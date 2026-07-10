@@ -10,6 +10,7 @@ import listTourPassengersTool from "./tools/list-tour-passengers";
 import getBookingPassengerDetailsTool from "./tools/get-booking-passenger-details";
 import listTourCustomFormsTool from "./tools/list-tour-custom-forms";
 import listTourAdditionalInfoTool from "./tools/list-tour-additional-info";
+import listEmailRulesTool from "./tools/list-email-rules";
 import createTourTool from "./tools/create-tour";
 import updateTourTool from "./tools/update-tour";
 import createItineraryTool from "./tools/create-itinerary";
@@ -31,7 +32,7 @@ export default defineMcp({
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
   instructions:
-    "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks. Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+    "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -48,6 +49,7 @@ export default defineMcp({
     getBookingPassengerDetailsTool,
     listTourCustomFormsTool,
     listTourAdditionalInfoTool,
+    listEmailRulesTool,
     createTourTool,
     updateTourTool,
     createItineraryTool,

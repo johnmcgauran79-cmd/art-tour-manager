@@ -305,6 +305,28 @@
         "outputSchema": null
       },
       {
+        "name": "list_email_rules",
+        "title": "List automated email rules",
+        "description": "List active automated email rules (email templates) and their ids. Use these ids in `include_in_email_rules` on an Additional Information section to make the section appear as an info block in those emails.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_inactive": {
+              "type": "boolean",
+              "description": "Include inactive rules too. Defaults to false (active only)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
         "name": "create_tour",
         "title": "Create tour",
         "description": "Create a new tour. Requires name, start_date, end_date (YYYY-MM-DD), and the number of days and nights. Optional fields set location, host, capacity, status and pricing.",
@@ -680,6 +702,13 @@
             "is_visible": {
               "type": "boolean",
               "description": "Whether the section is shown, default true."
+            },
+            "include_in_email_rules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Automated email rule ids this section should be injected into (as an info block). Use `list_email_rules` to find ids."
             }
           },
           "required": [
@@ -721,6 +750,13 @@
             },
             "is_visible": {
               "type": "boolean"
+            },
+            "include_in_email_rules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Automated email rule ids this section should be injected into (as an info block). Replaces the existing list. Use `list_email_rules` to find ids."
             }
           },
           "required": [
