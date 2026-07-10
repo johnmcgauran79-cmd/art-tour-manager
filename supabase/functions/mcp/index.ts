@@ -1940,12 +1940,13 @@ var get_payment_exception_report_default = defineTool27({
     const auth2 = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
+    const fctx = createXeroFetchContext();
     const records = [];
     for (const { booking, cls } of limited) {
       const primary = cls.primary_exception_type;
       const detail = cls.details[primary];
       const rows = mapByBooking.get(booking.id) ?? [];
-      const xero = await summarizeBookingXero(auth2, booking.id, rows, now);
+      const xero = await summarizeBookingXero(auth2, booking.id, rows, now, fctx);
       if (xero.partial_results) anyPartial = true;
       const cust = booking.customers;
       records.push({
@@ -1987,7 +1988,12 @@ var get_payment_exception_report_default = defineTool27({
       partial_results_reason: !auth2.ok ? "Xero is not connected; monetary values are from cached mappings only." : anyPartial ? "Some invoices could not be refreshed from live Xero; those monetary values are from cached mappings." : null,
       records
     };
-    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length });
+    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   }
 });
