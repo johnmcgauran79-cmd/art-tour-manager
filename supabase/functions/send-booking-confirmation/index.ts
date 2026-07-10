@@ -1915,7 +1915,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
-      sentTo: booking.customers.email,
+      sentTo: testRecipient || booking.customers.email,
+      isTest: isTestSend,
       ccTo: ccRecipients.length > 0 ? ccRecipients : undefined,
       additionalPassengers: additionalPassengerEmails.length > 0 ? additionalPassengerEmails : undefined
     }), {
