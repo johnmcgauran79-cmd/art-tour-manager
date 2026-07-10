@@ -113,6 +113,16 @@ export const PendingEmailPreviewModal = ({
     (_, formTitle) => `<span style="${placeholderButtonStyle}">📝 ${formTitle.trim()} (Preview)</span>`
   );
 
+  // Recolour custom cards to the tour's brand theme so the preview matches
+  // what the client will actually receive.
+  const brand = resolveBrand(brands, (booking as any)?.tours?.brand_id ?? null);
+  if (brand) {
+    processedContent = recolorCustomCards(processedContent, {
+      primary: brand.color_primary,
+      accent: brand.color_accent,
+    });
+  }
+
   const recipientName = booking?.customers
     ? `${booking.customers.first_name ?? ''} ${booking.customers.last_name ?? ''}`.trim()
     : 'Loading...';
