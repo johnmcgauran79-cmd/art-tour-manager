@@ -9,6 +9,17 @@ import getTourItineraryTool from "./tools/get-tour-itinerary";
 import listTourPassengersTool from "./tools/list-tour-passengers";
 import getBookingPassengerDetailsTool from "./tools/get-booking-passenger-details";
 import listTourCustomFormsTool from "./tools/list-tour-custom-forms";
+import listTourAdditionalInfoTool from "./tools/list-tour-additional-info";
+import createTourTool from "./tools/create-tour";
+import updateTourTool from "./tools/update-tour";
+import createItineraryTool from "./tools/create-itinerary";
+import addItineraryDayTool from "./tools/add-itinerary-day";
+import upsertItineraryEntryTool from "./tools/upsert-itinerary-entry";
+import deleteItineraryEntryTool from "./tools/delete-itinerary-entry";
+import deleteItineraryDayTool from "./tools/delete-itinerary-day";
+import addAdditionalInfoSectionTool from "./tools/add-additional-info-section";
+import updateAdditionalInfoSectionTool from "./tools/update-additional-info-section";
+import deleteAdditionalInfoSectionTool from "./tools/delete-additional-info-section";
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
@@ -20,7 +31,7 @@ export default defineMcp({
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
   instructions:
-    "Tools for the Australian Racing Tours tour manager. Use `list_tours` to find tours, `get_tour` for full details, `list_bookings` to see bookings, `list_tour_activities` and `get_activity` for activities, `list_tour_hotels` for hotel bookings, `get_tour_itinerary` for day-by-day itinerary, `list_tour_passengers` and `get_booking_passenger_details` for passenger information, and `list_tour_custom_forms` for custom form responses. All access is scoped to the signed-in user's permissions.",
+    "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks. Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -36,5 +47,16 @@ export default defineMcp({
     listTourPassengersTool,
     getBookingPassengerDetailsTool,
     listTourCustomFormsTool,
+    listTourAdditionalInfoTool,
+    createTourTool,
+    updateTourTool,
+    createItineraryTool,
+    addItineraryDayTool,
+    upsertItineraryEntryTool,
+    deleteItineraryEntryTool,
+    deleteItineraryDayTool,
+    addAdditionalInfoSectionTool,
+    updateAdditionalInfoSectionTool,
+    deleteAdditionalInfoSectionTool,
   ],
 });

@@ -278,6 +278,483 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "list_tour_additional_info",
+        "title": "List additional info sections",
+        "description": "List the Additional Information sections for a tour, in display order. Use the returned ids to edit or delete sections.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_tour",
+        "title": "Create tour",
+        "description": "Create a new tour. Requires name, start_date, end_date (YYYY-MM-DD), and the number of days and nights. Optional fields set location, host, capacity, status and pricing.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Tour name."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "Start date, YYYY-MM-DD."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "End date, YYYY-MM-DD."
+            },
+            "days": {
+              "type": "integer",
+              "description": "Number of days."
+            },
+            "nights": {
+              "type": "integer",
+              "description": "Number of nights."
+            },
+            "location": {
+              "type": "string",
+              "description": "Tour location."
+            },
+            "tour_host": {
+              "type": "string",
+              "description": "Tour host name."
+            },
+            "capacity": {
+              "type": "integer",
+              "description": "Maximum passengers."
+            },
+            "minimum_passengers_required": {
+              "type": "integer"
+            },
+            "status": {
+              "type": "string",
+              "description": "One of: pending, available, closed, sold_out, past, cancelled."
+            },
+            "tour_type": {
+              "type": "string",
+              "description": "domestic or international."
+            },
+            "notes": {
+              "type": "string"
+            },
+            "price_single": {
+              "type": "number"
+            },
+            "price_double": {
+              "type": "number"
+            },
+            "price_twin": {
+              "type": "number"
+            },
+            "deposit_required": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "name",
+            "start_date",
+            "end_date",
+            "days",
+            "nights"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_tour",
+        "title": "Update tour",
+        "description": "Update fields on an existing tour by id. Only the fields you provide are changed. Useful for editing dates, pricing, status, notes and operations notes while building a tour.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid) to update."
+            },
+            "name": {
+              "type": "string"
+            },
+            "start_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "days": {
+              "type": "integer"
+            },
+            "nights": {
+              "type": "integer"
+            },
+            "location": {
+              "type": "string"
+            },
+            "tour_host": {
+              "type": "string"
+            },
+            "capacity": {
+              "type": "integer"
+            },
+            "minimum_passengers_required": {
+              "type": "integer"
+            },
+            "status": {
+              "type": "string",
+              "description": "One of: pending, available, closed, sold_out, past, cancelled."
+            },
+            "tour_type": {
+              "type": "string",
+              "description": "domestic or international."
+            },
+            "notes": {
+              "type": "string"
+            },
+            "inclusions": {
+              "type": "string"
+            },
+            "exclusions": {
+              "type": "string"
+            },
+            "price_single": {
+              "type": "number"
+            },
+            "price_double": {
+              "type": "number"
+            },
+            "price_twin": {
+              "type": "number"
+            },
+            "deposit_required": {
+              "type": "number"
+            },
+            "ops_notes": {
+              "type": "string"
+            },
+            "ops_accomm_notes": {
+              "type": "string"
+            },
+            "ops_races_notes": {
+              "type": "string"
+            },
+            "ops_transport_notes": {
+              "type": "string"
+            },
+            "ops_dinner_notes": {
+              "type": "string"
+            },
+            "ops_activities_notes": {
+              "type": "string"
+            },
+            "ops_other_notes": {
+              "type": "string"
+            },
+            "tour_hosts_notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_itinerary",
+        "title": "Create tour itinerary",
+        "description": "Create the itinerary for a tour and auto-generate one day per date between the tour's start and end dates. Fails if an itinerary already exists for the tour.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid) to create the itinerary for."
+            },
+            "title": {
+              "type": "string",
+              "description": "Optional itinerary title."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_itinerary_day",
+        "title": "Add itinerary day",
+        "description": "Add a single day to an existing itinerary. Provide the itinerary_id and the activity_date (YYYY-MM-DD). The day number is assigned automatically as the next in sequence.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "itinerary_id": {
+              "type": "string",
+              "description": "The itinerary id (uuid)."
+            },
+            "activity_date": {
+              "type": "string",
+              "description": "The date for the new day, YYYY-MM-DD."
+            }
+          },
+          "required": [
+            "itinerary_id",
+            "activity_date"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upsert_itinerary_entry",
+        "title": "Add or edit itinerary entry",
+        "description": "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "entry_id": {
+              "type": "string",
+              "description": "Existing entry id (uuid) to edit. Omit to create a new entry."
+            },
+            "day_id": {
+              "type": "string",
+              "description": "The itinerary day id (uuid). Required when creating."
+            },
+            "subject": {
+              "type": "string",
+              "description": "The entry title/subject."
+            },
+            "time_slot": {
+              "type": "string",
+              "description": "Time of day, e.g. '09:00' or 'Morning'."
+            },
+            "content": {
+              "type": "string",
+              "description": "Entry details/description."
+            },
+            "sort_order": {
+              "type": "integer",
+              "description": "Display order within the day."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_itinerary_entry",
+        "title": "Delete itinerary entry",
+        "description": "Permanently delete a single itinerary entry by its id.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "entry_id": {
+              "type": "string",
+              "description": "The itinerary entry id (uuid) to delete."
+            }
+          },
+          "required": [
+            "entry_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_itinerary_day",
+        "title": "Delete itinerary day",
+        "description": "Permanently delete an itinerary day and all of its entries by the day id.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "day_id": {
+              "type": "string",
+              "description": "The itinerary day id (uuid) to delete."
+            }
+          },
+          "required": [
+            "day_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_additional_info_section",
+        "title": "Add additional info section",
+        "description": "Add an Additional Information section to a tour. Provide the tour_id, a name, and the content (HTML or plain text). icon_name defaults to 'Info'.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            },
+            "name": {
+              "type": "string",
+              "description": "Section title."
+            },
+            "content": {
+              "type": "string",
+              "description": "Section body content."
+            },
+            "icon_name": {
+              "type": "string",
+              "description": "Lucide icon name, defaults to 'Info'."
+            },
+            "sort_order": {
+              "type": "integer",
+              "description": "Display order."
+            },
+            "is_visible": {
+              "type": "boolean",
+              "description": "Whether the section is shown, default true."
+            }
+          },
+          "required": [
+            "tour_id",
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_additional_info_section",
+        "title": "Update additional info section",
+        "description": "Edit an existing Additional Information section by its id. Only the fields you provide are changed.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "section_id": {
+              "type": "string",
+              "description": "The section id (uuid) to update."
+            },
+            "name": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "icon_name": {
+              "type": "string"
+            },
+            "sort_order": {
+              "type": "integer"
+            },
+            "is_visible": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "section_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_additional_info_section",
+        "title": "Delete additional info section",
+        "description": "Permanently delete an Additional Information section by its id.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "section_id": {
+              "type": "string",
+              "description": "The section id (uuid) to delete."
+            }
+          },
+          "required": [
+            "section_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }
