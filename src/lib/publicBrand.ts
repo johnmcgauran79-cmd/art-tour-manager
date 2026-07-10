@@ -17,7 +17,7 @@ export const DEFAULT_PUBLIC_LOGO =
 // Falls back to the default ART navy/gold when no brand is resolved.
 export const brandButtonStyle = (
   brand: PublicBrand | null | undefined,
-): React.CSSProperties => ({
+): { backgroundColor: string; color: string } => ({
   backgroundColor: brand?.colorButton || "#0a1929",
   color: brand?.colorButtonText || "#d4a017",
 });
