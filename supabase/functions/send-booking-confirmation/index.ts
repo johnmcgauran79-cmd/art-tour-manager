@@ -364,6 +364,7 @@ const handler = async (req: Request): Promise<Response> => {
     let btnBg = getGSetting('theme_email_button_color', '#232628');
     let btnText = getGSetting('theme_email_button_text', '#F5C518');
     let brandPrimary = '#232628';
+    let brandAccent = getGSetting('theme_email_button_text', '#F5C518');
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
