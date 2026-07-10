@@ -189,6 +189,15 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   useEffect(() => {
     setUserHasEdited(false);
 
+    // Resolve the tour's brand so the preview shows the exact colours the
+    // client will receive (custom cards use the tour theme, not defaults).
+    const brand = resolveBrand(brands, (booking as any)?.tours?.brand_id ?? null);
+    const themeColors = brand
+      ? { primary: brand.color_primary, accent: brand.color_accent }
+      : null;
+    const applyTheme = (html: string) =>
+      themeColors ? recolorCustomCards(html, themeColors) : html;
+
     if (selectedTemplateId && selectedTemplateId !== "blank" && emailTemplates) {
       const template = emailTemplates.find(t => t.id === selectedTemplateId);
       if (template) {
@@ -200,10 +209,10 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
           const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
           const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
           setEditedSubject(processedSubject);
-          setEditedContent(processedContent);
+          setEditedContent(applyTheme(processedContent));
         } else {
           setEditedSubject(template.subject_template);
-          setEditedContent(template.content_template);
+          setEditedContent(applyTheme(template.content_template));
         }
       }
     } else {
@@ -222,7 +231,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         setEditedContent(defaultContentTemplate);
       }
     }
-  }, [selectedTemplateId, emailTemplates, booking]);
+  }, [selectedTemplateId, emailTemplates, booking, brands]);
 
   const handleSendEmail = async () => {
     if (!bookingId) return;
