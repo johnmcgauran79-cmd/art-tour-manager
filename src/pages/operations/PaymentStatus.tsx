@@ -78,6 +78,23 @@ export default function PaymentStatus() {
       }
       groups.get(b.tour_id)!.bookings.push(b);
     });
+    // Order within each tour: by status priority (Invoiced -> Deposited ->
+    // Instalment Paid -> RB Invoice), then oldest to newest booking.
+    const statusPriority: Record<string, number> = {
+      invoiced: 0,
+      deposited: 1,
+      instalment_paid: 2,
+      racing_breaks_invoice: 3,
+    };
+    const rank = (status: string) =>
+      status in statusPriority ? statusPriority[status] : 99;
+    groups.forEach(group => {
+      group.bookings.sort((a, b) => {
+        const diff = rank(a.status) - rank(b.status);
+        if (diff !== 0) return diff;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+    });
     // Sort by tour name
     return Array.from(groups.entries()).sort((a, b) => a[1].tourName.localeCompare(b[1].tourName));
   };
