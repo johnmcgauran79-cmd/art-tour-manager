@@ -8,18 +8,24 @@ import {
 } from "./_xeroLogic";
 
 // A tool error result shaped for MCP. Never contains tokens/secrets/payloads.
-export function toolError(code: XeroErrorCode, detail?: string) {
+export interface ToolErrorResult {
+  content: { type: "text"; text: string }[];
+  structuredContent: { error: { code: XeroErrorCode; message: string } };
+  isError: true;
+}
+
+export function toolError(code: XeroErrorCode, detail?: string): ToolErrorResult {
   const message = safeErrorMessage(code, detail);
   return {
-    content: [{ type: "text" as const, text: `${code}: ${message}` }],
+    content: [{ type: "text", text: `${code}: ${message}` }],
     structuredContent: { error: { code, message } },
-    isError: true as const,
+    isError: true,
   };
 }
 
 export type Guard<T> =
   | { ok: true; value: T }
-  | { ok: false; error: ReturnType<typeof toolError>; code: XeroErrorCode };
+  | { ok: false; error: ToolErrorResult; code: XeroErrorCode };
 
 /**
  * Verify the caller is authenticated AND holds an approved financial-access
