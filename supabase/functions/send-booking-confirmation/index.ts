@@ -1835,6 +1835,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap in branded email template
+      passengerEmailHtml = recolorCustomCards(passengerEmailHtml, { primary: brandPrimary, accent: brandAccent });
       passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
