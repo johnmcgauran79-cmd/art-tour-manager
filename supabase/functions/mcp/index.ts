@@ -1847,6 +1847,31 @@ async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now(), fc
     duplicate_link: duplicate
   };
 }
+function detectSharedInvoiceLinks(rows) {
+  const byInvoice = /* @__PURE__ */ new Map();
+  const numberByInvoice = /* @__PURE__ */ new Map();
+  for (const r of rows) {
+    if (!r.xero_invoice_id || !r.booking_id) continue;
+    if (!byInvoice.has(r.xero_invoice_id)) byInvoice.set(r.xero_invoice_id, /* @__PURE__ */ new Set());
+    byInvoice.get(r.xero_invoice_id).add(r.booking_id);
+    if (!numberByInvoice.has(r.xero_invoice_id)) {
+      numberByInvoice.set(r.xero_invoice_id, r.xero_invoice_number ?? null);
+    }
+  }
+  const findings = [];
+  for (const [invId, bookings] of byInvoice) {
+    if (bookings.size > 1) {
+      findings.push({
+        finding_type: "shared_invoice_across_bookings",
+        xero_invoice_id: invId,
+        invoice_number: numberByInvoice.get(invId) ?? null,
+        booking_ids: Array.from(bookings),
+        booking_count: bookings.size
+      });
+    }
+  }
+  return findings;
+}
 
 // src/lib/mcp/tools/get-payment-exception-report.ts
 var get_payment_exception_report_default = defineTool27({
@@ -2042,7 +2067,7 @@ var compare_art_payment_report_to_xero_default = defineTool28({
         mapByBooking.set(m.booking_id, arr);
       }
     }
-    const crossDuplicates = detectCrossBookingDuplicates(allMappingRows);
+    const sharedInvoiceLinks = detectSharedInvoiceLinks(allMappingRows);
     const auth2 = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
