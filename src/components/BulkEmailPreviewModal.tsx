@@ -792,6 +792,27 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
             />
 
             <div className="flex justify-end gap-2 pt-4 border-t sticky bottom-0 bg-background">
+              <div className="mr-auto flex items-end gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Send test to:</Label>
+                  <Input
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-9 w-56"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleSendTest}
+                  disabled={sendTestMutation.isPending || !editedContent.trim() || !previewBooking || !testEmailTo.trim()}
+                  title="Send a one-off test to this address using the preview recipient's data"
+                >
+                  {sendTestMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                  Send Test
+                </Button>
+              </div>
               <Button 
                 type="button" 
                 variant="outline" 
