@@ -454,7 +454,36 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="pt-4 border-t space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-2 rounded-md bg-muted/40 p-3">
+                <div className="flex-1">
+                  <Label htmlFor="testEmail">Send a test to (see exactly what the client sees):</Label>
+                  <Input
+                    id="testEmail"
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleSendTestEmail}
+                  disabled={sendEmail.isPending || !editedContent.trim() || !testEmailTo.trim()}
+                >
+                  {sendEmail.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Test Email'
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex justify-end gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -484,6 +513,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
                   'Approve & Send Email'
                 )}
               </Button>
+              </div>
             </div>
             </div>
           </div>
