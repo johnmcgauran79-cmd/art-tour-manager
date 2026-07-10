@@ -346,10 +346,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, batchId: externalBatchId, attachments: requestedAttachments, cleanupAttachments }: BookingConfirmationRequest = await req.json();
-    
-    // Default to true if not explicitly provided (backwards compatible)
-    const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, batchId: externalBatchId, attachments: requestedAttachments, cleanupAttachments, testEmailTo }: BookingConfirmationRequest = await req.json();
+
+    // A test send goes ONLY to the supplied address and never to real passengers.
+    const isTestSend = !!(testEmailTo && testEmailTo.trim());
+    const testRecipient = isTestSend ? testEmailTo!.trim() : null;
+
+    // Default to true if not explicitly provided (backwards compatible).
+    // Test sends never fan out to additional passengers.
+    const shouldIncludeAdditionalPassengers = !isTestSend && includeAdditionalPassengers !== false;
 
     // Fetch default email header image and sender settings
     const { data: generalSettings } = await supabaseClient
