@@ -1045,6 +1045,33 @@ async function requestWithRetry(doFetch, initialToken, forceRefresh2, opts) {
   }
   return { ok: false, code: "INTERNAL_ERROR" };
 }
+function createInvoiceFetchContext() {
+  return {
+    cache: /* @__PURE__ */ new Map(),
+    seen: /* @__PURE__ */ new Set(),
+    metrics: {
+      unique_invoice_ids: 0,
+      invoice_fetch_count: 0,
+      invoice_cache_hits: 0,
+      retry_count: 0
+    }
+  };
+}
+async function cachedInvoiceFetch(ctx, invoiceId, fetcher) {
+  if (!ctx.seen.has(invoiceId)) {
+    ctx.seen.add(invoiceId);
+    ctx.metrics.unique_invoice_ids++;
+  }
+  if (ctx.cache.has(invoiceId)) {
+    ctx.metrics.invoice_cache_hits++;
+    return ctx.cache.get(invoiceId);
+  }
+  const { result, retryCount } = await fetcher(invoiceId);
+  ctx.metrics.invoice_fetch_count++;
+  ctx.metrics.retry_count += retryCount;
+  ctx.cache.set(invoiceId, result);
+  return result;
+}
 
 // src/lib/mcp/tools/_xero.ts
 function serviceClient() {
@@ -1702,6 +1729,16 @@ function reportTypeFilter(reportType) {
 }
 
 // src/lib/mcp/tools/_paymentXero.ts
+function createXeroFetchContext() {
+  return createInvoiceFetchContext();
+}
+async function fetchInvoiceCached(fctx, auth2, invoiceId) {
+  return cachedInvoiceFetch(fctx, invoiceId, async (id) => {
+    const metrics = { retry_count: 0 };
+    const result = await fetchInvoiceById(auth2, id, { metrics });
+    return { result, retryCount: metrics.retry_count };
+  });
+}
 var INACTIVE_INVOICE_STATUSES = ["VOIDED", "DELETED"];
 function detectBookingDuplicate(bookingId, rows) {
   const byInvoice = /* @__PURE__ */ new Map();
@@ -1721,7 +1758,8 @@ function detectBookingDuplicate(bookingId, rows) {
   }
   return null;
 }
-async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now()) {
+async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now(), fctx) {
+  const fc = fctx ?? createXeroFetchContext();
   const linkedNumbers = Array.from(
     new Set(rows.map((r) => r.xero_invoice_number).filter(Boolean))
   );
@@ -1744,7 +1782,7 @@ async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now()) {
     let source = "xero_mapping_cache";
     let normalized = null;
     if (auth2.ok && m.xero_invoice_id) {
-      const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+      const live = await fetchInvoiceCached(fc, auth2.data, m.xero_invoice_id);
       if (live.ok) {
         anyLive = true;
         normalized = normalizeInvoice(live.data);
