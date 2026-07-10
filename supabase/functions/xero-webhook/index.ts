@@ -129,7 +129,10 @@ async function xeroFetchWithRetry(url: string, headers: Record<string, string>, 
 }
 
 // Fetch ALL invoices from Xero in bulk pages (100 per page) and build a lookup map
-async function fetchAllXeroInvoices(auth: { token: string; tenantId: string }): Promise<Map<string, any[]>> {
+async function fetchAllXeroInvoices(
+  auth: { token: string; tenantId: string },
+  whereClauseRaw = 'Status=="AUTHORISED" OR Status=="PAID"',
+): Promise<Map<string, any[]>> {
   const headers = { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' };
   const invoiceMap = new Map<string, any[]>(); // key = normalized ref/number, value = invoices
 
@@ -147,8 +150,7 @@ async function fetchAllXeroInvoices(auth: { token: string; tenantId: string }): 
   let page = 1;
   let hasMore = true;
 
-  // Only fetch AUTHORISED and PAID invoices (the ones that matter for status sync)
-  const whereClause = encodeURIComponent('Status=="AUTHORISED" OR Status=="PAID"');
+  const whereClause = encodeURIComponent(whereClauseRaw);
 
   while (hasMore) {
     console.log(`Fetching Xero invoices page ${page}...`);
@@ -562,6 +564,149 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    // Backfill missing booking<->invoice mappings ONLY. Mapping cache only.
+    // Does NOT change booking status and does NOT write anything to Xero.
+    // Dry-run by default; pass ?apply=true to persist mapping rows.
+    if (action === 'backfill-mappings') {
+      const apply = url.searchParams.get('apply') === 'true';
+      const auth = await getValidAccessToken(supabase);
+      if (!auth) {
+        return new Response(JSON.stringify({ error: 'Xero not connected or token expired' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const SKIP_REFS = ['0', 'tbc', 'n/a', ''];
+
+      // ALL bookings with a usable invoice_reference (no date cutoff).
+      const { data: bookings, error: bkErr } = await supabase
+        .from('bookings')
+        .select('id, invoice_reference, group_name, lead_passenger_id, customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
+        .not('invoice_reference', 'is', null)
+        .neq('invoice_reference', '');
+      if (bkErr) {
+        return new Response(JSON.stringify({ error: bkErr.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Existing mappings so we only fill gaps / refresh, and can report deltas.
+      const { data: existingMappings } = await supabase
+        .from('xero_invoice_mappings')
+        .select('booking_id, xero_invoice_id');
+      const mappedInvoiceByBooking = new Map<string, Set<string>>();
+      for (const m of existingMappings || []) {
+        if (!mappedInvoiceByBooking.has(m.booking_id)) mappedInvoiceByBooking.set(m.booking_id, new Set());
+        mappedInvoiceByBooking.get(m.booking_id)!.add(m.xero_invoice_id);
+      }
+
+      // Fetch all non-voided/deleted invoices for the widest safe linkage.
+      const invoiceMap = await fetchAllXeroInvoices(
+        auth,
+        'Status=="DRAFT" OR Status=="SUBMITTED" OR Status=="AUTHORISED" OR Status=="PAID"',
+      );
+
+      const linked: any[] = [];
+      const ambiguous: any[] = [];
+      const unmatched: any[] = [];
+      let wrote = 0;
+
+      const resolveMatches = (ref: string): any[] => {
+        const n = ref.trim().toLowerCase();
+        if (!n) return [];
+        return (
+          invoiceMap.get(n) ||
+          invoiceMap.get(`inv-${n}`) ||
+          invoiceMap.get(n.replace(/^inv-/i, '')) ||
+          []
+        );
+      };
+
+      for (const b of bookings || []) {
+        const name = (b as any).customers
+          ? `${(b as any).customers.first_name || ''} ${(b as any).customers.last_name || ''}`.trim()
+          : (b as any).group_name || 'Unknown';
+        const refs = String(b.invoice_reference)
+          .split(',').map((r: string) => r.trim()).filter(Boolean)
+          .filter((r: string) => !SKIP_REFS.includes(r.toLowerCase()));
+        if (refs.length === 0) continue;
+
+        const already = mappedInvoiceByBooking.get(b.id) || new Set<string>();
+
+        for (const ref of refs) {
+          const matches = resolveMatches(ref);
+          if (matches.length === 0) {
+            unmatched.push({ booking_id: b.id, client: name, reference: ref });
+            continue;
+          }
+          const best = pickBestInvoice(matches);
+          if (matches.length > 1) {
+            ambiguous.push({
+              booking_id: b.id, client: name, reference: ref,
+              chosen_invoice: best.InvoiceNumber, chosen_status: best.Status,
+              candidate_count: matches.length,
+              candidates: matches.map((i: any) => ({ invoice_number: i.InvoiceNumber, status: i.Status })),
+            });
+          }
+          const isNew = !already.has(best.InvoiceID);
+          const record = {
+            booking_id: b.id, client: name, reference: ref,
+            invoice_number: best.InvoiceNumber, xero_invoice_id: best.InvoiceID,
+            xero_status: best.Status, amount_paid: best.AmountPaid || 0,
+            amount_due: best.AmountDue || 0, total_amount: best.Total || 0,
+            action: isNew ? 'insert' : 'refresh',
+          };
+          linked.push(record);
+
+          if (apply) {
+            const { error: upErr } = await supabase
+              .from('xero_invoice_mappings')
+              .upsert({
+                booking_id: b.id,
+                xero_invoice_id: best.InvoiceID,
+                xero_invoice_number: best.InvoiceNumber,
+                invoice_reference: ref,
+                amount_due: best.AmountDue || 0,
+                amount_paid: best.AmountPaid || 0,
+                total_amount: best.Total || 0,
+                currency_code: best.CurrencyCode || 'AUD',
+                xero_status: best.Status,
+                last_payment_date: best.FullyPaidOnDate || null,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'xero_invoice_id' });
+            if (!upErr) wrote++;
+            else record.action = `error: ${upErr.message}`;
+          }
+        }
+      }
+
+      if (apply) {
+        await supabase.from('xero_sync_log').insert({
+          sync_type: 'mapping_backfill',
+          entity_type: 'invoice',
+          action: 'mappings_backfilled',
+          details: { linked: linked.length, wrote, ambiguous: ambiguous.length, unmatched: unmatched.length },
+          status: 'success',
+        });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        mode: apply ? 'applied' : 'dry_run',
+        bookings_checked: (bookings || []).length,
+        linkages_matched: linked.length,
+        inserts: linked.filter(l => l.action === 'insert').length,
+        refreshes: linked.filter(l => l.action === 'refresh').length,
+        rows_written: apply ? wrote : 0,
+        ambiguous_count: ambiguous.length,
+        unmatched_count: unmatched.length,
+        linked,
+        ambiguous,
+        unmatched,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Legacy: direct sync (kept for backward compatibility but shouldn't be used)
