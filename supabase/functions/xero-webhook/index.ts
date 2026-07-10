@@ -502,7 +502,7 @@ serve(async (req) => {
                 xero_status: change.xero_status,
                 last_payment_date: change.last_payment_date || null,
                 updated_at: new Date().toISOString(),
-              }, { onConflict: 'xero_invoice_id' });
+              }, { onConflict: 'booking_id,xero_invoice_id' });
           }
 
           // Log the sync action
@@ -676,7 +676,7 @@ serve(async (req) => {
                 xero_status: best.Status,
                 last_payment_date: best.FullyPaidOnDate || null,
                 updated_at: new Date().toISOString(),
-              }, { onConflict: 'xero_invoice_id' });
+              }, { onConflict: 'booking_id,xero_invoice_id' });
             if (!upErr) wrote++;
             else record.action = `error: ${upErr.message}`;
           }
