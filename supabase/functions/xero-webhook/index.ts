@@ -566,11 +566,6 @@ serve(async (req) => {
       });
     }
 
-    // Legacy: direct sync (kept for backward compatibility but shouldn't be used)
-    if (action === 'sync-invoices') {
-      // (see below)
-    }
-
     // Backfill missing booking<->invoice mappings ONLY. Mapping cache only.
     // Does NOT change booking status and does NOT write anything to Xero.
     // Dry-run by default; pass ?apply=true to persist mapping rows.
