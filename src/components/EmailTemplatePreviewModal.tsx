@@ -180,7 +180,15 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
       (_m, formTitle) => `<a href="#" style="${mockButtonStyle}">${String(formTitle).trim().toUpperCase()} (Preview)</a>`
     );
 
-    const headerImageUrl = getSettingValue('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    // Recolour custom cards to match the tour's brand theme.
+    if (brand) {
+      processedContent = recolorCustomCards(processedContent, {
+        primary: brand.color_primary,
+        accent: brand.color_accent,
+      });
+    }
+
+    const headerImageUrl = brand?.email_header_image_url || getSettingValue('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
 
     // Wrap in branded email shell
     const fullHtml = `<!DOCTYPE html>
