@@ -1454,13 +1454,732 @@ var list_outstanding_invoices_default = defineTool26({
   }
 });
 
+// src/lib/mcp/tools/get-payment-exception-report.ts
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z27 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_paymentReport.ts
+var PAYMENT_RULES_VERSION = "2026-07-10";
+var EXCEPTION_PRIORITY = [
+  "missing_deposit",
+  "missing_instalment",
+  "overdue_final_balance"
+];
+var EXCLUDED_STATUSES = [
+  "cancelled",
+  "waitlisted",
+  "host",
+  "complimentary"
+];
+var INSTALMENT_SATISFIED_STATUSES = [
+  "instalment_paid",
+  "fully_paid",
+  "racing_breaks_invoice"
+];
+var MS_PER_DAY = 24 * 60 * 60 * 1e3;
+function toDateOnly(d) {
+  return d.toISOString().split("T")[0];
+}
+function daysBetween(fromDateOnly, asOf) {
+  const from = (/* @__PURE__ */ new Date(fromDateOnly + "T00:00:00Z")).getTime();
+  const today = (/* @__PURE__ */ new Date(toDateOnly(asOf) + "T00:00:00Z")).getTime();
+  if (Number.isNaN(from)) return 0;
+  const diff = Math.floor((today - from) / MS_PER_DAY);
+  return diff > 0 ? diff : 0;
+}
+function isMissingDeposit(booking, asOf) {
+  if (booking.status !== "invoiced") return false;
+  const cutoff = new Date(asOf.getTime() - 7 * MS_PER_DAY);
+  return new Date(booking.created_at) < cutoff;
+}
+function isMissingInstalment(booking, tour, asOf) {
+  if (!tour.instalment_required || !tour.instalment_date) return false;
+  if (asOf <= new Date(tour.instalment_date)) return false;
+  return !INSTALMENT_SATISFIED_STATUSES.includes(
+    booking.status || ""
+  );
+}
+function isOverdueFinalBalance(booking, tour, asOf) {
+  if (!tour.final_payment_date) return false;
+  if (asOf <= new Date(tour.final_payment_date)) return false;
+  return booking.status !== "fully_paid";
+}
+function depositDetail(booking, tour, asOf) {
+  const created = new Date(booking.created_at);
+  const due = new Date(created.getTime() + 7 * MS_PER_DAY);
+  const dueDate = toDateOnly(due);
+  const perPerson = Number(tour.deposit_required) || 0;
+  const pax = Math.max(Number(booking.passenger_count) || 1, 1);
+  const hasDeposit = perPerson > 0;
+  return {
+    type: "missing_deposit",
+    expected_due_date: dueDate,
+    days_overdue: daysBetween(dueDate, asOf),
+    // deposit_required is stored per-person; passenger_count is a stored value.
+    expected_amount: hasDeposit ? perPerson * pax : null,
+    expected_amount_source: hasDeposit ? "stored_tour_deposit" : "unavailable"
+  };
+}
+function instalmentDetail(tour, asOf) {
+  const dueDate = tour.instalment_date || null;
+  const stored = Number(tour.instalment_amount);
+  const hasInstalmentAmount = Number.isFinite(stored) && stored > 0;
+  return {
+    type: "missing_instalment",
+    expected_due_date: dueDate,
+    days_overdue: dueDate ? daysBetween(dueDate, asOf) : 0,
+    expected_amount: hasInstalmentAmount ? stored : null,
+    expected_amount_source: hasInstalmentAmount ? "stored_instalment_amount" : "unavailable"
+  };
+}
+function finalDetail(tour, asOf) {
+  const dueDate = tour.final_payment_date || null;
+  return {
+    type: "overdue_final_balance",
+    expected_due_date: dueDate,
+    days_overdue: dueDate ? daysBetween(dueDate, asOf) : 0,
+    expected_amount: null,
+    expected_amount_source: "unavailable"
+  };
+}
+function isExcludedStatus(status) {
+  return EXCLUDED_STATUSES.includes(status || "");
+}
+function classifyBookingPaymentException(booking, tour, asOf = /* @__PURE__ */ new Date()) {
+  const emptyDetails = {
+    missing_deposit: null,
+    missing_instalment: null,
+    overdue_final_balance: null
+  };
+  if (isExcludedStatus(booking.status)) {
+    return {
+      is_exception: false,
+      primary_exception_type: null,
+      all_applicable_exception_types: [],
+      details: emptyDetails,
+      classification_explanation: `Booking status "${booking.status}" is excluded from payment-exception reporting.`,
+      excluded_reason: `status_${booking.status}`
+    };
+  }
+  const applicable = [];
+  const details = { ...emptyDetails };
+  if (isMissingDeposit(booking, asOf)) {
+    applicable.push("missing_deposit");
+    details.missing_deposit = depositDetail(booking, tour, asOf);
+  }
+  if (isMissingInstalment(booking, tour, asOf)) {
+    applicable.push("missing_instalment");
+    details.missing_instalment = instalmentDetail(tour, asOf);
+  }
+  if (isOverdueFinalBalance(booking, tour, asOf)) {
+    applicable.push("overdue_final_balance");
+    details.overdue_final_balance = finalDetail(tour, asOf);
+  }
+  const primary = EXCEPTION_PRIORITY.find((t) => applicable.includes(t)) ?? null;
+  let explanation;
+  if (!primary) {
+    explanation = "No payment exception applies to this booking as of the report date.";
+  } else if (applicable.length === 1) {
+    explanation = explainType(primary, details[primary]);
+  } else {
+    const secondary = applicable.filter((t) => t !== primary);
+    explanation = `${explainType(primary, details[primary])} This is the primary exception because ${primary} has the highest priority (deposit > instalment > final balance). Also applicable: ${secondary.join(", ")}.`;
+  }
+  return {
+    is_exception: applicable.length > 0,
+    primary_exception_type: primary,
+    all_applicable_exception_types: applicable,
+    details,
+    classification_explanation: explanation,
+    excluded_reason: null
+  };
+}
+function explainType(type, d) {
+  switch (type) {
+    case "missing_deposit":
+      return `Deposit owing: booking is still in "invoiced" status ${d.days_overdue} day(s) past the 7-day deposit window (due ${d.expected_due_date}).`;
+    case "missing_instalment":
+      return `Instalment owing: the tour requires an instalment and the instalment date (${d.expected_due_date}) has passed without the booking reaching an instalment-satisfied status.`;
+    case "overdue_final_balance":
+      return `Final balance overdue: the final payment date (${d.expected_due_date}) has passed and the booking is not fully paid.`;
+  }
+}
+function reportTypeFilter(reportType) {
+  switch (reportType) {
+    case "missing_deposits":
+      return ["missing_deposit"];
+    case "missing_instalments":
+      return ["missing_instalment"];
+    case "overdue_final_balances":
+      return ["overdue_final_balance"];
+    case "all_payment_exceptions":
+      return ["missing_deposit", "missing_instalment", "overdue_final_balance"];
+    default:
+      return null;
+  }
+}
+
+// src/lib/mcp/tools/_paymentXero.ts
+var INACTIVE_INVOICE_STATUSES = ["VOIDED", "DELETED"];
+function detectBookingDuplicate(bookingId, rows) {
+  const byInvoice = /* @__PURE__ */ new Map();
+  for (const r of rows) {
+    if (!r.xero_invoice_id) continue;
+    byInvoice.set(r.xero_invoice_id, (byInvoice.get(r.xero_invoice_id) || 0) + 1);
+  }
+  for (const [invId, count] of byInvoice) {
+    if (count > 1) {
+      return {
+        duplicate_type: "same_invoice_mapped_twice_same_booking",
+        affected_invoice_id: invId,
+        affected_booking_ids: [bookingId],
+        mapping_count: count
+      };
+    }
+  }
+  return null;
+}
+async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now()) {
+  const linkedNumbers = Array.from(
+    new Set(rows.map((r) => r.xero_invoice_number).filter(Boolean))
+  );
+  const duplicate = detectBookingDuplicate(bookingId, rows);
+  const unique = Array.from(
+    new Map(rows.filter((r) => r.xero_invoice_id).map((r) => [r.xero_invoice_id, r])).values()
+  );
+  const summaries = [];
+  const activeInvoices = [];
+  let anyLive = false;
+  let anyCache = false;
+  let liveAllOk = true;
+  let stale = false;
+  for (const m of unique) {
+    let total = Number(m.total_amount) || 0;
+    let paid = Number(m.amount_paid) || 0;
+    let due = Number(m.amount_due) || 0;
+    let status = m.xero_status || null;
+    let dueDate = null;
+    let source = "xero_mapping_cache";
+    let normalized = null;
+    if (auth2.ok && m.xero_invoice_id) {
+      const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+      if (live.ok) {
+        anyLive = true;
+        normalized = normalizeInvoice(live.data);
+        total = normalized.total;
+        paid = normalized.amount_paid;
+        due = normalized.amount_due;
+        status = normalized.status;
+        dueDate = normalized.due_date;
+        source = "live_xero";
+      } else {
+        liveAllOk = false;
+        anyCache = true;
+        stale = stale || computeStaleWarning(m.updated_at, now);
+      }
+    } else {
+      liveAllOk = false;
+      anyCache = true;
+      stale = stale || computeStaleWarning(m.updated_at, now);
+    }
+    const isActive = !INACTIVE_INVOICE_STATUSES.includes(
+      (status || "").toUpperCase()
+    );
+    summaries.push({
+      xero_invoice_id: m.xero_invoice_id,
+      invoice_number: m.xero_invoice_number,
+      status,
+      total,
+      amount_paid: paid,
+      amount_due: due,
+      due_date: dueDate,
+      is_active: isActive,
+      data_source: source
+    });
+    if (isActive && normalized) activeInvoices.push(normalized);
+  }
+  const activeSummaries = summaries.filter((s) => s.is_active);
+  const haveAnyMoney = summaries.length > 0;
+  const moneySource = !haveAnyMoney ? "unavailable" : anyLive && !anyCache ? "live_xero" : anyCache && !anyLive ? "xero_mapping_cache" : anyLive && anyCache ? "live_xero" : "unavailable";
+  const received = haveAnyMoney ? activeSummaries.reduce((s, r) => s + (r.amount_paid || 0), 0) : null;
+  const outstanding = haveAnyMoney ? activeSummaries.reduce((s, r) => s + (r.amount_due || 0), 0) : null;
+  const liveVerificationCompleted = auth2.ok && liveAllOk && haveAnyMoney;
+  const partial = !liveVerificationCompleted && haveAnyMoney;
+  let xeroFullyPaid = null;
+  if (liveVerificationCompleted && activeSummaries.length > 0) {
+    xeroFullyPaid = activeSummaries.every((r) => (r.amount_due || 0) <= 5e-3);
+  }
+  return {
+    invoices: activeInvoices,
+    invoice_summaries: summaries,
+    linked_invoice_numbers: linkedNumbers,
+    received_amount: received,
+    received_amount_source: haveAnyMoney ? moneySource : "unavailable",
+    outstanding_amount: outstanding,
+    outstanding_amount_source: haveAnyMoney ? moneySource : "unavailable",
+    active_invoice_count: activeSummaries.length,
+    xero_fully_paid: xeroFullyPaid,
+    data_source: anyLive && anyCache ? "mixed" : moneySource,
+    live_verification_completed: liveVerificationCompleted,
+    partial_results: partial,
+    stale_warning: stale,
+    duplicate_link: duplicate
+  };
+}
+function detectCrossBookingDuplicates(rows) {
+  const byInvoice = /* @__PURE__ */ new Map();
+  const counts = /* @__PURE__ */ new Map();
+  for (const r of rows) {
+    if (!r.xero_invoice_id || !r.booking_id) continue;
+    if (!byInvoice.has(r.xero_invoice_id)) byInvoice.set(r.xero_invoice_id, /* @__PURE__ */ new Set());
+    byInvoice.get(r.xero_invoice_id).add(r.booking_id);
+    counts.set(r.xero_invoice_id, (counts.get(r.xero_invoice_id) || 0) + 1);
+  }
+  const findings = [];
+  for (const [invId, bookings] of byInvoice) {
+    if (bookings.size > 1) {
+      findings.push({
+        duplicate_type: "same_invoice_mapped_to_multiple_bookings",
+        affected_invoice_id: invId,
+        affected_booking_ids: Array.from(bookings),
+        mapping_count: counts.get(invId) || bookings.size
+      });
+    }
+  }
+  return findings;
+}
+
+// src/lib/mcp/tools/get-payment-exception-report.ts
+var get_payment_exception_report_default = defineTool27({
+  name: "get_payment_exception_report",
+  title: "Get payment exception report",
+  description: "Compute the ART payment-exception report for a tour using the canonical classification rules (deposit/instalment/final-balance). Returns each exception booking with its primary and all applicable exception types, expected due date, expected amount with an explicit source label, and Xero monetary values (received/outstanding) labelled by source. This RE-COMPUTES the rules; it does not fetch a previously generated report artifact. Does NOT change any data. Restricted to admin/manager.",
+  inputSchema: {
+    tour_id: z27.string().uuid().describe("Required tour id (uuid)."),
+    report_type: z27.enum([
+      "missing_deposits",
+      "missing_instalments",
+      "overdue_final_balances",
+      "all_payment_exceptions"
+    ]).describe("Which exception category to include."),
+    as_of_date: z27.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today."),
+    limit: z27.number().int().optional().describe("Max records (default 100, max 500).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, report_type, as_of_date, limit }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    const tourAcc = await assertTourAccess(ctx, tour_id);
+    if (!tourAcc.ok) {
+      await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: false, errorCategory: tourAcc.code, durationMs: Date.now() - started });
+      return tourAcc.error;
+    }
+    if (as_of_date && !/^\d{4}-\d{2}-\d{2}$/.test(as_of_date)) {
+      return toolError("INVALID_INPUT", "as_of_date must be YYYY-MM-DD.");
+    }
+    const allowed = reportTypeFilter(report_type);
+    if (!allowed) return toolError("INVALID_INPUT", "Unknown report_type.");
+    const asOf = as_of_date ? /* @__PURE__ */ new Date(as_of_date + "T00:00:00Z") : /* @__PURE__ */ new Date();
+    const capped = Math.min(Math.max(limit ?? 100, 1), 500);
+    const supabase = supabaseForUser(ctx);
+    const { data: tour, error: tourErr } = await supabase.from("tours").select("id, name, instalment_required, instalment_date, final_payment_date, deposit_required, instalment_amount").eq("id", tour_id).maybeSingle();
+    if (tourErr || !tour) {
+      await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const { data: bookings, error: bkErr } = await supabase.from("bookings").select("id, status, created_at, passenger_count, group_name, tour_id, customers!bookings_lead_passenger_id_fkey(first_name, last_name)").eq("tour_id", tour_id);
+    if (bkErr) {
+      await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const matched = [];
+    for (const b of bookings ?? []) {
+      const cls = classifyBookingPaymentException(
+        { id: b.id, status: b.status, created_at: b.created_at, passenger_count: b.passenger_count },
+        tour,
+        asOf
+      );
+      if (!cls.is_exception) continue;
+      const inScope = cls.all_applicable_exception_types.some((t) => allowed.includes(t));
+      if (!inScope) continue;
+      matched.push({ booking: b, cls });
+    }
+    const limited = matched.slice(0, capped);
+    const bookingIds = limited.map((m) => m.booking.id);
+    const mapByBooking = /* @__PURE__ */ new Map();
+    if (bookingIds.length) {
+      const { data: mappings } = await supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, amount_due, amount_paid, total_amount, xero_status, updated_at, booking_id").in("booking_id", bookingIds);
+      for (const m of mappings ?? []) {
+        const arr = mapByBooking.get(m.booking_id) ?? [];
+        arr.push(m);
+        mapByBooking.set(m.booking_id, arr);
+      }
+    }
+    const auth2 = await getXeroAuth();
+    const now = Date.now();
+    let anyPartial = false;
+    const records = [];
+    for (const { booking, cls } of limited) {
+      const primary = cls.primary_exception_type;
+      const detail = cls.details[primary];
+      const rows = mapByBooking.get(booking.id) ?? [];
+      const xero = await summarizeBookingXero(auth2, booking.id, rows, now);
+      if (xero.partial_results) anyPartial = true;
+      const cust = booking.customers;
+      records.push({
+        booking_id: booking.id,
+        client: cust ? `${cust.first_name ?? ""} ${cust.last_name ?? ""}`.trim() : booking.group_name ?? null,
+        tour_id,
+        primary_exception_type: primary,
+        all_applicable_exception_types: cls.all_applicable_exception_types,
+        expected_payment_type: primary,
+        expected_due_date: detail.expected_due_date,
+        expected_amount: detail.expected_amount,
+        expected_amount_source: detail.expected_amount_source,
+        days_overdue: detail.days_overdue,
+        booking_status: booking.status,
+        passenger_count: booking.passenger_count,
+        linked_invoice_numbers: xero.linked_invoice_numbers,
+        received_amount: xero.received_amount,
+        received_amount_source: xero.received_amount_source,
+        outstanding_amount: xero.outstanding_amount,
+        outstanding_amount_source: xero.outstanding_amount_source,
+        data_source: xero.data_source,
+        live_verification_completed: xero.live_verification_completed,
+        stale_warning: xero.stale_warning,
+        classification_explanation: cls.classification_explanation
+      });
+    }
+    const result = {
+      computed_at: (/* @__PURE__ */ new Date()).toISOString(),
+      as_of_date: asOf.toISOString().split("T")[0],
+      rules_version: PAYMENT_RULES_VERSION,
+      coverage_scope: "tour_report_scoped",
+      tour: { id: tour.id, name: tour.name ?? null },
+      report_type,
+      count: records.length,
+      total_matched: matched.length,
+      truncated: matched.length > records.length,
+      xero_connected: auth2.ok,
+      partial_results: anyPartial || !auth2.ok,
+      partial_results_reason: !auth2.ok ? "Xero is not connected; monetary values are from cached mappings only." : anyPartial ? "Some invoices could not be refreshed from live Xero; those monetary values are from cached mappings." : null,
+      records
+    };
+    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
+// src/lib/mcp/tools/compare-art-payment-report-to-xero.ts
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z28 } from "npm:zod@^3.25.76";
+var compare_art_payment_report_to_xero_default = defineTool28({
+  name: "compare_art_payment_report_to_xero",
+  title: "Compare ART payment exceptions to Xero",
+  description: "For the bookings in a tour's ART payment-exception report, compare the ART position to the live Xero position and surface discrepancies (e.g. ART outstanding but Xero paid, and vice versa) using conservative rules. Scope is TOUR/REPORT SCOPED \u2014 it does NOT perform organisation-wide orphan-invoice detection; XERO_INVOICE_NOT_LINKED_TO_BOOKING is only reported for invoices encountered within this scope. Duplicate links, stale cache and incomplete live verification are flagged and never treated as confirmed financial discrepancies. Does NOT change any data. Restricted to admin/manager.",
+  inputSchema: {
+    tour_id: z28.string().uuid().describe("Required tour id (uuid)."),
+    report_type: z28.enum([
+      "missing_deposits",
+      "missing_instalments",
+      "overdue_final_balances",
+      "all_payment_exceptions"
+    ]).optional().describe("Which exception category to compare (default all_payment_exceptions)."),
+    as_of_date: z28.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today."),
+    limit: z28.number().int().optional().describe("Max bookings to compare (default 100, max 500).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, report_type, as_of_date, limit }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    const tourAcc = await assertTourAccess(ctx, tour_id);
+    if (!tourAcc.ok) {
+      await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: false, errorCategory: tourAcc.code, durationMs: Date.now() - started });
+      return tourAcc.error;
+    }
+    if (as_of_date && !/^\d{4}-\d{2}-\d{2}$/.test(as_of_date)) {
+      return toolError("INVALID_INPUT", "as_of_date must be YYYY-MM-DD.");
+    }
+    const type = report_type ?? "all_payment_exceptions";
+    const allowed = reportTypeFilter(type);
+    const asOf = as_of_date ? /* @__PURE__ */ new Date(as_of_date + "T00:00:00Z") : /* @__PURE__ */ new Date();
+    const capped = Math.min(Math.max(limit ?? 100, 1), 500);
+    const supabase = supabaseForUser(ctx);
+    const { data: tour, error: tourErr } = await supabase.from("tours").select("id, name, instalment_required, instalment_date, final_payment_date, deposit_required, instalment_amount").eq("id", tour_id).maybeSingle();
+    if (tourErr || !tour) {
+      await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const { data: bookings, error: bkErr } = await supabase.from("bookings").select("id, status, created_at, passenger_count, group_name, customers!bookings_lead_passenger_id_fkey(first_name, last_name)").eq("tour_id", tour_id);
+    if (bkErr) {
+      await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const matched = (bookings ?? []).map((b) => ({
+      booking: b,
+      cls: classifyBookingPaymentException(
+        { id: b.id, status: b.status, created_at: b.created_at, passenger_count: b.passenger_count },
+        tour,
+        asOf
+      )
+    })).filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t))).slice(0, capped);
+    const bookingIds = matched.map((m) => m.booking.id);
+    const mapByBooking = /* @__PURE__ */ new Map();
+    let allMappingRows = [];
+    if (bookingIds.length) {
+      const { data: mappings } = await supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, amount_due, amount_paid, total_amount, xero_status, updated_at, booking_id").in("booking_id", bookingIds);
+      allMappingRows = mappings ?? [];
+      for (const m of allMappingRows) {
+        const arr = mapByBooking.get(m.booking_id) ?? [];
+        arr.push(m);
+        mapByBooking.set(m.booking_id, arr);
+      }
+    }
+    const crossDuplicates = detectCrossBookingDuplicates(allMappingRows);
+    const auth2 = await getXeroAuth();
+    const now = Date.now();
+    let anyPartial = false;
+    const comparisons = [];
+    for (const { booking, cls } of matched) {
+      const rows = mapByBooking.get(booking.id) ?? [];
+      const xero = await summarizeBookingXero(auth2, booking.id, rows, now);
+      if (xero.partial_results) anyPartial = true;
+      const discrepancies = [];
+      if (xero.live_verification_completed && xero.active_invoice_count > 0) {
+        const artFullyPaid = booking.status === "fully_paid";
+        if (artFullyPaid && xero.xero_fully_paid === false) {
+          discrepancies.push({ type: "ART_PAID_XERO_OUTSTANDING", confidence: "confirmed" });
+        } else if (!artFullyPaid && xero.xero_fully_paid === true) {
+          discrepancies.push({ type: "ART_OUTSTANDING_XERO_PAID", confidence: "confirmed" });
+        }
+      }
+      if (xero.linked_invoice_numbers.length === 0) {
+        discrepancies.push({
+          type: "EXPECTED_PAYMENT_NOT_INVOICED",
+          confidence: "inferred",
+          note: `Booking has a ${cls.primary_exception_type} exception but no linked Xero invoice was found.`
+        });
+      }
+      if (xero.duplicate_link) {
+        discrepancies.push({ type: "DUPLICATE_INVOICE_LINK", confidence: "confirmed", detail: xero.duplicate_link });
+      }
+      if (!xero.live_verification_completed && xero.linked_invoice_numbers.length > 0) {
+        discrepancies.push({
+          type: "STALE_XERO_MAPPING",
+          confidence: "data_quality_warning",
+          note: "Live Xero verification incomplete; comparison used cached mapping data."
+        });
+      }
+      const cust = booking.customers;
+      comparisons.push({
+        booking_id: booking.id,
+        client: cust ? `${cust.first_name ?? ""} ${cust.last_name ?? ""}`.trim() : booking.group_name ?? null,
+        booking_status: booking.status,
+        primary_exception_type: cls.primary_exception_type,
+        all_applicable_exception_types: cls.all_applicable_exception_types,
+        linked_invoice_numbers: xero.linked_invoice_numbers,
+        received_amount: xero.received_amount,
+        received_amount_source: xero.received_amount_source,
+        outstanding_amount: xero.outstanding_amount,
+        outstanding_amount_source: xero.outstanding_amount_source,
+        xero_fully_paid: xero.xero_fully_paid,
+        data_source: xero.data_source,
+        live_verification_completed: xero.live_verification_completed,
+        stale_warning: xero.stale_warning,
+        discrepancies
+      });
+    }
+    const result = {
+      computed_at: (/* @__PURE__ */ new Date()).toISOString(),
+      as_of_date: asOf.toISOString().split("T")[0],
+      rules_version: PAYMENT_RULES_VERSION,
+      coverage_scope: "tour_report_scoped",
+      scope_note: "Comparison is limited to bookings appearing in this tour's payment-exception report. Organisation-wide orphan-invoice detection is out of scope.",
+      tour: { id: tour.id, name: tour.name ?? null },
+      report_type: type,
+      count: comparisons.length,
+      cross_booking_duplicates: crossDuplicates,
+      xero_connected: auth2.ok,
+      partial_results: anyPartial || !auth2.ok,
+      live_verification_completed: auth2.ok && !anyPartial,
+      partial_results_reason: !auth2.ok ? "Xero is not connected; comparison used cached mappings only and no high-confidence discrepancy is asserted." : anyPartial ? "Some invoices could not be refreshed from live Xero; affected comparisons are marked as data-quality warnings." : null,
+      comparisons
+    };
+    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
+// src/lib/mcp/tools/explain-booking-payment-position.ts
+import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z29 } from "npm:zod@^3.25.76";
+var explain_booking_payment_position_default = defineTool29({
+  name: "explain_booking_payment_position",
+  title: "Explain a booking's payment position",
+  description: "Explain one booking's payment position: the ART classification (primary + all applicable exceptions with expected amounts and source labels), the live Xero position (active invoices only; voided/deleted excluded, credit notes respected), a conservative status comparison (only 'fully paid' when ALL active linked invoices have no amount due), duplicate-link findings, and informational date differences. Never asserts a discrepancy from stale cache alone or from aggregate-total comparisons. Does NOT change any data. Restricted to admin/manager.",
+  inputSchema: {
+    booking_id: z29.string().uuid().describe("The ART booking id (uuid)."),
+    as_of_date: z29.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id, as_of_date }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    const acc = await assertBookingAccess(ctx, booking_id);
+    if (!acc.ok) {
+      await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: false, errorCategory: acc.code, durationMs: Date.now() - started });
+      return acc.error;
+    }
+    if (as_of_date && !/^\d{4}-\d{2}-\d{2}$/.test(as_of_date)) {
+      return toolError("INVALID_INPUT", "as_of_date must be YYYY-MM-DD.");
+    }
+    const booking = acc.value;
+    const asOf = as_of_date ? /* @__PURE__ */ new Date(as_of_date + "T00:00:00Z") : /* @__PURE__ */ new Date();
+    const supabase = supabaseForUser(ctx);
+    const { data: bk } = await supabase.from("bookings").select("id, status, created_at, passenger_count").eq("id", booking_id).maybeSingle();
+    let tour = null;
+    if (booking.tour_id) {
+      const { data } = await supabase.from("tours").select("instalment_required, instalment_date, final_payment_date, deposit_required, instalment_amount").eq("id", booking.tour_id).maybeSingle();
+      tour = data;
+    }
+    const cls = classifyBookingPaymentException(
+      {
+        id: booking_id,
+        status: bk?.status ?? booking.status,
+        created_at: bk?.created_at ?? (/* @__PURE__ */ new Date()).toISOString(),
+        passenger_count: bk?.passenger_count ?? booking.passenger_count
+      },
+      tour ?? {},
+      asOf
+    );
+    const { data: mappings, error: mapErr } = await supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, amount_due, amount_paid, total_amount, xero_status, updated_at, booking_id").eq("booking_id", booking_id);
+    if (mapErr) {
+      await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const auth2 = await getXeroAuth();
+    const xero = await summarizeBookingXero(auth2, booking_id, mappings ?? []);
+    const artFullyPaid = booking.status === "fully_paid";
+    let statusFinding = {
+      art_status: booking.status,
+      xero_fully_paid: xero.xero_fully_paid,
+      discrepancy_type: null,
+      discrepancy_confirmed: false,
+      review_note: null
+    };
+    if (!xero.live_verification_completed) {
+      statusFinding.review_note = "Live Xero verification incomplete; no status discrepancy asserted from cached data.";
+    } else if (xero.active_invoice_count === 0) {
+      statusFinding.review_note = "No active linked invoices to compare against.";
+    } else if (artFullyPaid && xero.xero_fully_paid === false) {
+      statusFinding.discrepancy_type = "ART_PAID_XERO_OUTSTANDING";
+      statusFinding.discrepancy_confirmed = true;
+      statusFinding.review_note = "Booking is fully_paid in ART but at least one active Xero invoice still has an amount due.";
+    } else if (!artFullyPaid && xero.xero_fully_paid === true) {
+      statusFinding.discrepancy_type = "ART_OUTSTANDING_XERO_PAID";
+      statusFinding.discrepancy_confirmed = true;
+      statusFinding.review_note = "All active Xero invoices are paid but the booking is not marked fully_paid in ART.";
+    } else {
+      statusFinding.review_note = "ART status is consistent with the live Xero position.";
+    }
+    const primary = cls.primary_exception_type;
+    const expected = primary ? cls.details[primary] : null;
+    let amountComparison = {
+      discrepancy_type: "INSUFFICIENT_DATA",
+      comparison_available: false,
+      comparison_unavailable_reason: "No exception or no authoritative expected amount."
+    };
+    if (expected && expected.expected_amount != null) {
+      const active = xero.invoice_summaries.filter((s) => s.is_active);
+      if (!xero.live_verification_completed) {
+        amountComparison = {
+          discrepancy_type: "INSUFFICIENT_DATA",
+          comparison_available: false,
+          comparison_unavailable_reason: "Live Xero verification incomplete; amounts not confirmed."
+        };
+      } else if (active.length === 1) {
+        const inv = active[0];
+        const diff = Math.round((inv.total - expected.expected_amount) * 100) / 100;
+        amountComparison = {
+          comparison_available: true,
+          expected_amount: expected.expected_amount,
+          expected_amount_source: expected.expected_amount_source,
+          matched_invoice_number: inv.invoice_number,
+          matched_invoice_total: inv.total,
+          matched_invoice_total_source: inv.data_source,
+          difference: diff,
+          discrepancy_type: Math.abs(diff) > 5e-3 ? "PAYMENT_AMOUNT_MISMATCH" : null,
+          match_basis: "exactly_one_active_invoice"
+        };
+      } else {
+        amountComparison = {
+          discrepancy_type: "INSUFFICIENT_DATA",
+          comparison_available: false,
+          comparison_unavailable_reason: active.length === 0 ? "No active invoice to compare the expected amount against." : "Multiple active invoices; expected stage amount cannot be reliably matched to a single invoice."
+        };
+      }
+    }
+    const dueDates = Array.from(
+      new Set(xero.invoice_summaries.map((s) => s.due_date).filter(Boolean))
+    );
+    const artExpectedDue = expected?.expected_due_date ?? null;
+    const dateInfo = {
+      art_expected_due_date: artExpectedDue,
+      xero_invoice_due_dates: dueDates,
+      dates_differ: artExpectedDue != null && dueDates.length > 0 && !dueDates.includes(artExpectedDue),
+      discrepancy_confirmed: false,
+      review_note: "ART expected dates and Xero invoice due dates may legitimately differ; no PAYMENT_DATE_MISMATCH asserted without an established rule."
+    };
+    const result = {
+      booking_id,
+      client: booking.lead_name,
+      tour: booking.tour_name,
+      rules_version: PAYMENT_RULES_VERSION,
+      as_of_date: asOf.toISOString().split("T")[0],
+      coverage_scope: "single_booking",
+      classification: {
+        is_exception: cls.is_exception,
+        primary_exception_type: cls.primary_exception_type,
+        all_applicable_exception_types: cls.all_applicable_exception_types,
+        expected_due_date: expected?.expected_due_date ?? null,
+        expected_amount: expected?.expected_amount ?? null,
+        expected_amount_source: expected?.expected_amount_source ?? "unavailable",
+        explanation: cls.classification_explanation
+      },
+      xero_position: {
+        linked_invoice_numbers: xero.linked_invoice_numbers,
+        active_invoice_count: xero.active_invoice_count,
+        received_amount: xero.received_amount,
+        received_amount_source: xero.received_amount_source,
+        outstanding_amount: xero.outstanding_amount,
+        outstanding_amount_source: xero.outstanding_amount_source,
+        invoices: xero.invoice_summaries
+      },
+      status_comparison: statusFinding,
+      amount_comparison: amountComparison,
+      date_information: dateInfo,
+      duplicate_link: xero.duplicate_link,
+      data_source: xero.data_source,
+      live_verification_completed: xero.live_verification_completed,
+      partial_results: xero.partial_results || !auth2.ok,
+      stale_warning: xero.stale_warning,
+      xero_connected: auth2.ok
+    };
+    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-mcp",
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices` \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position` \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. The reconciliation tools re-compute the canonical payment-exception rules (deposit/instalment/final balance) and are tour/report scoped (no org-wide orphan-invoice scanning). Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
@@ -1491,7 +2210,10 @@ var mcp_default = defineMcp({
     list_booking_invoices_default,
     get_xero_invoice_default,
     get_booking_payment_summary_default,
-    list_outstanding_invoices_default
+    list_outstanding_invoices_default,
+    get_payment_exception_report_default,
+    compare_art_payment_report_to_xero_default,
+    explain_booking_payment_position_default
   ]
 });
 
