@@ -232,9 +232,11 @@ const sanitizeQuillHtml = (html: string): string => {
 
 // Branded email wrapper - wraps content in ART header with logo
 // Includes CSS normalisation for Quill-generated content
-const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string): string => {
-  const headerTitle = title || 'Australian Racing Tours';
+const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string, headerBgColor?: string, brandName?: string): string => {
+  const headerTitle = title || brandName || 'Australian Racing Tours';
   const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+  const headerBg = headerBgColor || '#232628';
+  const footerName = brandName || 'Australian Racing Tours';
   const sanitizedContent = sanitizeQuillHtml(content);
   return `<!DOCTYPE html>
 <html>
@@ -291,8 +293,8 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
         <table cellpadding="0" cellspacing="0" style="width: 100%; max-width: 800px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
           <!-- Header -->
           <tr>
-            <td style="background-color: #232628; padding: 32px 40px; text-align: center;">
-              <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
+            <td style="background-color: ${headerBg}; padding: 32px 40px; text-align: center;">
+              <img src="${logoUrl}" alt="${footerName}" style="height: 80px; max-width: 400px; width: auto;" />
             </td>
           </tr>
           <!-- Body -->
@@ -304,7 +306,7 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">Australian Racing Tours</p>
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">${footerName}</p>
               <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 5px 0 0;">This email was sent regarding your tour booking.</p>
             </td>
           </tr>
