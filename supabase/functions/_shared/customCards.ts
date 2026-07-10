@@ -22,11 +22,11 @@ const decode = (v: string) => {
 };
 
 export function recolorCustomCards(html: string, colors: CardThemeColors): string {
-  if (!html || !colors?.primary || !html.includes('data-card-type="custom"')) {
+  if (!html || !colors?.primary) {
     return html;
   }
 
-  return html.replace(
+  let out = html.replace(
     /<table\b[^>]*\bdata-card-type="custom"[^>]*\bdata-card-meta="([^"]*)"[\s\S]*?letter-spacing:0\.5px;">/g,
     (segment: string, meta: string) => {
       let accentColor = "";
@@ -59,4 +59,24 @@ export function recolorCustomCards(html: string, colors: CardThemeColors): strin
         .replace(/color:[^;]+;letter-spacing:0\.5px;/, `color:${text};letter-spacing:0.5px;`);
     },
   );
+
+  // Retheme "plain" branded cards that were inserted as static HTML WITHOUT
+  // the data-card-type/data-card-meta markers (e.g. older TOUR DETAILS cards).
+  // These use the baked-in default navy (#0a1929) header + gold (#d4a017) title,
+  // so target those exact defaults to avoid touching intentional palettes.
+  out = out
+    .replace(
+      /border:1px solid #0a1929;border-radius:8px/gi,
+      `border:1px solid ${colors.primary};border-radius:8px`,
+    )
+    .replace(
+      /background-color:#0a1929;padding:12px 16px;border-bottom:1px solid #0a1929;/gi,
+      `background-color:${colors.primary};padding:12px 16px;border-bottom:1px solid ${colors.primary};`,
+    )
+    .replace(
+      /color:#d4a017;letter-spacing:0\.5px;/gi,
+      `color:${colors.accent};letter-spacing:0.5px;`,
+    );
+
+  return out;
 }
