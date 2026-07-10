@@ -349,6 +349,30 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
     setShowConfirmDialog(true);
   };
 
+  const handleSendTest = async () => {
+    if (!previewBooking?.id) {
+      toast({ title: "No preview recipient", description: "Select at least one recipient to base the test on.", variant: "destructive" });
+      return;
+    }
+    if (!testEmailTo.trim()) {
+      toast({ title: "No test address", description: "Enter an email address to send the test to.", variant: "destructive" });
+      return;
+    }
+    if (!editedContent.trim()) {
+      toast({ title: "Email content is empty", description: "Choose a template or write some content first.", variant: "destructive" });
+      return;
+    }
+    await sendTestMutation.mutateAsync({
+      bookingId: previewBooking.id,
+      customSubject: editedSubject,
+      customContent: editedContent,
+      fromEmail,
+      emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
+      attachments: attachments.length > 0 ? attachments : undefined,
+      testEmailTo: testEmailTo.trim(),
+    });
+  };
+
   const handleConfirmSend = async () => {
     // Guard with explicit feedback so the button never appears to do "nothing".
     if (!tourId || selectedBookingIds.size === 0) {
