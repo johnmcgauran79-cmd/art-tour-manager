@@ -10,7 +10,7 @@ import {
 } from "./_paymentReport";
 import {
   summarizeBookingXero,
-  detectCrossBookingDuplicates,
+  detectSharedInvoiceLinks,
   createXeroFetchContext,
   type MappingRow,
 } from "./_paymentXero";

@@ -1847,28 +1847,6 @@ async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now(), fc
     duplicate_link: duplicate
   };
 }
-function detectCrossBookingDuplicates(rows) {
-  const byInvoice = /* @__PURE__ */ new Map();
-  const counts = /* @__PURE__ */ new Map();
-  for (const r of rows) {
-    if (!r.xero_invoice_id || !r.booking_id) continue;
-    if (!byInvoice.has(r.xero_invoice_id)) byInvoice.set(r.xero_invoice_id, /* @__PURE__ */ new Set());
-    byInvoice.get(r.xero_invoice_id).add(r.booking_id);
-    counts.set(r.xero_invoice_id, (counts.get(r.xero_invoice_id) || 0) + 1);
-  }
-  const findings = [];
-  for (const [invId, bookings] of byInvoice) {
-    if (bookings.size > 1) {
-      findings.push({
-        duplicate_type: "same_invoice_mapped_to_multiple_bookings",
-        affected_invoice_id: invId,
-        affected_booking_ids: Array.from(bookings),
-        mapping_count: counts.get(invId) || bookings.size
-      });
-    }
-  }
-  return findings;
-}
 
 // src/lib/mcp/tools/get-payment-exception-report.ts
 var get_payment_exception_report_default = defineTool27({
