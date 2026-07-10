@@ -30,6 +30,7 @@ export const PendingEmailPreviewModal = ({
   ruleName,
   previewBookingId,
 }: PendingEmailPreviewModalProps) => {
+  const { data: brands } = useBrands();
   // Fetch one non-cancelled booking with full data for merge.
   // Prefer the explicitly-requested booking; otherwise fall back to the first
   // non-cancelled booking on the tour as a representative sample.
