@@ -954,7 +954,8 @@ async function auditXeroCall(ctx, f) {
         success: f.success,
         error_category: f.errorCategory ?? null,
         duration_ms: f.durationMs,
-        result_count: f.resultCount ?? null
+        result_count: f.resultCount ?? null,
+        metrics: f.metrics ?? null
       }
     });
   } catch (_) {
