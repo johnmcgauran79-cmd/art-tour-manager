@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PublicBrand, DEFAULT_PUBLIC_LOGO } from "@/lib/publicBrand";
+import { PublicBrand, DEFAULT_PUBLIC_LOGO, brandButtonStyle, brandDisplayName } from "@/lib/publicBrand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -461,7 +461,8 @@ export default function UpdateTravelDocs() {
               <div className="pt-4">
                 <Button 
                   type="submit" 
-                  className="w-full bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow" 
+                  className="w-full opacity-100 hover:opacity-90" 
+                  style={brandButtonStyle(brand)}
                   size="lg" 
                   disabled={submitting || editableSlots.length === 0}
                 >
@@ -480,7 +481,7 @@ export default function UpdateTravelDocs() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          © Australian Racing Tours. Your information is kept secure and confidential.
+          © {brandDisplayName(brand)}. Your information is kept secure and confidential.
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PublicBrand, DEFAULT_PUBLIC_LOGO } from "@/lib/publicBrand";
+import { PublicBrand, DEFAULT_PUBLIC_LOGO, brandButtonStyle } from "@/lib/publicBrand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -446,7 +446,8 @@ export default function SignWaiver() {
                   <Button
                     type="submit"
                     disabled={submitting || signatures.some(s => !s.agreed || !s.signed_name.trim())}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow font-semibold px-8"
+                    className="font-semibold px-8 opacity-100 hover:opacity-90"
+                    style={brandButtonStyle(brand)}
                     size="lg"
                   >
                     {submitting ? (

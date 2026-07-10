@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PublicBrand, DEFAULT_PUBLIC_LOGO } from "@/lib/publicBrand";
+import { PublicBrand, DEFAULT_PUBLIC_LOGO, brandButtonStyle } from "@/lib/publicBrand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -339,7 +339,12 @@ export default function CustomForm() {
                 );
               })}
 
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button
+                type="submit"
+                className="w-full opacity-100 hover:opacity-90"
+                style={brandButtonStyle(brand)}
+                disabled={submitting}
+              >
                 {submitting ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Submitting...</>
                 ) : (
