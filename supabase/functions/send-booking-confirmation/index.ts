@@ -1520,7 +1520,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Wrap the processed content in the branded email wrapper
       // Recolour custom cards to match the tour's brand theme.
       emailHtml = recolorCustomCards(emailHtml, { primary: brandPrimary, accent: brandAccent });
-      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl);
+      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
       const fallbackContent = `
@@ -1529,7 +1529,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p>We will be in touch with more details soon.</p>
         <p>Best regards,<br>The Team</p>
       `;
-      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl);
+      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl, brandPrimary, brandName);
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
@@ -1852,7 +1852,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Wrap in branded email template
       passengerEmailHtml = recolorCustomCards(passengerEmailHtml, { primary: brandPrimary, accent: brandAccent });
-      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl);
+      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
       const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);
