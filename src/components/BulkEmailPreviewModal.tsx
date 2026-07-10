@@ -72,6 +72,13 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
   const [hideCompletedForm, setHideCompletedForm] = useState(false);
+  const { user } = useAuth();
+  const [testEmailTo, setTestEmailTo] = useState<string>("");
+  const sendTestMutation = useSendBookingConfirmation();
+
+  useEffect(() => {
+    if (open && user?.email) setTestEmailTo((prev) => prev || user.email!);
+  }, [open, user?.email]);
   
   const scheduleEmailMutation = useScheduleEmail();
   const { toast } = useToast();
