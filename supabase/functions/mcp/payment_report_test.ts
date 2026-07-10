@@ -12,7 +12,7 @@ import {
 } from "../../../src/lib/mcp/tools/_paymentReport.ts";
 import {
   detectBookingDuplicate,
-  detectCrossBookingDuplicates,
+  detectSharedInvoiceLinks,
   summarizeBookingXero,
   type MappingRow,
 } from "../../../src/lib/mcp/tools/_paymentXero.ts";
