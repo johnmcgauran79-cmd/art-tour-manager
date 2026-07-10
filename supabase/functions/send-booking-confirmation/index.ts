@@ -379,6 +379,7 @@ const handler = async (req: Request): Promise<Response> => {
     let btnText = getGSetting('theme_email_button_text', '#F5C518');
     let brandPrimary = '#232628';
     let brandAccent = getGSetting('theme_email_button_text', '#F5C518');
+    let brandName = 'Australian Racing Tours';
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -495,6 +496,7 @@ const handler = async (req: Request): Promise<Response> => {
       btnText = brand.colorButtonText;
       brandPrimary = brand.colorPrimary || brandPrimary;
       brandAccent = brand.colorAccent || brandAccent;
+      brandName = brand.name || brandName;
       // Template-specific header image still wins; otherwise use the brand's.
       defaultHeaderImageUrl = brand.headerImageUrl;
       emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
