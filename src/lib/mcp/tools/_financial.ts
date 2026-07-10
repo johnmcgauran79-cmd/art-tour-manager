@@ -23,9 +23,14 @@ export function toolError(code: XeroErrorCode, detail?: string): ToolErrorResult
   };
 }
 
-export type Guard<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: ToolErrorResult; code: XeroErrorCode };
+// NOTE: this project compiles with strictNullChecks:false, so discriminated
+// unions do not narrow. Use a single shape with optional fields instead.
+export interface Guard<T> {
+  ok: boolean;
+  value?: T;
+  error?: ToolErrorResult;
+  code?: XeroErrorCode;
+}
 
 /**
  * Verify the caller is authenticated AND holds an approved financial-access
