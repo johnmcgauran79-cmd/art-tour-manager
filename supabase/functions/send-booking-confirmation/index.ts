@@ -91,6 +91,13 @@ interface BookingConfirmationRequest {
    * Defaults to true.
    */
   cleanupAttachments?: boolean;
+  /**
+   * When set, the email is sent ONLY to this address (a test/preview send).
+   * It uses the lead passenger's merge data so it renders exactly as the client
+   * would receive it. Additional passengers are skipped and no email_logs row
+   * is written for a test send.
+   */
+  testEmailTo?: string;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
@@ -339,10 +346,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, batchId: externalBatchId, attachments: requestedAttachments, cleanupAttachments }: BookingConfirmationRequest = await req.json();
-    
-    // Default to true if not explicitly provided (backwards compatible)
-    const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, batchId: externalBatchId, attachments: requestedAttachments, cleanupAttachments, testEmailTo }: BookingConfirmationRequest = await req.json();
+
+    // A test send goes ONLY to the supplied address and never to real passengers.
+    const isTestSend = !!(testEmailTo && testEmailTo.trim());
+    const testRecipient = isTestSend ? testEmailTo!.trim() : null;
+
+    // Default to true if not explicitly provided (backwards compatible).
+    // Test sends never fan out to additional passengers.
+    const shouldIncludeAdditionalPassengers = !isTestSend && includeAdditionalPassengers !== false;
 
     // Fetch default email header image and sender settings
     const { data: generalSettings } = await supabaseClient
@@ -1579,10 +1591,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     const emailResponse = await resend.emails.send({
       from: fromField,
-      to: [booking.customers.email],
-      cc: ccRecipients.length > 0 ? ccRecipients : undefined,
-      bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
-      subject: emailSubject,
+      to: [testRecipient || booking.customers.email],
+      cc: isTestSend ? undefined : (ccRecipients.length > 0 ? ccRecipients : undefined),
+      bcc: isTestSend ? undefined : (bccRecipients.length > 0 ? bccRecipients : undefined),
+      subject: isTestSend ? `[TEST] ${emailSubject}` : emailSubject,
       html: emailHtml,
       attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
     });
@@ -1612,8 +1624,8 @@ const handler = async (req: Request): Promise<Response> => {
     const willSendToAdditional = (booking.passenger_2?.email && booking.passenger_2.email !== booking.customers.email) ||
                                  (booking.passenger_3?.email && booking.passenger_3.email !== booking.customers.email);
 
-    // Log email to database for tracking
-    if (emailResponse.data?.id) {
+    // Log email to database for tracking (skipped for test/preview sends)
+    if (emailResponse.data?.id && !isTestSend) {
       const { error: logError } = await supabaseClient
         .from('email_logs')
         .insert({
@@ -1903,7 +1915,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
-      sentTo: booking.customers.email,
+      sentTo: testRecipient || booking.customers.email,
+      isTest: isTestSend,
       ccTo: ccRecipients.length > 0 ? ccRecipients : undefined,
       additionalPassengers: additionalPassengerEmails.length > 0 ? additionalPassengerEmails : undefined
     }), {

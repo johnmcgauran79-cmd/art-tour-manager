@@ -14,6 +14,7 @@ import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
+import { useAuth } from "@/hooks/useAuth";
 import { useBrands, resolveBrand } from "@/hooks/useBrands";
 import { recolorCustomCards } from "@/lib/customCardTheme";
 import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
@@ -78,11 +79,18 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const [bccEmails, setBccEmails] = useState<string>("");
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+  const [testEmailTo, setTestEmailTo] = useState<string>("");
   const sendEmail = useSendBookingConfirmation();
   const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
   const { data: brands } = useBrands();
+  const { user } = useAuth();
+
+  // Default the test recipient to the logged-in user's own email.
+  useEffect(() => {
+    if (user?.email) setTestEmailTo((prev) => prev || user.email!);
+  }, [user?.email]);
 
   // Keep the From field in sync with the configured default until the user
   // explicitly changes it.
@@ -267,6 +275,28 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
     }
   };
 
+  const handleSendTestEmail = async () => {
+    if (!bookingId) return;
+    const recipient = testEmailTo.trim();
+    if (!recipient) return;
+    try {
+      const subjectToSend = originalSubjectTemplate || editedSubject;
+      const contentToSend = originalContentTemplate || editedContent;
+      await sendEmail.mutateAsync({
+        bookingId,
+        customSubject: subjectToSend,
+        customContent: contentToSend,
+        fromEmail,
+        emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        testEmailTo: recipient,
+      });
+      // Keep the modal open so the user can review then send the real email.
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
   const fallbackRecipient = initialRecipient?.email
     ? {
         recipientEmail: initialRecipient.email,
@@ -424,7 +454,36 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="pt-4 border-t space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-2 rounded-md bg-muted/40 p-3">
+                <div className="flex-1">
+                  <Label htmlFor="testEmail">Send a test to (see exactly what the client sees):</Label>
+                  <Input
+                    id="testEmail"
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleSendTestEmail}
+                  disabled={sendEmail.isPending || !editedContent.trim() || !testEmailTo.trim()}
+                >
+                  {sendEmail.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Test Email'
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex justify-end gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -454,6 +513,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
                   'Approve & Send Email'
                 )}
               </Button>
+              </div>
             </div>
             </div>
           </div>

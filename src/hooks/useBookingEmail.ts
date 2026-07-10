@@ -6,7 +6,7 @@ export const useSendBookingConfirmation = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId, attachments }: { 
+    mutationFn: async ({ bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId, attachments, testEmailTo }: { 
       bookingId: string; 
       customSubject?: string; 
       customContent?: string; 
@@ -16,10 +16,11 @@ export const useSendBookingConfirmation = () => {
       bccEmails?: string[];
       emailTemplateId?: string;
       attachments?: Array<{ path: string; name: string; source?: "tour" | "upload" }>;
+      testEmailTo?: string;
     }) => {
-      console.log('Sending booking confirmation:', { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId, attachmentCount: attachments?.length || 0 });
+      console.log('Sending booking confirmation:', { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId, attachmentCount: attachments?.length || 0, testEmailTo });
       const { data, error } = await supabase.functions.invoke('send-booking-confirmation', {
-        body: { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId, attachments }
+        body: { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId, attachments, testEmailTo }
       });
 
       console.log('Edge function response:', { data, error });
@@ -34,8 +35,10 @@ export const useSendBookingConfirmation = () => {
     },
     onSuccess: (data) => {
       toast({
-        title: "Email Sent",
-        description: `Booking confirmation sent to ${data.sentTo}`,
+        title: data?.isTest ? "Test Email Sent" : "Email Sent",
+        description: data?.isTest
+          ? `Test email sent to ${data.sentTo}`
+          : `Booking confirmation sent to ${data.sentTo}`,
       });
     },
     onError: (error: any) => {
