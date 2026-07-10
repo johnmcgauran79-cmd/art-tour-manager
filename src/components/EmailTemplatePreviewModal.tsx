@@ -118,9 +118,13 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
 
     const mergeData = EmailTemplateEngine.convertBookingToMergeData(previewData);
     
+    // Resolve the tour's brand so the preview reflects the tour theme.
+    const brand = resolveBrand(brands, (previewData as any)?.tours?.brand_id ?? null);
+    const shellPrimary = brand?.color_primary || '#232628';
+
     // Process action placeholders as preview mock-ups
-    const btnBg = getSettingValue('theme_email_button_color', '#232628');
-    const btnText = getSettingValue('theme_email_button_text', '#F5C518');
+    const btnBg = brand?.color_button || getSettingValue('theme_email_button_color', '#232628');
+    const btnText = brand?.color_button_text || getSettingValue('theme_email_button_text', '#F5C518');
     const mockButtonStyle = `display:inline-block;padding:12px 28px;background:${btnBg};color:${btnText};border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px;text-transform:uppercase;`;
     
     mergeData.profile_update_button = `<a href="#" style="${mockButtonStyle}">UPDATE YOUR PROFILE (Preview)</a>`;
