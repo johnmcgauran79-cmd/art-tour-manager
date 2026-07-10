@@ -54,6 +54,7 @@ function escapeHtml(str: string): string {
 export function buildCancellationPolicyTableHtml(
   policy: CancellationPolicy,
   navy = "#232628",
+  headerText = "#ffffff",
 ): string {
   const rowsHtml = policy.rows
     .map((row, i) => {
@@ -66,10 +67,10 @@ export function buildCancellationPolicyTableHtml(
     .join("");
 
   return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
-    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:15px;font-weight:600;">${escapeHtml(policy.title)}</th></tr>
+    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:15px;font-weight:600;">${escapeHtml(policy.title)}</th></tr>
     <tr>
-      <th style="padding:8px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
-      <th style="padding:8px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
+      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
+      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
     </tr>
     ${rowsHtml}
   </table>`;
