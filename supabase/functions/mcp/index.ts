@@ -2062,10 +2062,11 @@ var compare_art_payment_report_to_xero_default = defineTool28({
     const auth2 = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
+    const fctx = createXeroFetchContext();
     const comparisons = [];
     for (const { booking, cls } of matched) {
       const rows = mapByBooking.get(booking.id) ?? [];
-      const xero = await summarizeBookingXero(auth2, booking.id, rows, now);
+      const xero = await summarizeBookingXero(auth2, booking.id, rows, now, fctx);
       if (xero.partial_results) anyPartial = true;
       const discrepancies = [];
       if (xero.live_verification_completed && xero.active_invoice_count > 0) {
@@ -2128,7 +2129,12 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       partial_results_reason: !auth2.ok ? "Xero is not connected; comparison used cached mappings only and no high-confidence discrepancy is asserted." : anyPartial ? "Some invoices could not be refreshed from live Xero; affected comparisons are marked as data-quality warnings." : null,
       comparisons
     };
-    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length });
+    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   }
 });

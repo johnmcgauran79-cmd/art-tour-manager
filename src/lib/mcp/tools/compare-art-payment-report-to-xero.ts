@@ -11,6 +11,7 @@ import {
 import {
   summarizeBookingXero,
   detectCrossBookingDuplicates,
+  createXeroFetchContext,
   type MappingRow,
 } from "./_paymentXero";
 
@@ -106,11 +107,14 @@ export default defineTool({
     const auth = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
+    // One request-scoped invoice cache for the whole invocation: a shared
+    // InvoiceID across bookings is fetched from Xero only once.
+    const fctx = createXeroFetchContext();
 
     const comparisons: any[] = [];
     for (const { booking, cls } of matched) {
       const rows = mapByBooking.get(booking.id) ?? [];
-      const xero = await summarizeBookingXero(auth, booking.id, rows, now);
+      const xero = await summarizeBookingXero(auth, booking.id, rows, now, fctx);
       if (xero.partial_results) anyPartial = true;
 
       const discrepancies: any[] = [];
@@ -190,7 +194,12 @@ export default defineTool({
       comparisons,
     };
 
-    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length });
+    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count,
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   },
 });
