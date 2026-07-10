@@ -62,11 +62,23 @@ export type MoneySource = "live_xero" | "xero_mapping_cache" | "unavailable";
 export interface DuplicateLinkFinding {
   duplicate_type:
     | "same_invoice_mapped_twice_same_booking"
-    | "same_invoice_mapped_to_multiple_bookings"
     | "duplicate_mapping_rows";
   affected_invoice_id: string;
   affected_booking_ids: string[];
   mapping_count: number;
+}
+
+/**
+ * Informational finding: one Xero invoice is intentionally linked to several
+ * bookings (shared/group/couple invoices). This is a supported, legitimate
+ * configuration and is NOT a discrepancy.
+ */
+export interface SharedInvoiceLink {
+  finding_type: "shared_invoice_across_bookings";
+  xero_invoice_id: string;
+  invoice_number: string | null;
+  booking_ids: string[];
+  booking_count: number;
 }
 
 export interface BookingXeroPosition {
