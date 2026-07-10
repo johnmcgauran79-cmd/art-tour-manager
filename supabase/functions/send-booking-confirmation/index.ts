@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { getBrandForTour } from "../_shared/brand.ts";
+import { recolorCustomCards } from "../_shared/customCards.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -363,6 +364,7 @@ const handler = async (req: Request): Promise<Response> => {
     let btnBg = getGSetting('theme_email_button_color', '#232628');
     let btnText = getGSetting('theme_email_button_text', '#F5C518');
     let brandPrimary = '#232628';
+    let brandAccent = getGSetting('theme_email_button_text', '#F5C518');
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -478,6 +480,7 @@ const handler = async (req: Request): Promise<Response> => {
       btnBg = brand.colorButton;
       btnText = brand.colorButtonText;
       brandPrimary = brand.colorPrimary || brandPrimary;
+      brandAccent = brand.colorAccent || brandAccent;
       // Template-specific header image still wins; otherwise use the brand's.
       defaultHeaderImageUrl = brand.headerImageUrl;
       emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
@@ -1499,6 +1502,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap the processed content in the branded email wrapper
+      // Recolour custom cards to match the tour's brand theme.
+      emailHtml = recolorCustomCards(emailHtml, { primary: brandPrimary, accent: brandAccent });
       emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
@@ -1830,6 +1835,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap in branded email template
+      passengerEmailHtml = recolorCustomCards(passengerEmailHtml, { primary: brandPrimary, accent: brandAccent });
       passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;

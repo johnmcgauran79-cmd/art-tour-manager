@@ -8,6 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
+import { useBrands, resolveBrand } from "@/hooks/useBrands";
+import { recolorCustomCards } from "@/lib/customCardTheme";
 
 interface EmailTemplatePreviewModalProps {
   open: boolean;
@@ -20,6 +22,7 @@ interface EmailTemplatePreviewModalProps {
 export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjectTemplate, contentTemplate }: EmailTemplatePreviewModalProps) => {
   const [selectedTourId, setSelectedTourId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const { data: brands } = useBrands();
 
   const subject = subjectTemplate || template?.subject_template || "";
   const content = contentTemplate || template?.content_template || "";
@@ -51,7 +54,7 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
         .from('bookings')
         .select(`
           *,
-          tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount, tour_type, capacity, minimum_passengers_required, price_twin, instalment_details, travel_documents_required),
+          tours:tour_id (brand_id, name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount, tour_type, capacity, minimum_passengers_required, price_twin, instalment_details, travel_documents_required),
           customers!lead_passenger_id (first_name, last_name, email, phone, city, state, country, spouse_name, dietary_requirements, notes, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
           passenger_2:customers!passenger_2_id (first_name, last_name, email, phone, dietary_requirements, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
           passenger_3:customers!passenger_3_id (first_name, last_name, email, phone, dietary_requirements, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
@@ -115,9 +118,13 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
 
     const mergeData = EmailTemplateEngine.convertBookingToMergeData(previewData);
     
+    // Resolve the tour's brand so the preview reflects the tour theme.
+    const brand = resolveBrand(brands, (previewData as any)?.tours?.brand_id ?? null);
+    const shellPrimary = brand?.color_primary || '#232628';
+
     // Process action placeholders as preview mock-ups
-    const btnBg = getSettingValue('theme_email_button_color', '#232628');
-    const btnText = getSettingValue('theme_email_button_text', '#F5C518');
+    const btnBg = brand?.color_button || getSettingValue('theme_email_button_color', '#232628');
+    const btnText = brand?.color_button_text || getSettingValue('theme_email_button_text', '#F5C518');
     const mockButtonStyle = `display:inline-block;padding:12px 28px;background:${btnBg};color:${btnText};border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px;text-transform:uppercase;`;
     
     mergeData.profile_update_button = `<a href="#" style="${mockButtonStyle}">UPDATE YOUR PROFILE (Preview)</a>`;
@@ -173,21 +180,29 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
       (_m, formTitle) => `<a href="#" style="${mockButtonStyle}">${String(formTitle).trim().toUpperCase()} (Preview)</a>`
     );
 
-    const headerImageUrl = getSettingValue('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    // Recolour custom cards to match the tour's brand theme.
+    if (brand) {
+      processedContent = recolorCustomCards(processedContent, {
+        primary: brand.color_primary,
+        accent: brand.color_accent,
+      });
+    }
+
+    const headerImageUrl = brand?.email_header_image_url || getSettingValue('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
 
     // Wrap in branded email shell
     const fullHtml = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background-color:#f5f5f5;">
   <div style="max-width:800px;margin:0 auto;padding:20px;">
-    <div style="background:#232628;padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+    <div style="background:${shellPrimary};padding:30px;text-align:center;border-radius:8px 8px 0 0;">
       <img src="${headerImageUrl}" alt="Header" style="height:80px;max-width:400px;width:auto;" />
     </div>
     <div style="background:#fff;padding:30px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;">
       ${processedContent}
     </div>
     <div style="text-align:center;padding:20px;color:#666;font-size:12px;">
-      <p style="margin:0;">Australian Racing Tours</p>
+      <p style="margin:0;">${brand?.name || 'Australian Racing Tours'}</p>
       <p style="margin:5px 0;">This email was sent regarding your tour booking.</p>
     </div>
   </div>

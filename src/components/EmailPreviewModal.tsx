@@ -14,6 +14,8 @@ import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
+import { useBrands, resolveBrand } from "@/hooks/useBrands";
+import { recolorCustomCards } from "@/lib/customCardTheme";
 import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -80,6 +82,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
+  const { data: brands } = useBrands();
 
   // Keep the From field in sync with the configured default until the user
   // explicitly changes it.
@@ -140,7 +143,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         .from('bookings')
         .select(`
           *,
-          tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount),
+          tours:tour_id (brand_id, name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount),
           customers!lead_passenger_id (first_name, last_name, email, phone, city, state, country, spouse_name, dietary_requirements, notes, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
           secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
           passenger_2:customers!passenger_2_id (first_name, last_name, email, phone, dietary_requirements, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
@@ -186,6 +189,15 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   useEffect(() => {
     setUserHasEdited(false);
 
+    // Resolve the tour's brand so the preview shows the exact colours the
+    // client will receive (custom cards use the tour theme, not defaults).
+    const brand = resolveBrand(brands, (booking as any)?.tours?.brand_id ?? null);
+    const themeColors = brand
+      ? { primary: brand.color_primary, accent: brand.color_accent }
+      : null;
+    const applyTheme = (html: string) =>
+      themeColors ? recolorCustomCards(html, themeColors) : html;
+
     if (selectedTemplateId && selectedTemplateId !== "blank" && emailTemplates) {
       const template = emailTemplates.find(t => t.id === selectedTemplateId);
       if (template) {
@@ -197,10 +209,10 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
           const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
           const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
           setEditedSubject(processedSubject);
-          setEditedContent(processedContent);
+          setEditedContent(applyTheme(processedContent));
         } else {
           setEditedSubject(template.subject_template);
-          setEditedContent(template.content_template);
+          setEditedContent(applyTheme(template.content_template));
         }
       }
     } else {
@@ -219,7 +231,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         setEditedContent(defaultContentTemplate);
       }
     }
-  }, [selectedTemplateId, emailTemplates, booking]);
+  }, [selectedTemplateId, emailTemplates, booking, brands]);
 
   const handleSendEmail = async () => {
     if (!bookingId) return;
