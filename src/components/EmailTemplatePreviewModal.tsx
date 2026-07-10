@@ -195,7 +195,7 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background-color:#f5f5f5;">
   <div style="max-width:800px;margin:0 auto;padding:20px;">
-    <div style="background:#232628;padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+    <div style="background:${shellPrimary};padding:30px;text-align:center;border-radius:8px 8px 0 0;">
       <img src="${headerImageUrl}" alt="Header" style="height:80px;max-width:400px;width:auto;" />
     </div>
     <div style="background:#fff;padding:30px;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;">
