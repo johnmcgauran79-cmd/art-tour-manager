@@ -2131,7 +2131,7 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       tour: { id: tour.id, name: tour.name ?? null },
       report_type: type,
       count: comparisons.length,
-      cross_booking_duplicates: crossDuplicates,
+      shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth2.ok,
       partial_results: anyPartial || !auth2.ok,
       live_verification_completed: auth2.ok && !anyPartial,

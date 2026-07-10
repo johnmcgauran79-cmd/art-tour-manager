@@ -184,7 +184,7 @@ export default defineTool({
       tour: { id: tour.id, name: (tour as any).name ?? null },
       report_type: type,
       count: comparisons.length,
-      cross_booking_duplicates: crossDuplicates,
+      shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth.ok,
       partial_results: anyPartial || !auth.ok,
       live_verification_completed: auth.ok && !anyPartial,
