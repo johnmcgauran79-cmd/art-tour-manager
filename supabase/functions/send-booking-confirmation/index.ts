@@ -1502,6 +1502,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap the processed content in the branded email wrapper
+      // Recolour custom cards to match the tour's brand theme.
+      emailHtml = recolorCustomCards(emailHtml, { primary: brandPrimary, accent: brandAccent });
       emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
