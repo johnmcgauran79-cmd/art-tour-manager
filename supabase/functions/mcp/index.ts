@@ -954,7 +954,8 @@ async function auditXeroCall(ctx, f) {
         success: f.success,
         error_category: f.errorCategory ?? null,
         duration_ms: f.durationMs,
-        result_count: f.resultCount ?? null
+        result_count: f.resultCount ?? null,
+        metrics: f.metrics ?? null
       }
     });
   } catch (_) {
@@ -963,6 +964,117 @@ async function auditXeroCall(ctx, f) {
 
 // src/lib/mcp/tools/_xero.ts
 import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.110.0";
+
+// src/lib/mcp/tools/_xeroHttp.ts
+var DEFAULT_RETRY_CONFIG = {
+  max429Retries: 2,
+  max5xxRetries: 2,
+  globalAttemptCap: 8
+};
+var RETRYABLE_5XX = [500, 502, 503, 504];
+function backoffDelayMs(retryNumber, rnd = Math.random) {
+  const base = Math.min(400 * Math.pow(2, retryNumber - 1), 3200);
+  const jitter = rnd() * 250;
+  return Math.round(base + jitter);
+}
+async function requestWithRetry(doFetch, initialToken, forceRefresh2, opts) {
+  const cfg = opts?.config ?? DEFAULT_RETRY_CONFIG;
+  const sleep = opts?.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const rnd = opts?.rnd ?? Math.random;
+  const metrics = opts?.metrics;
+  const bump = () => {
+    if (metrics) metrics.retry_count++;
+  };
+  let token = initialToken;
+  let refreshed = false;
+  let retries429 = 0;
+  let retries5xx = 0;
+  let attempts = 0;
+  while (attempts < cfg.globalAttemptCap) {
+    attempts++;
+    let res;
+    try {
+      res = await doFetch(token);
+    } catch {
+      return { ok: false, code: "INTERNAL_ERROR" };
+    }
+    const status = res.status;
+    if (status === 401) {
+      await res.discardBody().catch(() => {
+      });
+      if (refreshed) {
+        return { ok: false, status, code: "XERO_UNAUTHORISED" };
+      }
+      refreshed = true;
+      bump();
+      const newToken = await forceRefresh2();
+      if (!newToken) return { ok: false, status, code: "XERO_TOKEN_REFRESH_FAILED" };
+      token = newToken;
+      continue;
+    }
+    if (status === 429) {
+      const retryAfter = parseInt(res.getHeader("Retry-After") || "2", 10);
+      await res.discardBody().catch(() => {
+      });
+      if (retries429 >= cfg.max429Retries) return { ok: false, status, code: "XERO_RATE_LIMITED" };
+      retries429++;
+      bump();
+      await sleep(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
+      continue;
+    }
+    if (RETRYABLE_5XX.includes(status)) {
+      await res.discardBody().catch(() => {
+      });
+      if (retries5xx >= cfg.max5xxRetries) return { ok: false, status, code: "INTERNAL_ERROR" };
+      retries5xx++;
+      bump();
+      await sleep(backoffDelayMs(retries5xx, rnd));
+      continue;
+    }
+    if (status === 404) {
+      await res.discardBody().catch(() => {
+      });
+      return { ok: false, status, code: "XERO_INVOICE_NOT_FOUND" };
+    }
+    if (status < 200 || status >= 300) {
+      await res.discardBody().catch(() => {
+      });
+      return { ok: false, status, code: "INTERNAL_ERROR" };
+    }
+    const data = await res.json();
+    return { ok: true, status, data };
+  }
+  return { ok: false, code: "INTERNAL_ERROR" };
+}
+function createInvoiceFetchContext() {
+  return {
+    cache: /* @__PURE__ */ new Map(),
+    seen: /* @__PURE__ */ new Set(),
+    metrics: {
+      unique_invoice_ids: 0,
+      invoice_fetch_count: 0,
+      invoice_cache_hits: 0,
+      retry_count: 0
+    }
+  };
+}
+async function cachedInvoiceFetch(ctx, invoiceId, fetcher) {
+  if (!ctx.seen.has(invoiceId)) {
+    ctx.seen.add(invoiceId);
+    ctx.metrics.unique_invoice_ids++;
+  }
+  if (ctx.cache.has(invoiceId)) {
+    ctx.metrics.invoice_cache_hits++;
+    return ctx.cache.get(invoiceId);
+  }
+  const { result, retryCount } = await fetcher(invoiceId);
+  ctx.metrics.invoice_fetch_count++;
+  ctx.metrics.retry_count += retryCount;
+  ctx.cache.set(invoiceId, result);
+  return result;
+}
+
+// src/lib/mcp/tools/_xero.ts
 function serviceClient() {
   return createClient2(
     process.env.SUPABASE_URL,
@@ -1001,8 +1113,14 @@ async function refreshAccessToken(supabase, settings) {
     refresh_token: tokens.refresh_token,
     token_expires_at: new Date(Date.now() + tokens.expires_in * 1e3).toISOString(),
     updated_at: (/* @__PURE__ */ new Date()).toISOString()
-  }).eq("id", settings.id);
+  }).eq("id", settings.id).eq("refresh_token", settings.refresh_token);
   return tokens.access_token;
+}
+async function forceRefresh() {
+  const supabase = serviceClient();
+  const { data: settings } = await supabase.from("xero_integration_settings").select("*").eq("is_connected", true).maybeSingle();
+  if (!settings || !settings.refresh_token) return null;
+  return refreshAccessToken(supabase, settings);
 }
 async function getXeroAuth() {
   const supabase = serviceClient();
@@ -1018,57 +1136,49 @@ async function getXeroAuth() {
   }
   return { ok: true, data: { token: settings.access_token, tenantId: settings.tenant_id } };
 }
-var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function xeroGet(auth2, path, maxRetries = 3) {
-  const headers = {
-    Authorization: `Bearer ${auth2.token}`,
-    "Xero-Tenant-Id": auth2.tenantId,
-    Accept: "application/json"
+async function xeroFetch(token, tenantId, path) {
+  const res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Xero-Tenant-Id": tenantId,
+      Accept: "application/json"
+    }
+  });
+  return {
+    status: res.status,
+    getHeader: (n) => res.headers.get(n),
+    json: () => res.json(),
+    discardBody: async () => {
+      await res.text().catch(() => {
+      });
+    }
   };
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    let res;
-    try {
-      res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, { headers });
-    } catch {
-      return { ok: false, code: "INTERNAL_ERROR" };
-    }
-    if (res.status === 429) {
-      const retryAfter = parseInt(res.headers.get("Retry-After") || "2", 10);
-      await res.text().catch(() => {
-      });
-      if (attempt === maxRetries - 1) return { ok: false, code: "XERO_RATE_LIMITED" };
-      await sleep(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
-      continue;
-    }
-    if (res.status === 404) {
-      await res.text().catch(() => {
-      });
-      return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
-    }
-    if (!res.ok) {
-      await res.text().catch(() => {
-      });
-      return { ok: false, code: "INTERNAL_ERROR" };
-    }
-    const data = await res.json();
-    return { ok: true, data };
-  }
-  return { ok: false, code: "XERO_RATE_LIMITED" };
 }
-async function fetchInvoiceById(auth2, invoiceId) {
-  const res = await xeroGet(auth2, `Invoices/${encodeURIComponent(invoiceId)}`);
+async function xeroGet(auth2, path, opts) {
+  const res = await requestWithRetry(
+    (token) => xeroFetch(token, auth2.tenantId, path),
+    auth2.token,
+    forceRefresh,
+    { metrics: opts?.metrics }
+  );
+  if (res.ok) return { ok: true, data: res.data };
+  const code = res.code === "XERO_UNAUTHORISED" ? "XERO_TOKEN_REFRESH_FAILED" : res.code;
+  return { ok: false, code };
+}
+async function fetchInvoiceById(auth2, invoiceId, opts) {
+  const res = await xeroGet(auth2, `Invoices/${encodeURIComponent(invoiceId)}`, opts);
   if (!res.ok) return res;
   const inv = res.data?.Invoices?.[0];
   if (!inv) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
   return { ok: true, data: inv };
 }
-async function fetchInvoiceByNumber(auth2, invoiceNumber) {
+async function fetchInvoiceByNumber(auth2, invoiceNumber, opts) {
   const where = encodeURIComponent(`InvoiceNumber=="${invoiceNumber.replace(/"/g, "")}"`);
-  const res = await xeroGet(auth2, `Invoices?where=${where}`);
+  const res = await xeroGet(auth2, `Invoices?where=${where}`, opts);
   if (!res.ok) return res;
   const inv = res.data?.Invoices?.[0];
   if (!inv?.InvoiceID) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
-  return fetchInvoiceById(auth2, inv.InvoiceID);
+  return fetchInvoiceById(auth2, inv.InvoiceID, opts);
 }
 
 // src/lib/mcp/tools/list-booking-invoices.ts
@@ -1620,6 +1730,16 @@ function reportTypeFilter(reportType) {
 }
 
 // src/lib/mcp/tools/_paymentXero.ts
+function createXeroFetchContext() {
+  return createInvoiceFetchContext();
+}
+async function fetchInvoiceCached(fctx, auth2, invoiceId) {
+  return cachedInvoiceFetch(fctx, invoiceId, async (id) => {
+    const metrics = { retry_count: 0 };
+    const result = await fetchInvoiceById(auth2, id, { metrics });
+    return { result, retryCount: metrics.retry_count };
+  });
+}
 var INACTIVE_INVOICE_STATUSES = ["VOIDED", "DELETED"];
 function detectBookingDuplicate(bookingId, rows) {
   const byInvoice = /* @__PURE__ */ new Map();
@@ -1639,7 +1759,8 @@ function detectBookingDuplicate(bookingId, rows) {
   }
   return null;
 }
-async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now()) {
+async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now(), fctx) {
+  const fc = fctx ?? createXeroFetchContext();
   const linkedNumbers = Array.from(
     new Set(rows.map((r) => r.xero_invoice_number).filter(Boolean))
   );
@@ -1662,7 +1783,7 @@ async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now()) {
     let source = "xero_mapping_cache";
     let normalized = null;
     if (auth2.ok && m.xero_invoice_id) {
-      const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+      const live = await fetchInvoiceCached(fc, auth2.data, m.xero_invoice_id);
       if (live.ok) {
         anyLive = true;
         normalized = normalizeInvoice(live.data);
@@ -1819,12 +1940,13 @@ var get_payment_exception_report_default = defineTool27({
     const auth2 = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
+    const fctx = createXeroFetchContext();
     const records = [];
     for (const { booking, cls } of limited) {
       const primary = cls.primary_exception_type;
       const detail = cls.details[primary];
       const rows = mapByBooking.get(booking.id) ?? [];
-      const xero = await summarizeBookingXero(auth2, booking.id, rows, now);
+      const xero = await summarizeBookingXero(auth2, booking.id, rows, now, fctx);
       if (xero.partial_results) anyPartial = true;
       const cust = booking.customers;
       records.push({
@@ -1866,7 +1988,12 @@ var get_payment_exception_report_default = defineTool27({
       partial_results_reason: !auth2.ok ? "Xero is not connected; monetary values are from cached mappings only." : anyPartial ? "Some invoices could not be refreshed from live Xero; those monetary values are from cached mappings." : null,
       records
     };
-    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length });
+    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   }
 });
@@ -1941,10 +2068,11 @@ var compare_art_payment_report_to_xero_default = defineTool28({
     const auth2 = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
+    const fctx = createXeroFetchContext();
     const comparisons = [];
     for (const { booking, cls } of matched) {
       const rows = mapByBooking.get(booking.id) ?? [];
-      const xero = await summarizeBookingXero(auth2, booking.id, rows, now);
+      const xero = await summarizeBookingXero(auth2, booking.id, rows, now, fctx);
       if (xero.partial_results) anyPartial = true;
       const discrepancies = [];
       if (xero.live_verification_completed && xero.active_invoice_count > 0) {
@@ -2007,7 +2135,12 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       partial_results_reason: !auth2.ok ? "Xero is not connected; comparison used cached mappings only and no high-confidence discrepancy is asserted." : anyPartial ? "Some invoices could not be refreshed from live Xero; affected comparisons are marked as data-quality warnings." : null,
       comparisons
     };
-    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length });
+    await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: comparisons.length, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   }
 });
@@ -2061,7 +2194,8 @@ var explain_booking_payment_position_default = defineTool29({
       return toolError("INTERNAL_ERROR");
     }
     const auth2 = await getXeroAuth();
-    const xero = await summarizeBookingXero(auth2, booking_id, mappings ?? []);
+    const fctx = createXeroFetchContext();
+    const xero = await summarizeBookingXero(auth2, booking_id, mappings ?? [], Date.now(), fctx);
     const artFullyPaid = booking.status === "fully_paid";
     let statusFinding = {
       art_status: booking.status,
@@ -2168,7 +2302,12 @@ var explain_booking_payment_position_default = defineTool29({
       stale_warning: xero.stale_warning,
       xero_connected: auth2.ok
     };
-    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count });
+    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   }
 });

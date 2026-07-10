@@ -10,6 +10,7 @@ import {
   type PaymentExceptionType,
 } from "./_paymentReport";
 import { summarizeBookingXero, type MappingRow } from "./_paymentXero";
+import { createXeroFetchContext } from "./_paymentXero";
 
 export default defineTool({
   name: "get_payment_exception_report",
@@ -104,13 +105,15 @@ export default defineTool({
     const auth = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
+    // Request-scoped invoice cache shared across every booking in this report.
+    const fctx = createXeroFetchContext();
 
     const records: any[] = [];
     for (const { booking, cls } of limited) {
       const primary = cls.primary_exception_type as PaymentExceptionType;
       const detail = cls.details[primary]!;
       const rows = mapByBooking.get(booking.id) ?? [];
-      const xero = await summarizeBookingXero(auth, booking.id, rows, now);
+      const xero = await summarizeBookingXero(auth, booking.id, rows, now, fctx);
       if (xero.partial_results) anyPartial = true;
       const cust = booking.customers;
       records.push({
@@ -158,7 +161,12 @@ export default defineTool({
       records,
     };
 
-    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length });
+    await auditXeroCall(ctx, { tool: "get_payment_exception_report", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: records.length, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count,
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   },
 });

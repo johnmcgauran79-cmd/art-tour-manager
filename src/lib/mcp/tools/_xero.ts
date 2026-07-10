@@ -1,6 +1,11 @@
 /// <reference types="node" />
 import { createClient } from "@supabase/supabase-js";
 import type { XeroErrorCode } from "./_xeroLogic";
+import {
+  requestWithRetry,
+  type HttpResponseLike,
+  type RequestMetrics,
+} from "./_xeroHttp";
 
 /**
  * Service-role Xero accessor.
@@ -70,6 +75,11 @@ async function refreshAccessToken(
   }
 
   const tokens = await tokenResponse.json();
+  // Concurrency guard: only overwrite the stored tokens if the refresh_token we
+  // used is STILL the current one. If a concurrent call already rotated it, our
+  // conditional update matches 0 rows and we do not clobber the newer refresh
+  // token with an older one. Our freshly minted access token is still valid to
+  // return to the caller for the in-flight request.
   await supabase
     .from("xero_integration_settings")
     .update({
@@ -78,9 +88,27 @@ async function refreshAccessToken(
       token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("id", settings.id);
+    .eq("id", settings.id)
+    .eq("refresh_token", settings.refresh_token);
 
   return tokens.access_token;
+}
+
+/**
+ * Force a single token rotation for the mid-call 401 flow. Re-reads the LATEST
+ * stored settings (so it uses the newest refresh_token) then refreshes and
+ * persists via the concurrency-guarded path. Returns the new access token or
+ * null. Never returns/logs the refresh token, client secret or Basic header.
+ */
+async function forceRefresh(): Promise<string | null> {
+  const supabase = serviceClient();
+  const { data: settings } = await supabase
+    .from("xero_integration_settings")
+    .select("*")
+    .eq("is_connected", true)
+    .maybeSingle();
+  if (!settings || !settings.refresh_token) return null;
+  return refreshAccessToken(supabase, settings);
 }
 
 /**
@@ -110,59 +138,67 @@ export async function getXeroAuth(): Promise<XeroResult<XeroAuth>> {
   return { ok: true, data: { token: settings.access_token, tenantId: settings.tenant_id } };
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** Options accepted by the read-only Xero GET helpers. */
+export interface XeroGetOpts {
+  /** Accumulates the number of retries (401/429/5xx) consumed by this request. */
+  metrics?: RequestMetrics;
+}
+
+/** Wrap a real fetch Response in the transport-agnostic shape the engine uses. */
+async function xeroFetch(
+  token: string,
+  tenantId: string,
+  path: string,
+): Promise<HttpResponseLike> {
+  const res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Xero-Tenant-Id": tenantId,
+      Accept: "application/json",
+    },
+  });
+  return {
+    status: res.status,
+    getHeader: (n: string) => res.headers.get(n),
+    json: () => res.json(),
+    discardBody: async () => {
+      await res.text().catch(() => {});
+    },
+  };
+}
 
 /**
- * Authorised GET against the Xero Accounting API with bounded 429 retry.
- * `path` is the part after /api.xro/2.0/ (already URL-encoded as needed).
- * Returns parsed JSON on success. Never logs tokens/headers/bodies.
+ * Authorised GET against the Xero Accounting API with bounded retry handling:
+ * one forced token refresh + single retry on 401, bounded transient-5xx retry,
+ * and the existing bounded 429 retry. `path` is the part after /api.xro/2.0/
+ * (already URL-encoded as needed). Never logs tokens/headers/bodies.
  */
 export async function xeroGet(
   auth: XeroAuth,
   path: string,
-  maxRetries = 3,
+  opts?: XeroGetOpts,
 ): Promise<XeroResult<any>> {
-  const headers = {
-    Authorization: `Bearer ${auth.token}`,
-    "Xero-Tenant-Id": auth.tenantId,
-    Accept: "application/json",
-  };
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    let res: Response;
-    try {
-      res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, { headers });
-    } catch {
-      return { ok: false, code: "INTERNAL_ERROR" };
-    }
-
-    if (res.status === 429) {
-      const retryAfter = parseInt(res.headers.get("Retry-After") || "2", 10);
-      await res.text().catch(() => {});
-      if (attempt === maxRetries - 1) return { ok: false, code: "XERO_RATE_LIMITED" };
-      await sleep(Math.min(Math.max(retryAfter, 1) * 1000, 10000));
-      continue;
-    }
-    if (res.status === 404) {
-      await res.text().catch(() => {});
-      return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
-    }
-    if (!res.ok) {
-      await res.text().catch(() => {});
-      return { ok: false, code: "INTERNAL_ERROR" };
-    }
-    const data = await res.json();
-    return { ok: true, data };
-  }
-  return { ok: false, code: "XERO_RATE_LIMITED" };
+  const res = await requestWithRetry(
+    (token) => xeroFetch(token, auth.tenantId, path),
+    auth.token,
+    forceRefresh,
+    { metrics: opts?.metrics },
+  );
+  if (res.ok) return { ok: true, data: res.data };
+  // Map the transport code onto the tool-facing XeroErrorCode set.
+  const code = (res.code === "XERO_UNAUTHORISED"
+    ? "XERO_TOKEN_REFRESH_FAILED"
+    : res.code) as XeroErrorCode;
+  return { ok: false, code };
 }
 
 /** Fetch a single invoice by Xero InvoiceID (full detail incl. line items & payments). */
 export async function fetchInvoiceById(
   auth: XeroAuth,
   invoiceId: string,
+  opts?: XeroGetOpts,
 ): Promise<XeroResult<any>> {
-  const res = await xeroGet(auth, `Invoices/${encodeURIComponent(invoiceId)}`);
+  const res = await xeroGet(auth, `Invoices/${encodeURIComponent(invoiceId)}`, opts);
   if (!res.ok) return res;
   const inv = res.data?.Invoices?.[0];
   if (!inv) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
@@ -173,11 +209,12 @@ export async function fetchInvoiceById(
 export async function fetchInvoiceByNumber(
   auth: XeroAuth,
   invoiceNumber: string,
+  opts?: XeroGetOpts,
 ): Promise<XeroResult<any>> {
   const where = encodeURIComponent(`InvoiceNumber=="${invoiceNumber.replace(/"/g, "")}"`);
-  const res = await xeroGet(auth, `Invoices?where=${where}`);
+  const res = await xeroGet(auth, `Invoices?where=${where}`, opts);
   if (!res.ok) return res;
   const inv = res.data?.Invoices?.[0];
   if (!inv?.InvoiceID) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
-  return fetchInvoiceById(auth, inv.InvoiceID);
+  return fetchInvoiceById(auth, inv.InvoiceID, opts);
 }

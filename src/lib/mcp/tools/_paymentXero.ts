@@ -7,6 +7,41 @@ import {
   normalizeInvoice,
   type NormalizedInvoice,
 } from "./_xeroLogic";
+import {
+  createInvoiceFetchContext,
+  cachedInvoiceFetch,
+  type InvoiceFetchContext,
+  type FetchContextMetrics,
+} from "./_xeroHttp";
+
+// A request-scoped cache of normalised invoice fetch results. Keyed by Xero
+// InvoiceID; lives only for one MCP tool invocation. Stores the tool-facing
+// result (ok/data/code) only — never tokens or raw Xero payloads.
+export type XeroInvoiceResult = { ok: boolean; data?: any; code?: string };
+export type XeroFetchContext = InvoiceFetchContext<XeroInvoiceResult>;
+export type { FetchContextMetrics };
+
+/** Create a fresh request-scoped invoice cache for a single tool invocation. */
+export function createXeroFetchContext(): XeroFetchContext {
+  return createInvoiceFetchContext<XeroInvoiceResult>();
+}
+
+/**
+ * Fetch an invoice through the request-scoped cache: at most one live Xero call
+ * per InvoiceID per invocation, even across bookings. Retry counts consumed by
+ * the underlying request are folded into the context metrics.
+ */
+export async function fetchInvoiceCached(
+  fctx: XeroFetchContext,
+  auth: XeroAuth,
+  invoiceId: string,
+): Promise<XeroInvoiceResult> {
+  return cachedInvoiceFetch(fctx, invoiceId, async (id) => {
+    const metrics = { retry_count: 0 };
+    const result = await fetchInvoiceById(auth, id, { metrics });
+    return { result, retryCount: metrics.retry_count };
+  });
+}
 
 // Xero invoice statuses that must be EXCLUDED from an active balance.
 const INACTIVE_INVOICE_STATUSES = ["VOIDED", "DELETED"];
@@ -98,7 +133,11 @@ export async function summarizeBookingXero(
   bookingId: string,
   rows: MappingRow[],
   now: number = Date.now(),
+  fctx?: XeroFetchContext,
 ): Promise<BookingXeroPosition> {
+  // Use a shared request-scoped cache when provided; otherwise create a local
+  // one so a single booking still de-duplicates its own repeated InvoiceIDs.
+  const fc = fctx ?? createXeroFetchContext();
   const linkedNumbers = Array.from(
     new Set(rows.map((r) => r.xero_invoice_number).filter(Boolean) as string[]),
   );
@@ -126,7 +165,7 @@ export async function summarizeBookingXero(
     let normalized: NormalizedInvoice | null = null;
 
     if (auth.ok && m.xero_invoice_id) {
-      const live = await fetchInvoiceById(auth.data as XeroAuth, m.xero_invoice_id);
+      const live = await fetchInvoiceCached(fc, auth.data as XeroAuth, m.xero_invoice_id);
       if (live.ok) {
         anyLive = true;
         normalized = normalizeInvoice(live.data);

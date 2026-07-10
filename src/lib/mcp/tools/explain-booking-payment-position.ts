@@ -5,6 +5,7 @@ import { assertFinancialAccess, assertBookingAccess, auditXeroCall, toolError } 
 import { getXeroAuth } from "./_xero";
 import { PAYMENT_RULES_VERSION, classifyBookingPaymentException } from "./_paymentReport";
 import { summarizeBookingXero, type MappingRow } from "./_paymentXero";
+import { createXeroFetchContext } from "./_paymentXero";
 
 export default defineTool({
   name: "explain_booking_payment_position",
@@ -70,7 +71,8 @@ export default defineTool({
     }
 
     const auth = await getXeroAuth();
-    const xero = await summarizeBookingXero(auth, booking_id, (mappings ?? []) as MappingRow[]);
+    const fctx = createXeroFetchContext();
+    const xero = await summarizeBookingXero(auth, booking_id, (mappings ?? []) as MappingRow[], Date.now(), fctx);
 
     // ---- Conservative status comparison ----
     // Only assert a status discrepancy when live verification is complete.
@@ -195,7 +197,12 @@ export default defineTool({
       xero_connected: auth.ok,
     };
 
-    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count });
+    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count,
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   },
 });

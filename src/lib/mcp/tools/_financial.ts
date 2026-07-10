@@ -155,6 +155,9 @@ export interface AuditFields {
   errorCategory?: string | null;
   durationMs: number;
   resultCount?: number | null;
+  // Internal performance metrics (invoice de-dup + retry counts). Numeric
+  // counters only — never tokens, headers or payloads.
+  metrics?: Record<string, number> | null;
 }
 
 /**
@@ -178,6 +181,7 @@ export async function auditXeroCall(ctx: ToolContext, f: AuditFields): Promise<v
           error_category: f.errorCategory ?? null,
           duration_ms: f.durationMs,
           result_count: f.resultCount ?? null,
+          metrics: f.metrics ?? null,
         },
       });
   } catch (_) {
