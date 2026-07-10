@@ -14,6 +14,8 @@ import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
+import { useBrands, resolveBrand } from "@/hooks/useBrands";
+import { recolorCustomCards } from "@/lib/customCardTheme";
 import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
