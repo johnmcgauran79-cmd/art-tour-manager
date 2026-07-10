@@ -3946,7 +3946,15 @@ export type Database = {
           itinerary_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tour_itinerary_days_itinerary_id_fkey"
+            columns: ["itinerary_id"]
+            isOneToOne: false
+            referencedRelation: "tour_itineraries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tour_itinerary_entries: {
         Row: {
@@ -3979,7 +3987,15 @@ export type Database = {
           time_slot?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tour_itinerary_entries_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "tour_itinerary_days"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tour_ops_reviews: {
         Row: {
