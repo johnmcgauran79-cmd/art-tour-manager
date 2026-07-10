@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Xero serialises dates as "/Date(1580515200000+0000)/". Postgres timestamptz
+// cannot parse that form, so normalise to ISO 8601 (or null) before writing.
+function parseXeroDate(value: unknown): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const m = value.match(/\/Date\((-?\d+)(?:[+-]\d{4})?\)\//);
+  if (m) {
+    const ms = Number(m[1]);
+    if (!Number.isFinite(ms)) return null;
+    return new Date(ms).toISOString();
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 // Helper: get valid access token, refreshing if needed
 async function getValidAccessToken(supabase: any): Promise<{ token: string; tenantId: string } | null> {
   const { data: settings } = await supabase
