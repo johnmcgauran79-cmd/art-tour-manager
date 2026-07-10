@@ -705,12 +705,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (needsProfileUpdateLink && booking.customers?.id) {
       // Generate a profile update token
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
         .insert({
           customer_id: booking.customers.id,
+          // Link the token to this booking so guest pages can resolve the tour's brand/theme.
+          booking_id: bookingId,
           // IMPORTANT: This column is UUID in the DB; using "system" causes token creation to fail,
           // which means no link/button can be generated.
           created_by: requestUserId || SYSTEM_ACTOR_ID,
