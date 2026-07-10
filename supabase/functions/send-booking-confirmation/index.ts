@@ -1591,10 +1591,10 @@ const handler = async (req: Request): Promise<Response> => {
     
     const emailResponse = await resend.emails.send({
       from: fromField,
-      to: [booking.customers.email],
-      cc: ccRecipients.length > 0 ? ccRecipients : undefined,
-      bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
-      subject: emailSubject,
+      to: [testRecipient || booking.customers.email],
+      cc: isTestSend ? undefined : (ccRecipients.length > 0 ? ccRecipients : undefined),
+      bcc: isTestSend ? undefined : (bccRecipients.length > 0 ? bccRecipients : undefined),
+      subject: isTestSend ? `[TEST] ${emailSubject}` : emailSubject,
       html: emailHtml,
       attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
     });
