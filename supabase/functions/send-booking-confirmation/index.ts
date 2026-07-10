@@ -38,7 +38,7 @@ function escapeCpHtml(str: string): string {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function buildCancellationPolicyTableHtml(policy: any, navy = "#232628"): string {
+function buildCancellationPolicyTableHtml(policy: any, navy = "#232628", headerText = "#ffffff"): string {
   const rowsHtml = (policy.rows || []).map((row: any, i: number) => {
     const bg = i % 2 === 1 ? "#f3f4f6" : "#ffffff";
     return `<tr>
@@ -47,10 +47,10 @@ function buildCancellationPolicyTableHtml(policy: any, navy = "#232628"): string
     </tr>`;
   }).join("");
   return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
-    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:15px;font-weight:600;">${escapeCpHtml(policy.title)}</th></tr>
+    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:15px;font-weight:600;">${escapeCpHtml(policy.title)}</th></tr>
     <tr>
-      <th style="padding:8px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
-      <th style="padding:8px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
+      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
+      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
     </tr>
     ${rowsHtml}
   </table>`;
@@ -1411,7 +1411,7 @@ const handler = async (req: Request): Promise<Response> => {
             if (s.setting_key === 'cancellation_policy') cpGlobal = s.setting_value;
           }
           const cpPolicy = normaliseCancellationPolicy(cpTour?.cancellation_policy_override ?? cpGlobal);
-          cancellationPolicyBlock = buildCancellationPolicyTableHtml(cpPolicy, cpNavy);
+          cancellationPolicyBlock = buildCancellationPolicyTableHtml(cpPolicy, cpNavy, btnText);
         }
       } catch (cpErr) {
         console.error('Error building cancellation policy block:', cpErr);
