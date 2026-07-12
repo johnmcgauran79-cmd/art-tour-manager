@@ -345,7 +345,12 @@ export const ArtAiWorkspace = () => {
                             type="button"
                             onClick={() =>
                               s.kind === "deterministic"
-                                ? runSkillCard(s.skillId!, s.landingPrompt ?? "")
+                                ? s.requiresContext === false
+                                  ? runDeterministicCard(s.skillId!)
+                                  : runSkillCard(
+                                      s.skillId as "explain_booking" | "explain_client",
+                                      s.landingPrompt ?? "",
+                                    )
                                 : send(s.prompt ?? "", { entryPoint: "landing_card" })
                             }
                             className="rounded-lg border border-border bg-background p-3 text-left transition hover:border-primary/50 hover:bg-accent"
