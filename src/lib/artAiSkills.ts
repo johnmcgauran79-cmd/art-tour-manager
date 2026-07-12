@@ -132,4 +132,6 @@ export const COMING_SOON_SKILLS: { id: string; label: string; description: strin
 export const SKILL_LAUNCH_PROMPTS: Record<string, string> = {
   explain_booking: "Explain this booking.",
   explain_client: "Explain this client.",
+  payment_exceptions_for_next_departing_tour:
+    "Show payment exceptions for our next departing tour.",
 };
