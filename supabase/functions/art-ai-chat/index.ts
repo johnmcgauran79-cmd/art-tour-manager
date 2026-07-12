@@ -295,6 +295,9 @@ Deno.serve(async (req) => {
   const mode = body.mode === "deterministic_skill" ? "deterministic_skill" : "generic_chat";
   const entryPoint = typeof body.entry_point === "string" ? body.entry_point.slice(0, 60) : null;
 
+  // Authoritative server-side date context for THIS request (org timezone).
+  const dateCtx = buildDateContext();
+
   // Verify conversation ownership (user client → RLS scoped)
   const { data: convo, error: convoError } = await userClient
     .from("ai_conversations")
