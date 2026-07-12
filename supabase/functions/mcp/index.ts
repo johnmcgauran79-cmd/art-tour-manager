@@ -114,9 +114,17 @@ var list_bookings_default = defineTool3({
     const { data, error } = await query;
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
+    const bookings = data ?? [];
+    const truncated = bookings.length === capped;
+    const result = {
+      count: bookings.length,
+      truncated,
+      truncation_note: truncated ? `Showing the first ${capped} bookings \u2014 there may be more. Raise 'limit' (max 500) or add a status filter to see the rest.` : null,
+      bookings
+    };
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { bookings: data ?? [] }
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
     };
   }
 });
