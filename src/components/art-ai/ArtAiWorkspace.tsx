@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import artAiLogo from "@/assets/art-ai-logo.png";
@@ -120,9 +121,31 @@ export const ArtAiWorkspace = () => {
 
       let convoId = convoIdOverride ?? activeId;
       if (!convoId) {
-        const convo = await createConvo.mutateAsync(undefined);
-        convoId = convo.id;
-        setActiveId(convo.id);
+        try {
+          const convo = await createConvo.mutateAsync(undefined);
+          convoId = convo.id;
+          setActiveId(convo.id);
+        } catch (e) {
+          // Most commonly an expired/invalid session: the conversation insert
+          // is rejected by RLS before we ever reach the chat function. Surface
+          // it instead of silently doing nothing.
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (!sessionData.session) {
+            toast({
+              title: "Session expired",
+              description: "Please sign in again to use ART AI.",
+              variant: "destructive",
+            });
+            navigate("/login");
+          } else {
+            toast({
+              title: "Couldn't start conversation",
+              description: "Something went wrong starting the chat. Please try again.",
+              variant: "destructive",
+            });
+          }
+          return;
+        }
       }
 
       setInput("");
