@@ -421,6 +421,161 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_conversations: {
+        Row: {
+          context: Json
+          created_at: string
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          retain_indefinitely: boolean
+          system_prompt_version: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          retain_indefinitely?: boolean
+          system_prompt_version?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          retain_indefinitely?: boolean
+          system_prompt_version?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          parts: Json
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          parts?: Json
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          parts?: Json
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_rate_limits: {
+        Row: {
+          id: string
+          requested_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          requested_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          requested_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_usage: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          estimated_cost_usd: number
+          id: string
+          input_tokens: number
+          latency_ms: number
+          message_id: string | null
+          model: string
+          output_tokens: number
+          tool_call_count: number
+          total_tokens: number
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          estimated_cost_usd?: number
+          id?: string
+          input_tokens?: number
+          latency_ms?: number
+          message_id?: string | null
+          model: string
+          output_tokens?: number
+          tool_call_count?: number
+          total_tokens?: number
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          estimated_cost_usd?: number
+          id?: string
+          input_tokens?: number
+          latency_ms?: number
+          message_id?: string | null
+          model?: string
+          output_tokens?: number
+          tool_call_count?: number
+          total_tokens?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           details: Json | null
@@ -4606,12 +4761,21 @@ export type Database = {
         Args: { _agent_id: string; _booking_id: string }
         Returns: boolean
       }
+      ai_retention_days: { Args: never; Returns: number }
       auto_archive_completed_tours: { Args: never; Returns: number }
       booking_skips_billing: { Args: { _booking_id: string }; Returns: boolean }
       booking_skips_emails: { Args: { _booking_id: string }; Returns: boolean }
       calculate_nights: {
         Args: { check_in: string; check_out: string }
         Returns: number
+      }
+      check_ai_rate_limit: {
+        Args: {
+          _max_requests?: number
+          _user_id: string
+          _window_seconds?: number
+        }
+        Returns: Json
       }
       check_missing_activity_allocations: {
         Args: never
@@ -4752,6 +4916,7 @@ export type Database = {
         Args: { p_customer_id: string; p_dietary_value: string }
         Returns: undefined
       }
+      purge_ai_conversations: { Args: never; Returns: number }
       purge_passport_data: { Args: never; Returns: number }
       refresh_capacity_alerts: { Args: never; Returns: number }
       secure_customer_search: {
