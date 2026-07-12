@@ -532,7 +532,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
               model: MODEL,
-              instructions: skillPrompt,
+              instructions: skillPrompt + dateGroundingBlock(dateCtx),
               input: inputItems,
               tool_choice: "none",
               store: false,
@@ -760,7 +760,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
               model: MODEL,
-              instructions: SYSTEM_PROMPT,
+              instructions: SYSTEM_PROMPT + dateGroundingBlock(dateCtx),
               input: inputItems,
               tools: openaiTools,
               tool_choice: forceNoTools ? "none" : "auto",
