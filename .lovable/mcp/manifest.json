@@ -20,7 +20,7 @@
       {
         "name": "list_tours",
         "title": "List tours",
-        "description": "List tours the signed-in user can access, most recent start date first. Returns up to 200 tours by default (raise `limit` up to 500 for a full list). Optionally filter by a name/location search term or status.",
+        "description": "List tours the signed-in user can access. By default returns SOONEST start date first (ascending), which is what you want for questions about the 'next departing tour' — the FIRST row is the next tour to depart. To reliably answer 'next departing tour', set `upcoming_only: true` (excludes tours that already started) and read the first row. Returns up to 200 tours by default (raise `limit` up to 500). Optionally filter by name/location search term, status, or upcoming-only. Set `sort: 'desc'` for most-recent-first.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -36,6 +36,18 @@
             "status": {
               "type": "string",
               "description": "Filter by exact tour status. Valid values: pending, available, limited_availability, sold_out, closed, past, cancelled, archived. Omit to return tours of every status."
+            },
+            "upcoming_only": {
+              "type": "boolean",
+              "description": "When true, only return tours whose start_date is today or later (excludes past departures). Use this to find the next departing tour."
+            },
+            "sort": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "description": "Sort order by start_date. 'asc' (default) = soonest first (next departing at top); 'desc' = furthest future first."
             },
             "limit": {
               "type": "integer",
