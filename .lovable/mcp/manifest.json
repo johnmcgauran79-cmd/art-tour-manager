@@ -1054,7 +1054,7 @@
       {
         "name": "get_customer",
         "title": "Get a customer overview",
-        "description": "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location, created date and Keap external id. Excludes all passport, medical, emergency-contact, accessibility and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+        "description": "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location and created date. Excludes all passport, medical, emergency-contact, accessibility and dietary data, and internal external-CRM identifiers (e.g. Keap). Read-only; access is RLS-scoped to the signed-in user.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

@@ -2458,7 +2458,7 @@ import { z as z31 } from "npm:zod@^3.25.76";
 var get_customer_default = defineTool31({
   name: "get_customer",
   title: "Get a customer overview",
-  description: "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location, created date and Keap external id. Excludes all passport, medical, emergency-contact, accessibility and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+  description: "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location and created date. Excludes all passport, medical, emergency-contact, accessibility and dietary data, and internal external-CRM identifiers (e.g. Keap). Read-only; access is RLS-scoped to the signed-in user.",
   inputSchema: {
     customer_id: z31.string().uuid().describe("The ART customer/contact id (uuid).")
   },
@@ -2470,7 +2470,7 @@ var get_customer_default = defineTool31({
       return toolError("INVALID_INPUT", "customer_id must be a UUID.");
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("customers").select(
-      "id, first_name, last_name, preferred_name, title, email, phone, city, state, country, keap_contact_id, created_at"
+      "id, first_name, last_name, preferred_name, title, email, phone, city, state, country, created_at"
     ).eq("id", customer_id).maybeSingle();
     if (error) {
       await auditReadCall(ctx, { tool: "get_customer", recordId: customer_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
@@ -2493,7 +2493,6 @@ var get_customer_default = defineTool31({
         state: data.state ?? null,
         country: data.country ?? null
       },
-      keap_contact_id: data.keap_contact_id ?? null,
       created_at: data.created_at ?? null
     };
     await auditReadCall(ctx, { tool: "get_customer", recordId: customer_id, success: true, durationMs: Date.now() - started });
