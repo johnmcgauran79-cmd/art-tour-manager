@@ -174,6 +174,17 @@ export default function ContactDetail() {
             Back
           </Button>
           
+          <ExplainWithArtAiButton
+            skillId="explain_client"
+            entryPoint="contact_detail_mobile"
+            size="sm"
+            context={{
+              source_page: "contact_detail",
+              customer_id: contact.id,
+              context_label: `Client: ${fullName}`,
+            }}
+          />
+
           {!isViewOnly && (
             <>
               <SendProfileUpdateButton
