@@ -291,6 +291,11 @@ Deno.serve(async (req) => {
         for (let step = 0; step < MAX_TOOL_STEPS + 1; step++) {
           if (aborted) throw new Error("timeout");
 
+          // On the final allowed step, force a synthesis turn: no more tools,
+          // just a written answer. This guarantees the user always gets text
+          // even when the tool budget is exhausted.
+          const forceNoTools = step === MAX_TOOL_STEPS;
+
           const oaRes = await fetch("https://api.openai.com/v1/responses", {
             method: "POST",
             headers: {
@@ -302,7 +307,7 @@ Deno.serve(async (req) => {
               instructions: SYSTEM_PROMPT,
               input: inputItems,
               tools: openaiTools,
-              tool_choice: "auto",
+              tool_choice: forceNoTools ? "none" : "auto",
               store: false, // never persist at OpenAI
               max_output_tokens: MAX_OUTPUT_TOKENS,
               stream: true,
@@ -362,13 +367,15 @@ Deno.serve(async (req) => {
           }
 
           const outputs: any[] = completed.output ?? [];
-          const functionCalls = outputs.filter((o) => o.type === "function_call");
+          const functionCalls = forceNoTools
+            ? []
+            : outputs.filter((o) => o.type === "function_call");
 
           // Append this turn's outputs to the running input for continuity (store:false)
           for (const o of outputs) inputItems.push(o);
 
-          if (functionCalls.length === 0 || step === MAX_TOOL_STEPS) {
-            break; // done, or hit step ceiling
+          if (functionCalls.length === 0) {
+            break; // model produced its final answer (or forced synthesis turn)
           }
 
           // Execute allowlisted tool calls via MCP (user token)
