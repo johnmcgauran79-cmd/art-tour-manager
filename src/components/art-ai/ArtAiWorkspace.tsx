@@ -287,32 +287,59 @@ export const ArtAiWorkspace = () => {
       <section className="flex min-w-0 flex-1 flex-col rounded-lg border border-border bg-card">
         <div ref={scrollRef} className="flex-1 overflow-auto p-4">
           {messages.length === 0 && !live.streaming ? (
-            <div className="mx-auto max-w-2xl py-8 text-center">
-              <img src={artAiLogo} alt="ART AI" width={64} height={64} className="mx-auto mb-4 h-16 w-16 rounded-xl" />
-              <h2 className="font-display text-xl font-bold">Ask ART AI</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your operational assistant. Ask about tours, bookings, activities, hotels and finances.
-              </p>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {SUGGESTIONS.map((s) => (
-                  <div key={s.group} className="text-left">
-                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {s.group}
-                    </p>
-                    <div className="space-y-1.5">
-                      {s.prompts.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => send(p)}
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-left text-xs hover:bg-accent"
-                        >
-                          {p}
-                        </button>
-                      ))}
+            <div className="mx-auto max-w-3xl py-8">
+              <div className="text-center">
+                <img src={artAiLogo} alt="ART AI" width={64} height={64} className="mx-auto mb-4 h-16 w-16 rounded-xl" />
+                <h2 className="font-display text-xl font-bold">Ask ART AI</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your operational assistant. Pick a quick skill or ask your own question.
+                </p>
+              </div>
+              <div className="mt-6 space-y-5">
+                {GROUPS.map((group) => {
+                  const active = QUICK_SKILLS.filter((s) => s.group === group);
+                  const soon = COMING_SOON_SKILLS.filter((s) => s.group === group);
+                  if (active.length === 0 && soon.length === 0) return null;
+                  return (
+                    <div key={group}>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {group}
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {active.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() =>
+                              s.kind === "deterministic"
+                                ? runSkillCard(s.skillId!, s.landingPrompt ?? "")
+                                : send(s.prompt ?? "", { entryPoint: "landing_card" })
+                            }
+                            className="rounded-lg border border-border bg-background p-3 text-left transition hover:border-primary/50 hover:bg-accent"
+                          >
+                            <p className="text-sm font-medium">{s.label}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
+                          </button>
+                        ))}
+                        {soon.map((s) => (
+                          <div
+                            key={s.id}
+                            aria-disabled="true"
+                            className="pointer-events-none select-none rounded-lg border border-dashed border-border bg-muted/40 p-3 text-left opacity-60"
+                          >
+                            <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                              <Lock className="h-3 w-3" /> {s.label}
+                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
+                            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Coming soon
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
