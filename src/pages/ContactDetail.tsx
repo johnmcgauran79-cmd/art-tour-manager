@@ -18,6 +18,9 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
+import { useContactCommunications } from "@/hooks/useCommunications";
+import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
+import { MessageSquare } from "lucide-react";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -40,6 +43,10 @@ export default function ContactDetail() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
+  const { data: contactComms, isLoading: contactCommsLoading } = useContactCommunications(
+    contact?.id,
+    contact?.email
+  );
 
   // Update tab when URL changes
   useEffect(() => {
@@ -297,6 +304,10 @@ export default function ContactDetail() {
             <Mail className="h-4 w-4 mr-2" />
             Bookings
           </TabsTrigger>
+          <TabsTrigger value="communications">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Communications
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4 mt-6">
@@ -359,6 +370,21 @@ export default function ContactDetail() {
         <TabsContent value="bookings" className="space-y-4 mt-6">
           <ContactBookingsList contactId={contact.id} />
           <RelatedTasksSection entityType="contact" entityId={contact.id} />
+        </TabsContent>
+
+        <TabsContent value="communications" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Communications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CommunicationsTimeline
+                rows={contactComms}
+                isLoading={contactCommsLoading}
+                showContext
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
