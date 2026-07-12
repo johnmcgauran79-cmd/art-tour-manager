@@ -146,3 +146,9 @@ verify_jwt = false
 
 [functions.send-host-briefing-email]
 verify_jwt = false
+
+[functions.art-ai-chat]
+verify_jwt = false
+
+[functions.purge-ai-conversations]
+verify_jwt = false

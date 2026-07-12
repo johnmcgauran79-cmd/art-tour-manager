@@ -6,9 +6,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useThemeProvider } from "@/hooks/useThemeProvider";
+import { AiContextProvider } from "@/contexts/AiContext";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
+import ArtAi from "./pages/ArtAi";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import TourDetail from "./pages/TourDetail";
@@ -132,6 +134,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <AiContextProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -153,6 +156,16 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <Index />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/art-ai"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ArtAi />
                     </AppLayout>
                   </ProtectedRoute>
                 }
@@ -350,6 +363,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </AiContextProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
