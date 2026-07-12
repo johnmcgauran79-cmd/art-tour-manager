@@ -458,7 +458,7 @@ Deno.serve(async (req) => {
           structured.financial = { unavailable_to_role: true };
         }
       }
-    } else {
+    } else if (skillId === "explain_client") {
       // explain_client
       const cust = await invokeTool("get_customer", { customer_id: ctxIds.customer_id });
       toolsUsed.push("get_customer");
@@ -493,6 +493,73 @@ Deno.serve(async (req) => {
         }
         structured.communications_note =
           "CRM marketing history is not yet integrated; only ART operational records are available.";
+      }
+    } else if (skillId === "payment_exceptions_for_next_departing_tour") {
+      // Fully server-orchestrated: pick the next tour, then compute its report.
+      const asOf = dateCtx.current_date;
+      structured.as_of_date_used = asOf;
+      structured.timezone = dateCtx.timezone;
+
+      if (!isFinancial) {
+        structured.financial_access_denied = true;
+      } else {
+        const nextRes = await invokeTool("get_next_departing_tour", { as_of_date: asOf });
+        toolsUsed.push("get_next_departing_tour");
+        if (!nextRes.ok) {
+          accessError = "Could not determine the next departing tour.";
+        } else {
+          const nd = nextRes.data as any;
+          const nextTour = nd?.tour ?? null;
+          // Validation: a tour must be returned with a start_date on/after as-of.
+          if (!nextTour || !nextTour.tour_id) {
+            structured.no_upcoming_tour = true;
+            structured.selection = { as_of_date: asOf, selection_rule: nd?.selection_rule };
+          } else if (nextTour.start_date < asOf) {
+            accessError = "Internal validation failed selecting the next departing tour.";
+          } else {
+            structured.selected_tour = nextTour;
+            structured.selection_rule = nd?.selection_rule ?? null;
+            const rep = await invokeTool("get_payment_exception_report", {
+              tour_id: nextTour.tour_id,
+              report_type: "all_payment_exceptions",
+              as_of_date: asOf,
+            });
+            toolsUsed.push("get_payment_exception_report");
+            if (!rep.ok) {
+              accessError = "Could not compute the payment exception report for the selected tour.";
+            } else {
+              const report = rep.data as any;
+              // Validation: report must be for the SAME tour and SAME as-of date.
+              const reportTourId = report?.tour?.id ?? report?.tour?.tour_id ?? null;
+              if (reportTourId && reportTourId !== nextTour.tour_id) {
+                accessError = "Internal validation failed: report tour did not match the selected tour.";
+              } else if (report?.as_of_date && report.as_of_date !== asOf) {
+                accessError = "Internal validation failed: report date did not match the requested date.";
+              } else {
+                const records: any[] = Array.isArray(report?.records) ? report.records : [];
+                const countBy = (t: string) =>
+                  records.filter(
+                    (r) =>
+                      r?.primary_exception_type === t ||
+                      (Array.isArray(r?.all_applicable_exception_types) &&
+                        r.all_applicable_exception_types.includes(t)),
+                  ).length;
+                structured.payment_exceptions = {
+                  as_of_date: report?.as_of_date ?? asOf,
+                  total_exceptions: report?.count ?? records.length,
+                  missing_deposits: countBy("missing_deposit"),
+                  missing_instalments: countBy("missing_instalment"),
+                  overdue_final_balances: countBy("overdue_final_balance"),
+                  partial_results: !!report?.partial_results,
+                  partial_results_reason: report?.partial_results_reason ?? null,
+                  xero_connected: report?.xero_connected ?? null,
+                  truncated: !!report?.truncated,
+                  records,
+                };
+              }
+            }
+          }
+        }
       }
     }
 
