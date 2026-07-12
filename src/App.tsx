@@ -134,6 +134,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <AiContextProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -362,6 +363,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </AiContextProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
