@@ -11,6 +11,7 @@ import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 import { WaiverSettingsCard } from "./WaiverSettingsCard";
 import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
+import { AiRetentionSettingsCard } from "./AiRetentionSettingsCard";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -48,6 +49,9 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* ART AI settings */}
+        <AiRetentionSettingsCard />
 
         {/* Database Settings */}
         <Card>
