@@ -10,6 +10,8 @@ import {
   PinOff,
   Wrench,
   Loader2,
+  X,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import artAiLogo from "@/assets/art-ai-logo.png";
 import { AiMarkdown } from "./AiMarkdown";
 import {
@@ -28,43 +31,30 @@ import {
   streamAiChat,
   type AiMessage,
   type AiMessagePart,
+  type AiConversationContext,
+  type StreamOptions,
 } from "@/hooks/useAiChat";
+import {
+  QUICK_SKILLS,
+  COMING_SOON_SKILLS,
+  SKILL_LAUNCH_PROMPTS,
+  type SkillGroup,
+} from "@/lib/artAiSkills";
+import type { ArtAiLaunchState } from "@/hooks/useLaunchArtAiSkill";
 
-const SUGGESTIONS: { group: string; prompts: string[] }[] = [
-  {
-    group: "Operations",
-    prompts: [
-      "Which upcoming tours are below their minimum passenger count?",
-      "List the activities for our next tour with their transport details.",
-    ],
-  },
-  {
-    group: "Sales & Marketing",
-    prompts: [
-      "How many bookings do we have per tour this season?",
-      "Which tours still have spare capacity?",
-    ],
-  },
-  {
-    group: "Finance",
-    prompts: [
-      "Show me the payment exception report for our next tour.",
-      "Which bookings have outstanding invoices?",
-    ],
-  },
-  {
-    group: "Administration",
-    prompts: [
-      "Summarise the itinerary for our next departing tour.",
-      "Which custom forms are still awaiting responses?",
-    ],
-  },
-];
+const GROUPS: SkillGroup[] = ["Operations", "Finance", "Administration"];
 
 interface LiveState {
   streaming: boolean;
   text: string;
   tools: { tool_name: string; status: string; duration_ms?: number; result_count?: number | null }[];
+}
+
+interface ContextChip {
+  label: string;
+  context: AiConversationContext;
+  skillId: "explain_booking" | "explain_client";
+  entryPoint: string;
 }
 
 const ToolActivity = ({ parts }: { parts: AiMessagePart[] }) => {
