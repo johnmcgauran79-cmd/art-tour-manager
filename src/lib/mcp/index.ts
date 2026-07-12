@@ -30,6 +30,7 @@ import compareArtPaymentReportToXeroTool from "./tools/compare-art-payment-repor
 import explainBookingPaymentPositionTool from "./tools/explain-booking-payment-position";
 import getBookingTool from "./tools/get-booking";
 import getCustomerTool from "./tools/get-customer";
+import searchCustomersTool from "./tools/search-customers";
 import listCustomerBookingsTool from "./tools/list-customer-bookings";
 import listInvoiceMappingIssuesTool from "./tools/list-invoice-mapping-issues";
 
@@ -84,6 +85,7 @@ export default defineMcp({
     explainBookingPaymentPositionTool,
     getBookingTool,
     getCustomerTool,
+    searchCustomersTool,
     listCustomerBookingsTool,
     listInvoiceMappingIssuesTool,
   ],

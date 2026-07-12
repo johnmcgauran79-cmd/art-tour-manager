@@ -2503,9 +2503,83 @@ var get_customer_default = defineTool31({
   }
 });
 
-// src/lib/mcp/tools/list-customer-bookings.ts
+// src/lib/mcp/tools/search-customers.ts
 import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z32 } from "npm:zod@^3.25.76";
+var search_customers_default = defineTool32({
+  name: "search_customers",
+  title: "Search customers by name or email",
+  description: "Find customers/contacts by a free-text query matching first name, last name, preferred name, full name or email (case-insensitive, partial match). Use this FIRST to resolve a person's name (e.g. 'Jason Reed') into a customer_id before calling get_customer or list_customer_bookings. Returns minimised non-sensitive fields (id, name, email, phone, location). Read-only; RLS-scoped to the signed-in user.",
+  inputSchema: {
+    query: z32.string().describe("Name or email to search for, e.g. 'Jason Reed' or 'reed@'."),
+    limit: z32.number().int().optional().describe("Maximum results to return (default 20, max 50).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ query, limit }, ctx) => {
+    const started = Date.now();
+    if (!ctx.isAuthenticated()) return toolError("UNAUTHENTICATED");
+    const q = (query ?? "").trim();
+    if (q.length < 2)
+      return toolError("INVALID_INPUT", "query must be at least 2 characters.");
+    const capped = Math.min(Math.max(limit ?? 20, 1), 50);
+    const supabase = supabaseForUser(ctx);
+    const term = q.replace(/[%,()]/g, " ").trim();
+    const pattern = `%${term}%`;
+    const orFilters = [
+      `first_name.ilike.${pattern}`,
+      `last_name.ilike.${pattern}`,
+      `preferred_name.ilike.${pattern}`,
+      `email.ilike.${pattern}`
+    ];
+    let rows = [];
+    const { data, error } = await supabase.from("customers").select(
+      "id, first_name, last_name, preferred_name, title, email, phone, city, state, country"
+    ).or(orFilters.join(",")).limit(capped);
+    if (error) {
+      await auditReadCall(ctx, { tool: "search_customers", success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    rows = data ?? [];
+    const words = term.split(/\s+/).filter(Boolean);
+    if (words.length >= 2 && rows.length < capped) {
+      const first = `%${words[0]}%`;
+      const last = `%${words[words.length - 1]}%`;
+      const { data: combo } = await supabase.from("customers").select(
+        "id, first_name, last_name, preferred_name, title, email, phone, city, state, country"
+      ).ilike("first_name", first).ilike("last_name", last).limit(capped);
+      const seen = new Set(rows.map((r) => r.id));
+      for (const r of combo ?? []) {
+        if (!seen.has(r.id)) {
+          rows.push(r);
+          seen.add(r.id);
+        }
+      }
+    }
+    const customers = rows.slice(0, capped).map((r) => ({
+      customer_id: r.id,
+      name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || null,
+      preferred_name: r.preferred_name ?? null,
+      title: r.title ?? null,
+      email: r.email ?? null,
+      phone: r.phone ?? null,
+      location: {
+        city: r.city ?? null,
+        state: r.state ?? null,
+        country: r.country ?? null
+      }
+    }));
+    const result = { query: q, count: customers.length, customers };
+    await auditReadCall(ctx, { tool: "search_customers", success: true, resultCount: customers.length, durationMs: Date.now() - started });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-customer-bookings.ts
+import { defineTool as defineTool33 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z33 } from "npm:zod@^3.25.76";
 function classify(startDate, endDate, today) {
   if (!startDate && !endDate) return "unknown";
   const start = startDate ?? endDate;
@@ -2514,12 +2588,12 @@ function classify(startDate, endDate, today) {
   if (today > end) return "past";
   return "current";
 }
-var list_customer_bookings_default = defineTool32({
+var list_customer_bookings_default = defineTool33({
   name: "list_customer_bookings",
   title: "List a customer's bookings",
   description: "List every booking a customer is linked to (as lead, secondary or passenger 2/3), with tour name, dates, status, passenger count, room/bedding type and a current/upcoming/past classification. Includes a financial-summary availability flag but no financial figures and no sensitive passenger data. Read-only; RLS-scoped to the signed-in user.",
   inputSchema: {
-    customer_id: z32.string().uuid().describe("The ART customer/contact id (uuid).")
+    customer_id: z33.string().uuid().describe("The ART customer/contact id (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ customer_id }, ctx) => {
@@ -2581,21 +2655,21 @@ var list_customer_bookings_default = defineTool32({
 });
 
 // src/lib/mcp/tools/list-invoice-mapping-issues.ts
-import { defineTool as defineTool33 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z33 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool34 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z34 } from "npm:zod@^3.25.76";
 function normRef(v) {
   if (!v) return "";
   return v.trim().toUpperCase().replace(/^INV[-\s]*/i, "").replace(/^0+/, "");
 }
 var DEAD_STATUSES = /* @__PURE__ */ new Set(["DELETED", "VOIDED"]);
-var list_invoice_mapping_issues_default = defineTool33({
+var list_invoice_mapping_issues_default = defineTool34({
   name: "list_invoice_mapping_issues",
   title: "List invoice mapping issues",
   description: "Audit bookings whose linked Xero invoice is unhealthy: the mapped invoice is DELETED or VOIDED in live Xero, or the mapped invoice number disagrees with the booking's invoice_reference field. Each mapping is refreshed against live Xero (falling back to the cached mapping with a stale_warning when Xero is unavailable). Optionally scope to a tour. Read-only; changes nothing. Restricted to admin/manager.",
   inputSchema: {
-    tour_id: z33.string().uuid().optional().describe("Optional tour id to scope the audit."),
-    issue_types: z33.array(z33.enum(["deleted_or_voided", "reference_mismatch"])).optional().describe("Which issue categories to include. Defaults to both."),
-    limit: z33.number().int().optional().describe("Max mappings to inspect (default 300, max 500).")
+    tour_id: z34.string().uuid().optional().describe("Optional tour id to scope the audit."),
+    issue_types: z34.array(z34.enum(["deleted_or_voided", "reference_mismatch"])).optional().describe("Which issue categories to include. Defaults to both."),
+    limit: z34.number().int().optional().describe("Max mappings to inspect (default 300, max 500).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, issue_types, limit }, ctx) => {
@@ -2753,6 +2827,7 @@ var mcp_default = defineMcp({
     explain_booking_payment_position_default,
     get_booking_default,
     get_customer_default,
+    search_customers_default,
     list_customer_bookings_default,
     list_invoice_mapping_issues_default
   ]
