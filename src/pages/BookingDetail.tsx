@@ -386,6 +386,18 @@ export default function BookingDetail() {
               context="Booking"
             />
 
+            <ExplainWithArtAiButton
+              skillId="explain_booking"
+              entryPoint="booking_detail_desktop"
+              context={{
+                source_page: "booking_detail",
+                booking_id: booking.id,
+                tour_id: booking.tour_id || undefined,
+                customer_id: booking.customers?.id || undefined,
+                context_label: `Booking: ${leadPassengerName}${tour ? ` — ${tour.name}` : ""}`,
+              }}
+            />
+
             {!isAgent && (
               <Button
                 variant="outline"
