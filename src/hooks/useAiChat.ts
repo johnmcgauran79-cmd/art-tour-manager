@@ -92,7 +92,7 @@ export const useCreateAiConversation = () => {
         : null;
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: uid, context: safeContext })
+        .insert({ user_id: uid, context: safeContext as never })
         .select("id, title, retain_indefinitely, expires_at, created_at, updated_at, context")
         .single();
       if (error) throw error;
