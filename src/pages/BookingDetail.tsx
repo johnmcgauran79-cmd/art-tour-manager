@@ -43,6 +43,7 @@ import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { ShareButton } from "@/components/ShareButton";
+import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
