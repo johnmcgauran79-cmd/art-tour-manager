@@ -56,6 +56,7 @@ export default defineMcp({
   }),
   tools: [
     listToursTool,
+    getNextDepartingTourTool,
     getTourTool,
     listBookingsTool,
     listTourActivitiesTool,

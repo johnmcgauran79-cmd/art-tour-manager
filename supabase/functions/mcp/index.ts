@@ -74,698 +74,9 @@ var list_tours_default = defineTool({
   }
 });
 
-// src/lib/mcp/tools/get-tour.ts
+// src/lib/mcp/tools/get-next-departing-tour.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z2 } from "npm:zod@^3.25.76";
-var get_tour_default = defineTool2({
-  name: "get_tour",
-  title: "Get tour details",
-  description: "Fetch full details for a single tour by its id, including dates, pricing, capacity and host.",
-  inputSchema: {
-    tour_id: z2.string().describe("The tour id (uuid).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tours").select(
-      "id, name, location, start_date, end_date, days, nights, status, capacity, minimum_passengers_required, tour_host, tour_type, price_single, price_double, price_twin, deposit_required, notes"
-    ).eq("id", tour_id).maybeSingle();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data)
-      return { content: [{ type: "text", text: "Tour not found" }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { tour: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-bookings.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z3 } from "npm:zod@^3.25.76";
-var list_bookings_default = defineTool3({
-  name: "list_bookings",
-  title: "List bookings for a tour",
-  description: "List bookings for a given tour id, including passenger counts, status and accommodation dates.",
-  inputSchema: {
-    tour_id: z3.string().describe("The tour id (uuid) to list bookings for."),
-    status: z3.string().optional().describe("Optional booking status filter (e.g. paid, deposited, waitlist)."),
-    limit: z3.number().int().optional().describe("Maximum number of bookings to return (default 100, max 500).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id, status, limit }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const capped = Math.min(Math.max(limit ?? 100, 1), 500);
-    let query = supabaseForUser(ctx).from("bookings").select(
-      "id, tour_id, group_name, passenger_count, passenger_2_name, passenger_3_name, status, accommodation_required, check_in_date, check_out_date, total_nights, booking_agent"
-    ).eq("tour_id", tour_id).order("created_at", { ascending: false }).limit(capped);
-    if (status) query = query.eq("status", status);
-    const { data, error } = await query;
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    const bookings = data ?? [];
-    const truncated = bookings.length === capped;
-    const result = {
-      count: bookings.length,
-      truncated,
-      truncation_note: truncated ? `Showing the first ${capped} bookings \u2014 there may be more. Raise 'limit' (max 500) or add a status filter to see the rest.` : null,
-      bookings
-    };
-    return {
-      content: [{ type: "text", text: JSON.stringify(result) }],
-      structuredContent: result
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-tour-activities.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z4 } from "npm:zod@^3.25.76";
-var list_tour_activities_default = defineTool4({
-  name: "list_tour_activities",
-  title: "List tour activities",
-  description: "List activities for a given tour id, including dates, times, locations, transport and dress code.",
-  inputSchema: {
-    tour_id: z4.string().describe("The tour id (uuid) to list activities for.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("activities").select(
-      "id, name, activity_date, start_time, end_time, location, depart_for_activity, transport_mode, transport_company, transport_contact_name, transport_phone, transport_email, pickup_location_transport, driver_name, driver_phone, dress_code, hospitality_inclusions, notes, operations_notes, transport_status, spots_available, spots_booked, spots_remaining"
-    ).eq("tour_id", tour_id).order("activity_date", { ascending: true }).order("start_time", { ascending: true });
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { activities: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/get-activity.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z5 } from "npm:zod@^3.25.76";
-var get_activity_default = defineTool5({
-  name: "get_activity",
-  title: "Get activity details",
-  description: "Fetch full details for a single activity, including pickup journeys and which bookings are attending.",
-  inputSchema: {
-    activity_id: z5.string().describe("The activity id (uuid).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ activity_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("activities").select(
-      "*, activity_journeys (*), activity_bookings (id, booking_id, passengers_attending)"
-    ).eq("id", activity_id).maybeSingle();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data)
-      return { content: [{ type: "text", text: "Activity not found" }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { activity: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-tour-hotels.ts
-import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z6 } from "npm:zod@^3.25.76";
-var list_tour_hotels_default = defineTool6({
-  name: "list_tour_hotels",
-  title: "List tour hotels",
-  description: "List hotels and hotel bookings for a given tour id, including check-in/out dates, bedding and allocated rooms.",
-  inputSchema: {
-    tour_id: z6.string().describe("The tour id (uuid) to list hotels for.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("hotels").select(
-      "id, name, address, contact_name, contact_phone, contact_email, default_check_in, default_check_out, default_room_type, rooms_reserved, rooms_booked, rooms_available, operations_notes, booking_status, payment_status, hotel_bookings (id, booking_id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, required)"
-    ).eq("tour_id", tour_id).order("created_at", { ascending: true });
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { hotels: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/get-tour-itinerary.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z7 } from "npm:zod@^3.25.76";
-var get_tour_itinerary_default = defineTool7({
-  name: "get_tour_itinerary",
-  title: "Get tour itinerary",
-  description: "Fetch the day-by-day itinerary for a tour, including days and entries with times and descriptions.",
-  inputSchema: {
-    tour_id: z7.string().describe("The tour id (uuid) to fetch the itinerary for.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    const { data: itinerary, error: itError } = await supabase.from("tour_itineraries").select("*").eq("tour_id", tour_id).eq("is_current", true).order("version", { ascending: false }).limit(1).maybeSingle();
-    if (itError)
-      return { content: [{ type: "text", text: itError.message }], isError: true };
-    if (!itinerary)
-      return { content: [{ type: "text", text: "Itinerary not found" }], isError: true };
-    const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("*").eq("itinerary_id", itinerary.id).order("day_number");
-    if (daysError)
-      return { content: [{ type: "text", text: daysError.message }], isError: true };
-    const dayIds = (days ?? []).map((d) => d.id);
-    const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("*").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
-    if (entriesError)
-      return { content: [{ type: "text", text: entriesError.message }], isError: true };
-    const result = {
-      ...itinerary,
-      tour_itinerary_days: (days ?? []).map((day) => ({
-        ...day,
-        tour_itinerary_entries: (entries ?? []).filter((e) => e.day_id === day.id)
-      }))
-    };
-    return {
-      content: [{ type: "text", text: JSON.stringify(result) }],
-      structuredContent: { itinerary: result }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-tour-passengers.ts
-import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z8 } from "npm:zod@^3.25.76";
-var list_tour_passengers_default = defineTool8({
-  name: "list_tour_passengers",
-  title: "List tour passengers",
-  description: "List all passengers on a tour with their names, contact details, dietary requirements, medical conditions and accessibility needs.",
-  inputSchema: {
-    tour_id: z8.string().describe("The tour id (uuid) to list passengers for.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("bookings").select(
-      "id, group_name, passenger_count, status, booking_notes, customers!lead_passenger_id (id, title, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, date_of_birth), passenger_2:customers!passenger_2_id (id, title, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, date_of_birth), passenger_3:customers!passenger_3_id (id, title, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, date_of_birth)"
-    ).eq("tour_id", tour_id).order("created_at", { ascending: false });
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { bookings: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/get-booking-passenger-details.ts
-import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z9 } from "npm:zod@^3.25.76";
-var get_booking_passenger_details_default = defineTool9({
-  name: "get_booking_passenger_details",
-  title: "Get booking passenger details",
-  description: "Fetch full passenger details for a single booking, including passport details, travel docs, waivers, hotel, activity bookings, dietary and medical info.",
-  inputSchema: {
-    booking_id: z9.string().describe("The booking id (uuid).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ booking_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("bookings").select(
-      "*, tours (name), customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, preferred_name, notes), secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone), passenger_2:customers!passenger_2_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, preferred_name, notes), passenger_3:customers!passenger_3_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, preferred_name, notes), hotel_bookings (id, hotel_id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, hotels (name)), activity_bookings (id, activity_id, passengers_attending, activities (name, activity_date, start_time, end_time, location)), booking_travel_docs (*), booking_waivers (*), selected_pickup:tour_pickup_options!selected_pickup_option_id (id, name, details, pickup_time, sort_order)"
-    ).eq("id", booking_id).maybeSingle();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data)
-      return { content: [{ type: "text", text: "Booking not found" }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { booking: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-tour-custom-forms.ts
-import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z10 } from "npm:zod@^3.25.76";
-var list_tour_custom_forms_default = defineTool10({
-  name: "list_tour_custom_forms",
-  title: "List tour custom forms",
-  description: "List custom forms attached to a tour, including their fields and submitted responses.",
-  inputSchema: {
-    tour_id: z10.string().describe("The tour id (uuid) to list custom forms for.")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tour_custom_forms").select(
-      "id, form_title, form_description, is_published, response_mode, tour_custom_form_fields (id, field_label, field_type, field_options, is_required, sort_order), tour_custom_form_responses (id, booking_id, customer_id, passenger_slot, submitted_at, response_data)"
-    ).eq("tour_id", tour_id).order("created_at", { ascending: true });
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { custom_forms: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-tour-additional-info.ts
-import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z11 } from "npm:zod@^3.25.76";
-var list_tour_additional_info_default = defineTool11({
-  name: "list_tour_additional_info",
-  title: "List additional info sections",
-  description: "List the Additional Information sections for a tour, in display order. Use the returned ids to edit or delete sections.",
-  inputSchema: {
-    tour_id: z11.string().describe("The tour id (uuid).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ tour_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tour_additional_info_sections").select("id, name, icon_name, content, sort_order, is_visible, include_in_email_rules").eq("tour_id", tour_id).order("sort_order", { ascending: true });
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { sections: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/list-email-rules.ts
-import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z12 } from "npm:zod@^3.25.76";
-var list_email_rules_default = defineTool12({
-  name: "list_email_rules",
-  title: "List automated email rules",
-  description: "List active automated email rules (email templates) and their ids. Use these ids in `include_in_email_rules` on an Additional Information section to make the section appear as an info block in those emails.",
-  inputSchema: {
-    include_inactive: z12.boolean().optional().describe("Include inactive rules too. Defaults to false (active only).")
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ include_inactive }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    let query = supabaseForUser(ctx).from("automated_email_rules").select("id, rule_name, rule_type, trigger_type, days_before_tour, is_active, email_template_id").order("days_before_tour", { ascending: false });
-    if (!include_inactive) query = query.eq("is_active", true);
-    const { data, error } = await query;
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { rules: data ?? [] }
-    };
-  }
-});
-
-// src/lib/mcp/tools/create-tour.ts
-import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z13 } from "npm:zod@^3.25.76";
-var create_tour_default = defineTool13({
-  name: "create_tour",
-  title: "Create tour",
-  description: "Create a new tour. Requires name, start_date, end_date (YYYY-MM-DD), and the number of days and nights. Optional fields set location, host, capacity, status and pricing.",
-  inputSchema: {
-    name: z13.string().describe("Tour name."),
-    start_date: z13.string().describe("Start date, YYYY-MM-DD."),
-    end_date: z13.string().describe("End date, YYYY-MM-DD."),
-    days: z13.number().int().describe("Number of days."),
-    nights: z13.number().int().describe("Number of nights."),
-    location: z13.string().optional().describe("Tour location."),
-    tour_host: z13.string().optional().describe("Tour host name."),
-    capacity: z13.number().int().optional().describe("Maximum passengers."),
-    minimum_passengers_required: z13.number().int().optional(),
-    status: z13.string().optional().describe("One of: pending, available, closed, sold_out, past, cancelled."),
-    tour_type: z13.string().optional().describe("domestic or international."),
-    notes: z13.string().optional(),
-    price_single: z13.number().optional(),
-    price_double: z13.number().optional(),
-    price_twin: z13.number().optional(),
-    deposit_required: z13.number().optional()
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async (input, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tours").insert(input).select("id, name, start_date, end_date, status").single();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Created tour ${data.name} (${data.id})` }],
-      structuredContent: { tour: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/update-tour.ts
-import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z14 } from "npm:zod@^3.25.76";
-var update_tour_default = defineTool14({
-  name: "update_tour",
-  title: "Update tour",
-  description: "Update fields on an existing tour by id. Only the fields you provide are changed. Useful for editing dates, pricing, status, notes and operations notes while building a tour.",
-  inputSchema: {
-    tour_id: z14.string().describe("The tour id (uuid) to update."),
-    name: z14.string().optional(),
-    start_date: z14.string().optional().describe("YYYY-MM-DD."),
-    end_date: z14.string().optional().describe("YYYY-MM-DD."),
-    days: z14.number().int().optional(),
-    nights: z14.number().int().optional(),
-    location: z14.string().optional(),
-    tour_host: z14.string().optional(),
-    capacity: z14.number().int().optional(),
-    minimum_passengers_required: z14.number().int().optional(),
-    status: z14.string().optional().describe("One of: pending, available, closed, sold_out, past, cancelled."),
-    tour_type: z14.string().optional().describe("domestic or international."),
-    notes: z14.string().optional(),
-    inclusions: z14.string().optional(),
-    exclusions: z14.string().optional(),
-    price_single: z14.number().optional(),
-    price_double: z14.number().optional(),
-    price_twin: z14.number().optional(),
-    deposit_required: z14.number().optional(),
-    ops_notes: z14.string().optional(),
-    ops_accomm_notes: z14.string().optional(),
-    ops_races_notes: z14.string().optional(),
-    ops_transport_notes: z14.string().optional(),
-    ops_dinner_notes: z14.string().optional(),
-    ops_activities_notes: z14.string().optional(),
-    ops_other_notes: z14.string().optional(),
-    tour_hosts_notes: z14.string().optional()
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ tour_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const clean = Object.fromEntries(
-      Object.entries(updates).filter(([, v]) => v !== void 0)
-    );
-    if (Object.keys(clean).length === 0)
-      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tours").update(clean).eq("id", tour_id).select("id, name, start_date, end_date, status").maybeSingle();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data)
-      return { content: [{ type: "text", text: "Tour not found or not permitted" }], isError: true };
-    return {
-      content: [{ type: "text", text: `Updated tour ${data.name} (${data.id})` }],
-      structuredContent: { tour: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/create-itinerary.ts
-import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z15 } from "npm:zod@^3.25.76";
-var create_itinerary_default = defineTool15({
-  name: "create_itinerary",
-  title: "Create tour itinerary",
-  description: "Create the itinerary for a tour and auto-generate one day per date between the tour's start and end dates. Fails if an itinerary already exists for the tour.",
-  inputSchema: {
-    tour_id: z15.string().describe("The tour id (uuid) to create the itinerary for."),
-    title: z15.string().optional().describe("Optional itinerary title.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ tour_id, title }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    const { data: existing } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tour_id).eq("is_current", true).maybeSingle();
-    if (existing)
-      return { content: [{ type: "text", text: "An itinerary already exists for this tour." }], isError: true };
-    const { data: tour, error: tourError } = await supabase.from("tours").select("start_date, end_date").eq("id", tour_id).maybeSingle();
-    if (tourError)
-      return { content: [{ type: "text", text: tourError.message }], isError: true };
-    if (!tour)
-      return { content: [{ type: "text", text: "Tour not found" }], isError: true };
-    const { data: itinerary, error: itError } = await supabase.from("tour_itineraries").insert({ tour_id, title: title ?? "Tour Itinerary", created_by: ctx.getUserId() }).select().single();
-    if (itError)
-      return { content: [{ type: "text", text: itError.message }], isError: true };
-    const days = [];
-    const [y, m, d] = String(tour.start_date).split("-").map(Number);
-    const current = new Date(Date.UTC(y, m - 1, d));
-    const endStr = String(tour.end_date);
-    while (true) {
-      const dateStr = current.toISOString().split("T")[0];
-      days.push({ itinerary_id: itinerary.id, day_number: days.length + 1, activity_date: dateStr });
-      if (dateStr >= endStr) break;
-      current.setUTCDate(current.getUTCDate() + 1);
-    }
-    const { error: daysError } = await supabase.from("tour_itinerary_days").insert(days);
-    if (daysError)
-      return { content: [{ type: "text", text: daysError.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Created itinerary with ${days.length} day(s).` }],
-      structuredContent: { itinerary_id: itinerary.id, day_count: days.length }
-    };
-  }
-});
-
-// src/lib/mcp/tools/add-itinerary-day.ts
-import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z16 } from "npm:zod@^3.25.76";
-var add_itinerary_day_default = defineTool16({
-  name: "add_itinerary_day",
-  title: "Add itinerary day",
-  description: "Add a single day to an existing itinerary. Provide the itinerary_id and the activity_date (YYYY-MM-DD). The day number is assigned automatically as the next in sequence.",
-  inputSchema: {
-    itinerary_id: z16.string().describe("The itinerary id (uuid)."),
-    activity_date: z16.string().describe("The date for the new day, YYYY-MM-DD.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ itinerary_id, activity_date }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    const { data: last } = await supabase.from("tour_itinerary_days").select("day_number").eq("itinerary_id", itinerary_id).order("day_number", { ascending: false }).limit(1).maybeSingle();
-    const { data, error } = await supabase.from("tour_itinerary_days").insert({
-      itinerary_id,
-      activity_date,
-      day_number: (last?.day_number ?? 0) + 1
-    }).select().single();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Added day ${data.day_number} (${data.id}).` }],
-      structuredContent: { day: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/upsert-itinerary-entry.ts
-import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z17 } from "npm:zod@^3.25.76";
-var upsert_itinerary_entry_default = defineTool17({
-  name: "upsert_itinerary_entry",
-  title: "Add or edit itinerary entry",
-  description: "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
-  inputSchema: {
-    entry_id: z17.string().optional().describe("Existing entry id (uuid) to edit. Omit to create a new entry."),
-    day_id: z17.string().optional().describe("The itinerary day id (uuid). Required when creating."),
-    subject: z17.string().optional().describe("The entry title/subject."),
-    time_slot: z17.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
-    content: z17.string().optional().describe("Entry details/description."),
-    sort_order: z17.number().int().optional().describe("Display order within the day.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    if (entry_id) {
-      const updates = Object.fromEntries(
-        Object.entries({ subject, time_slot, content, sort_order }).filter(([, v]) => v !== void 0)
-      );
-      const { data: data2, error: error2 } = await supabase.from("tour_itinerary_entries").update(updates).eq("id", entry_id).select().maybeSingle();
-      if (error2)
-        return { content: [{ type: "text", text: error2.message }], isError: true };
-      if (!data2)
-        return { content: [{ type: "text", text: "Entry not found or not permitted" }], isError: true };
-      return {
-        content: [{ type: "text", text: `Updated entry ${data2.id}.` }],
-        structuredContent: { entry: data2 }
-      };
-    }
-    if (!day_id || !subject)
-      return { content: [{ type: "text", text: "day_id and subject are required to create an entry." }], isError: true };
-    const { data, error } = await supabase.from("tour_itinerary_entries").insert({ day_id, subject, time_slot: time_slot ?? null, content: content ?? null, sort_order: sort_order ?? 0 }).select().single();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Added entry ${data.id}.` }],
-      structuredContent: { entry: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/delete-itinerary-entry.ts
-import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z18 } from "npm:zod@^3.25.76";
-var delete_itinerary_entry_default = defineTool18({
-  name: "delete_itinerary_entry",
-  title: "Delete itinerary entry",
-  description: "Permanently delete a single itinerary entry by its id.",
-  inputSchema: {
-    entry_id: z18.string().describe("The itinerary entry id (uuid) to delete.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-  handler: async ({ entry_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { error } = await supabaseForUser(ctx).from("tour_itinerary_entries").delete().eq("id", entry_id);
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: `Deleted entry ${entry_id}.` }] };
-  }
-});
-
-// src/lib/mcp/tools/delete-itinerary-day.ts
-import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z19 } from "npm:zod@^3.25.76";
-var delete_itinerary_day_default = defineTool19({
-  name: "delete_itinerary_day",
-  title: "Delete itinerary day",
-  description: "Permanently delete an itinerary day and all of its entries by the day id.",
-  inputSchema: {
-    day_id: z19.string().describe("The itinerary day id (uuid) to delete.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-  handler: async ({ day_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    await supabase.from("tour_itinerary_entries").delete().eq("day_id", day_id);
-    const { error } = await supabase.from("tour_itinerary_days").delete().eq("id", day_id);
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: `Deleted day ${day_id}.` }] };
-  }
-});
-
-// src/lib/mcp/tools/add-additional-info-section.ts
-import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z20 } from "npm:zod@^3.25.76";
-var add_additional_info_section_default = defineTool20({
-  name: "add_additional_info_section",
-  title: "Add additional info section",
-  description: "Add an Additional Information section to a tour. Provide the tour_id, a name, and the content (HTML or plain text). icon_name defaults to 'Info'.",
-  inputSchema: {
-    tour_id: z20.string().describe("The tour id (uuid)."),
-    name: z20.string().describe("Section title."),
-    content: z20.string().optional().describe("Section body content."),
-    icon_name: z20.string().optional().describe("Lucide icon name, defaults to 'Info'."),
-    sort_order: z20.number().int().optional().describe("Display order."),
-    is_visible: z20.boolean().optional().describe("Whether the section is shown, default true."),
-    include_in_email_rules: z20.array(z20.string()).optional().describe(
-      "Automated email rule ids this section should be injected into (as an info block). Use `list_email_rules` to find ids."
-    )
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible, include_in_email_rules }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const supabase = supabaseForUser(ctx);
-    let order = sort_order;
-    if (order === void 0) {
-      const { count } = await supabase.from("tour_additional_info_sections").select("id", { count: "exact", head: true }).eq("tour_id", tour_id);
-      order = count ?? 0;
-    }
-    const { data, error } = await supabase.from("tour_additional_info_sections").insert({
-      tour_id,
-      name,
-      content: content ?? null,
-      icon_name: icon_name ?? "Info",
-      sort_order: order,
-      is_visible: is_visible ?? true,
-      include_in_email_rules: include_in_email_rules ?? [],
-      created_by: ctx.getUserId()
-    }).select("id, name").single();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Added section "${data.name}" (${data.id}).` }],
-      structuredContent: { section: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/update-additional-info-section.ts
-import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z21 } from "npm:zod@^3.25.76";
-var update_additional_info_section_default = defineTool21({
-  name: "update_additional_info_section",
-  title: "Update additional info section",
-  description: "Edit an existing Additional Information section by its id. Only the fields you provide are changed.",
-  inputSchema: {
-    section_id: z21.string().describe("The section id (uuid) to update."),
-    name: z21.string().optional(),
-    content: z21.string().optional(),
-    icon_name: z21.string().optional(),
-    sort_order: z21.number().int().optional(),
-    is_visible: z21.boolean().optional(),
-    include_in_email_rules: z21.array(z21.string()).optional().describe(
-      "Automated email rule ids this section should be injected into (as an info block). Replaces the existing list. Use `list_email_rules` to find ids."
-    )
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ section_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const clean = Object.fromEntries(
-      Object.entries(updates).filter(([, v]) => v !== void 0)
-    );
-    if (Object.keys(clean).length === 0)
-      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tour_additional_info_sections").update(clean).eq("id", section_id).select("id, name").maybeSingle();
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data)
-      return { content: [{ type: "text", text: "Section not found or not permitted" }], isError: true };
-    return {
-      content: [{ type: "text", text: `Updated section "${data.name}" (${data.id}).` }],
-      structuredContent: { section: data }
-    };
-  }
-});
-
-// src/lib/mcp/tools/delete-additional-info-section.ts
-import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z22 } from "npm:zod@^3.25.76";
-var delete_additional_info_section_default = defineTool22({
-  name: "delete_additional_info_section",
-  title: "Delete additional info section",
-  description: "Permanently delete an Additional Information section by its id.",
-  inputSchema: {
-    section_id: z22.string().describe("The section id (uuid) to delete.")
-  },
-  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-  handler: async ({ section_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { error } = await supabaseForUser(ctx).from("tour_additional_info_sections").delete().eq("id", section_id);
-    if (error)
-      return { content: [{ type: "text", text: error.message }], isError: true };
-    return { content: [{ type: "text", text: `Deleted section ${section_id}.` }] };
-  }
-});
-
-// src/lib/mcp/tools/list-booking-invoices.ts
-import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z23 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_xeroLogic.ts
 var FINANCIAL_ROLES = ["admin", "manager"];
@@ -895,6 +206,801 @@ function pickLowestProposedStatus(proposals) {
     (a, b) => (STATUS_ORDER[a] || 0) - (STATUS_ORDER[b] || 0)
   )[0];
 }
+
+// src/lib/mcp/tools/_audit.ts
+async function getUserRoles(ctx) {
+  try {
+    const { data, error } = await supabaseForUser(ctx).from("user_roles").select("role").eq("user_id", ctx.getUserId());
+    if (error) return [];
+    return (data ?? []).map((r) => r.role);
+  } catch {
+    return [];
+  }
+}
+function hasFinancialRole(roles) {
+  return roles.includes("admin") || roles.includes("manager");
+}
+async function auditReadCall(ctx, f) {
+  try {
+    await supabaseForUser(ctx).from("audit_log").insert({
+      user_id: ctx.getUserId(),
+      operation_type: f.success ? "mcp_read" : "mcp_read_error",
+      table_name: f.tool,
+      record_id: f.recordId && isUuid(f.recordId) ? f.recordId : null,
+      details: {
+        tool: f.tool,
+        success: f.success,
+        error_category: f.errorCategory ?? null,
+        duration_ms: f.durationMs,
+        result_count: f.resultCount ?? null
+      }
+    });
+  } catch (_) {
+  }
+}
+
+// src/lib/mcp/tools/get-next-departing-tour.ts
+var ORG_TIMEZONE = "Australia/Sydney";
+function todayInTimezone(tz) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(/* @__PURE__ */ new Date());
+}
+var get_next_departing_tour_default = defineTool2({
+  name: "get_next_departing_tour",
+  title: "Get next departing tour",
+  description: "Deterministically return the SINGLE next departing tour the signed-in user is authorised to see: the earliest tour whose start_date is on or after the as-of date. Use this instead of list_tours whenever you need the 'next', 'upcoming' or 'soonest' tour \u2014 do NOT infer it from the order of list_tours. If as_of_date is omitted, the organisation's current date (Australia/Sydney) is used. Excludes archived tours always, cancelled tours unless include_cancelled, and test tours unless include_test_tours. Read-only.",
+  inputSchema: {
+    as_of_date: z2.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today in Australia/Sydney."),
+    include_test_tours: z2.boolean().optional().describe("Include tours flagged as test tours. Default false."),
+    include_cancelled: z2.boolean().optional().describe("Include cancelled tours. Default false.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ as_of_date, include_test_tours, include_cancelled }, ctx) => {
+    const started = Date.now();
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const asOf = as_of_date ?? todayInTimezone(ORG_TIMEZONE);
+    const excludedStatuses = ["archived", ...include_cancelled ? [] : ["cancelled"]];
+    let query = supabaseForUser(ctx).from("tours").select("id, name, location, start_date, end_date, status, created_at, is_test_tour").gte("start_date", asOf).not("status", "in", `(${excludedStatuses.join(",")})`).order("start_date", { ascending: true }).order("name", { ascending: true }).order("created_at", { ascending: true }).order("id", { ascending: true });
+    if (!include_test_tours) query = query.eq("is_test_tour", false);
+    const { data, error } = await query.limit(5);
+    if (error) {
+      await auditReadCall(ctx, {
+        tool: "get_next_departing_tour",
+        success: false,
+        errorCategory: "INTERNAL_ERROR",
+        durationMs: Date.now() - started
+      });
+      return { content: [{ type: "text", text: "Could not load tours." }], isError: true };
+    }
+    const rows = data ?? [];
+    const next = rows[0] ?? null;
+    const result = {
+      as_of_date: asOf,
+      timezone: ORG_TIMEZONE,
+      tour: next ? {
+        tour_id: next.id,
+        name: next.name,
+        start_date: next.start_date,
+        end_date: next.end_date,
+        status: next.status,
+        location: next.location
+      } : null,
+      selection_rule: "earliest_authorised_future_start_date",
+      excluded_statuses: excludedStatuses,
+      include_test_tours: !!include_test_tours,
+      data_source: "art_database"
+    };
+    await auditReadCall(ctx, {
+      tool: "get_next_departing_tour",
+      recordId: next?.id ?? null,
+      success: true,
+      durationMs: Date.now() - started,
+      resultCount: next ? 1 : 0
+    });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-tour.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z3 } from "npm:zod@^3.25.76";
+var get_tour_default = defineTool3({
+  name: "get_tour",
+  title: "Get tour details",
+  description: "Fetch full details for a single tour by its id, including dates, pricing, capacity and host.",
+  inputSchema: {
+    tour_id: z3.string().describe("The tour id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("tours").select(
+      "id, name, location, start_date, end_date, days, nights, status, capacity, minimum_passengers_required, tour_host, tour_type, price_single, price_double, price_twin, deposit_required, notes"
+    ).eq("id", tour_id).maybeSingle();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data)
+      return { content: [{ type: "text", text: "Tour not found" }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { tour: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-bookings.ts
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z4 } from "npm:zod@^3.25.76";
+var list_bookings_default = defineTool4({
+  name: "list_bookings",
+  title: "List bookings for a tour",
+  description: "List bookings for a given tour id, including passenger counts, status and accommodation dates.",
+  inputSchema: {
+    tour_id: z4.string().describe("The tour id (uuid) to list bookings for."),
+    status: z4.string().optional().describe("Optional booking status filter (e.g. paid, deposited, waitlist)."),
+    limit: z4.number().int().optional().describe("Maximum number of bookings to return (default 100, max 500).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, status, limit }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const capped = Math.min(Math.max(limit ?? 100, 1), 500);
+    let query = supabaseForUser(ctx).from("bookings").select(
+      "id, tour_id, group_name, passenger_count, passenger_2_name, passenger_3_name, status, accommodation_required, check_in_date, check_out_date, total_nights, booking_agent"
+    ).eq("tour_id", tour_id).order("created_at", { ascending: false }).limit(capped);
+    if (status) query = query.eq("status", status);
+    const { data, error } = await query;
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    const bookings = data ?? [];
+    const truncated = bookings.length === capped;
+    const result = {
+      count: bookings.length,
+      truncated,
+      truncation_note: truncated ? `Showing the first ${capped} bookings \u2014 there may be more. Raise 'limit' (max 500) or add a status filter to see the rest.` : null,
+      bookings
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-activities.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z5 } from "npm:zod@^3.25.76";
+var list_tour_activities_default = defineTool5({
+  name: "list_tour_activities",
+  title: "List tour activities",
+  description: "List activities for a given tour id, including dates, times, locations, transport and dress code.",
+  inputSchema: {
+    tour_id: z5.string().describe("The tour id (uuid) to list activities for.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("activities").select(
+      "id, name, activity_date, start_time, end_time, location, depart_for_activity, transport_mode, transport_company, transport_contact_name, transport_phone, transport_email, pickup_location_transport, driver_name, driver_phone, dress_code, hospitality_inclusions, notes, operations_notes, transport_status, spots_available, spots_booked, spots_remaining"
+    ).eq("tour_id", tour_id).order("activity_date", { ascending: true }).order("start_time", { ascending: true });
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { activities: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-activity.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z6 } from "npm:zod@^3.25.76";
+var get_activity_default = defineTool6({
+  name: "get_activity",
+  title: "Get activity details",
+  description: "Fetch full details for a single activity, including pickup journeys and which bookings are attending.",
+  inputSchema: {
+    activity_id: z6.string().describe("The activity id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ activity_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("activities").select(
+      "*, activity_journeys (*), activity_bookings (id, booking_id, passengers_attending)"
+    ).eq("id", activity_id).maybeSingle();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data)
+      return { content: [{ type: "text", text: "Activity not found" }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { activity: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-hotels.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z7 } from "npm:zod@^3.25.76";
+var list_tour_hotels_default = defineTool7({
+  name: "list_tour_hotels",
+  title: "List tour hotels",
+  description: "List hotels and hotel bookings for a given tour id, including check-in/out dates, bedding and allocated rooms.",
+  inputSchema: {
+    tour_id: z7.string().describe("The tour id (uuid) to list hotels for.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("hotels").select(
+      "id, name, address, contact_name, contact_phone, contact_email, default_check_in, default_check_out, default_room_type, rooms_reserved, rooms_booked, rooms_available, operations_notes, booking_status, payment_status, hotel_bookings (id, booking_id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, required)"
+    ).eq("tour_id", tour_id).order("created_at", { ascending: true });
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { hotels: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-tour-itinerary.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z8 } from "npm:zod@^3.25.76";
+var get_tour_itinerary_default = defineTool8({
+  name: "get_tour_itinerary",
+  title: "Get tour itinerary",
+  description: "Fetch the day-by-day itinerary for a tour, including days and entries with times and descriptions.",
+  inputSchema: {
+    tour_id: z8.string().describe("The tour id (uuid) to fetch the itinerary for.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    const { data: itinerary, error: itError } = await supabase.from("tour_itineraries").select("*").eq("tour_id", tour_id).eq("is_current", true).order("version", { ascending: false }).limit(1).maybeSingle();
+    if (itError)
+      return { content: [{ type: "text", text: itError.message }], isError: true };
+    if (!itinerary)
+      return { content: [{ type: "text", text: "Itinerary not found" }], isError: true };
+    const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("*").eq("itinerary_id", itinerary.id).order("day_number");
+    if (daysError)
+      return { content: [{ type: "text", text: daysError.message }], isError: true };
+    const dayIds = (days ?? []).map((d) => d.id);
+    const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("*").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
+    if (entriesError)
+      return { content: [{ type: "text", text: entriesError.message }], isError: true };
+    const result = {
+      ...itinerary,
+      tour_itinerary_days: (days ?? []).map((day) => ({
+        ...day,
+        tour_itinerary_entries: (entries ?? []).filter((e) => e.day_id === day.id)
+      }))
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: { itinerary: result }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-passengers.ts
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z9 } from "npm:zod@^3.25.76";
+var list_tour_passengers_default = defineTool9({
+  name: "list_tour_passengers",
+  title: "List tour passengers",
+  description: "List all passengers on a tour with their names, contact details, dietary requirements, medical conditions and accessibility needs.",
+  inputSchema: {
+    tour_id: z9.string().describe("The tour id (uuid) to list passengers for.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("bookings").select(
+      "id, group_name, passenger_count, status, booking_notes, customers!lead_passenger_id (id, title, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, date_of_birth), passenger_2:customers!passenger_2_id (id, title, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, date_of_birth), passenger_3:customers!passenger_3_id (id, title, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, date_of_birth)"
+    ).eq("tour_id", tour_id).order("created_at", { ascending: false });
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { bookings: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-booking-passenger-details.ts
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z10 } from "npm:zod@^3.25.76";
+var get_booking_passenger_details_default = defineTool10({
+  name: "get_booking_passenger_details",
+  title: "Get booking passenger details",
+  description: "Fetch full passenger details for a single booking, including passport details, travel docs, waivers, hotel, activity bookings, dietary and medical info.",
+  inputSchema: {
+    booking_id: z10.string().describe("The booking id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("bookings").select(
+      "*, tours (name), customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, preferred_name, notes), secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone), passenger_2:customers!passenger_2_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, preferred_name, notes), passenger_3:customers!passenger_3_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, preferred_name, notes), hotel_bookings (id, hotel_id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, hotels (name)), activity_bookings (id, activity_id, passengers_attending, activities (name, activity_date, start_time, end_time, location)), booking_travel_docs (*), booking_waivers (*), selected_pickup:tour_pickup_options!selected_pickup_option_id (id, name, details, pickup_time, sort_order)"
+    ).eq("id", booking_id).maybeSingle();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data)
+      return { content: [{ type: "text", text: "Booking not found" }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { booking: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-custom-forms.ts
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z11 } from "npm:zod@^3.25.76";
+var list_tour_custom_forms_default = defineTool11({
+  name: "list_tour_custom_forms",
+  title: "List tour custom forms",
+  description: "List custom forms attached to a tour, including their fields and submitted responses.",
+  inputSchema: {
+    tour_id: z11.string().describe("The tour id (uuid) to list custom forms for.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("tour_custom_forms").select(
+      "id, form_title, form_description, is_published, response_mode, tour_custom_form_fields (id, field_label, field_type, field_options, is_required, sort_order), tour_custom_form_responses (id, booking_id, customer_id, passenger_slot, submitted_at, response_data)"
+    ).eq("tour_id", tour_id).order("created_at", { ascending: true });
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { custom_forms: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-additional-info.ts
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z12 } from "npm:zod@^3.25.76";
+var list_tour_additional_info_default = defineTool12({
+  name: "list_tour_additional_info",
+  title: "List additional info sections",
+  description: "List the Additional Information sections for a tour, in display order. Use the returned ids to edit or delete sections.",
+  inputSchema: {
+    tour_id: z12.string().describe("The tour id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("tour_additional_info_sections").select("id, name, icon_name, content, sort_order, is_visible, include_in_email_rules").eq("tour_id", tour_id).order("sort_order", { ascending: true });
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { sections: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-email-rules.ts
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z13 } from "npm:zod@^3.25.76";
+var list_email_rules_default = defineTool13({
+  name: "list_email_rules",
+  title: "List automated email rules",
+  description: "List active automated email rules (email templates) and their ids. Use these ids in `include_in_email_rules` on an Additional Information section to make the section appear as an info block in those emails.",
+  inputSchema: {
+    include_inactive: z13.boolean().optional().describe("Include inactive rules too. Defaults to false (active only).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ include_inactive }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    let query = supabaseForUser(ctx).from("automated_email_rules").select("id, rule_name, rule_type, trigger_type, days_before_tour, is_active, email_template_id").order("days_before_tour", { ascending: false });
+    if (!include_inactive) query = query.eq("is_active", true);
+    const { data, error } = await query;
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { rules: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-tour.ts
+import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z14 } from "npm:zod@^3.25.76";
+var create_tour_default = defineTool14({
+  name: "create_tour",
+  title: "Create tour",
+  description: "Create a new tour. Requires name, start_date, end_date (YYYY-MM-DD), and the number of days and nights. Optional fields set location, host, capacity, status and pricing.",
+  inputSchema: {
+    name: z14.string().describe("Tour name."),
+    start_date: z14.string().describe("Start date, YYYY-MM-DD."),
+    end_date: z14.string().describe("End date, YYYY-MM-DD."),
+    days: z14.number().int().describe("Number of days."),
+    nights: z14.number().int().describe("Number of nights."),
+    location: z14.string().optional().describe("Tour location."),
+    tour_host: z14.string().optional().describe("Tour host name."),
+    capacity: z14.number().int().optional().describe("Maximum passengers."),
+    minimum_passengers_required: z14.number().int().optional(),
+    status: z14.string().optional().describe("One of: pending, available, closed, sold_out, past, cancelled."),
+    tour_type: z14.string().optional().describe("domestic or international."),
+    notes: z14.string().optional(),
+    price_single: z14.number().optional(),
+    price_double: z14.number().optional(),
+    price_twin: z14.number().optional(),
+    deposit_required: z14.number().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("tours").insert(input).select("id, name, start_date, end_date, status").single();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Created tour ${data.name} (${data.id})` }],
+      structuredContent: { tour: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-tour.ts
+import { defineTool as defineTool15 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z15 } from "npm:zod@^3.25.76";
+var update_tour_default = defineTool15({
+  name: "update_tour",
+  title: "Update tour",
+  description: "Update fields on an existing tour by id. Only the fields you provide are changed. Useful for editing dates, pricing, status, notes and operations notes while building a tour.",
+  inputSchema: {
+    tour_id: z15.string().describe("The tour id (uuid) to update."),
+    name: z15.string().optional(),
+    start_date: z15.string().optional().describe("YYYY-MM-DD."),
+    end_date: z15.string().optional().describe("YYYY-MM-DD."),
+    days: z15.number().int().optional(),
+    nights: z15.number().int().optional(),
+    location: z15.string().optional(),
+    tour_host: z15.string().optional(),
+    capacity: z15.number().int().optional(),
+    minimum_passengers_required: z15.number().int().optional(),
+    status: z15.string().optional().describe("One of: pending, available, closed, sold_out, past, cancelled."),
+    tour_type: z15.string().optional().describe("domestic or international."),
+    notes: z15.string().optional(),
+    inclusions: z15.string().optional(),
+    exclusions: z15.string().optional(),
+    price_single: z15.number().optional(),
+    price_double: z15.number().optional(),
+    price_twin: z15.number().optional(),
+    deposit_required: z15.number().optional(),
+    ops_notes: z15.string().optional(),
+    ops_accomm_notes: z15.string().optional(),
+    ops_races_notes: z15.string().optional(),
+    ops_transport_notes: z15.string().optional(),
+    ops_dinner_notes: z15.string().optional(),
+    ops_activities_notes: z15.string().optional(),
+    ops_other_notes: z15.string().optional(),
+    tour_hosts_notes: z15.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ tour_id, ...updates }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const clean = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== void 0)
+    );
+    if (Object.keys(clean).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("tours").update(clean).eq("id", tour_id).select("id, name, start_date, end_date, status").maybeSingle();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data)
+      return { content: [{ type: "text", text: "Tour not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated tour ${data.name} (${data.id})` }],
+      structuredContent: { tour: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-itinerary.ts
+import { defineTool as defineTool16 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z16 } from "npm:zod@^3.25.76";
+var create_itinerary_default = defineTool16({
+  name: "create_itinerary",
+  title: "Create tour itinerary",
+  description: "Create the itinerary for a tour and auto-generate one day per date between the tour's start and end dates. Fails if an itinerary already exists for the tour.",
+  inputSchema: {
+    tour_id: z16.string().describe("The tour id (uuid) to create the itinerary for."),
+    title: z16.string().optional().describe("Optional itinerary title.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ tour_id, title }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    const { data: existing } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tour_id).eq("is_current", true).maybeSingle();
+    if (existing)
+      return { content: [{ type: "text", text: "An itinerary already exists for this tour." }], isError: true };
+    const { data: tour, error: tourError } = await supabase.from("tours").select("start_date, end_date").eq("id", tour_id).maybeSingle();
+    if (tourError)
+      return { content: [{ type: "text", text: tourError.message }], isError: true };
+    if (!tour)
+      return { content: [{ type: "text", text: "Tour not found" }], isError: true };
+    const { data: itinerary, error: itError } = await supabase.from("tour_itineraries").insert({ tour_id, title: title ?? "Tour Itinerary", created_by: ctx.getUserId() }).select().single();
+    if (itError)
+      return { content: [{ type: "text", text: itError.message }], isError: true };
+    const days = [];
+    const [y, m, d] = String(tour.start_date).split("-").map(Number);
+    const current = new Date(Date.UTC(y, m - 1, d));
+    const endStr = String(tour.end_date);
+    while (true) {
+      const dateStr = current.toISOString().split("T")[0];
+      days.push({ itinerary_id: itinerary.id, day_number: days.length + 1, activity_date: dateStr });
+      if (dateStr >= endStr) break;
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+    const { error: daysError } = await supabase.from("tour_itinerary_days").insert(days);
+    if (daysError)
+      return { content: [{ type: "text", text: daysError.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Created itinerary with ${days.length} day(s).` }],
+      structuredContent: { itinerary_id: itinerary.id, day_count: days.length }
+    };
+  }
+});
+
+// src/lib/mcp/tools/add-itinerary-day.ts
+import { defineTool as defineTool17 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z17 } from "npm:zod@^3.25.76";
+var add_itinerary_day_default = defineTool17({
+  name: "add_itinerary_day",
+  title: "Add itinerary day",
+  description: "Add a single day to an existing itinerary. Provide the itinerary_id and the activity_date (YYYY-MM-DD). The day number is assigned automatically as the next in sequence.",
+  inputSchema: {
+    itinerary_id: z17.string().describe("The itinerary id (uuid)."),
+    activity_date: z17.string().describe("The date for the new day, YYYY-MM-DD.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ itinerary_id, activity_date }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    const { data: last } = await supabase.from("tour_itinerary_days").select("day_number").eq("itinerary_id", itinerary_id).order("day_number", { ascending: false }).limit(1).maybeSingle();
+    const { data, error } = await supabase.from("tour_itinerary_days").insert({
+      itinerary_id,
+      activity_date,
+      day_number: (last?.day_number ?? 0) + 1
+    }).select().single();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Added day ${data.day_number} (${data.id}).` }],
+      structuredContent: { day: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/upsert-itinerary-entry.ts
+import { defineTool as defineTool18 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z18 } from "npm:zod@^3.25.76";
+var upsert_itinerary_entry_default = defineTool18({
+  name: "upsert_itinerary_entry",
+  title: "Add or edit itinerary entry",
+  description: "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
+  inputSchema: {
+    entry_id: z18.string().optional().describe("Existing entry id (uuid) to edit. Omit to create a new entry."),
+    day_id: z18.string().optional().describe("The itinerary day id (uuid). Required when creating."),
+    subject: z18.string().optional().describe("The entry title/subject."),
+    time_slot: z18.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
+    content: z18.string().optional().describe("Entry details/description."),
+    sort_order: z18.number().int().optional().describe("Display order within the day.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    if (entry_id) {
+      const updates = Object.fromEntries(
+        Object.entries({ subject, time_slot, content, sort_order }).filter(([, v]) => v !== void 0)
+      );
+      const { data: data2, error: error2 } = await supabase.from("tour_itinerary_entries").update(updates).eq("id", entry_id).select().maybeSingle();
+      if (error2)
+        return { content: [{ type: "text", text: error2.message }], isError: true };
+      if (!data2)
+        return { content: [{ type: "text", text: "Entry not found or not permitted" }], isError: true };
+      return {
+        content: [{ type: "text", text: `Updated entry ${data2.id}.` }],
+        structuredContent: { entry: data2 }
+      };
+    }
+    if (!day_id || !subject)
+      return { content: [{ type: "text", text: "day_id and subject are required to create an entry." }], isError: true };
+    const { data, error } = await supabase.from("tour_itinerary_entries").insert({ day_id, subject, time_slot: time_slot ?? null, content: content ?? null, sort_order: sort_order ?? 0 }).select().single();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Added entry ${data.id}.` }],
+      structuredContent: { entry: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-itinerary-entry.ts
+import { defineTool as defineTool19 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z19 } from "npm:zod@^3.25.76";
+var delete_itinerary_entry_default = defineTool19({
+  name: "delete_itinerary_entry",
+  title: "Delete itinerary entry",
+  description: "Permanently delete a single itinerary entry by its id.",
+  inputSchema: {
+    entry_id: z19.string().describe("The itinerary entry id (uuid) to delete.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ entry_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { error } = await supabaseForUser(ctx).from("tour_itinerary_entries").delete().eq("id", entry_id);
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Deleted entry ${entry_id}.` }] };
+  }
+});
+
+// src/lib/mcp/tools/delete-itinerary-day.ts
+import { defineTool as defineTool20 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z20 } from "npm:zod@^3.25.76";
+var delete_itinerary_day_default = defineTool20({
+  name: "delete_itinerary_day",
+  title: "Delete itinerary day",
+  description: "Permanently delete an itinerary day and all of its entries by the day id.",
+  inputSchema: {
+    day_id: z20.string().describe("The itinerary day id (uuid) to delete.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ day_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    await supabase.from("tour_itinerary_entries").delete().eq("day_id", day_id);
+    const { error } = await supabase.from("tour_itinerary_days").delete().eq("id", day_id);
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Deleted day ${day_id}.` }] };
+  }
+});
+
+// src/lib/mcp/tools/add-additional-info-section.ts
+import { defineTool as defineTool21 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z21 } from "npm:zod@^3.25.76";
+var add_additional_info_section_default = defineTool21({
+  name: "add_additional_info_section",
+  title: "Add additional info section",
+  description: "Add an Additional Information section to a tour. Provide the tour_id, a name, and the content (HTML or plain text). icon_name defaults to 'Info'.",
+  inputSchema: {
+    tour_id: z21.string().describe("The tour id (uuid)."),
+    name: z21.string().describe("Section title."),
+    content: z21.string().optional().describe("Section body content."),
+    icon_name: z21.string().optional().describe("Lucide icon name, defaults to 'Info'."),
+    sort_order: z21.number().int().optional().describe("Display order."),
+    is_visible: z21.boolean().optional().describe("Whether the section is shown, default true."),
+    include_in_email_rules: z21.array(z21.string()).optional().describe(
+      "Automated email rule ids this section should be injected into (as an info block). Use `list_email_rules` to find ids."
+    )
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible, include_in_email_rules }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    let order = sort_order;
+    if (order === void 0) {
+      const { count } = await supabase.from("tour_additional_info_sections").select("id", { count: "exact", head: true }).eq("tour_id", tour_id);
+      order = count ?? 0;
+    }
+    const { data, error } = await supabase.from("tour_additional_info_sections").insert({
+      tour_id,
+      name,
+      content: content ?? null,
+      icon_name: icon_name ?? "Info",
+      sort_order: order,
+      is_visible: is_visible ?? true,
+      include_in_email_rules: include_in_email_rules ?? [],
+      created_by: ctx.getUserId()
+    }).select("id, name").single();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Added section "${data.name}" (${data.id}).` }],
+      structuredContent: { section: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-additional-info-section.ts
+import { defineTool as defineTool22 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z22 } from "npm:zod@^3.25.76";
+var update_additional_info_section_default = defineTool22({
+  name: "update_additional_info_section",
+  title: "Update additional info section",
+  description: "Edit an existing Additional Information section by its id. Only the fields you provide are changed.",
+  inputSchema: {
+    section_id: z22.string().describe("The section id (uuid) to update."),
+    name: z22.string().optional(),
+    content: z22.string().optional(),
+    icon_name: z22.string().optional(),
+    sort_order: z22.number().int().optional(),
+    is_visible: z22.boolean().optional(),
+    include_in_email_rules: z22.array(z22.string()).optional().describe(
+      "Automated email rule ids this section should be injected into (as an info block). Replaces the existing list. Use `list_email_rules` to find ids."
+    )
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ section_id, ...updates }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const clean = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== void 0)
+    );
+    if (Object.keys(clean).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("tour_additional_info_sections").update(clean).eq("id", section_id).select("id, name").maybeSingle();
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data)
+      return { content: [{ type: "text", text: "Section not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated section "${data.name}" (${data.id}).` }],
+      structuredContent: { section: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-additional-info-section.ts
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z23 } from "npm:zod@^3.25.76";
+var delete_additional_info_section_default = defineTool23({
+  name: "delete_additional_info_section",
+  title: "Delete additional info section",
+  description: "Permanently delete an Additional Information section by its id.",
+  inputSchema: {
+    section_id: z23.string().describe("The section id (uuid) to delete.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ section_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const { error } = await supabaseForUser(ctx).from("tour_additional_info_sections").delete().eq("id", section_id);
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Deleted section ${section_id}.` }] };
+  }
+});
+
+// src/lib/mcp/tools/list-booking-invoices.ts
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z24 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_financial.ts
 function toolError(code, detail) {
@@ -1212,12 +1318,12 @@ async function fetchInvoiceByNumber(auth2, invoiceNumber, opts) {
 }
 
 // src/lib/mcp/tools/list-booking-invoices.ts
-var list_booking_invoices_default = defineTool23({
+var list_booking_invoices_default = defineTool24({
   name: "list_booking_invoices",
   title: "List a booking's Xero invoices",
   description: "List all Xero invoices linked to an ART booking, with totals, payments received, outstanding balance, invoice statuses and the ART booking payment status. Uses the canonical mapping for linkage and live Xero data for current amounts (falls back to cached mapping data with a stale warning if Xero is unavailable). Restricted to admin/manager.",
   inputSchema: {
-    booking_id: z23.string().uuid().describe("The ART booking id (uuid).")
+    booking_id: z24.string().uuid().describe("The ART booking id (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id }, ctx) => {
@@ -1302,15 +1408,15 @@ var list_booking_invoices_default = defineTool23({
 });
 
 // src/lib/mcp/tools/get-xero-invoice.ts
-import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z24 } from "npm:zod@^3.25.76";
-var get_xero_invoice_default = defineTool24({
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z25 } from "npm:zod@^3.25.76";
+var get_xero_invoice_default = defineTool25({
   name: "get_xero_invoice",
   title: "Get a Xero invoice",
   description: "Fetch full LIVE detail for a single Xero invoice by invoice_id (Xero InvoiceID/GUID) or invoice_number: summary, line items, payments, contact and reference, plus the linked ART booking and its payment status. Restricted to admin/manager.",
   inputSchema: {
-    invoice_id: z24.string().optional().describe("Xero InvoiceID (GUID)."),
-    invoice_number: z24.string().optional().describe("Xero invoice number, e.g. INV-1234.")
+    invoice_id: z25.string().optional().describe("Xero InvoiceID (GUID)."),
+    invoice_number: z25.string().optional().describe("Xero invoice number, e.g. INV-1234.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ invoice_id, invoice_number }, ctx) => {
@@ -1372,14 +1478,14 @@ var get_xero_invoice_default = defineTool24({
 });
 
 // src/lib/mcp/tools/get-booking-payment-summary.ts
-import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z25 } from "npm:zod@^3.25.76";
-var get_booking_payment_summary_default = defineTool25({
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z26 } from "npm:zod@^3.25.76";
+var get_booking_payment_summary_default = defineTool26({
   name: "get_booking_payment_summary",
   title: "Get a booking's payment summary",
   description: "Summarise a booking's financial position from its linked Xero invoices: total invoiced, total paid, total outstanding, current ART status and the expected status inferred from Xero payments (with a discrepancy flag). booking_contract_total is returned as null unless an authoritative stored total exists; a mismatch is never asserted without one. Restricted to admin/manager.",
   inputSchema: {
-    booking_id: z25.string().uuid().describe("The ART booking id (uuid).")
+    booking_id: z26.string().uuid().describe("The ART booking id (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id }, ctx) => {
@@ -1475,17 +1581,17 @@ var get_booking_payment_summary_default = defineTool25({
 });
 
 // src/lib/mcp/tools/list-outstanding-invoices.ts
-import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z26 } from "npm:zod@^3.25.76";
-var list_outstanding_invoices_default = defineTool26({
+import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z27 } from "npm:zod@^3.25.76";
+var list_outstanding_invoices_default = defineTool27({
   name: "list_outstanding_invoices",
   title: "List outstanding invoices",
   description: "List bookings with outstanding Xero balances (amount due > 0), optionally scoped to a tour. Returns booking, primary client, tour, invoice number, due date, total, amount paid, amount due and days overdue. Candidate invoices come from the canonical mapping cache; each is refreshed against live Xero for the current due date and amounts. Restricted to admin/manager.",
   inputSchema: {
-    tour_id: z26.string().uuid().optional().describe("Optional tour id to scope results."),
-    overdue_only: z26.boolean().optional().describe("Only include invoices past their due date."),
-    due_before: z26.string().optional().describe("Only include invoices due before this date (YYYY-MM-DD)."),
-    limit: z26.number().int().optional().describe("Max invoices to inspect (default 200, max 500).")
+    tour_id: z27.string().uuid().optional().describe("Optional tour id to scope results."),
+    overdue_only: z27.boolean().optional().describe("Only include invoices past their due date."),
+    due_before: z27.string().optional().describe("Only include invoices due before this date (YYYY-MM-DD)."),
+    limit: z27.number().int().optional().describe("Max invoices to inspect (default 200, max 500).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, overdue_only, due_before, limit }, ctx) => {
@@ -1598,8 +1704,8 @@ var list_outstanding_invoices_default = defineTool26({
 });
 
 // src/lib/mcp/tools/get-payment-exception-report.ts
-import { defineTool as defineTool27 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z27 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z28 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_paymentReport.ts
 var PAYMENT_RULES_VERSION = "2026-07-10";
@@ -1907,20 +2013,20 @@ function detectSharedInvoiceLinks(rows) {
 }
 
 // src/lib/mcp/tools/get-payment-exception-report.ts
-var get_payment_exception_report_default = defineTool27({
+var get_payment_exception_report_default = defineTool28({
   name: "get_payment_exception_report",
   title: "Get payment exception report",
   description: "Compute the ART payment-exception report for a tour using the canonical classification rules (deposit/instalment/final-balance). Returns each exception booking with its primary and all applicable exception types, expected due date, expected amount with an explicit source label, and Xero monetary values (received/outstanding) labelled by source. This RE-COMPUTES the rules; it does not fetch a previously generated report artifact. Does NOT change any data. Restricted to admin/manager.",
   inputSchema: {
-    tour_id: z27.string().uuid().describe("Required tour id (uuid)."),
-    report_type: z27.enum([
+    tour_id: z28.string().uuid().describe("Required tour id (uuid)."),
+    report_type: z28.enum([
       "missing_deposits",
       "missing_instalments",
       "overdue_final_balances",
       "all_payment_exceptions"
     ]).describe("Which exception category to include."),
-    as_of_date: z27.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today."),
-    limit: z27.number().int().optional().describe("Max records (default 100, max 500).")
+    as_of_date: z28.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today."),
+    limit: z28.number().int().optional().describe("Max records (default 100, max 500).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, report_type, as_of_date, limit }, ctx) => {
@@ -2035,22 +2141,22 @@ var get_payment_exception_report_default = defineTool27({
 });
 
 // src/lib/mcp/tools/compare-art-payment-report-to-xero.ts
-import { defineTool as defineTool28 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z28 } from "npm:zod@^3.25.76";
-var compare_art_payment_report_to_xero_default = defineTool28({
+import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z29 } from "npm:zod@^3.25.76";
+var compare_art_payment_report_to_xero_default = defineTool29({
   name: "compare_art_payment_report_to_xero",
   title: "Compare ART payment exceptions to Xero",
   description: "For the bookings in a tour's ART payment-exception report, compare the ART position to the live Xero position and surface discrepancies (e.g. ART outstanding but Xero paid, and vice versa) using conservative rules. Scope is TOUR/REPORT SCOPED \u2014 it does NOT perform organisation-wide orphan-invoice detection; XERO_INVOICE_NOT_LINKED_TO_BOOKING is only reported for invoices encountered within this scope. Duplicate links, stale cache and incomplete live verification are flagged and never treated as confirmed financial discrepancies. Does NOT change any data. Restricted to admin/manager.",
   inputSchema: {
-    tour_id: z28.string().uuid().describe("Required tour id (uuid)."),
-    report_type: z28.enum([
+    tour_id: z29.string().uuid().describe("Required tour id (uuid)."),
+    report_type: z29.enum([
       "missing_deposits",
       "missing_instalments",
       "overdue_final_balances",
       "all_payment_exceptions"
     ]).optional().describe("Which exception category to compare (default all_payment_exceptions)."),
-    as_of_date: z28.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today."),
-    limit: z28.number().int().optional().describe("Max bookings to compare (default 100, max 500).")
+    as_of_date: z29.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today."),
+    limit: z29.number().int().optional().describe("Max bookings to compare (default 100, max 500).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, report_type, as_of_date, limit }, ctx) => {
@@ -2186,15 +2292,15 @@ var compare_art_payment_report_to_xero_default = defineTool28({
 });
 
 // src/lib/mcp/tools/explain-booking-payment-position.ts
-import { defineTool as defineTool29 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z29 } from "npm:zod@^3.25.76";
-var explain_booking_payment_position_default = defineTool29({
+import { defineTool as defineTool30 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z30 } from "npm:zod@^3.25.76";
+var explain_booking_payment_position_default = defineTool30({
   name: "explain_booking_payment_position",
   title: "Explain a booking's payment position",
   description: "Explain one booking's payment position: the ART classification (primary + all applicable exceptions with expected amounts and source labels), the live Xero position (active invoices only; voided/deleted excluded, credit notes respected), a conservative status comparison (only 'fully paid' when ALL active linked invoices have no amount due), duplicate-link findings, and informational date differences. Never asserts a discrepancy from stale cache alone or from aggregate-total comparisons. Does NOT change any data. Restricted to admin/manager.",
   inputSchema: {
-    booking_id: z29.string().uuid().describe("The ART booking id (uuid)."),
-    as_of_date: z29.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today.")
+    booking_id: z30.string().uuid().describe("The ART booking id (uuid)."),
+    as_of_date: z30.string().optional().describe("Optional as-of date (YYYY-MM-DD). Defaults to today.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id, as_of_date }, ctx) => {
@@ -2353,48 +2459,14 @@ var explain_booking_payment_position_default = defineTool29({
 });
 
 // src/lib/mcp/tools/get-booking.ts
-import { defineTool as defineTool30 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z30 } from "npm:zod@^3.25.76";
-
-// src/lib/mcp/tools/_audit.ts
-async function getUserRoles(ctx) {
-  try {
-    const { data, error } = await supabaseForUser(ctx).from("user_roles").select("role").eq("user_id", ctx.getUserId());
-    if (error) return [];
-    return (data ?? []).map((r) => r.role);
-  } catch {
-    return [];
-  }
-}
-function hasFinancialRole(roles) {
-  return roles.includes("admin") || roles.includes("manager");
-}
-async function auditReadCall(ctx, f) {
-  try {
-    await supabaseForUser(ctx).from("audit_log").insert({
-      user_id: ctx.getUserId(),
-      operation_type: f.success ? "mcp_read" : "mcp_read_error",
-      table_name: f.tool,
-      record_id: f.recordId && isUuid(f.recordId) ? f.recordId : null,
-      details: {
-        tool: f.tool,
-        success: f.success,
-        error_category: f.errorCategory ?? null,
-        duration_ms: f.durationMs,
-        result_count: f.resultCount ?? null
-      }
-    });
-  } catch (_) {
-  }
-}
-
-// src/lib/mcp/tools/get-booking.ts
-var get_booking_default = defineTool30({
+import { defineTool as defineTool31 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z31 } from "npm:zod@^3.25.76";
+var get_booking_default = defineTool31({
   name: "get_booking",
   title: "Get a booking overview",
   description: "Fetch a minimised, non-sensitive operational overview of one booking by id: status, dates, passenger count, room/bedding type, accommodation dates, linked customer ids and operational flags. Excludes all passport, medical, emergency-contact and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
   inputSchema: {
-    booking_id: z30.string().uuid().describe("The ART booking id (uuid).")
+    booking_id: z31.string().uuid().describe("The ART booking id (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id }, ctx) => {
@@ -2465,14 +2537,14 @@ var get_booking_default = defineTool30({
 });
 
 // src/lib/mcp/tools/get-customer.ts
-import { defineTool as defineTool31 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z31 } from "npm:zod@^3.25.76";
-var get_customer_default = defineTool31({
+import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z32 } from "npm:zod@^3.25.76";
+var get_customer_default = defineTool32({
   name: "get_customer",
   title: "Get a customer overview",
   description: "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location and created date. Excludes all passport, medical, emergency-contact, accessibility and dietary data, and internal external-CRM identifiers (e.g. Keap). Read-only; access is RLS-scoped to the signed-in user.",
   inputSchema: {
-    customer_id: z31.string().uuid().describe("The ART customer/contact id (uuid).")
+    customer_id: z32.string().uuid().describe("The ART customer/contact id (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ customer_id }, ctx) => {
@@ -2516,15 +2588,15 @@ var get_customer_default = defineTool31({
 });
 
 // src/lib/mcp/tools/search-customers.ts
-import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z32 } from "npm:zod@^3.25.76";
-var search_customers_default = defineTool32({
+import { defineTool as defineTool33 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z33 } from "npm:zod@^3.25.76";
+var search_customers_default = defineTool33({
   name: "search_customers",
   title: "Search customers by name or email",
   description: "Find customers/contacts by a free-text query matching first name, last name, preferred name, full name or email (case-insensitive, partial match). Use this FIRST to resolve a person's name (e.g. 'Jason Reed') into a customer_id before calling get_customer or list_customer_bookings. Returns minimised non-sensitive fields (id, name, email, phone, location). Read-only; RLS-scoped to the signed-in user.",
   inputSchema: {
-    query: z32.string().describe("Name or email to search for, e.g. 'Jason Reed' or 'reed@'."),
-    limit: z32.number().int().optional().describe("Maximum results to return (default 20, max 50).")
+    query: z33.string().describe("Name or email to search for, e.g. 'Jason Reed' or 'reed@'."),
+    limit: z33.number().int().optional().describe("Maximum results to return (default 20, max 50).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ query, limit }, ctx) => {
@@ -2590,8 +2662,8 @@ var search_customers_default = defineTool32({
 });
 
 // src/lib/mcp/tools/list-customer-bookings.ts
-import { defineTool as defineTool33 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z33 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool34 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z34 } from "npm:zod@^3.25.76";
 function classify(startDate, endDate, today) {
   if (!startDate && !endDate) return "unknown";
   const start = startDate ?? endDate;
@@ -2600,12 +2672,12 @@ function classify(startDate, endDate, today) {
   if (today > end) return "past";
   return "current";
 }
-var list_customer_bookings_default = defineTool33({
+var list_customer_bookings_default = defineTool34({
   name: "list_customer_bookings",
   title: "List a customer's bookings",
   description: "List every booking a customer is linked to (as lead, secondary or passenger 2/3), with tour name, dates, status, passenger count, room/bedding type and a current/upcoming/past classification. Includes a financial-summary availability flag but no financial figures and no sensitive passenger data. Read-only; RLS-scoped to the signed-in user.",
   inputSchema: {
-    customer_id: z33.string().uuid().describe("The ART customer/contact id (uuid).")
+    customer_id: z34.string().uuid().describe("The ART customer/contact id (uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ customer_id }, ctx) => {
@@ -2667,21 +2739,21 @@ var list_customer_bookings_default = defineTool33({
 });
 
 // src/lib/mcp/tools/list-invoice-mapping-issues.ts
-import { defineTool as defineTool34 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z34 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool35 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z35 } from "npm:zod@^3.25.76";
 function normRef(v) {
   if (!v) return "";
   return v.trim().toUpperCase().replace(/^INV[-\s]*/i, "").replace(/^0+/, "");
 }
 var DEAD_STATUSES = /* @__PURE__ */ new Set(["DELETED", "VOIDED"]);
-var list_invoice_mapping_issues_default = defineTool34({
+var list_invoice_mapping_issues_default = defineTool35({
   name: "list_invoice_mapping_issues",
   title: "List invoice mapping issues",
   description: "Audit bookings whose linked Xero invoice is unhealthy: the mapped invoice is DELETED or VOIDED in live Xero, or the mapped invoice number disagrees with the booking's invoice_reference field. Each mapping is refreshed against live Xero (falling back to the cached mapping with a stale_warning when Xero is unavailable). Optionally scope to a tour. Read-only; changes nothing. Restricted to admin/manager.",
   inputSchema: {
-    tour_id: z34.string().uuid().optional().describe("Optional tour id to scope the audit."),
-    issue_types: z34.array(z34.enum(["deleted_or_voided", "reference_mismatch"])).optional().describe("Which issue categories to include. Defaults to both."),
-    limit: z34.number().int().optional().describe("Max mappings to inspect (default 300, max 500).")
+    tour_id: z35.string().uuid().optional().describe("Optional tour id to scope the audit."),
+    issue_types: z35.array(z35.enum(["deleted_or_voided", "reference_mismatch"])).optional().describe("Which issue categories to include. Defaults to both."),
+    limit: z35.number().int().optional().describe("Max mappings to inspect (default 300, max 500).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, issue_types, limit }, ctx) => {
@@ -2809,6 +2881,7 @@ var mcp_default = defineMcp({
   }),
   tools: [
     list_tours_default,
+    get_next_departing_tour_default,
     get_tour_default,
     list_bookings_default,
     list_tour_activities_default,
