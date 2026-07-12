@@ -43,6 +43,10 @@ export default defineMcp({
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
+    // Allow the app's own signed-in session JWTs (from the ART AI edge
+    // function's locally-orchestrated loop) which don't carry a client_id
+    // claim. Per-user scoping is still enforced via RLS on the user token.
+    requireOAuthClientClaim: false,
   }),
   tools: [
     listToursTool,
