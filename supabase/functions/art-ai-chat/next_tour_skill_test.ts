@@ -30,7 +30,7 @@ Deno.test("deterministic skill passes the SAME as_of date to both tools", () => 
 
 Deno.test("deterministic skill selects the tour via the tool, not list_tours", () => {
   // The skill orchestration must not read list_tours to pick the next tour.
-  const branch = SRC.slice(SRC.indexOf("payment_exceptions_for_next_departing_tour") {"));
+  const branch = SRC.slice(SRC.indexOf('payment_exceptions_for_next_departing_tour") {'));
   const skillBlock = branch.slice(0, branch.indexOf("const dedupTools"));
   assertEquals(skillBlock.includes('invokeTool("list_tours"'), false);
   assert(skillBlock.includes('invokeTool("get_next_departing_tour"'));
