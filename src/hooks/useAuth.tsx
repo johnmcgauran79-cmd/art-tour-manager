@@ -38,8 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const authCheckId = useRef(0);
+  // Track the currently-authenticated user so we can ignore benign auth events
+  // (e.g. TOKEN_REFRESHED fired when the tab regains focus) that would
+  // otherwise flip the app back into its loading state and remount everything.
+  const currentUserIdRef = useRef<string | null>(null);
 
   const clearAuthState = useCallback(() => {
+    currentUserIdRef.current = null;
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -121,6 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setSession(candidateSession);
       setUser(verifiedUser);
+      currentUserIdRef.current = verifiedUser.id;
       await Promise.all([
         fetchUserProfile(verifiedUser.id),
         fetchUserRole(verifiedUser.id)
@@ -144,6 +150,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!session?.user) {
           clearAuthState();
           setLoading(false);
+          return;
+        }
+
+        // Token refreshes (fired when the tab regains focus/visibility) and
+        // repeat events for the already-authenticated user must NOT re-trigger
+        // the loading state or a full re-validation — doing so remounts the
+        // whole app and destroys in-progress screens like the AI conversation.
+        if (
+          event === 'TOKEN_REFRESHED' ||
+          (currentUserIdRef.current && currentUserIdRef.current === session.user.id)
+        ) {
+          // Keep the session token fresh in state, but don't disrupt the UI.
+          setSession(session);
           return;
         }
 
