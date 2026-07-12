@@ -10,6 +10,8 @@ import {
   PinOff,
   Wrench,
   Loader2,
+  X,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import artAiLogo from "@/assets/art-ai-logo.png";
 import { AiMarkdown } from "./AiMarkdown";
 import {
@@ -28,43 +31,30 @@ import {
   streamAiChat,
   type AiMessage,
   type AiMessagePart,
+  type AiConversationContext,
+  type StreamOptions,
 } from "@/hooks/useAiChat";
+import {
+  QUICK_SKILLS,
+  COMING_SOON_SKILLS,
+  SKILL_LAUNCH_PROMPTS,
+  type SkillGroup,
+} from "@/lib/artAiSkills";
+import type { ArtAiLaunchState } from "@/hooks/useLaunchArtAiSkill";
 
-const SUGGESTIONS: { group: string; prompts: string[] }[] = [
-  {
-    group: "Operations",
-    prompts: [
-      "Which upcoming tours are below their minimum passenger count?",
-      "List the activities for our next tour with their transport details.",
-    ],
-  },
-  {
-    group: "Sales & Marketing",
-    prompts: [
-      "How many bookings do we have per tour this season?",
-      "Which tours still have spare capacity?",
-    ],
-  },
-  {
-    group: "Finance",
-    prompts: [
-      "Show me the payment exception report for our next tour.",
-      "Which bookings have outstanding invoices?",
-    ],
-  },
-  {
-    group: "Administration",
-    prompts: [
-      "Summarise the itinerary for our next departing tour.",
-      "Which custom forms are still awaiting responses?",
-    ],
-  },
-];
+const GROUPS: SkillGroup[] = ["Operations", "Finance", "Administration"];
 
 interface LiveState {
   streaming: boolean;
   text: string;
   tools: { tool_name: string; status: string; duration_ms?: number; result_count?: number | null }[];
+}
+
+interface ContextChip {
+  label: string;
+  context: AiConversationContext;
+  skillId: "explain_booking" | "explain_client";
+  entryPoint: string;
 }
 
 const ToolActivity = ({ parts }: { parts: AiMessagePart[] }) => {
@@ -95,6 +85,8 @@ const ToolActivity = ({ parts }: { parts: AiMessagePart[] }) => {
 export const ArtAiWorkspace = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { data: conversations = [] } = useAiConversations();
   const createConvo = useCreateAiConversation();
   const deleteConvo = useDeleteAiConversation();
@@ -104,9 +96,11 @@ export const ArtAiWorkspace = () => {
   const { data: messages = [] } = useAiMessages(activeId);
   const [input, setInput] = useState("");
   const [live, setLive] = useState<LiveState>({ streaming: false, text: "", tools: [] });
+  const [contextChip, setContextChip] = useState<ContextChip | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const launchHandledRef = useRef<string | null>(null);
 
   const activeConvo = conversations.find((c) => c.id === activeId) ?? null;
 
@@ -120,13 +114,13 @@ export const ArtAiWorkspace = () => {
   }, [messages, live]);
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, options?: StreamOptions, convoIdOverride?: string) => {
       const trimmed = text.trim();
       if (!trimmed || live.streaming) return;
 
-      let convoId = activeId;
+      let convoId = convoIdOverride ?? activeId;
       if (!convoId) {
-        const convo = await createConvo.mutateAsync();
+        const convo = await createConvo.mutateAsync(undefined);
         convoId = convo.id;
         setActiveId(convo.id);
       }
@@ -174,10 +168,46 @@ export const ArtAiWorkspace = () => {
             toast({ title: "ART AI error", description: "Something went wrong. Please try again.", variant: "destructive" });
           }
         },
-      });
+      }, options);
     },
     [activeId, live.streaming, createConvo, qc, toast],
   );
+
+  // ---- Auto-launch a deterministic skill arriving from a context button ----
+  useEffect(() => {
+    const launch = (location.state as { artAiLaunch?: ArtAiLaunchState } | null)?.artAiLaunch;
+    if (!launch) return;
+    if (launchHandledRef.current === launch.conversationId) return;
+    launchHandledRef.current = launch.conversationId;
+    // Clear router state so a refresh/back doesn't re-fire the skill.
+    navigate(location.pathname, { replace: true, state: null });
+
+    setActiveId(launch.conversationId);
+    setContextChip({
+      label: launch.context.context_label ?? "Context",
+      context: launch.context,
+      skillId: launch.skillId,
+      entryPoint: launch.entryPoint,
+    });
+    const prompt = SKILL_LAUNCH_PROMPTS[launch.skillId] ?? "Explain this.";
+    void send(
+      prompt,
+      {
+        mode: "deterministic_skill",
+        skillId: launch.skillId,
+        entryPoint: launch.entryPoint,
+        context: launch.context,
+      },
+      launch.conversationId,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  const runSkillCard = (skillId: "explain_booking" | "explain_client", landingPrompt: string) => {
+    // From the landing page there is no record context — launch a curated
+    // generic-chat prompt that guides the user to identify the record.
+    void send(landingPrompt, { mode: "generic_chat", entryPoint: "landing_card" });
+  };
 
   const stop = () => {
     abortRef.current?.abort();
@@ -197,6 +227,7 @@ export const ArtAiWorkspace = () => {
   const newConversation = async () => {
     setActiveId(null);
     setLive({ streaming: false, text: "", tools: [] });
+    setContextChip(null);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
@@ -257,32 +288,59 @@ export const ArtAiWorkspace = () => {
       <section className="flex min-w-0 flex-1 flex-col rounded-lg border border-border bg-card">
         <div ref={scrollRef} className="flex-1 overflow-auto p-4">
           {messages.length === 0 && !live.streaming ? (
-            <div className="mx-auto max-w-2xl py-8 text-center">
-              <img src={artAiLogo} alt="ART AI" width={64} height={64} className="mx-auto mb-4 h-16 w-16 rounded-xl" />
-              <h2 className="font-display text-xl font-bold">Ask ART AI</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your operational assistant. Ask about tours, bookings, activities, hotels and finances.
-              </p>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {SUGGESTIONS.map((s) => (
-                  <div key={s.group} className="text-left">
-                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {s.group}
-                    </p>
-                    <div className="space-y-1.5">
-                      {s.prompts.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => send(p)}
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-left text-xs hover:bg-accent"
-                        >
-                          {p}
-                        </button>
-                      ))}
+            <div className="mx-auto max-w-3xl py-8">
+              <div className="text-center">
+                <img src={artAiLogo} alt="ART AI" width={64} height={64} className="mx-auto mb-4 h-16 w-16 rounded-xl" />
+                <h2 className="font-display text-xl font-bold">Ask ART AI</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Your operational assistant. Pick a quick skill or ask your own question.
+                </p>
+              </div>
+              <div className="mt-6 space-y-5">
+                {GROUPS.map((group) => {
+                  const active = QUICK_SKILLS.filter((s) => s.group === group);
+                  const soon = COMING_SOON_SKILLS.filter((s) => s.group === group);
+                  if (active.length === 0 && soon.length === 0) return null;
+                  return (
+                    <div key={group}>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {group}
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {active.map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() =>
+                              s.kind === "deterministic"
+                                ? runSkillCard(s.skillId!, s.landingPrompt ?? "")
+                                : send(s.prompt ?? "", { entryPoint: "landing_card" })
+                            }
+                            className="rounded-lg border border-border bg-background p-3 text-left transition hover:border-primary/50 hover:bg-accent"
+                          >
+                            <p className="text-sm font-medium">{s.label}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
+                          </button>
+                        ))}
+                        {soon.map((s) => (
+                          <div
+                            key={s.id}
+                            aria-disabled="true"
+                            className="pointer-events-none select-none rounded-lg border border-dashed border-border bg-muted/40 p-3 text-left opacity-60"
+                          >
+                            <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                              <Lock className="h-3 w-3" /> {s.label}
+                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{s.description}</p>
+                            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Coming soon
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -349,6 +407,23 @@ export const ArtAiWorkspace = () => {
 
         {/* Composer */}
         <div className="border-t border-border p-3">
+          {contextChip && (
+            <div className="mx-auto mb-2 flex max-w-3xl items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                <img src={artAiLogo} alt="" width={14} height={14} className="h-3.5 w-3.5 rounded" />
+                {contextChip.label}
+                <button
+                  type="button"
+                  onClick={() => setContextChip(null)}
+                  className="ml-0.5 rounded-full hover:bg-primary/20"
+                  title="Remove context"
+                  aria-label="Remove context"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            </div>
+          )}
           <div className="mx-auto flex max-w-3xl items-end gap-2">
             <Textarea
               ref={textareaRef}

@@ -17,6 +17,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
+import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { useContactCommunications } from "@/hooks/useCommunications";
 import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
@@ -173,6 +174,17 @@ export default function ContactDetail() {
             Back
           </Button>
           
+          <ExplainWithArtAiButton
+            skillId="explain_client"
+            entryPoint="contact_detail_mobile"
+            size="sm"
+            context={{
+              source_page: "contact_detail",
+              customer_id: contact.id,
+              context_label: `Client: ${fullName}`,
+            }}
+          />
+
           {!isViewOnly && (
             <>
               <SendProfileUpdateButton
@@ -262,6 +274,16 @@ export default function ContactDetail() {
               Back
             </Button>
             
+            <ExplainWithArtAiButton
+              skillId="explain_client"
+              entryPoint="contact_detail_desktop"
+              context={{
+                source_page: "contact_detail",
+                customer_id: contact.id,
+                context_label: `Client: ${fullName}`,
+              }}
+            />
+
             {!isViewOnly && (
               <>
                 <SendProfileUpdateButton

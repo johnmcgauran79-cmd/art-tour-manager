@@ -28,6 +28,9 @@ const ALLOWLIST = new Set<string>([
   "list_tours",
   "get_tour",
   "list_bookings",
+  "get_booking",
+  "get_customer",
+  "list_customer_bookings",
   "list_tour_activities",
   "get_activity",
   "list_tour_hotels",
@@ -48,6 +51,36 @@ const ALLOWLIST = new Set<string>([
 // Approximate USD pricing per 1M tokens for gpt-4.1-mini (used for estimation only).
 const PRICE_INPUT_PER_M = 0.40;
 const PRICE_OUTPUT_PER_M = 1.60;
+
+// ---- Deterministic skills ----
+const SKILL_IDS = new Set<string>(["explain_booking", "explain_client"]);
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_RE.test(v);
+}
+
+const SKILL_PROMPTS: Record<string, string> = {
+  explain_booking: `You are ART AI running the "Explain Booking" skill.
+You are given an authoritative STRUCTURED CONTEXT object assembled from ART's read-only tools. Explain the booking clearly for ART operational staff.
+Rules:
+- Use ONLY the structured context. Never invent ids, names, amounts, dates or statuses. If a field is absent, say it is not available.
+- If a financial section is present, report it and surface any data_source / stale_warning. If financial data is marked unavailable_to_role, state that financial information is not available to the caller's role — do not guess figures.
+- Distinguish ART data from Xero data.
+- Do not expose UUIDs in prose.
+- Use Australian date format (dd/mm/yyyy).
+- Structure the answer with clear markdown headings: Overview, Accommodation, Forms & Documents, Itinerary (brief), Financial (if available), Suggested follow-up.
+- Be concise and operational.`,
+  explain_client: `You are ART AI running the "Explain Client" skill.
+You are given an authoritative STRUCTURED CONTEXT object assembled from ART's read-only tools. Explain the client/contact for ART operational staff.
+Rules:
+- Use ONLY the structured context. Never invent data. If a field is absent, say it is not available.
+- Do NOT calculate or claim lifetime value, preferences, CRM history, Outlook history, marketing engagement, or any inferred personality/propensity. State "CRM marketing history is not yet integrated" where relevant.
+- If financial data is present, report it (with data_source / stale_warning). If it is unavailable_to_role, state financial information is not available to the caller's role.
+- Do not expose UUIDs in prose. Use Australian date format (dd/mm/yyyy).
+- Structure the answer with markdown headings: Customer Overview, Upcoming Bookings, Past Tour Relationship, Booking/Travel Patterns (only if evidenced), Current Operational Issues, Financial Issues (if permitted), Suggested Manual Follow-up, Data Sources, Limitations.
+- Be concise and operational.`,
+};
 
 const SYSTEM_PROMPT = `You are ART AI, the operational assistant embedded in the Australian Racing Tours (ART) Admin System.
 
@@ -161,7 +194,14 @@ Deno.serve(async (req) => {
   }
 
   // ---- Parse body ----
-  let body: { conversationId?: string; message?: string; context?: Record<string, unknown> };
+  let body: {
+    conversationId?: string;
+    message?: string;
+    context?: Record<string, unknown>;
+    mode?: string;
+    skill_id?: string;
+    entry_point?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -178,6 +218,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  const mode = body.mode === "deterministic_skill" ? "deterministic_skill" : "generic_chat";
+  const entryPoint = typeof body.entry_point === "string" ? body.entry_point.slice(0, 60) : null;
 
   // Verify conversation ownership (user client → RLS scoped)
   const { data: convo, error: convoError } = await userClient
@@ -192,8 +234,345 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ---- Discover MCP tools & intersect with allowlist (fail closed) ----
   const mcpBase = `${SUPABASE_URL}/functions/v1/mcp`;
+
+  // Helper: invoke one MCP tool via the user token (RLS enforced). Never
+  // exposes raw results to the browser — used only to build the model context.
+  async function invokeTool(name: string, args: Record<string, unknown>) {
+    try {
+      const res = await fetch(
+        `${mcpBase}/.mcp/invoke-tool/${encodeURIComponent(name)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: authHeader!,
+            apikey: ANON_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(args),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.isError) {
+        return {
+          ok: false,
+          error: sanitizeError(json?.content?.[0]?.text ?? json?.error ?? "tool_error"),
+        };
+      }
+      return { ok: true, data: json.structuredContent ?? {} };
+    } catch (e) {
+      return { ok: false, error: sanitizeError((e as Error).message) };
+    }
+  }
+
+  // ============================================================
+  // Deterministic skill mode
+  // ============================================================
+  if (mode === "deterministic_skill") {
+    const skillId = body.skill_id ?? "";
+    if (!SKILL_IDS.has(skillId)) {
+      return new Response(JSON.stringify({ error: "invalid_skill_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Validate structured context. IDs are untrusted; context_label is display-only.
+    const rawCtx = (body.context ?? {}) as Record<string, unknown>;
+    const ctxIds: Record<string, string> = {};
+    for (const k of ["booking_id", "customer_id", "tour_id"]) {
+      const v = rawCtx[k];
+      if (v != null && v !== "") {
+        if (!isUuid(v)) {
+          return new Response(JSON.stringify({ error: `invalid_context_${k}` }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        ctxIds[k] = v as string;
+      }
+    }
+    const sourcePage =
+      typeof rawCtx.source_page === "string" ? (rawCtx.source_page as string).slice(0, 120) : null;
+
+    if (skillId === "explain_booking" && !ctxIds.booking_id) {
+      return new Response(JSON.stringify({ error: "missing_booking_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (skillId === "explain_client" && !ctxIds.customer_id) {
+      return new Response(JSON.stringify({ error: "missing_customer_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Caller roles (user token → RLS) for the financial branch.
+    const { data: roleRows } = await userClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+    const isFinancial = roles.includes("admin") || roles.includes("manager");
+
+    // Persist the user message (curated prompt).
+    await userClient.from("ai_messages").insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "user",
+      content: userMessage,
+      parts: [{ type: "text", text: userMessage }],
+    });
+    if (!convo.title || convo.title === "New conversation") {
+      await userClient
+        .from("ai_conversations")
+        .update({ title: userMessage.slice(0, 60) })
+        .eq("id", conversationId);
+    }
+
+    const toolsUsed: string[] = [];
+    const startedAt = Date.now();
+
+    // ---- Orchestrate: gather structured context deterministically ----
+    let structured: Record<string, unknown> = {};
+    let accessError: string | null = null;
+
+    if (skillId === "explain_booking") {
+      const bk = await invokeTool("get_booking", { booking_id: ctxIds.booking_id });
+      toolsUsed.push("get_booking");
+      if (!bk.ok) {
+        accessError = "You do not have access to this booking, or it does not exist.";
+      } else {
+        const booking = (bk.data as any).booking ?? {};
+        const tourId = booking.tour_id ?? ctxIds.tour_id ?? null;
+        structured.booking = booking;
+        if (tourId) {
+          const [tour, itin, hotels, forms, addl] = await Promise.all([
+            invokeTool("get_tour", { tour_id: tourId }),
+            invokeTool("get_tour_itinerary", { tour_id: tourId }),
+            invokeTool("list_tour_hotels", { tour_id: tourId }),
+            invokeTool("list_tour_custom_forms", { tour_id: tourId }),
+            invokeTool("list_tour_additional_info", { tour_id: tourId }),
+          ]);
+          toolsUsed.push(
+            "get_tour",
+            "get_tour_itinerary",
+            "list_tour_hotels",
+            "list_tour_custom_forms",
+            "list_tour_additional_info",
+          );
+          if (tour.ok) structured.tour = (tour.data as any).tour ?? tour.data;
+          if (itin.ok) structured.itinerary = itin.data;
+          if (hotels.ok) structured.hotels = hotels.data;
+          if (forms.ok) structured.custom_forms = forms.data;
+          if (addl.ok) structured.additional_info = addl.data;
+        }
+        if (isFinancial) {
+          const [inv, pay] = await Promise.all([
+            invokeTool("list_booking_invoices", { booking_id: ctxIds.booking_id }),
+            invokeTool("get_booking_payment_summary", { booking_id: ctxIds.booking_id }),
+          ]);
+          toolsUsed.push("list_booking_invoices", "get_booking_payment_summary");
+          structured.financial = {
+            invoices: inv.ok ? inv.data : { unavailable: inv.error },
+            payment_summary: pay.ok ? pay.data : { unavailable: pay.error },
+          };
+        } else {
+          structured.financial = { unavailable_to_role: true };
+        }
+      }
+    } else {
+      // explain_client
+      const cust = await invokeTool("get_customer", { customer_id: ctxIds.customer_id });
+      toolsUsed.push("get_customer");
+      if (!cust.ok) {
+        accessError = "You do not have access to this contact, or it does not exist.";
+      } else {
+        structured.customer = (cust.data as any).customer ?? cust.data;
+        const list = await invokeTool("list_customer_bookings", {
+          customer_id: ctxIds.customer_id,
+        });
+        toolsUsed.push("list_customer_bookings");
+        const bookings = list.ok ? ((list.data as any).bookings ?? []) : [];
+        structured.bookings = bookings;
+        if (isFinancial) {
+          const relevant = bookings
+            .filter((b: any) => b.timeline === "upcoming" || b.timeline === "current")
+            .slice(0, 5);
+          const fin: any[] = [];
+          for (const b of relevant) {
+            const pay = await invokeTool("get_booking_payment_summary", {
+              booking_id: b.booking_id,
+            });
+            fin.push({
+              booking_id: b.booking_id,
+              payment_summary: pay.ok ? pay.data : { unavailable: pay.error },
+            });
+          }
+          if (relevant.length > 0) toolsUsed.push("get_booking_payment_summary");
+          structured.financial = { per_booking: fin };
+        } else {
+          structured.financial = { unavailable_to_role: true };
+        }
+        structured.communications_note =
+          "CRM marketing history is not yet integrated; only ART operational records are available.";
+      }
+    }
+
+    const dedupTools = Array.from(new Set(toolsUsed));
+    const skillPrompt = SKILL_PROMPTS[skillId];
+
+    // Build the input for a single, tool-less OpenAI synthesis call.
+    const inputItems: any[] = [];
+    inputItems.push({ role: "user", content: userMessage });
+    if (accessError) {
+      inputItems.push({
+        role: "user",
+        content: `STRUCTURED CONTEXT (authoritative): { "access_error": ${JSON.stringify(
+          accessError,
+        )} }. Explain that the requested record is not accessible and no data can be shown.`,
+      });
+    } else {
+      const ctxJson = JSON.stringify(structured).slice(0, 24000);
+      inputItems.push({
+        role: "user",
+        content: `STRUCTURED CONTEXT (authoritative, do not infer beyond this):\n${ctxJson}`,
+      });
+    }
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let finalText = "";
+        let usageIn = 0;
+        let usageOut = 0;
+        const timeout = setTimeout(() => controller.error(new Error("timeout")), OVERALL_TIMEOUT_MS);
+        try {
+          const oaRes = await fetch("https://api.openai.com/v1/responses", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${OPENAI_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: MODEL,
+              instructions: skillPrompt,
+              input: inputItems,
+              tool_choice: "none",
+              store: false,
+              max_output_tokens: MAX_OUTPUT_TOKENS,
+              stream: true,
+            }),
+          });
+          if (!oaRes.ok || !oaRes.body) {
+            const errText = await oaRes.text().catch(() => "");
+            console.error("[art-ai-chat] skill openai error", oaRes.status, sanitizeError(errText));
+            sse(controller, "error", { error: "AI_ERROR", status: oaRes.status });
+          } else {
+            const reader = oaRes.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let completed: any = null;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const events = buffer.split("\n\n");
+              buffer = events.pop() ?? "";
+              for (const evt of events) {
+                const line = evt.split("\n").find((l) => l.startsWith("data:"));
+                if (!line) continue;
+                const payload = line.slice(5).trim();
+                if (!payload || payload === "[DONE]") continue;
+                let json: any;
+                try {
+                  json = JSON.parse(payload);
+                } catch {
+                  continue;
+                }
+                if (json.type === "response.output_text.delta" && typeof json.delta === "string") {
+                  finalText += json.delta;
+                  sse(controller, "delta", { text: json.delta });
+                } else if (json.type === "response.completed") {
+                  completed = json.response;
+                }
+              }
+            }
+            if (completed?.usage) {
+              usageIn += completed.usage.input_tokens ?? 0;
+              usageOut += completed.usage.output_tokens ?? 0;
+            }
+          }
+
+          finalText = redact(finalText).trim();
+          const parts: any[] = [{ type: "text", text: finalText }];
+          parts.push({
+            type: "tool_activity_summary",
+            tool_name: `skill:${skillId}`,
+            status: accessError ? "access_denied" : "ok",
+            result_count: dedupTools.length,
+          });
+
+          const { data: savedMsg } = await userClient
+            .from("ai_messages")
+            .insert({
+              conversation_id: conversationId,
+              user_id: userId,
+              role: "assistant",
+              content: finalText,
+              parts,
+            })
+            .select("id")
+            .maybeSingle();
+
+          const latencyMs = Date.now() - startedAt;
+          const estCost =
+            (usageIn / 1_000_000) * PRICE_INPUT_PER_M + (usageOut / 1_000_000) * PRICE_OUTPUT_PER_M;
+
+          await userClient.from("ai_usage").insert({
+            conversation_id: conversationId,
+            message_id: savedMsg?.id ?? null,
+            user_id: userId,
+            model: MODEL,
+            input_tokens: usageIn,
+            output_tokens: usageOut,
+            total_tokens: usageIn + usageOut,
+            tool_call_count: dedupTools.length,
+            latency_ms: latencyMs,
+            estimated_cost_usd: Number(estCost.toFixed(6)),
+            skill_id: skillId,
+            entry_point: entryPoint,
+            source_page: sourcePage,
+            success: !accessError,
+            tools_used: dedupTools,
+          });
+
+          sse(controller, "done", {
+            message_id: savedMsg?.id ?? null,
+            tool_calls: dedupTools.length,
+            skill_id: skillId,
+          });
+        } catch (e) {
+          const msg = (e as Error).message;
+          console.error("[art-ai-chat] skill error", sanitizeError(msg));
+          sse(controller, "error", { error: msg === "timeout" ? "AI_TIMEOUT" : "AI_ERROR" });
+        } finally {
+          clearTimeout(timeout);
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  }
+
+  // ---- Discover MCP tools & intersect with allowlist (fail closed) ----
   let openaiTools: unknown[] = [];
   try {
     const listRes = await fetch(`${mcpBase}/.mcp/list-tools`, {
@@ -504,6 +883,8 @@ Deno.serve(async (req) => {
           tool_call_count: toolCallCount,
           latency_ms: latencyMs,
           estimated_cost_usd: Number(estCost.toFixed(6)),
+          entry_point: entryPoint,
+          success: true,
         });
 
         sse(controller, "done", {

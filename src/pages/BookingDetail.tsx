@@ -43,6 +43,7 @@ import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { ShareButton } from "@/components/ShareButton";
+import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -248,6 +249,19 @@ export default function BookingDetail() {
             Back
           </Button>
           
+          <ExplainWithArtAiButton
+            skillId="explain_booking"
+            entryPoint="booking_detail_mobile"
+            size="sm"
+            context={{
+              source_page: "booking_detail",
+              booking_id: booking.id,
+              tour_id: booking.tour_id || undefined,
+              customer_id: booking.customers?.id || undefined,
+              context_label: `Booking: ${leadPassengerName}${tour ? ` — ${tour.name}` : ""}`,
+            }}
+          />
+
           {/* WhatsApp button hidden until properly implemented */}
           
           {!isAgent && booking.customers && (
@@ -370,6 +384,18 @@ export default function BookingDetail() {
             <ShareButton
               title={`${leadPassengerName}${tour ? ` — ${tour.name}` : ""}`}
               context="Booking"
+            />
+
+            <ExplainWithArtAiButton
+              skillId="explain_booking"
+              entryPoint="booking_detail_desktop"
+              context={{
+                source_page: "booking_detail",
+                booking_id: booking.id,
+                tour_id: booking.tour_id || undefined,
+                customer_id: booking.customers?.id || undefined,
+                context_label: `Booking: ${leadPassengerName}${tour ? ` — ${tour.name}` : ""}`,
+              }}
             />
 
             {!isAgent && (

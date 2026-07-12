@@ -8,6 +8,17 @@ export interface AiConversation {
   expires_at: string;
   created_at: string;
   updated_at: string;
+  context?: AiConversationContext | null;
+}
+
+/** Display-only, ID-based page context stored on a conversation. Never payloads. */
+export interface AiConversationContext {
+  source_page?: string;
+  booking_id?: string;
+  customer_id?: string;
+  tour_id?: string;
+  selected_filters?: Record<string, unknown>;
+  context_label?: string;
 }
 
 export interface AiMessagePart {
@@ -34,7 +45,7 @@ export const useAiConversations = () =>
     queryFn: async (): Promise<AiConversation[]> => {
       const { data, error } = await supabase
         .from("ai_conversations")
-        .select("id, title, retain_indefinitely, expires_at, created_at, updated_at")
+        .select("id, title, retain_indefinitely, expires_at, created_at, updated_at, context")
         .is("deleted_at", null)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -64,14 +75,25 @@ export const useAiMessages = (conversationId: string | null) =>
 export const useCreateAiConversation = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (): Promise<AiConversation> => {
+    mutationFn: async (context?: AiConversationContext): Promise<AiConversation> => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) throw new Error("Not authenticated");
+      // Persist ONLY id-based, display context — never record payloads.
+      const safeContext = context
+        ? {
+            source_page: context.source_page ?? null,
+            booking_id: context.booking_id ?? null,
+            customer_id: context.customer_id ?? null,
+            tour_id: context.tour_id ?? null,
+            selected_filters: context.selected_filters ?? null,
+            context_label: context.context_label ?? null,
+          }
+        : null;
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: uid })
-        .select("id, title, retain_indefinitely, expires_at, created_at, updated_at")
+        .insert({ user_id: uid, context: safeContext as never })
+        .select("id, title, retain_indefinitely, expires_at, created_at, updated_at, context")
         .single();
       if (error) throw error;
       return data as AiConversation;
@@ -116,6 +138,13 @@ export interface StreamHandlers {
   onError: (evt: { error: string; retry_after_seconds?: number }) => void;
 }
 
+export interface StreamOptions {
+  mode?: "generic_chat" | "deterministic_skill";
+  skillId?: "explain_booking" | "explain_client";
+  entryPoint?: string;
+  context?: AiConversationContext;
+}
+
 /**
  * Stream a turn from the art-ai-chat Edge Function. Returns an AbortController
  * so callers can implement a Stop control.
@@ -124,6 +153,7 @@ export const streamAiChat = (
   conversationId: string,
   message: string,
   handlers: StreamHandlers,
+  options?: StreamOptions,
 ): AbortController => {
   const controller = new AbortController();
   (async () => {
@@ -142,7 +172,14 @@ export const streamAiChat = (
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ conversationId, message }),
+        body: JSON.stringify({
+          conversationId,
+          message,
+          mode: options?.mode ?? "generic_chat",
+          skill_id: options?.skillId,
+          entry_point: options?.entryPoint,
+          context: options?.context,
+        }),
         signal: controller.signal,
       });
 
