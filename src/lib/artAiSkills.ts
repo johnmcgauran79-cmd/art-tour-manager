@@ -6,6 +6,12 @@
 export type QuickSkillKind = "deterministic" | "generic" | "coming_soon";
 export type SkillGroup = "Operations" | "Finance" | "Administration";
 
+/** Deterministic, server-orchestrated skills. */
+export type DeterministicSkillId =
+  | "explain_booking"
+  | "explain_client"
+  | "payment_exceptions_for_next_departing_tour";
+
 export interface QuickSkill {
   id: string;
   label: string;
@@ -13,7 +19,9 @@ export interface QuickSkill {
   group: SkillGroup;
   kind: QuickSkillKind;
   /** deterministic skills */
-  skillId?: "explain_booking" | "explain_client";
+  skillId?: DeterministicSkillId;
+  /** deterministic skills that require on-page record context (booking/customer). */
+  requiresContext?: boolean;
   /** generic skills — curated prompt sent to the generic chat loop */
   prompt?: string;
   /** deterministic skills launched from the landing page (no record context) */
@@ -29,6 +37,7 @@ export const QUICK_SKILLS: QuickSkill[] = [
     group: "Operations",
     kind: "deterministic",
     skillId: "explain_booking",
+    requiresContext: true,
     landingPrompt:
       "I want to understand a specific booking. Ask me for the tour and lead passenger, then look it up and summarise it.",
   },
@@ -39,17 +48,19 @@ export const QUICK_SKILLS: QuickSkill[] = [
     group: "Operations",
     kind: "deterministic",
     skillId: "explain_client",
+    requiresContext: true,
     landingPrompt:
       "I want to understand a specific client. Ask me for their name or email, then look them up and summarise their bookings.",
   },
   // ---- Finance ----
   {
     id: "payment_exceptions",
-    label: "Payment Exceptions",
-    description: "Bookings that are behind on their expected payment stage.",
+    label: "Payment exceptions for next tour",
+    description: "Deterministically finds the next departing tour and lists bookings behind on their expected payment stage.",
     group: "Finance",
-    kind: "generic",
-    prompt: "Show me the payment exception report for our next departing tour.",
+    kind: "deterministic",
+    skillId: "payment_exceptions_for_next_departing_tour",
+    requiresContext: false,
   },
   {
     id: "explain_invoice",
@@ -121,4 +132,6 @@ export const COMING_SOON_SKILLS: { id: string; label: string; description: strin
 export const SKILL_LAUNCH_PROMPTS: Record<string, string> = {
   explain_booking: "Explain this booking.",
   explain_client: "Explain this client.",
+  payment_exceptions_for_next_departing_tour:
+    "Show payment exceptions for our next departing tour.",
 };

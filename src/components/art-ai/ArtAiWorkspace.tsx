@@ -40,6 +40,7 @@ import {
   COMING_SOON_SKILLS,
   SKILL_LAUNCH_PROMPTS,
   type SkillGroup,
+  type DeterministicSkillId,
 } from "@/lib/artAiSkills";
 import type { ArtAiLaunchState } from "@/hooks/useLaunchArtAiSkill";
 
@@ -54,7 +55,7 @@ interface LiveState {
 interface ContextChip {
   label: string;
   context: AiConversationContext;
-  skillId: "explain_booking" | "explain_client";
+  skillId: DeterministicSkillId;
   entryPoint: string;
 }
 
@@ -233,6 +234,13 @@ export const ArtAiWorkspace = () => {
     void send(landingPrompt, { mode: "generic_chat", entryPoint: "landing_card" });
   };
 
+  // Context-free deterministic skills run the full server orchestration directly
+  // from the landing card (no record context, no generic chat).
+  const runDeterministicCard = (skillId: DeterministicSkillId) => {
+    const prompt = SKILL_LAUNCH_PROMPTS[skillId] ?? "Run this skill.";
+    void send(prompt, { mode: "deterministic_skill", skillId, entryPoint: "landing_card" });
+  };
+
   const stop = () => {
     abortRef.current?.abort();
     setLive({ streaming: false, text: "", tools: [] });
@@ -337,7 +345,12 @@ export const ArtAiWorkspace = () => {
                             type="button"
                             onClick={() =>
                               s.kind === "deterministic"
-                                ? runSkillCard(s.skillId!, s.landingPrompt ?? "")
+                                ? s.requiresContext === false
+                                  ? runDeterministicCard(s.skillId!)
+                                  : runSkillCard(
+                                      s.skillId as "explain_booking" | "explain_client",
+                                      s.landingPrompt ?? "",
+                                    )
                                 : send(s.prompt ?? "", { entryPoint: "landing_card" })
                             }
                             className="rounded-lg border border-border bg-background p-3 text-left transition hover:border-primary/50 hover:bg-accent"
