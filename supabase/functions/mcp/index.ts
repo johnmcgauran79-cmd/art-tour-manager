@@ -2340,13 +2340,254 @@ var explain_booking_payment_position_default = defineTool29({
   }
 });
 
+// src/lib/mcp/tools/get-booking.ts
+import { defineTool as defineTool30 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z30 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_audit.ts
+async function getUserRoles(ctx) {
+  try {
+    const { data, error } = await supabaseForUser(ctx).from("user_roles").select("role").eq("user_id", ctx.getUserId());
+    if (error) return [];
+    return (data ?? []).map((r) => r.role);
+  } catch {
+    return [];
+  }
+}
+function hasFinancialRole(roles) {
+  return roles.includes("admin") || roles.includes("manager");
+}
+async function auditReadCall(ctx, f) {
+  try {
+    await supabaseForUser(ctx).from("audit_log").insert({
+      user_id: ctx.getUserId(),
+      operation_type: f.success ? "mcp_read" : "mcp_read_error",
+      table_name: f.tool,
+      record_id: f.recordId && isUuid(f.recordId) ? f.recordId : null,
+      details: {
+        tool: f.tool,
+        success: f.success,
+        error_category: f.errorCategory ?? null,
+        duration_ms: f.durationMs,
+        result_count: f.resultCount ?? null
+      }
+    });
+  } catch (_) {
+  }
+}
+
+// src/lib/mcp/tools/get-booking.ts
+var get_booking_default = defineTool30({
+  name: "get_booking",
+  title: "Get a booking overview",
+  description: "Fetch a minimised, non-sensitive operational overview of one booking by id: status, dates, passenger count, room/bedding type, accommodation dates, linked customer ids and operational flags. Excludes all passport, medical, emergency-contact and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+  inputSchema: {
+    booking_id: z30.string().uuid().describe("The ART booking id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id }, ctx) => {
+    const started = Date.now();
+    if (!ctx.isAuthenticated()) return toolError("UNAUTHENTICATED");
+    if (!isUuid(booking_id))
+      return toolError("INVALID_INPUT", "booking_id must be a UUID.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("bookings").select(
+      "id, tour_id, lead_passenger_id, passenger_2_id, passenger_3_id, secondary_contact_id, status, created_at, passenger_count, accommodation_required, check_in_date, check_out_date, total_nights, whatsapp_group_comms, split_invoice, passport_not_required, cancelled_at, tours!bookings_tour_id_fkey(name)"
+    ).eq("id", booking_id).maybeSingle();
+    if (error) {
+      await auditReadCall(ctx, { tool: "get_booking", recordId: booking_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    if (!data) {
+      await auditReadCall(ctx, { tool: "get_booking", recordId: booking_id, success: false, errorCategory: "BOOKING_ACCESS_DENIED", durationMs: Date.now() - started });
+      return toolError("BOOKING_ACCESS_DENIED");
+    }
+    const { data: hotelRows } = await supabase.from("hotel_bookings").select("bedding, room_type").eq("booking_id", booking_id);
+    const beddingTypes = Array.from(
+      new Set((hotelRows ?? []).map((h) => h.bedding).filter(Boolean))
+    );
+    const roomTypes = Array.from(
+      new Set((hotelRows ?? []).map((h) => h.room_type).filter(Boolean))
+    );
+    const status = data.status ?? null;
+    const linkedCustomerIds = [
+      data.lead_passenger_id,
+      data.passenger_2_id,
+      data.passenger_3_id,
+      data.secondary_contact_id
+    ].filter(Boolean);
+    const result = {
+      booking_id: data.id,
+      tour_id: data.tour_id ?? null,
+      tour_name: data.tours?.name ?? null,
+      lead_customer_id: data.lead_passenger_id ?? null,
+      linked_customer_ids: linkedCustomerIds,
+      status,
+      booking_date: data.created_at ?? null,
+      passenger_count: data.passenger_count ?? null,
+      bedding_types: beddingTypes,
+      room_types: roomTypes,
+      accommodation: {
+        required: !!data.accommodation_required,
+        check_in_date: data.check_in_date ?? null,
+        check_out_date: data.check_out_date ?? null,
+        total_nights: data.total_nights ?? null
+      },
+      indicators: {
+        is_host: status === "host",
+        is_complimentary: status === "complimentary",
+        is_cancelled: !!data.cancelled_at
+      },
+      operational_flags: {
+        whatsapp_group_comms: !!data.whatsapp_group_comms,
+        split_invoice: !!data.split_invoice,
+        passport_not_required: !!data.passport_not_required
+      }
+    };
+    await auditReadCall(ctx, { tool: "get_booking", recordId: booking_id, success: true, durationMs: Date.now() - started });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: { booking: result }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-customer.ts
+import { defineTool as defineTool31 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z31 } from "npm:zod@^3.25.76";
+var get_customer_default = defineTool31({
+  name: "get_customer",
+  title: "Get a customer overview",
+  description: "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location, created date and Keap external id. Excludes all passport, medical, emergency-contact, accessibility and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+  inputSchema: {
+    customer_id: z31.string().uuid().describe("The ART customer/contact id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ customer_id }, ctx) => {
+    const started = Date.now();
+    if (!ctx.isAuthenticated()) return toolError("UNAUTHENTICATED");
+    if (!isUuid(customer_id))
+      return toolError("INVALID_INPUT", "customer_id must be a UUID.");
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("customers").select(
+      "id, first_name, last_name, preferred_name, title, email, phone, city, state, country, keap_contact_id, created_at"
+    ).eq("id", customer_id).maybeSingle();
+    if (error) {
+      await auditReadCall(ctx, { tool: "get_customer", recordId: customer_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    if (!data) {
+      await auditReadCall(ctx, { tool: "get_customer", recordId: customer_id, success: false, errorCategory: "BOOKING_ACCESS_DENIED", durationMs: Date.now() - started });
+      return toolError("INVALID_INPUT", "Customer not found or not accessible.");
+    }
+    const name = `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim();
+    const result = {
+      customer_id: data.id,
+      name: name || null,
+      preferred_name: data.preferred_name ?? null,
+      title: data.title ?? null,
+      email: data.email ?? null,
+      phone: data.phone ?? null,
+      location: {
+        city: data.city ?? null,
+        state: data.state ?? null,
+        country: data.country ?? null
+      },
+      keap_contact_id: data.keap_contact_id ?? null,
+      created_at: data.created_at ?? null
+    };
+    await auditReadCall(ctx, { tool: "get_customer", recordId: customer_id, success: true, durationMs: Date.now() - started });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: { customer: result }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-customer-bookings.ts
+import { defineTool as defineTool32 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z32 } from "npm:zod@^3.25.76";
+function classify(startDate, endDate, today) {
+  if (!startDate && !endDate) return "unknown";
+  const start = startDate ?? endDate;
+  const end = endDate ?? startDate;
+  if (today < start) return "upcoming";
+  if (today > end) return "past";
+  return "current";
+}
+var list_customer_bookings_default = defineTool32({
+  name: "list_customer_bookings",
+  title: "List a customer's bookings",
+  description: "List every booking a customer is linked to (as lead, secondary or passenger 2/3), with tour name, dates, status, passenger count, room/bedding type and a current/upcoming/past classification. Includes a financial-summary availability flag but no financial figures and no sensitive passenger data. Read-only; RLS-scoped to the signed-in user.",
+  inputSchema: {
+    customer_id: z32.string().uuid().describe("The ART customer/contact id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ customer_id }, ctx) => {
+    const started = Date.now();
+    if (!ctx.isAuthenticated()) return toolError("UNAUTHENTICATED");
+    if (!isUuid(customer_id))
+      return toolError("INVALID_INPUT", "customer_id must be a UUID.");
+    const supabase = supabaseForUser(ctx);
+    const financialAvailable = hasFinancialRole(await getUserRoles(ctx));
+    const { data, error } = await supabase.from("bookings").select(
+      "id, tour_id, status, passenger_count, check_in_date, check_out_date, lead_passenger_id, passenger_2_id, passenger_3_id, secondary_contact_id, tours!bookings_tour_id_fkey(name, start_date, end_date)"
+    ).or(
+      `lead_passenger_id.eq.${customer_id},passenger_2_id.eq.${customer_id},passenger_3_id.eq.${customer_id},secondary_contact_id.eq.${customer_id}`
+    ).order("created_at", { ascending: false }).limit(200);
+    if (error) {
+      await auditReadCall(ctx, { tool: "list_customer_bookings", recordId: customer_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const rows = data ?? [];
+    const bookingIds = rows.map((r) => r.id);
+    const beddingByBooking = /* @__PURE__ */ new Map();
+    if (bookingIds.length > 0) {
+      const { data: hb } = await supabase.from("hotel_bookings").select("booking_id, bedding").in("booking_id", bookingIds);
+      for (const h of hb ?? []) {
+        if (!h.bedding) continue;
+        const set = beddingByBooking.get(h.booking_id) ?? /* @__PURE__ */ new Set();
+        set.add(h.bedding);
+        beddingByBooking.set(h.booking_id, set);
+      }
+    }
+    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const bookings = rows.map((r) => {
+      const tour = r.tours;
+      return {
+        booking_id: r.id,
+        tour_id: r.tour_id ?? null,
+        tour_name: tour?.name ?? null,
+        start_date: tour?.start_date ?? null,
+        end_date: tour?.end_date ?? null,
+        status: r.status ?? null,
+        passenger_count: r.passenger_count ?? null,
+        bedding_types: Array.from(beddingByBooking.get(r.id) ?? []),
+        timeline: classify(tour?.start_date ?? null, tour?.end_date ?? null, today),
+        financial_summary_available: financialAvailable
+      };
+    });
+    const result = {
+      customer_id,
+      count: bookings.length,
+      financial_summary_available: financialAvailable,
+      bookings
+    };
+    await auditReadCall(ctx, { tool: "list_customer_bookings", recordId: customer_id, success: true, resultCount: bookings.length, durationMs: Date.now() - started });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-mcp",
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position` \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. The reconciliation tools re-compute the canonical payment-exception rules (deposit/instalment/final balance) and are tour/report scoped (no org-wide orphan-invoice scanning). Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `get_booking` (minimised non-sensitive booking overview), `get_customer` (minimised non-sensitive contact profile), `list_customer_bookings` (a contact's bookings with upcoming/current/past classification), `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position` \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. The reconciliation tools re-compute the canonical payment-exception rules (deposit/instalment/final balance) and are tour/report scoped (no org-wide orphan-invoice scanning). Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -2384,7 +2625,10 @@ var mcp_default = defineMcp({
     list_outstanding_invoices_default,
     get_payment_exception_report_default,
     compare_art_payment_report_to_xero_default,
-    explain_booking_payment_position_default
+    explain_booking_payment_position_default,
+    get_booking_default,
+    get_customer_default,
+    list_customer_bookings_default
   ]
 });
 
