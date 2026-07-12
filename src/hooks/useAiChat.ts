@@ -140,7 +140,10 @@ export interface StreamHandlers {
 
 export interface StreamOptions {
   mode?: "generic_chat" | "deterministic_skill";
-  skillId?: "explain_booking" | "explain_client";
+  skillId?:
+    | "explain_booking"
+    | "explain_client"
+    | "payment_exceptions_for_next_departing_tour";
   entryPoint?: string;
   context?: AiConversationContext;
 }
