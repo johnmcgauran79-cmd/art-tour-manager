@@ -29,6 +29,7 @@ const ALLOWLIST = new Set<string>([
   "get_tour",
   "list_bookings",
   "get_booking",
+  "search_customers",
   "get_customer",
   "list_customer_bookings",
   "list_tour_activities",
