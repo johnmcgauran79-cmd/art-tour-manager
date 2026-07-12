@@ -103,7 +103,11 @@ const PRICE_INPUT_PER_M = 0.40;
 const PRICE_OUTPUT_PER_M = 1.60;
 
 // ---- Deterministic skills ----
-const SKILL_IDS = new Set<string>(["explain_booking", "explain_client"]);
+const SKILL_IDS = new Set<string>([
+  "explain_booking",
+  "explain_client",
+  "payment_exceptions_for_next_departing_tour",
+]);
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUuid(v: unknown): v is string {
