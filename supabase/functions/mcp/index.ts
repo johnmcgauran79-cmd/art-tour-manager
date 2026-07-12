@@ -249,6 +249,23 @@ function todayInTimezone(tz) {
     day: "2-digit"
   }).format(/* @__PURE__ */ new Date());
 }
+function selectNextDepartingTour(rows, opts) {
+  const excluded = /* @__PURE__ */ new Set(["archived", ...opts.includeCancelled ? [] : ["cancelled"]]);
+  const filtered = rows.filter((t) => {
+    if (t.start_date < opts.asOf) return false;
+    if (excluded.has(t.status)) return false;
+    if (!opts.includeTestTours && t.is_test_tour) return false;
+    return true;
+  });
+  filtered.sort((a, b) => {
+    if (a.start_date !== b.start_date) return a.start_date < b.start_date ? -1 : 1;
+    if (a.name !== b.name) return a.name < b.name ? -1 : 1;
+    const ac = a.created_at ?? "", bc = b.created_at ?? "";
+    if (ac !== bc) return ac < bc ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+  return filtered[0] ?? null;
+}
 var get_next_departing_tour_default = defineTool2({
   name: "get_next_departing_tour",
   title: "Get next departing tour",
@@ -277,8 +294,11 @@ var get_next_departing_tour_default = defineTool2({
       });
       return { content: [{ type: "text", text: "Could not load tours." }], isError: true };
     }
-    const rows = data ?? [];
-    const next = rows[0] ?? null;
+    const next = selectNextDepartingTour(data ?? [], {
+      asOf,
+      includeTestTours: !!include_test_tours,
+      includeCancelled: !!include_cancelled
+    });
     const result = {
       as_of_date: asOf,
       timezone: ORG_TIMEZONE,
@@ -286,9 +306,9 @@ var get_next_departing_tour_default = defineTool2({
         tour_id: next.id,
         name: next.name,
         start_date: next.start_date,
-        end_date: next.end_date,
+        end_date: next.end_date ?? null,
         status: next.status,
-        location: next.location
+        location: next.location ?? null
       } : null,
       selection_rule: "earliest_authorised_future_start_date",
       excluded_statuses: excludedStatuses,
