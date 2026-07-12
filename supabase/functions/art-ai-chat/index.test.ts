@@ -57,3 +57,12 @@ Deno.test("mcp list_customer_bookings requires a user token (401)", async () => 
   assertEquals(res.status, 401);
   await res.text();
 });
+
+// Data minimisation: get_customer must never select or emit the internal
+// external-CRM identifier (keap_contact_id).
+Deno.test("get_customer excludes keap_contact_id from query and output", async () => {
+  const src = await Deno.readTextFile(
+    new URL("../../../src/lib/mcp/tools/get-customer.ts", import.meta.url),
+  );
+  assertEquals(src.includes("keap_contact_id"), false);
+});
