@@ -85,6 +85,8 @@ const ToolActivity = ({ parts }: { parts: AiMessagePart[] }) => {
 export const ArtAiWorkspace = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { data: conversations = [] } = useAiConversations();
   const createConvo = useCreateAiConversation();
   const deleteConvo = useDeleteAiConversation();
@@ -94,9 +96,11 @@ export const ArtAiWorkspace = () => {
   const { data: messages = [] } = useAiMessages(activeId);
   const [input, setInput] = useState("");
   const [live, setLive] = useState<LiveState>({ streaming: false, text: "", tools: [] });
+  const [contextChip, setContextChip] = useState<ContextChip | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const launchHandledRef = useRef<string | null>(null);
 
   const activeConvo = conversations.find((c) => c.id === activeId) ?? null;
 
@@ -110,13 +114,13 @@ export const ArtAiWorkspace = () => {
   }, [messages, live]);
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, options?: StreamOptions, convoIdOverride?: string) => {
       const trimmed = text.trim();
       if (!trimmed || live.streaming) return;
 
-      let convoId = activeId;
+      let convoId = convoIdOverride ?? activeId;
       if (!convoId) {
-        const convo = await createConvo.mutateAsync();
+        const convo = await createConvo.mutateAsync(undefined);
         convoId = convo.id;
         setActiveId(convo.id);
       }
@@ -164,10 +168,46 @@ export const ArtAiWorkspace = () => {
             toast({ title: "ART AI error", description: "Something went wrong. Please try again.", variant: "destructive" });
           }
         },
-      });
+      }, options);
     },
     [activeId, live.streaming, createConvo, qc, toast],
   );
+
+  // ---- Auto-launch a deterministic skill arriving from a context button ----
+  useEffect(() => {
+    const launch = (location.state as { artAiLaunch?: ArtAiLaunchState } | null)?.artAiLaunch;
+    if (!launch) return;
+    if (launchHandledRef.current === launch.conversationId) return;
+    launchHandledRef.current = launch.conversationId;
+    // Clear router state so a refresh/back doesn't re-fire the skill.
+    navigate(location.pathname, { replace: true, state: null });
+
+    setActiveId(launch.conversationId);
+    setContextChip({
+      label: launch.context.context_label ?? "Context",
+      context: launch.context,
+      skillId: launch.skillId,
+      entryPoint: launch.entryPoint,
+    });
+    const prompt = SKILL_LAUNCH_PROMPTS[launch.skillId] ?? "Explain this.";
+    void send(
+      prompt,
+      {
+        mode: "deterministic_skill",
+        skillId: launch.skillId,
+        entryPoint: launch.entryPoint,
+        context: launch.context,
+      },
+      launch.conversationId,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  const runSkillCard = (skillId: "explain_booking" | "explain_client", landingPrompt: string) => {
+    // From the landing page there is no record context — launch a curated
+    // generic-chat prompt that guides the user to identify the record.
+    void send(landingPrompt, { mode: "generic_chat", entryPoint: "landing_card" });
+  };
 
   const stop = () => {
     abortRef.current?.abort();
