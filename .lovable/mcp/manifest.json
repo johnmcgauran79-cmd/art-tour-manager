@@ -898,7 +898,7 @@
             },
             "limit": {
               "type": "integer",
-              "description": "Max invoices to inspect (default 25, max 100)."
+              "description": "Max invoices to inspect (default 200, max 500)."
             }
           },
           "additionalProperties": false,

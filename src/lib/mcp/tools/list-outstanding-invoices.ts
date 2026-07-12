@@ -14,7 +14,7 @@ export default defineTool({
     tour_id: z.string().uuid().optional().describe("Optional tour id to scope results."),
     overdue_only: z.boolean().optional().describe("Only include invoices past their due date."),
     due_before: z.string().optional().describe("Only include invoices due before this date (YYYY-MM-DD)."),
-    limit: z.number().int().optional().describe("Max invoices to inspect (default 25, max 100)."),
+    limit: z.number().int().optional().describe("Max invoices to inspect (default 200, max 500)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, overdue_only, due_before, limit }, ctx) => {
@@ -33,7 +33,7 @@ export default defineTool({
       return toolError("INVALID_INPUT", "due_before must be YYYY-MM-DD.");
     }
 
-    const capped = Math.min(Math.max(limit ?? 25, 1), 100);
+    const capped = Math.min(Math.max(limit ?? 200, 1), 500);
     const supabase = supabaseForUser(ctx);
 
     // Candidate outstanding invoices from the canonical mapping cache (RLS applied).
@@ -62,6 +62,10 @@ export default defineTool({
       await auditXeroCall(ctx, { tool: "list_outstanding_invoices", recordId: tour_id ?? null, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
       return toolError("INTERNAL_ERROR");
     }
+
+    // The candidate cache query is capped; if it returned exactly the cap there
+    // may be more outstanding invoices than were inspected.
+    const candidatesTruncated = (mappings ?? []).length === capped;
 
     const unique = Array.from(
       new Map((mappings ?? []).map((m: any) => [m.xero_invoice_id, m])).values(),
@@ -137,6 +141,10 @@ export default defineTool({
 
     const result = {
       count: rows.length,
+      truncated: candidatesTruncated,
+      truncation_note: candidatesTruncated
+        ? `Only the first ${capped} candidate invoices were inspected — there may be more outstanding. Raise 'limit' (max 500) or scope to a tour to see the rest.`
+        : null,
       data_source: anyLive ? (rows.some((r) => r.data_source === "mapping_cache") ? "mixed" : "live_xero") : "mapping_cache",
       xero_connected: auth.ok,
       partial_results: partial,
