@@ -47,9 +47,17 @@ var list_tours_default = defineTool({
     const { data, error } = await query;
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
+    const tours = data ?? [];
+    const truncated = tours.length === capped;
+    const result = {
+      count: tours.length,
+      truncated,
+      truncation_note: truncated ? `Showing the first ${capped} tours \u2014 there may be more. Raise 'limit' (max 500) or add a status/search filter to see the rest.` : null,
+      tours
+    };
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { count: (data ?? []).length, tours: data ?? [] }
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
     };
   }
 });
