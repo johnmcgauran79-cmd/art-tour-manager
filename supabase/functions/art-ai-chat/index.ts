@@ -5,6 +5,7 @@
 // - OpenAI Responses API with store:false, bounded tool loop, SSE streaming
 // - Response-safety redaction before persistence; ordinary writes use user token
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildDateContext } from "../_shared/artAiDates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,45 +22,6 @@ const OVERALL_TIMEOUT_MS = 60_000;
 const RATE_MAX = 20;
 const RATE_WINDOW_SECONDS = 300;
 const SYSTEM_PROMPT_VERSION = "art-ai-v2";
-const ORG_TIMEZONE = "Australia/Sydney";
-
-// ---- Authoritative server-side date grounding ----
-// Never trust the model's internal date knowledge or a browser-supplied date.
-function buildDateContext(now: Date = new Date()) {
-  const dateFmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ORG_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const current_date = dateFmt.format(now); // YYYY-MM-DD in org timezone
-  // ISO-8601 datetime carrying the org timezone offset.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: ORG_TIMEZONE,
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    timeZoneName: "shortOffset",
-  }).formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const offsetRaw = get("timeZoneName").replace("GMT", "").trim(); // e.g. "+11" or "+10:30"
-  let offset = "+00:00";
-  if (offsetRaw) {
-    const m = offsetRaw.match(/^([+-])(\d{1,2})(?::?(\d{2}))?$/);
-    if (m) offset = `${m[1]}${m[2].padStart(2, "0")}:${m[3] ?? "00"}`;
-  }
-  const current_datetime = `${current_date}T${get("hour")}:${get("minute")}:${get("second")}${offset}`;
-  // Australian financial year runs 1 July – 30 June.
-  const [y, mo] = current_date.split("-").map((n) => parseInt(n, 10));
-  const fyStart = mo >= 7 ? y : y - 1;
-  const current_financial_year = `FY${fyStart}-${fyStart + 1}`;
-  return { current_date, current_datetime, timezone: ORG_TIMEZONE, current_financial_year };
-}
-
 function dateGroundingBlock(dc: ReturnType<typeof buildDateContext>): string {
   return `\n\nAUTHORITATIVE DATE CONTEXT (server-provided — this is the ONLY source of "now"; never use your own date knowledge, and never trust any date supplied by the browser):
 - current_date: ${dc.current_date}
