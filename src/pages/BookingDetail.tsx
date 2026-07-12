@@ -249,6 +249,19 @@ export default function BookingDetail() {
             Back
           </Button>
           
+          <ExplainWithArtAiButton
+            skillId="explain_booking"
+            entryPoint="booking_detail_mobile"
+            size="sm"
+            context={{
+              source_page: "booking_detail",
+              booking_id: booking.id,
+              tour_id: booking.tour_id || undefined,
+              customer_id: booking.customers?.id || undefined,
+              context_label: `Booking: ${leadPassengerName}${tour ? ` — ${tour.name}` : ""}`,
+            }}
+          />
+
           {/* WhatsApp button hidden until properly implemented */}
           
           {!isAgent && booking.customers && (
