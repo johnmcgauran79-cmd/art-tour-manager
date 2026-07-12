@@ -488,6 +488,10 @@ export default function BookingDetail() {
               {!isMobile && <MessageSquare className="h-4 w-4" />}
               <span>History ({comments.length + auditLog.length})</span>
             </TabsTrigger>
+            <TabsTrigger value="communications" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <Mail className="h-4 w-4" />}
+              <span>Communications</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 mt-6">
@@ -805,6 +809,21 @@ export default function BookingDetail() {
             <Separator />
 
             <RelatedTasksSection entityType="booking" entityId={booking.id} />
+          </TabsContent>
+
+          <TabsContent value="communications" className="space-y-4 mt-6">
+            <div className="bg-card rounded-lg border p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold">Communications</h3>
+                <p className="text-sm text-muted-foreground">
+                  Every email sent for this booking, with delivery and open status.
+                </p>
+              </div>
+              <CommunicationsTimeline
+                rows={bookingComms}
+                isLoading={bookingCommsLoading}
+              />
+            </div>
           </TabsContent>
         </Tabs>
 
