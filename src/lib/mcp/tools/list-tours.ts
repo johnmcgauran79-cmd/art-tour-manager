@@ -63,6 +63,9 @@ export default defineTool({
     const tours = data ?? [];
     const truncated = tours.length === capped;
     const result = {
+      today,
+      sort_order: ascending ? "asc" : "desc",
+      upcoming_only: !!upcoming_only,
       count: tours.length,
       truncated,
       truncation_note: truncated

@@ -59,6 +59,9 @@ var list_tours_default = defineTool({
     const tours = data ?? [];
     const truncated = tours.length === capped;
     const result = {
+      today,
+      sort_order: ascending ? "asc" : "desc",
+      upcoming_only: !!upcoming_only,
       count: tours.length,
       truncated,
       truncation_note: truncated ? `Showing the first ${capped} tours \u2014 there may be more. Raise 'limit' (max 500) or add a status/search filter to see the rest.` : null,
