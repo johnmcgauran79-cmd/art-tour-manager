@@ -883,6 +883,8 @@ Deno.serve(async (req) => {
           tool_call_count: toolCallCount,
           latency_ms: latencyMs,
           estimated_cost_usd: Number(estCost.toFixed(6)),
+          entry_point: entryPoint,
+          success: true,
         });
 
         sse(controller, "done", {
