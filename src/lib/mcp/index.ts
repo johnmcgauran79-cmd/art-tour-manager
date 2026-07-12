@@ -1,5 +1,6 @@
 import { auth, defineMcp } from "@lovable.dev/mcp-js";
 import listToursTool from "./tools/list-tours";
+import getNextDepartingTourTool from "./tools/get-next-departing-tour";
 import getTourTool from "./tools/get-tour";
 import listBookingsTool from "./tools/list-bookings";
 import listTourActivitiesTool from "./tools/list-tour-activities";
