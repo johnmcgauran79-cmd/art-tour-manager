@@ -54,7 +54,10 @@ export const useAiMessages = (conversationId: string | null) =>
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as AiMessage[];
+      return (data ?? []).map((m) => ({
+        ...m,
+        parts: Array.isArray(m.parts) ? (m.parts as unknown as AiMessagePart[]) : [],
+      })) as AiMessage[];
     },
   });
 
