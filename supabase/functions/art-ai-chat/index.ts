@@ -46,6 +46,7 @@ const ALLOWLIST = new Set<string>([
   "get_payment_exception_report",
   "compare_art_payment_report_to_xero",
   "explain_booking_payment_position",
+  "list_invoice_mapping_issues",
 ]);
 
 // Approximate USD pricing per 1M tokens for gpt-4.1-mini (used for estimation only).

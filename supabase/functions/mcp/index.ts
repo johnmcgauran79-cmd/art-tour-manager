@@ -2580,13 +2580,139 @@ var list_customer_bookings_default = defineTool32({
   }
 });
 
+// src/lib/mcp/tools/list-invoice-mapping-issues.ts
+import { defineTool as defineTool33 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z33 } from "npm:zod@^3.25.76";
+function normRef(v) {
+  if (!v) return "";
+  return v.trim().toUpperCase().replace(/^INV[-\s]*/i, "").replace(/^0+/, "");
+}
+var DEAD_STATUSES = /* @__PURE__ */ new Set(["DELETED", "VOIDED"]);
+var list_invoice_mapping_issues_default = defineTool33({
+  name: "list_invoice_mapping_issues",
+  title: "List invoice mapping issues",
+  description: "Audit bookings whose linked Xero invoice is unhealthy: the mapped invoice is DELETED or VOIDED in live Xero, or the mapped invoice number disagrees with the booking's invoice_reference field. Each mapping is refreshed against live Xero (falling back to the cached mapping with a stale_warning when Xero is unavailable). Optionally scope to a tour. Read-only; changes nothing. Restricted to admin/manager.",
+  inputSchema: {
+    tour_id: z33.string().uuid().optional().describe("Optional tour id to scope the audit."),
+    issue_types: z33.array(z33.enum(["deleted_or_voided", "reference_mismatch"])).optional().describe("Which issue categories to include. Defaults to both."),
+    limit: z33.number().int().optional().describe("Max mappings to inspect (default 300, max 500).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, issue_types, limit }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    if (tour_id) {
+      const tourAcc = await assertTourAccess(ctx, tour_id);
+      if (!tourAcc.ok) {
+        await auditXeroCall(ctx, { tool: "list_invoice_mapping_issues", recordId: tour_id, success: false, errorCategory: tourAcc.code, durationMs: Date.now() - started });
+        return tourAcc.error;
+      }
+    }
+    const wantDeleted = !issue_types || issue_types.includes("deleted_or_voided");
+    const wantMismatch = !issue_types || issue_types.includes("reference_mismatch");
+    const capped = Math.min(Math.max(limit ?? 300, 1), 500);
+    const supabase = supabaseForUser(ctx);
+    let query = supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, xero_status, updated_at, booking_id");
+    if (tour_id) {
+      const { data: tourBookings } = await supabase.from("bookings").select("id").eq("tour_id", tour_id);
+      const ids = (tourBookings ?? []).map((b) => b.id);
+      if (ids.length === 0) {
+        const empty = { count: 0, issues: [], data_source: "mapping_cache", partial_results: false };
+        await auditXeroCall(ctx, { tool: "list_invoice_mapping_issues", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: 0 });
+        return { content: [{ type: "text", text: JSON.stringify(empty) }], structuredContent: empty };
+      }
+      query = query.in("booking_id", ids);
+    }
+    const { data: mappings, error: mapErr } = await query.limit(capped);
+    if (mapErr) {
+      await auditXeroCall(ctx, { tool: "list_invoice_mapping_issues", recordId: tour_id ?? null, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const truncated = (mappings ?? []).length === capped;
+    const bookingIds = Array.from(new Set((mappings ?? []).map((m) => m.booking_id).filter(Boolean)));
+    const bookingMap = /* @__PURE__ */ new Map();
+    if (bookingIds.length) {
+      const { data: bookings } = await supabase.from("bookings").select("id, group_name, tour_id, invoice_reference, tours!bookings_tour_id_fkey(name), customers!bookings_lead_passenger_id_fkey(first_name, last_name)").in("id", bookingIds);
+      for (const b of bookings ?? []) bookingMap.set(b.id, b);
+    }
+    const auth2 = await getXeroAuth();
+    const now = Date.now();
+    let partial = false;
+    let anyLive = false;
+    const rows = [];
+    for (const m of mappings ?? []) {
+      const b = m.booking_id ? bookingMap.get(m.booking_id) : null;
+      let liveStatus = null;
+      let dataSource = "mapping_cache";
+      let stale = computeStaleWarning(m.updated_at, now);
+      if (auth2.ok && m.xero_invoice_id) {
+        const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+        if (live.ok) {
+          anyLive = true;
+          liveStatus = normalizeInvoice(live.data).status;
+          dataSource = "live_xero";
+          stale = false;
+        } else if (live.code === "XERO_INVOICE_NOT_FOUND") {
+          anyLive = true;
+          liveStatus = "NOT_FOUND";
+          dataSource = "live_xero";
+          stale = false;
+        } else {
+          partial = true;
+        }
+      } else if (!auth2.ok) {
+        partial = true;
+      }
+      const effectiveStatus = liveStatus ?? m.xero_status ?? null;
+      const isDead = liveStatus != null && (DEAD_STATUSES.has(liveStatus) || liveStatus === "NOT_FOUND") || liveStatus == null && !!m.xero_status && DEAD_STATUSES.has(m.xero_status);
+      const bookingRef = b?.invoice_reference ?? null;
+      const hasBothRefs = !!bookingRef && !!m.xero_invoice_number;
+      const isMismatch = hasBothRefs && normRef(bookingRef) !== normRef(m.xero_invoice_number);
+      const issues = [];
+      if (wantDeleted && isDead) issues.push("deleted_or_voided");
+      if (wantMismatch && isMismatch) issues.push("reference_mismatch");
+      if (issues.length === 0) continue;
+      const cust = b?.customers;
+      rows.push({
+        booking_id: m.booking_id ?? null,
+        primary_client: cust ? `${cust.first_name ?? ""} ${cust.last_name ?? ""}`.trim() : b?.group_name ?? null,
+        tour: b?.tours?.name ?? null,
+        mapped_invoice_number: m.xero_invoice_number ?? null,
+        mapped_xero_invoice_id: m.xero_invoice_id ?? null,
+        mapped_invoice_status: effectiveStatus,
+        booking_invoice_reference: bookingRef,
+        issues,
+        data_source: dataSource,
+        stale_warning: stale
+      });
+    }
+    const result = {
+      count: rows.length,
+      truncated,
+      truncation_note: truncated ? `Only the first ${capped} mappings were inspected \u2014 raise 'limit' (max 500) or scope to a tour to audit the rest.` : null,
+      issue_types_checked: [
+        ...wantDeleted ? ["deleted_or_voided"] : [],
+        ...wantMismatch ? ["reference_mismatch"] : []
+      ],
+      data_source: anyLive ? rows.some((r) => r.data_source === "mapping_cache") ? "mixed" : "live_xero" : "mapping_cache",
+      xero_connected: auth2.ok,
+      partial_results: partial,
+      partial_results_reason: partial ? auth2.ok ? "Some invoices could not be refreshed from live Xero; their status is from the cached mapping." : "Xero is not connected; statuses are from cached mappings only." : null,
+      issues: rows
+    };
+    await auditXeroCall(ctx, { tool: "list_invoice_mapping_issues", recordId: tour_id ?? null, success: true, durationMs: Date.now() - started, resultCount: rows.length });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-mcp",
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `get_booking` (minimised non-sensitive booking overview), `get_customer` (minimised non-sensitive contact profile), `list_customer_bookings` (a contact's bookings with upcoming/current/past classification), `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position` \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. The reconciliation tools re-compute the canonical payment-exception rules (deposit/instalment/final balance) and are tour/report scoped (no org-wide orphan-invoice scanning). Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `get_booking` (minimised non-sensitive booking overview), `get_customer` (minimised non-sensitive contact profile), `list_customer_bookings` (a contact's bookings with upcoming/current/past classification), `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues` (audit bookings whose mapped Xero invoice is DELETED/VOIDED or disagrees with the booking's invoice_reference) \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. The reconciliation tools re-compute the canonical payment-exception rules (deposit/instalment/final balance) and are tour/report scoped (no org-wide orphan-invoice scanning). Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -2627,7 +2753,8 @@ var mcp_default = defineMcp({
     explain_booking_payment_position_default,
     get_booking_default,
     get_customer_default,
-    list_customer_bookings_default
+    list_customer_bookings_default,
+    list_invoice_mapping_issues_default
   ]
 });
 

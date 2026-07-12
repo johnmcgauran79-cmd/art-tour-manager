@@ -75,6 +75,15 @@ export const QUICK_SKILLS: QuickSkill[] = [
     kind: "generic",
     prompt: "Which bookings have outstanding invoices right now?",
   },
+  {
+    id: "invoice_mapping_issues",
+    label: "Invoice Mapping Issues",
+    description: "Flag bookings whose linked Xero invoice is deleted/voided or disagrees with the invoice reference.",
+    group: "Finance",
+    kind: "generic",
+    prompt:
+      "Audit our bookings for invoice mapping issues: list any where the mapped Xero invoice is deleted or voided, or where it disagrees with the booking's invoice reference.",
+  },
   // ---- Administration ----
   {
     id: "summarise_tour",
