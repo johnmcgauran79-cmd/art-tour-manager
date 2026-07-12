@@ -89,7 +89,7 @@ export const useCreateAiConversation = () => {
             selected_filters: context.selected_filters ?? null,
             context_label: context.context_label ?? null,
           }
-        : null;
+        : {};
       const { data, error } = await supabase
         .from("ai_conversations")
         .insert({ user_id: uid, context: safeContext as never })
