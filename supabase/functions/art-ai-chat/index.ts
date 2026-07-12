@@ -26,6 +26,7 @@ const SYSTEM_PROMPT_VERSION = "art-ai-v1";
 // get_booking_passenger_details is intentionally EXCLUDED (sensitive passenger data).
 const ALLOWLIST = new Set<string>([
   "list_tours",
+  "get_next_departing_tour",
   "get_tour",
   "list_bookings",
   "get_booking",
