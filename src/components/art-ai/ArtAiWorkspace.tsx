@@ -40,6 +40,7 @@ import {
   COMING_SOON_SKILLS,
   SKILL_LAUNCH_PROMPTS,
   type SkillGroup,
+  type DeterministicSkillId,
 } from "@/lib/artAiSkills";
 import type { ArtAiLaunchState } from "@/hooks/useLaunchArtAiSkill";
 
@@ -54,7 +55,7 @@ interface LiveState {
 interface ContextChip {
   label: string;
   context: AiConversationContext;
-  skillId: "explain_booking" | "explain_client";
+  skillId: DeterministicSkillId;
   entryPoint: string;
 }
 
@@ -231,6 +232,13 @@ export const ArtAiWorkspace = () => {
     // From the landing page there is no record context — launch a curated
     // generic-chat prompt that guides the user to identify the record.
     void send(landingPrompt, { mode: "generic_chat", entryPoint: "landing_card" });
+  };
+
+  // Context-free deterministic skills run the full server orchestration directly
+  // from the landing card (no record context, no generic chat).
+  const runDeterministicCard = (skillId: DeterministicSkillId) => {
+    const prompt = SKILL_LAUNCH_PROMPTS[skillId] ?? "Run this skill.";
+    void send(prompt, { mode: "deterministic_skill", skillId, entryPoint: "landing_card" });
   };
 
   const stop = () => {
