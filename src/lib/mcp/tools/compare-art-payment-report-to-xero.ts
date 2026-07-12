@@ -73,7 +73,7 @@ export default defineTool({
       return toolError("INTERNAL_ERROR");
     }
 
-    const matched = (bookings ?? [])
+    const allMatched = (bookings ?? [])
       .map((b: any) => ({
         booking: b,
         cls: classifyBookingPaymentException(
@@ -82,8 +82,8 @@ export default defineTool({
           asOf,
         ),
       }))
-      .filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t)))
-      .slice(0, capped);
+      .filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t)));
+    const matched = allMatched.slice(0, capped);
 
     const bookingIds = matched.map((m) => m.booking.id);
     const mapByBooking = new Map<string, MappingRow[]>();
@@ -184,6 +184,11 @@ export default defineTool({
       tour: { id: tour.id, name: (tour as any).name ?? null },
       report_type: type,
       count: comparisons.length,
+      total_matched: allMatched.length,
+      truncated: allMatched.length > matched.length,
+      truncation_note: allMatched.length > matched.length
+        ? `Only the first ${capped} of ${allMatched.length} matched bookings were compared. Raise 'limit' (max 500) to compare the rest.`
+        : null,
       shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth.ok,
       partial_results: anyPartial || !auth.ok,

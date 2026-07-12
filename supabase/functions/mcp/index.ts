@@ -47,9 +47,17 @@ var list_tours_default = defineTool({
     const { data, error } = await query;
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
+    const tours = data ?? [];
+    const truncated = tours.length === capped;
+    const result = {
+      count: tours.length,
+      truncated,
+      truncation_note: truncated ? `Showing the first ${capped} tours \u2014 there may be more. Raise 'limit' (max 500) or add a status/search filter to see the rest.` : null,
+      tours
+    };
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { count: (data ?? []).length, tours: data ?? [] }
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
     };
   }
 });
@@ -106,9 +114,17 @@ var list_bookings_default = defineTool3({
     const { data, error } = await query;
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
+    const bookings = data ?? [];
+    const truncated = bookings.length === capped;
+    const result = {
+      count: bookings.length,
+      truncated,
+      truncation_note: truncated ? `Showing the first ${capped} bookings \u2014 there may be more. Raise 'limit' (max 500) or add a status filter to see the rest.` : null,
+      bookings
+    };
     return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { bookings: data ?? [] }
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
     };
   }
 });
@@ -1457,7 +1473,7 @@ var list_outstanding_invoices_default = defineTool26({
     tour_id: z26.string().uuid().optional().describe("Optional tour id to scope results."),
     overdue_only: z26.boolean().optional().describe("Only include invoices past their due date."),
     due_before: z26.string().optional().describe("Only include invoices due before this date (YYYY-MM-DD)."),
-    limit: z26.number().int().optional().describe("Max invoices to inspect (default 25, max 100).")
+    limit: z26.number().int().optional().describe("Max invoices to inspect (default 200, max 500).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, overdue_only, due_before, limit }, ctx) => {
@@ -1474,7 +1490,7 @@ var list_outstanding_invoices_default = defineTool26({
     if (due_before && !/^\d{4}-\d{2}-\d{2}$/.test(due_before)) {
       return toolError("INVALID_INPUT", "due_before must be YYYY-MM-DD.");
     }
-    const capped = Math.min(Math.max(limit ?? 25, 1), 100);
+    const capped = Math.min(Math.max(limit ?? 200, 1), 500);
     const supabase = supabaseForUser(ctx);
     let query = supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, amount_due, amount_paid, total_amount, currency_code, xero_status, updated_at, booking_id").gt("amount_due", 0);
     if (tour_id) {
@@ -1492,6 +1508,7 @@ var list_outstanding_invoices_default = defineTool26({
       await auditXeroCall(ctx, { tool: "list_outstanding_invoices", recordId: tour_id ?? null, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
       return toolError("INTERNAL_ERROR");
     }
+    const candidatesTruncated = (mappings ?? []).length === capped;
     const unique = Array.from(
       new Map((mappings ?? []).map((m) => [m.xero_invoice_id, m])).values()
     );
@@ -1555,6 +1572,8 @@ var list_outstanding_invoices_default = defineTool26({
     }
     const result = {
       count: rows.length,
+      truncated: candidatesTruncated,
+      truncation_note: candidatesTruncated ? `Only the first ${capped} candidate invoices were inspected \u2014 there may be more outstanding. Raise 'limit' (max 500) or scope to a tour to see the rest.` : null,
       data_source: anyLive ? rows.some((r) => r.data_source === "mapping_cache") ? "mixed" : "live_xero" : "mapping_cache",
       xero_connected: auth2.ok,
       partial_results: partial,
@@ -2049,14 +2068,15 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
       return toolError("INTERNAL_ERROR");
     }
-    const matched = (bookings ?? []).map((b) => ({
+    const allMatched = (bookings ?? []).map((b) => ({
       booking: b,
       cls: classifyBookingPaymentException(
         { id: b.id, status: b.status, created_at: b.created_at, passenger_count: b.passenger_count },
         tour,
         asOf
       )
-    })).filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t))).slice(0, capped);
+    })).filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t)));
+    const matched = allMatched.slice(0, capped);
     const bookingIds = matched.map((m) => m.booking.id);
     const mapByBooking = /* @__PURE__ */ new Map();
     let allMappingRows = [];
@@ -2133,6 +2153,9 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       tour: { id: tour.id, name: tour.name ?? null },
       report_type: type,
       count: comparisons.length,
+      total_matched: allMatched.length,
+      truncated: allMatched.length > matched.length,
+      truncation_note: allMatched.length > matched.length ? `Only the first ${capped} of ${allMatched.length} matched bookings were compared. Raise 'limit' (max 500) to compare the rest.` : null,
       shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth2.ok,
       partial_results: anyPartial || !auth2.ok,
