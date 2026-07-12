@@ -520,6 +520,7 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
+          entry_point: string | null
           estimated_cost_usd: number
           id: string
           input_tokens: number
@@ -527,13 +528,18 @@ export type Database = {
           message_id: string | null
           model: string
           output_tokens: number
+          skill_id: string | null
+          source_page: string | null
+          success: boolean | null
           tool_call_count: number
+          tools_used: string[] | null
           total_tokens: number
           user_id: string
         }
         Insert: {
           conversation_id: string
           created_at?: string
+          entry_point?: string | null
           estimated_cost_usd?: number
           id?: string
           input_tokens?: number
@@ -541,13 +547,18 @@ export type Database = {
           message_id?: string | null
           model: string
           output_tokens?: number
+          skill_id?: string | null
+          source_page?: string | null
+          success?: boolean | null
           tool_call_count?: number
+          tools_used?: string[] | null
           total_tokens?: number
           user_id: string
         }
         Update: {
           conversation_id?: string
           created_at?: string
+          entry_point?: string | null
           estimated_cost_usd?: number
           id?: string
           input_tokens?: number
@@ -555,7 +566,11 @@ export type Database = {
           message_id?: string | null
           model?: string
           output_tokens?: number
+          skill_id?: string | null
+          source_page?: string | null
+          success?: boolean | null
           tool_call_count?: number
+          tools_used?: string[] | null
           total_tokens?: number
           user_id?: string
         }
