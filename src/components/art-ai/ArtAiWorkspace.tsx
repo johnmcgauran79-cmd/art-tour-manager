@@ -227,6 +227,7 @@ export const ArtAiWorkspace = () => {
   const newConversation = async () => {
     setActiveId(null);
     setLive({ streaming: false, text: "", tools: [] });
+    setContextChip(null);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
