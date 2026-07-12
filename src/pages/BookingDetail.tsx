@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBookingAuditLog } from "@/hooks/useBookingAuditLog";
+import { useBookingCommunications } from "@/hooks/useCommunications";
+import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
 import { BookingAuditTrail } from "@/components/BookingAuditTrail";
 import { Separator } from "@/components/ui/separator";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
@@ -76,6 +78,7 @@ export default function BookingDetail() {
   const { data: hotels = [] } = useHotels(booking?.tour_id || '');
   const { data: comments = [] } = useBookingComments(booking?.id || '');
   const { data: auditLog = [] } = useBookingAuditLog(booking?.id);
+  const { data: bookingComms, isLoading: bookingCommsLoading } = useBookingCommunications(booking?.id);
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
@@ -457,7 +460,7 @@ export default function BookingDetail() {
 
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-1 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-1 h-auto p-1">
             <TabsTrigger value="details" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
               {!isMobile && <FileText className="h-4 w-4" />}
               <span>Details</span>
