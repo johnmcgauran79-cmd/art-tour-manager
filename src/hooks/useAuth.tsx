@@ -1,6 +1,6 @@
 
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useCallback, useRef, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -37,6 +37,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const authCheckId = useRef(0);
+
+  const clearAuthState = useCallback(() => {
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setUserRole(null);
+    setMustChangePassword(false);
+  }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -85,30 +94,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const validateSession = useCallback(async (candidateSession: Session | null, source: string) => {
+    const checkId = ++authCheckId.current;
+
+    if (!candidateSession) {
+      clearAuthState();
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log('[Auth] Validating session from:', source);
+      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
+
+      if (checkId !== authCheckId.current) return;
+
+      if (error || !verifiedUser) {
+        console.log('[Auth] Session validation failed:', error?.message ?? 'No verified user');
+        clearAuthState();
+        await supabase.auth.signOut({ scope: 'local' }).catch((signOutError) => {
+          console.log('[Auth] Local sign-out after invalid session failed:', signOutError);
+        });
+        setLoading(false);
+        return;
+      }
+
+      setSession(candidateSession);
+      setUser(verifiedUser);
+      await Promise.all([
+        fetchUserProfile(verifiedUser.id),
+        fetchUserRole(verifiedUser.id)
+      ]);
+      setLoading(false);
+    } catch (error) {
+      if (checkId !== authCheckId.current) return;
+      console.log('[Auth] Session validation exception:', error);
+      clearAuthState();
+      setLoading(false);
+    }
+  }, [clearAuthState]);
+
   useEffect(() => {
     console.log('[Auth] Initializing auth listener and session check');
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('[Auth] onAuthStateChange event:', event, { hasSession: !!session, userId: session?.user?.id });
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer Supabase calls with setTimeout to prevent deadlock
-          setTimeout(() => {
-            Promise.all([
-              fetchUserProfile(session.user.id),
-              fetchUserRole(session.user.id)
-            ]);
-          }, 0);
-        } else {
-          setProfile(null);
-          setUserRole(null);
-          setMustChangePassword(false);
+
+        if (!session?.user) {
+          clearAuthState();
+          setLoading(false);
+          return;
         }
-        
-        setLoading(false);
+
+        setLoading(true);
+        // Defer Supabase calls with setTimeout to prevent auth callback deadlock.
+        setTimeout(() => {
+          validateSession(session, `auth event: ${event}`);
+        }, 0);
       }
     );
 
@@ -124,18 +167,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('[Auth] getSession start');
         const { data: { session } } = await supabase.auth.getSession();
         console.log('[Auth] getSession result:', { hasSession: !!session, userId: session?.user?.id });
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await Promise.all([
-            fetchUserProfile(session.user.id),
-            fetchUserRole(session.user.id)
-          ]);
-        }
-        setLoading(false);
+        await validateSession(session, 'initial load');
       } catch (error) {
         console.log('[Auth] getSession error:', error, '- forcing loading=false');
+        clearAuthState();
         setLoading(false);
       }
     };
@@ -147,7 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       clearTimeout(fallbackTimeout);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [clearAuthState, validateSession]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

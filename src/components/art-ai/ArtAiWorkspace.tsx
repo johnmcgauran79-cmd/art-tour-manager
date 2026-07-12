@@ -129,14 +129,15 @@ export const ArtAiWorkspace = () => {
           // Most commonly an expired/invalid session: the conversation insert
           // is rejected by RLS before we ever reach the chat function. Surface
           // it instead of silently doing nothing.
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (!sessionData.session) {
+          const { data: userData } = await supabase.auth.getUser();
+          if (!userData.user) {
             toast({
               title: "Session expired",
               description: "Please sign in again to use ART AI.",
               variant: "destructive",
             });
-            navigate("/login");
+            await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+            navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
           } else {
             toast({
               title: "Couldn't start conversation",
@@ -193,7 +194,7 @@ export const ArtAiWorkspace = () => {
         },
       }, options);
     },
-    [activeId, live.streaming, createConvo, qc, toast],
+    [activeId, live.streaming, createConvo, location.pathname, location.search, navigate, qc, toast],
   );
 
   // ---- Auto-launch a deterministic skill arriving from a context button ----
