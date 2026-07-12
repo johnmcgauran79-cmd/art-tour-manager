@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useThemeProvider } from "@/hooks/useThemeProvider";
 import { AiContextProvider } from "@/contexts/AiContext";
@@ -54,13 +54,14 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     return <div>Loading...</div>;
   }
   
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
   
   return <>{children}</>;
@@ -74,13 +75,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const TaskRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const { isAdminOrManager, isLoading: rolesLoading } = useIsAdminOrManager();
+  const location = useLocation();
 
   if (loading || rolesLoading) {
     return <div>Loading...</div>;
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
   if (!isAdminOrManager) {
@@ -98,13 +100,14 @@ const TaskRoute = ({ children }: { children: React.ReactNode }) => {
 const WorkspaceRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, userRole } = useAuth();
   const { isAdminOrManager, isLoading: rolesLoading } = useIsAdminOrManager();
+  const location = useLocation();
 
   if (loading || rolesLoading) {
     return <div>Loading...</div>;
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
   if (!isAdminOrManager && userRole !== "host") {
