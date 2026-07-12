@@ -1,5 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { DateTimeDisplay } from "@/components/dashboard/DateTimeDisplay";
@@ -15,6 +17,18 @@ interface AppLayoutProps {
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+
+  // Global "Ask ART AI" shortcut: Ctrl/Cmd+K opens the ART AI workspace.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        navigate("/art-ai");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate]);
 
   return (
     <SidebarProvider>
@@ -46,6 +60,21 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
           <div className="flex items-center gap-3 sm:gap-5">
             {!isMobile && <DateTimeDisplay />}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/art-ai")}
+              className="gap-2 text-brand-yellow hover:bg-white/10 hover:text-brand-yellow"
+              aria-label="Ask ART AI"
+            >
+              <Bot className="h-4 w-4" />
+              <span className="hidden sm:inline">Ask ART AI</span>
+              {!isMobile && (
+                <kbd className="hidden rounded bg-white/15 px-1.5 py-0.5 text-[10px] font-medium lg:inline">
+                  ⌘K
+                </kbd>
+              )}
+            </Button>
             <NotificationBell />
             <UserDropdown />
           </div>
