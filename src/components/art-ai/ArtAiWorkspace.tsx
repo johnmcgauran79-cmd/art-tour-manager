@@ -407,6 +407,23 @@ export const ArtAiWorkspace = () => {
 
         {/* Composer */}
         <div className="border-t border-border p-3">
+          {contextChip && (
+            <div className="mx-auto mb-2 flex max-w-3xl items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                <img src={artAiLogo} alt="" width={14} height={14} className="h-3.5 w-3.5 rounded" />
+                {contextChip.label}
+                <button
+                  type="button"
+                  onClick={() => setContextChip(null)}
+                  className="ml-0.5 rounded-full hover:bg-primary/20"
+                  title="Remove context"
+                  aria-label="Remove context"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            </div>
+          )}
           <div className="mx-auto flex max-w-3xl items-end gap-2">
             <Textarea
               ref={textareaRef}
