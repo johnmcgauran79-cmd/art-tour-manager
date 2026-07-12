@@ -9,7 +9,7 @@ export default defineTool({
   name: "get_customer",
   title: "Get a customer overview",
   description:
-    "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location, created date and Keap external id. Excludes all passport, medical, emergency-contact, accessibility and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+    "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location and created date. Excludes all passport, medical, emergency-contact, accessibility and dietary data, and internal external-CRM identifiers (e.g. Keap). Read-only; access is RLS-scoped to the signed-in user.",
   inputSchema: {
     customer_id: z.string().uuid().describe("The ART customer/contact id (uuid)."),
   },
@@ -24,7 +24,7 @@ export default defineTool({
     const { data, error } = await supabase
       .from("customers")
       .select(
-        "id, first_name, last_name, preferred_name, title, email, phone, city, state, country, keap_contact_id, created_at",
+        "id, first_name, last_name, preferred_name, title, email, phone, city, state, country, created_at",
       )
       .eq("id", customer_id)
       .maybeSingle();
@@ -52,7 +52,6 @@ export default defineTool({
         state: (data as any).state ?? null,
         country: (data as any).country ?? null,
       },
-      keap_contact_id: (data as any).keap_contact_id ?? null,
       created_at: (data as any).created_at ?? null,
     };
 
