@@ -1102,6 +1102,44 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "list_invoice_mapping_issues",
+        "title": "List invoice mapping issues",
+        "description": "Audit bookings whose linked Xero invoice is unhealthy: the mapped invoice is DELETED or VOIDED in live Xero, or the mapped invoice number disagrees with the booking's invoice_reference field. Each mapping is refreshed against live Xero (falling back to the cached mapping with a stale_warning when Xero is unavailable). Optionally scope to a tour. Read-only; changes nothing. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional tour id to scope the audit."
+            },
+            "issue_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "deleted_or_voided",
+                  "reference_mismatch"
+                ]
+              },
+              "description": "Which issue categories to include. Defaults to both."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max mappings to inspect (default 300, max 500)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }

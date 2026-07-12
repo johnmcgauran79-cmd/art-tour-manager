@@ -85,5 +85,6 @@ export default defineMcp({
     getBookingTool,
     getCustomerTool,
     listCustomerBookingsTool,
+    listInvoiceMappingIssuesTool,
   ],
 });
