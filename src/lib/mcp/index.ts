@@ -28,6 +28,9 @@ import listOutstandingInvoicesTool from "./tools/list-outstanding-invoices";
 import getPaymentExceptionReportTool from "./tools/get-payment-exception-report";
 import compareArtPaymentReportToXeroTool from "./tools/compare-art-payment-report-to-xero";
 import explainBookingPaymentPositionTool from "./tools/explain-booking-payment-position";
+import getBookingTool from "./tools/get-booking";
+import getCustomerTool from "./tools/get-customer";
+import listCustomerBookingsTool from "./tools/list-customer-bookings";
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
@@ -78,5 +81,8 @@ export default defineMcp({
     getPaymentExceptionReportTool,
     compareArtPaymentReportToXeroTool,
     explainBookingPaymentPositionTool,
+    getBookingTool,
+    getCustomerTool,
+    listCustomerBookingsTool,
   ],
 });

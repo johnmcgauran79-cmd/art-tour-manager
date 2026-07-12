@@ -1024,6 +1024,84 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "get_booking",
+        "title": "Get a booking overview",
+        "description": "Fetch a minimised, non-sensitive operational overview of one booking by id: status, dates, passenger count, room/bedding type, accommodation dates, linked customer ids and operational flags. Excludes all passport, medical, emergency-contact and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The ART booking id (uuid)."
+            }
+          },
+          "required": [
+            "booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_customer",
+        "title": "Get a customer overview",
+        "description": "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location, created date and Keap external id. Excludes all passport, medical, emergency-contact, accessibility and dietary data. Read-only; access is RLS-scoped to the signed-in user.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The ART customer/contact id (uuid)."
+            }
+          },
+          "required": [
+            "customer_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_customer_bookings",
+        "title": "List a customer's bookings",
+        "description": "List every booking a customer is linked to (as lead, secondary or passenger 2/3), with tour name, dates, status, passenger count, room/bedding type and a current/upcoming/past classification. Includes a financial-summary availability flag but no financial figures and no sensitive passenger data. Read-only; RLS-scoped to the signed-in user.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The ART customer/contact id (uuid)."
+            }
+          },
+          "required": [
+            "customer_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }
