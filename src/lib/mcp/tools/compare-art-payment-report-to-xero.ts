@@ -184,6 +184,11 @@ export default defineTool({
       tour: { id: tour.id, name: (tour as any).name ?? null },
       report_type: type,
       count: comparisons.length,
+      total_matched: allMatched.length,
+      truncated: allMatched.length > matched.length,
+      truncation_note: allMatched.length > matched.length
+        ? `Only the first ${capped} of ${allMatched.length} matched bookings were compared. Raise 'limit' (max 500) to compare the rest.`
+        : null,
       shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth.ok,
       partial_results: anyPartial || !auth.ok,
