@@ -17,6 +17,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
+import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { useContactCommunications } from "@/hooks/useCommunications";
 import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
