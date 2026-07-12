@@ -31,6 +31,7 @@ import explainBookingPaymentPositionTool from "./tools/explain-booking-payment-p
 import getBookingTool from "./tools/get-booking";
 import getCustomerTool from "./tools/get-customer";
 import listCustomerBookingsTool from "./tools/list-customer-bookings";
+import listInvoiceMappingIssuesTool from "./tools/list-invoice-mapping-issues";
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
