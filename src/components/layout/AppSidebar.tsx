@@ -10,6 +10,7 @@ import {
   ListTodo,
   StickyNote,
   CalendarDays,
+  Bot,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -66,6 +67,7 @@ export const AppSidebar = () => {
 
   const mainItems: NavItem[] = [];
   if (!isAgent && !isHost) mainItems.push({ key: "dashboard", label: "Dashboard", icon: LayoutDashboard, tab: "dashboard" });
+  if (!isAgent) mainItems.push({ key: "art-ai", label: "ART AI", icon: Bot, path: "/art-ai" });
   if (!isAgent && !isHost) mainItems.push({ key: "operations", label: "Operations", icon: ClipboardList, tab: "operations" });
   if (isAdminOrManager) mainItems.push({ key: "tasks", label: "Tasks", icon: CheckSquare, tab: "tasks", badge: overdueTaskCount });
   mainItems.push({ key: "tours", label: "Tours", icon: Map, tab: "tours" });
