@@ -20,7 +20,7 @@
       {
         "name": "list_tours",
         "title": "List tours",
-        "description": "List tours the signed-in user can access, most recent start date first. Optionally filter by a name/location search term or status.",
+        "description": "List tours the signed-in user can access, most recent start date first. Returns up to 200 tours by default (raise `limit` up to 500 for a full list). Optionally filter by a name/location search term or status.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -35,11 +35,11 @@
             },
             "status": {
               "type": "string",
-              "description": "Filter by tour status (e.g. active, cancelled, archived)."
+              "description": "Filter by exact tour status. Valid values: pending, available, limited_availability, sold_out, closed, past, cancelled, archived. Omit to return tours of every status."
             },
             "limit": {
               "type": "integer",
-              "description": "Maximum number of tours to return (default 25, max 100)."
+              "description": "Maximum number of tours to return (default 200, max 500)."
             }
           },
           "additionalProperties": false,

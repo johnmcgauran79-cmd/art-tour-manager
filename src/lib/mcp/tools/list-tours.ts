@@ -6,7 +6,7 @@ export default defineTool({
   name: "list_tours",
   title: "List tours",
   description:
-    "List tours the signed-in user can access, most recent start date first. Optionally filter by a name/location search term or status.",
+    "List tours the signed-in user can access, most recent start date first. Returns up to 200 tours by default (raise `limit` up to 500 for a full list). Optionally filter by a name/location search term or status.",
   inputSchema: {
     search: z
       .string()
@@ -15,19 +15,21 @@ export default defineTool({
     status: z
       .string()
       .optional()
-      .describe("Filter by tour status (e.g. active, cancelled, archived)."),
+      .describe(
+        "Filter by exact tour status. Valid values: pending, available, limited_availability, sold_out, closed, past, cancelled, archived. Omit to return tours of every status.",
+      ),
     limit: z
       .number()
       .int()
       .optional()
-      .describe("Maximum number of tours to return (default 25, max 100)."),
+      .describe("Maximum number of tours to return (default 200, max 500)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ search, status, limit }, ctx) => {
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
 
-    const capped = Math.min(Math.max(limit ?? 25, 1), 100);
+    const capped = Math.min(Math.max(limit ?? 200, 1), 500);
     let query = supabaseForUser(ctx)
       .from("tours")
       .select(
@@ -45,7 +47,7 @@ export default defineTool({
 
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { tours: data ?? [] },
+      structuredContent: { count: (data ?? []).length, tours: data ?? [] },
     };
   },
 });
