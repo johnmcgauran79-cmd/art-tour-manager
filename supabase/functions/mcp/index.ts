@@ -2068,14 +2068,15 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       await auditXeroCall(ctx, { tool: "compare_art_payment_report_to_xero", recordId: tour_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
       return toolError("INTERNAL_ERROR");
     }
-    const matched = (bookings ?? []).map((b) => ({
+    const allMatched = (bookings ?? []).map((b) => ({
       booking: b,
       cls: classifyBookingPaymentException(
         { id: b.id, status: b.status, created_at: b.created_at, passenger_count: b.passenger_count },
         tour,
         asOf
       )
-    })).filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t))).slice(0, capped);
+    })).filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t)));
+    const matched = allMatched.slice(0, capped);
     const bookingIds = matched.map((m) => m.booking.id);
     const mapByBooking = /* @__PURE__ */ new Map();
     let allMappingRows = [];

@@ -73,7 +73,7 @@ export default defineTool({
       return toolError("INTERNAL_ERROR");
     }
 
-    const matched = (bookings ?? [])
+    const allMatched = (bookings ?? [])
       .map((b: any) => ({
         booking: b,
         cls: classifyBookingPaymentException(
@@ -82,8 +82,8 @@ export default defineTool({
           asOf,
         ),
       }))
-      .filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t)))
-      .slice(0, capped);
+      .filter((m) => m.cls.is_exception && m.cls.all_applicable_exception_types.some((t) => allowed.includes(t)));
+    const matched = allMatched.slice(0, capped);
 
     const bookingIds = matched.map((m) => m.booking.id);
     const mapByBooking = new Map<string, MappingRow[]>();
