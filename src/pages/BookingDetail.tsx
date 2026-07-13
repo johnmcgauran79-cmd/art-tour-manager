@@ -45,10 +45,20 @@ import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSectio
 import { ShareButton } from "@/components/ShareButton";
 import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 
-const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
+const InfoRow = ({ label, value, onClick }: { label: string; value: string | null | undefined; onClick?: () => void }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
-    <span className="text-sm">{value || "—"}</span>
+    {onClick && value ? (
+      <button
+        type="button"
+        onClick={onClick}
+        className="text-sm text-primary hover:underline text-left w-fit"
+      >
+        {value}
+      </button>
+    ) : (
+      <span className="text-sm">{value || "—"}</span>
+    )}
   </div>
 );
 
@@ -533,7 +543,15 @@ export default function BookingDetail() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoRow label="Lead Passenger" value={leadPassengerName} />
+                <InfoRow
+                  label="Lead Passenger"
+                  value={leadPassengerName}
+                  onClick={
+                    booking.customers?.id
+                      ? () => navigateWithContext(`/contacts/${booking.customers?.id}`)
+                      : undefined
+                  }
+                />
                 <InfoRow label="Preferred Name" value={booking.customers?.preferred_name} />
                 <InfoRow label="Email" value={booking.customers?.email} />
                 <InfoRow label="Phone" value={booking.customers?.phone} />
