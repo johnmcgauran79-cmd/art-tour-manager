@@ -282,7 +282,7 @@ export const useFilterCounts = () => {
       const { count: depositsOwingCount } = await supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'invoiced')
+        .in('status', ['pending', 'invoiced', 'racing_breaks_invoice'])
         .lt('created_at', cutoffDateDeposits.toISOString());
 
       // Instalments owing: tour has instalment_required, past instalment_date,
