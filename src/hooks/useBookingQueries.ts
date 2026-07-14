@@ -158,8 +158,29 @@ export const useFilteredBookings = (
 
       const today = new Date();
 
+      // Status priority maps (lower = higher up the list). Within each status,
+      // bookings are ordered oldest-first (ascending created_at).
+      const PRIORITY: Record<string, Record<string, number>> = {
+        deposits_owing: { invoiced: 0, racing_breaks_invoice: 1, pending: 2 },
+        instalments_owing: { invoiced: 0, deposited: 1, racing_breaks_invoice: 2, pending: 3 },
+        payment_due: { invoiced: 0, deposited: 1, instalment_paid: 2, racing_breaks_invoice: 3, pending: 4 },
+      };
+
+      const sortAndPaginate = (rows: any[], key: keyof typeof PRIORITY) => {
+        const priorityMap = PRIORITY[key];
+        const rank = (status: string) =>
+          status in priorityMap ? priorityMap[status] : 99;
+        const sorted = [...rows].sort((a, b) => {
+          const diff = rank(a.status) - rank(b.status);
+          if (diff !== 0) return diff;
+          // Oldest booking first, newest last within each status group
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
+        return sorted.slice(start, end + 1);
+      };
+
       if (filterType === 'deposits_owing') {
-        // Deposits owing: invoiced status 7+ days after booking created
+        // Deposits owing: pre-deposit statuses 7+ days after booking created
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 7);
         
@@ -171,19 +192,18 @@ export const useFilteredBookings = (
             customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
-          .eq('status', 'invoiced')
-          .lt('created_at', cutoffDate.toISOString())
-          .order('created_at', { ascending: false });
+          .in('status', ['pending', 'invoiced', 'racing_breaks_invoice'])
+          .lt('created_at', cutoffDate.toISOString());
         
         // Apply tour filter
         if (tourFilter !== 'all') {
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query.range(start, end);
+        const { data, error, count } = await query;
         
         if (error) throw error;
-        return { data: data || [], count: count || 0 };
+        return { data: sortAndPaginate(data || [], 'deposits_owing'), count: count || 0 };
         
       } else if (filterType === 'instalments_owing') {
         // Instalments owing: tour has instalment_required, past instalment_date,
@@ -203,18 +223,17 @@ export const useFilteredBookings = (
           .neq('status', 'complimentary')
           .neq('status', 'host')
           .neq('status', 'cancelled')
-          .neq('status', 'waitlisted')
-          .order('created_at', { ascending: false });
+          .neq('status', 'waitlisted');
         
         // Apply tour filter
         if (tourFilter !== 'all') {
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query.range(start, end);
+        const { data, error, count } = await query;
         
         if (error) throw error;
-        return { data: data || [], count: count || 0 };
+        return { data: sortAndPaginate(data || [], 'instalments_owing'), count: count || 0 };
         
       } else if (filterType === 'payment_due') {
         // Final payment owing: past final_payment_date and not fully_paid
@@ -231,18 +250,17 @@ export const useFilteredBookings = (
           .neq('status', 'complimentary')
           .neq('status', 'host')
           .neq('status', 'cancelled')
-          .neq('status', 'waitlisted')
-          .order('created_at', { ascending: false });
+          .neq('status', 'waitlisted');
         
         // Apply tour filter
         if (tourFilter !== 'all') {
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query.range(start, end);
+        const { data, error, count } = await query;
         
         if (error) throw error;
-        return { data: data || [], count: count || 0 };
+        return { data: sortAndPaginate(data || [], 'payment_due'), count: count || 0 };
       }
 
       return { data: [], count: 0 };
@@ -264,7 +282,7 @@ export const useFilterCounts = () => {
       const { count: depositsOwingCount } = await supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'invoiced')
+        .in('status', ['pending', 'invoiced', 'racing_breaks_invoice'])
         .lt('created_at', cutoffDateDeposits.toISOString());
 
       // Instalments owing: tour has instalment_required, past instalment_date,
