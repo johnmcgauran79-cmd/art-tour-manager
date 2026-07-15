@@ -17,9 +17,7 @@ export default defineTool({
 
     const { data, error } = await supabaseForUser(ctx)
       .from("tours")
-      .select(
-        "id, name, location, start_date, end_date, days, nights, status, capacity, minimum_passengers_required, tour_host, tour_type, price_single, price_double, price_twin, deposit_required, notes",
-      )
+      .select("*")
       .eq("id", tour_id)
       .maybeSingle();
 

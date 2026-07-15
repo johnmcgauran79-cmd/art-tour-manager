@@ -343,9 +343,7 @@ var get_tour_default = defineTool3({
   handler: async ({ tour_id }, ctx) => {
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tours").select(
-      "id, name, location, start_date, end_date, days, nights, status, capacity, minimum_passengers_required, tour_host, tour_type, price_single, price_double, price_twin, deposit_required, notes"
-    ).eq("id", tour_id).maybeSingle();
+    const { data, error } = await supabaseForUser(ctx).from("tours").select("*").eq("id", tour_id).maybeSingle();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
     if (!data)
@@ -650,6 +648,34 @@ var list_email_rules_default = defineTool13({
 // src/lib/mcp/tools/create-tour.ts
 import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z14 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_perms.ts
+async function requireAdminOrManager(ctx) {
+  if (!ctx.isAuthenticated()) {
+    return {
+      content: [{ type: "text", text: "Not authenticated" }],
+      isError: true
+    };
+  }
+  const supabase = supabaseForUser(ctx);
+  const userId = ctx.getUserId();
+  const [{ data: isAdmin }, { data: isManager }] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+    supabase.rpc("has_role", { _user_id: userId, _role: "manager" })
+  ]);
+  if (isAdmin === true || isManager === true) return null;
+  return {
+    content: [
+      {
+        type: "text",
+        text: "Permission denied: this MCP tool is restricted to admin or manager users."
+      }
+    ],
+    isError: true
+  };
+}
+
+// src/lib/mcp/tools/create-tour.ts
 var create_tour_default = defineTool14({
   name: "create_tour",
   title: "Create tour",
@@ -674,8 +700,8 @@ var create_tour_default = defineTool14({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const { data, error } = await supabaseForUser(ctx).from("tours").insert(input).select("id, name, start_date, end_date, status").single();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
@@ -720,12 +746,43 @@ var update_tour_default = defineTool15({
     ops_dinner_notes: z15.string().optional(),
     ops_activities_notes: z15.string().optional(),
     ops_other_notes: z15.string().optional(),
-    tour_hosts_notes: z15.string().optional()
+    tour_hosts_notes: z15.string().optional(),
+    // Extended fields — full parity with tour edit UI.
+    pickup_point: z15.string().optional(),
+    url_reference: z15.string().optional(),
+    instalment_required: z15.boolean().optional(),
+    instalment_amount: z15.number().optional(),
+    instalment_date: z15.string().optional().describe("YYYY-MM-DD."),
+    instalment_details: z15.string().optional(),
+    final_payment_date: z15.string().optional().describe("YYYY-MM-DD."),
+    travel_documents_required: z15.boolean().optional(),
+    pickup_location_required: z15.boolean().optional(),
+    is_test_tour: z15.boolean().optional(),
+    manual_billing: z15.boolean().optional(),
+    manual_emails: z15.boolean().optional(),
+    alerts_enabled: z15.boolean().optional(),
+    xero_product_id: z15.string().optional(),
+    xero_reference: z15.string().optional(),
+    keap_tag_id: z15.string().optional(),
+    brand_id: z15.string().optional(),
+    photos_videos_url: z15.string().optional(),
+    host_flights_status: z15.string().optional(),
+    outbound_flight_number: z15.string().optional(),
+    outbound_flight_date: z15.string().optional(),
+    return_flight_number: z15.string().optional(),
+    return_flight_date: z15.string().optional(),
+    cancellation_policy_enabled: z15.boolean().optional(),
+    cancellation_policy_override: z15.string().optional(),
+    welcome_message_enabled: z15.boolean().optional(),
+    welcome_message_heading: z15.string().optional(),
+    welcome_message_body: z15.string().optional(),
+    welcome_message_signoff: z15.string().optional(),
+    welcome_message_image_path: z15.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const clean = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== void 0)
     );
@@ -756,8 +813,8 @@ var create_itinerary_default = defineTool16({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, title }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     const { data: existing } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tour_id).eq("is_current", true).maybeSingle();
     if (existing)
@@ -803,8 +860,8 @@ var add_itinerary_day_default = defineTool17({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ itinerary_id, activity_date }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     const { data: last } = await supabase.from("tour_itinerary_days").select("day_number").eq("itinerary_id", itinerary_id).order("day_number", { ascending: false }).limit(1).maybeSingle();
     const { data, error } = await supabase.from("tour_itinerary_days").insert({
@@ -838,8 +895,8 @@ var upsert_itinerary_entry_default = defineTool18({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     if (entry_id) {
       const updates = Object.fromEntries(
@@ -879,8 +936,8 @@ var delete_itinerary_entry_default = defineTool19({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ entry_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const { error } = await supabaseForUser(ctx).from("tour_itinerary_entries").delete().eq("id", entry_id);
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
@@ -900,8 +957,8 @@ var delete_itinerary_day_default = defineTool20({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ day_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     await supabase.from("tour_itinerary_entries").delete().eq("day_id", day_id);
     const { error } = await supabase.from("tour_itinerary_days").delete().eq("id", day_id);
@@ -931,8 +988,8 @@ var add_additional_info_section_default = defineTool21({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible, include_in_email_rules }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     let order = sort_order;
     if (order === void 0) {
@@ -978,8 +1035,8 @@ var update_additional_info_section_default = defineTool22({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ section_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const clean = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== void 0)
     );
@@ -1009,8 +1066,8 @@ var delete_additional_info_section_default = defineTool23({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ section_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const { error } = await supabaseForUser(ctx).from("tour_additional_info_sections").delete().eq("id", section_id);
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
@@ -2884,13 +2941,758 @@ var list_invoice_mapping_issues_default = defineTool35({
   }
 });
 
+// src/lib/mcp/tools/list-tour-attachments.ts
+import { defineTool as defineTool36 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z36 } from "npm:zod@^3.25.76";
+var list_tour_attachments_default = defineTool36({
+  name: "list_tour_attachments",
+  title: "List tour attachments",
+  description: "List all file attachments (guest docs, ops docs, etc.) uploaded against a tour.",
+  inputSchema: { tour_id: z36.string().describe("The tour id (uuid).") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_attachments").select("*").eq("tour_id", tour_id).order("uploaded_at", { ascending: false });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { attachments: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-external-links.ts
+import { defineTool as defineTool37 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z37 } from "npm:zod@^3.25.76";
+var list_tour_external_links_default = defineTool37({
+  name: "list_tour_external_links",
+  title: "List tour external links",
+  description: "List external links (docs, photos, videos, references) attached to a tour.",
+  inputSchema: { tour_id: z37.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_external_links").select("*").eq("tour_id", tour_id).order("created_at", { ascending: true });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { links: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-pickup-options.ts
+import { defineTool as defineTool38 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z38 } from "npm:zod@^3.25.76";
+var list_tour_pickup_options_default = defineTool38({
+  name: "list_tour_pickup_options",
+  title: "List tour pickup options",
+  description: "List configured pickup locations for a tour.",
+  inputSchema: { tour_id: z38.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_pickup_options").select("*").eq("tour_id", tour_id).order("sort_order", { ascending: true });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { pickup_options: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-host-assignments.ts
+import { defineTool as defineTool39 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z39 } from "npm:zod@^3.25.76";
+var list_tour_host_assignments_default = defineTool39({
+  name: "list_tour_host_assignments",
+  title: "List tour host assignments",
+  description: "List staff/host users assigned to a tour.",
+  inputSchema: { tour_id: z39.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_host_assignments").select("*, profiles:user_id (id, full_name, email)").eq("tour_id", tour_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { host_assignments: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-document-images.ts
+import { defineTool as defineTool40 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z40 } from "npm:zod@^3.25.76";
+var list_tour_document_images_default = defineTool40({
+  name: "list_tour_document_images",
+  title: "List tour document images",
+  description: "List images uploaded against a tour's guest documents.",
+  inputSchema: { tour_id: z40.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_document_images").select("*").eq("tour_id", tour_id).order("sort_order", { ascending: true });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { images: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-ops-reviews.ts
+import { defineTool as defineTool41 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z41 } from "npm:zod@^3.25.76";
+var list_tour_ops_reviews_default = defineTool41({
+  name: "list_tour_ops_reviews",
+  title: "List tour ops reviews",
+  description: "List operations review sign-offs recorded against a tour.",
+  inputSchema: { tour_id: z41.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_ops_reviews").select("*").eq("tour_id", tour_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { reviews: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-alerts.ts
+import { defineTool as defineTool42 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z42 } from "npm:zod@^3.25.76";
+var list_tour_alerts_default = defineTool42({
+  name: "list_tour_alerts",
+  title: "List tour alerts",
+  description: "List capacity, cancellation, unread-email and other alerts raised for a tour.",
+  inputSchema: {
+    tour_id: z42.string(),
+    include_acknowledged: z42.boolean().optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, include_acknowledged }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("tour_alerts").select("*").eq("tour_id", tour_id).order("created_at", { ascending: false });
+    if (!include_acknowledged) q = q.is("acknowledged_at", null);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { alerts: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-operations-documents.ts
+import { defineTool as defineTool43 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z43 } from "npm:zod@^3.25.76";
+var list_tour_operations_documents_default = defineTool43({
+  name: "list_tour_operations_documents",
+  title: "List tour operations documents",
+  description: "List operations documents attached to a tour along with their sections/content.",
+  inputSchema: { tour_id: z43.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("operations_documents").select("*, operations_document_sections (*)").eq("tour_id", tour_id).order("created_at", { ascending: true });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { operations_documents: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-hotel.ts
+import { defineTool as defineTool44 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z44 } from "npm:zod@^3.25.76";
+var get_hotel_default = defineTool44({
+  name: "get_hotel",
+  title: "Get hotel details",
+  description: "Fetch a single hotel with all fields, hotel bookings, attachments and external links.",
+  inputSchema: { hotel_id: z44.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ hotel_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("hotels").select("*, hotel_bookings (*), hotel_attachments (*), hotel_external_links (*)").eq("id", hotel_id).maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Hotel not found" }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { hotel: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-activity-attachments.ts
+import { defineTool as defineTool45 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z45 } from "npm:zod@^3.25.76";
+var list_activity_attachments_default = defineTool45({
+  name: "list_activity_attachments",
+  title: "List activity attachments",
+  description: "List file attachments (contracts, briefs, tickets) uploaded against an activity.",
+  inputSchema: { activity_id: z45.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ activity_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("activity_attachments").select("*").eq("activity_id", activity_id).order("uploaded_at", { ascending: false });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { attachments: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-activity-external-links.ts
+import { defineTool as defineTool46 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z46 } from "npm:zod@^3.25.76";
+var list_activity_external_links_default = defineTool46({
+  name: "list_activity_external_links",
+  title: "List activity external links",
+  description: "List external reference links attached to an activity.",
+  inputSchema: { activity_id: z46.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ activity_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("activity_external_links").select("*").eq("activity_id", activity_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { links: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-booking-travel-docs.ts
+import { defineTool as defineTool47 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z47 } from "npm:zod@^3.25.76";
+var list_booking_travel_docs_default = defineTool47({
+  name: "list_booking_travel_docs",
+  title: "List booking travel documents",
+  description: "List travel documents (passports, visas, etc.) recorded against a booking, including full passport numbers, DOB and nationality (admin/manager only).",
+  inputSchema: { booking_id: z47.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("booking_travel_docs").select("*").eq("booking_id", booking_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { travel_docs: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-booking-waivers.ts
+import { defineTool as defineTool48 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z48 } from "npm:zod@^3.25.76";
+var list_booking_waivers_default = defineTool48({
+  name: "list_booking_waivers",
+  title: "List booking waivers",
+  description: "List signed / requested waivers for a booking or for all bookings on a tour.",
+  inputSchema: {
+    booking_id: z48.string().optional(),
+    tour_id: z48.string().optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id, tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!booking_id && !tour_id)
+      return { content: [{ type: "text", text: "Provide booking_id or tour_id" }], isError: true };
+    let q = supabaseForUser(ctx).from("booking_waivers").select("*, bookings!inner(id, tour_id)");
+    if (booking_id) q = q.eq("booking_id", booking_id);
+    if (tour_id) q = q.eq("bookings.tour_id", tour_id);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { waivers: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-booking-comments.ts
+import { defineTool as defineTool49 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z49 } from "npm:zod@^3.25.76";
+var list_booking_comments_default = defineTool49({
+  name: "list_booking_comments",
+  title: "List booking comments",
+  description: "List internal staff comments on a booking.",
+  inputSchema: { booking_id: z49.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("booking_comments").select("*").eq("booking_id", booking_id).order("created_at", { ascending: true });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { comments: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-email-logs.ts
+import { defineTool as defineTool50 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z50 } from "npm:zod@^3.25.76";
+var list_tour_email_logs_default = defineTool50({
+  name: "list_tour_email_logs",
+  title: "List tour email logs",
+  description: "List sent-email logs for a tour (subject, recipient, status, error, sent_at). Filter with booking_id or a limit.",
+  inputSchema: {
+    tour_id: z50.string().optional(),
+    booking_id: z50.string().optional(),
+    limit: z50.number().int().optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, booking_id, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("email_logs").select("*").order("sent_at", { ascending: false }).limit(Math.min(limit ?? 100, 500));
+    if (tour_id) q = q.eq("tour_id", tour_id);
+    if (booking_id) q = q.eq("booking_id", booking_id);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { emails: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-scheduled-emails.ts
+import { defineTool as defineTool51 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z51 } from "npm:zod@^3.25.76";
+var list_scheduled_emails_default = defineTool51({
+  name: "list_scheduled_emails",
+  title: "List scheduled emails",
+  description: "List emails scheduled for future delivery. Filter by tour_id or booking_id.",
+  inputSchema: {
+    tour_id: z51.string().optional(),
+    booking_id: z51.string().optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, booking_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("scheduled_emails").select("*").order("send_at", { ascending: true });
+    if (tour_id) q = q.eq("tour_id", tour_id);
+    if (booking_id) q = q.eq("booking_id", booking_id);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { scheduled: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-pending-email-approvals.ts
+import { defineTool as defineTool52 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z52 } from "npm:zod@^3.25.76";
+var list_pending_email_approvals_default = defineTool52({
+  name: "list_pending_email_approvals",
+  title: "List pending status-change email approvals",
+  description: "List status-change email approvals currently awaiting review. Filter by tour_id.",
+  inputSchema: { tour_id: z52.string().optional() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("status_change_email_queue").select("*").order("created_at", { ascending: false });
+    if (tour_id) q = q.eq("tour_id", tour_id);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { queue: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-email-templates.ts
+import { defineTool as defineTool53 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_email_templates_default = defineTool53({
+  name: "list_email_templates",
+  title: "List email templates",
+  description: "List all email templates (name, subject, body, category).",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("email_templates").select("*").order("name", { ascending: true });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { templates: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-email-rule-overrides.ts
+import { defineTool as defineTool54 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z53 } from "npm:zod@^3.25.76";
+var list_tour_email_rule_overrides_default = defineTool54({
+  name: "list_tour_email_rule_overrides",
+  title: "List tour-specific email rule overrides",
+  description: "List automated-email rule overrides configured for a specific tour (custom templates, disabled rules, etc.).",
+  inputSchema: { tour_id: z53.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("tour_email_rule_overrides").select("*").eq("tour_id", tour_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { overrides: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-hotel.ts
+import { defineTool as defineTool55 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z54 } from "npm:zod@^3.25.76";
+var create_hotel_default = defineTool55({
+  name: "create_hotel",
+  title: "Create hotel",
+  description: "Add a new hotel to a tour.",
+  inputSchema: {
+    tour_id: z54.string(),
+    name: z54.string(),
+    address: z54.string().optional(),
+    contact_name: z54.string().optional(),
+    contact_phone: z54.string().optional(),
+    contact_email: z54.string().optional(),
+    default_check_in: z54.string().optional().describe("YYYY-MM-DD."),
+    default_check_out: z54.string().optional().describe("YYYY-MM-DD."),
+    default_room_type: z54.string().optional(),
+    rooms_reserved: z54.number().int().optional(),
+    operations_notes: z54.string().optional(),
+    booking_status: z54.string().optional(),
+    payment_status: z54.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("hotels").insert(input).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Created hotel ${data.name} (${data.id})` }],
+      structuredContent: { hotel: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-hotel.ts
+import { defineTool as defineTool56 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z55 } from "npm:zod@^3.25.76";
+var update_hotel_default = defineTool56({
+  name: "update_hotel",
+  title: "Update hotel",
+  description: "Update fields on an existing hotel by id. Only supplied fields are changed.",
+  inputSchema: {
+    hotel_id: z55.string(),
+    name: z55.string().optional(),
+    address: z55.string().optional(),
+    contact_name: z55.string().optional(),
+    contact_phone: z55.string().optional(),
+    contact_email: z55.string().optional(),
+    default_check_in: z55.string().optional(),
+    default_check_out: z55.string().optional(),
+    default_room_type: z55.string().optional(),
+    rooms_reserved: z55.number().int().optional(),
+    operations_notes: z55.string().optional(),
+    booking_status: z55.string().optional(),
+    payment_status: z55.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ hotel_id, ...updates }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const clean = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== void 0)
+    );
+    if (Object.keys(clean).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("hotels").update(clean).eq("id", hotel_id).select("*").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Hotel not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated hotel ${data.name}` }],
+      structuredContent: { hotel: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-hotel.ts
+import { defineTool as defineTool57 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z56 } from "npm:zod@^3.25.76";
+var delete_hotel_default = defineTool57({
+  name: "delete_hotel",
+  title: "Delete hotel",
+  description: "Delete a hotel by id. This cascades to hotel bookings \u2014 confirm with the user first.",
+  inputSchema: { hotel_id: z56.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ hotel_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("hotels").delete().eq("id", hotel_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: "Deleted hotel" }] };
+  }
+});
+
+// src/lib/mcp/tools/upsert-hotel-booking.ts
+import { defineTool as defineTool58 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z57 } from "npm:zod@^3.25.76";
+var upsert_hotel_booking_default = defineTool58({
+  name: "upsert_hotel_booking",
+  title: "Create or update a hotel booking",
+  description: "Create a hotel booking (link a booking to a hotel with dates/bedding/room) or update it if hotel_booking_id is supplied.",
+  inputSchema: {
+    hotel_booking_id: z57.string().optional().describe("Provide to update; omit to create."),
+    hotel_id: z57.string().optional(),
+    booking_id: z57.string().optional(),
+    check_in_date: z57.string().optional(),
+    check_out_date: z57.string().optional(),
+    nights: z57.number().int().optional(),
+    bedding: z57.string().optional(),
+    allocated: z57.boolean().optional(),
+    room_type: z57.string().optional(),
+    room_upgrade: z57.string().optional(),
+    confirmation_number: z57.string().optional(),
+    room_requests: z57.string().optional(),
+    required: z57.boolean().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ hotel_booking_id, ...fields }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const clean = Object.fromEntries(
+      Object.entries(fields).filter(([, v]) => v !== void 0)
+    );
+    const sb = supabaseForUser(ctx);
+    if (hotel_booking_id) {
+      const { data: data2, error: error2 } = await sb.from("hotel_bookings").update(clean).eq("id", hotel_booking_id).select("*").maybeSingle();
+      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+      return { content: [{ type: "text", text: "Updated hotel booking" }], structuredContent: { hotel_booking: data2 } };
+    }
+    if (!fields.hotel_id || !fields.booking_id)
+      return { content: [{ type: "text", text: "hotel_id and booking_id are required to create" }], isError: true };
+    const { data, error } = await sb.from("hotel_bookings").insert(clean).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Created hotel booking ${data.id}` }], structuredContent: { hotel_booking: data } };
+  }
+});
+
+// src/lib/mcp/tools/delete-hotel-booking.ts
+import { defineTool as defineTool59 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z58 } from "npm:zod@^3.25.76";
+var delete_hotel_booking_default = defineTool59({
+  name: "delete_hotel_booking",
+  title: "Delete a hotel booking",
+  description: "Remove a hotel booking (unlink a booking from a hotel).",
+  inputSchema: { hotel_booking_id: z58.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ hotel_booking_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("hotel_bookings").delete().eq("id", hotel_booking_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: "Deleted hotel booking" }] };
+  }
+});
+
+// src/lib/mcp/tools/create-activity.ts
+import { defineTool as defineTool60 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z59 } from "npm:zod@^3.25.76";
+var create_activity_default = defineTool60({
+  name: "create_activity",
+  title: "Create activity",
+  description: "Add a new activity to a tour.",
+  inputSchema: {
+    tour_id: z59.string(),
+    name: z59.string(),
+    activity_date: z59.string().optional().describe("YYYY-MM-DD."),
+    start_time: z59.string().optional().describe("HH:MM."),
+    end_time: z59.string().optional().describe("HH:MM."),
+    location: z59.string().optional(),
+    dress_code: z59.string().optional(),
+    hospitality_inclusions: z59.string().optional(),
+    notes: z59.string().optional(),
+    operations_notes: z59.string().optional(),
+    transport_mode: z59.string().optional(),
+    transport_company: z59.string().optional(),
+    transport_status: z59.string().optional(),
+    booking_status: z59.string().optional(),
+    payment_status: z59.string().optional(),
+    spots_available: z59.number().int().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("activities").insert(input).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Created activity ${data.name} (${data.id})` }],
+      structuredContent: { activity: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-activity.ts
+import { defineTool as defineTool61 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z60 } from "npm:zod@^3.25.76";
+var update_activity_default = defineTool61({
+  name: "update_activity",
+  title: "Update activity",
+  description: "Update fields on an existing activity. Only supplied fields are changed.",
+  inputSchema: {
+    activity_id: z60.string(),
+    name: z60.string().optional(),
+    activity_date: z60.string().optional(),
+    start_time: z60.string().optional(),
+    end_time: z60.string().optional(),
+    depart_for_activity: z60.string().optional(),
+    location: z60.string().optional(),
+    contact_name: z60.string().optional(),
+    contact_phone: z60.string().optional(),
+    contact_email: z60.string().optional(),
+    dress_code: z60.string().optional(),
+    hospitality_inclusions: z60.string().optional(),
+    notes: z60.string().optional(),
+    operations_notes: z60.string().optional(),
+    transport_mode: z60.string().optional(),
+    transport_company: z60.string().optional(),
+    transport_contact_name: z60.string().optional(),
+    transport_phone: z60.string().optional(),
+    transport_email: z60.string().optional(),
+    transport_notes: z60.string().optional(),
+    transport_status: z60.string().optional(),
+    booking_status: z60.string().optional(),
+    payment_status: z60.string().optional(),
+    cancellation_status: z60.string().optional(),
+    cancellation_details: z60.string().optional(),
+    cancellation_terms: z60.string().optional(),
+    driver_name: z60.string().optional(),
+    driver_phone: z60.string().optional(),
+    pickup_location_transport: z60.string().optional(),
+    spots_available: z60.number().int().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ activity_id, ...updates }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const clean = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== void 0)
+    );
+    if (Object.keys(clean).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("activities").update(clean).eq("id", activity_id).select("*").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Activity not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated activity ${data.name}` }],
+      structuredContent: { activity: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-activity.ts
+import { defineTool as defineTool62 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z61 } from "npm:zod@^3.25.76";
+var delete_activity_default = defineTool62({
+  name: "delete_activity",
+  title: "Delete activity",
+  description: "Delete an activity by id. Cascades to activity bookings \u2014 confirm first.",
+  inputSchema: { activity_id: z61.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ activity_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("activities").delete().eq("id", activity_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: "Deleted activity" }] };
+  }
+});
+
+// src/lib/mcp/tools/upsert-activity-booking.ts
+import { defineTool as defineTool63 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z62 } from "npm:zod@^3.25.76";
+var upsert_activity_booking_default = defineTool63({
+  name: "upsert_activity_booking",
+  title: "Create or update an activity booking",
+  description: "Assign a booking to an activity with a passenger count, or update the count. Provide activity_booking_id to update, or activity_id + booking_id to create.",
+  inputSchema: {
+    activity_booking_id: z62.string().optional(),
+    activity_id: z62.string().optional(),
+    booking_id: z62.string().optional(),
+    passengers_attending: z62.number().int().describe("Number of passengers attending (0 to opt out).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ activity_booking_id, activity_id, booking_id, passengers_attending }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const sb = supabaseForUser(ctx);
+    if (activity_booking_id) {
+      const { data: data2, error: error2 } = await sb.from("activity_bookings").update({ passengers_attending }).eq("id", activity_booking_id).select("*").maybeSingle();
+      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+      return { content: [{ type: "text", text: "Updated activity booking" }], structuredContent: { activity_booking: data2 } };
+    }
+    if (!activity_id || !booking_id)
+      return { content: [{ type: "text", text: "activity_id and booking_id required to create" }], isError: true };
+    const { data, error } = await sb.from("activity_bookings").insert({ activity_id, booking_id, passengers_attending }).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Created activity booking ${data.id}` }], structuredContent: { activity_booking: data } };
+  }
+});
+
+// src/lib/mcp/tools/delete-activity-booking.ts
+import { defineTool as defineTool64 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z63 } from "npm:zod@^3.25.76";
+var delete_activity_booking_default = defineTool64({
+  name: "delete_activity_booking",
+  title: "Delete an activity booking",
+  description: "Remove a booking's assignment to an activity.",
+  inputSchema: { activity_booking_id: z63.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ activity_booking_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("activity_bookings").delete().eq("id", activity_booking_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: "Deleted activity booking" }] };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-mcp",
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours` (does NOT guarantee any business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic single next/upcoming/soonest departing tour \u2014 ALWAYS use this for 'next tour' style questions), `get_tour`, `list_bookings`, `get_booking` (minimised non-sensitive booking overview), `search_customers` (resolve a person's name/email into a customer_id \u2014 use FIRST before get_customer/list_customer_bookings), `get_customer` (minimised non-sensitive contact profile), `list_customer_bookings` (a contact's bookings with upcoming/current/past classification), `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues` (audit bookings whose mapped Xero invoice is DELETED/VOIDED or disagrees with the booking's invoice_reference) \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. The reconciliation tools re-compute the canonical payment-exception rules (deposit/instalment/final balance) and are tour/report scoped (no org-wide orphan-invoice scanning). Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+  instructions: "Tools for the Australian Racing Tours tour manager. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, etc.) are restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -2934,7 +3736,36 @@ var mcp_default = defineMcp({
     get_customer_default,
     search_customers_default,
     list_customer_bookings_default,
-    list_invoice_mapping_issues_default
+    list_invoice_mapping_issues_default,
+    list_tour_attachments_default,
+    list_tour_external_links_default,
+    list_tour_pickup_options_default,
+    list_tour_host_assignments_default,
+    list_tour_document_images_default,
+    list_tour_ops_reviews_default,
+    list_tour_alerts_default,
+    list_tour_operations_documents_default,
+    get_hotel_default,
+    list_activity_attachments_default,
+    list_activity_external_links_default,
+    list_booking_travel_docs_default,
+    list_booking_waivers_default,
+    list_booking_comments_default,
+    list_tour_email_logs_default,
+    list_scheduled_emails_default,
+    list_pending_email_approvals_default,
+    list_email_templates_default,
+    list_tour_email_rule_overrides_default,
+    create_hotel_default,
+    update_hotel_default,
+    delete_hotel_default,
+    upsert_hotel_booking_default,
+    delete_hotel_booking_default,
+    create_activity_default,
+    update_activity_default,
+    delete_activity_default,
+    upsert_activity_booking_default,
+    delete_activity_booking_default
   ]
 });
 

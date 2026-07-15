@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
+import { requireAdminOrManager } from "./_perms";
 
 export default defineTool({
   name: "create_tour",
@@ -30,8 +31,8 @@ export default defineTool({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
 
     const { data, error } = await supabaseForUser(ctx)
       .from("tours")

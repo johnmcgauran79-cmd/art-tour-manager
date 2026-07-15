@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
+import { requireAdminOrManager } from "./_perms";
 
 export default defineTool({
   name: "add_itinerary_day",
@@ -13,8 +14,8 @@ export default defineTool({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ itinerary_id, activity_date }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
 
     const supabase = supabaseForUser(ctx);
     const { data: last } = await supabase

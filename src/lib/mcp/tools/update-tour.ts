@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
+import { requireAdminOrManager } from "./_perms";
 
 export default defineTool({
   name: "update_tour",
@@ -38,11 +39,42 @@ export default defineTool({
     ops_activities_notes: z.string().optional(),
     ops_other_notes: z.string().optional(),
     tour_hosts_notes: z.string().optional(),
+    // Extended fields — full parity with tour edit UI.
+    pickup_point: z.string().optional(),
+    url_reference: z.string().optional(),
+    instalment_required: z.boolean().optional(),
+    instalment_amount: z.number().optional(),
+    instalment_date: z.string().optional().describe("YYYY-MM-DD."),
+    instalment_details: z.string().optional(),
+    final_payment_date: z.string().optional().describe("YYYY-MM-DD."),
+    travel_documents_required: z.boolean().optional(),
+    pickup_location_required: z.boolean().optional(),
+    is_test_tour: z.boolean().optional(),
+    manual_billing: z.boolean().optional(),
+    manual_emails: z.boolean().optional(),
+    alerts_enabled: z.boolean().optional(),
+    xero_product_id: z.string().optional(),
+    xero_reference: z.string().optional(),
+    keap_tag_id: z.string().optional(),
+    brand_id: z.string().optional(),
+    photos_videos_url: z.string().optional(),
+    host_flights_status: z.string().optional(),
+    outbound_flight_number: z.string().optional(),
+    outbound_flight_date: z.string().optional(),
+    return_flight_number: z.string().optional(),
+    return_flight_date: z.string().optional(),
+    cancellation_policy_enabled: z.boolean().optional(),
+    cancellation_policy_override: z.string().optional(),
+    welcome_message_enabled: z.boolean().optional(),
+    welcome_message_heading: z.string().optional(),
+    welcome_message_body: z.string().optional(),
+    welcome_message_signoff: z.string().optional(),
+    welcome_message_image_path: z.string().optional(),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
 
     const clean = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined),
