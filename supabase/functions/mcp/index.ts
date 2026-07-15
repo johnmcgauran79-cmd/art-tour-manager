@@ -343,9 +343,7 @@ var get_tour_default = defineTool3({
   handler: async ({ tour_id }, ctx) => {
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("tours").select(
-      "id, name, location, start_date, end_date, days, nights, status, capacity, minimum_passengers_required, tour_host, tour_type, price_single, price_double, price_twin, deposit_required, notes"
-    ).eq("id", tour_id).maybeSingle();
+    const { data, error } = await supabaseForUser(ctx).from("tours").select("*").eq("id", tour_id).maybeSingle();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
     if (!data)
