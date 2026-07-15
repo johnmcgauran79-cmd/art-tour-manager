@@ -650,6 +650,34 @@ var list_email_rules_default = defineTool13({
 // src/lib/mcp/tools/create-tour.ts
 import { defineTool as defineTool14 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z14 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_perms.ts
+async function requireAdminOrManager(ctx) {
+  if (!ctx.isAuthenticated()) {
+    return {
+      content: [{ type: "text", text: "Not authenticated" }],
+      isError: true
+    };
+  }
+  const supabase = supabaseForUser(ctx);
+  const userId = ctx.getUserId();
+  const [{ data: isAdmin }, { data: isManager }] = await Promise.all([
+    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+    supabase.rpc("has_role", { _user_id: userId, _role: "manager" })
+  ]);
+  if (isAdmin === true || isManager === true) return null;
+  return {
+    content: [
+      {
+        type: "text",
+        text: "Permission denied: this MCP tool is restricted to admin or manager users."
+      }
+    ],
+    isError: true
+  };
+}
+
+// src/lib/mcp/tools/create-tour.ts
 var create_tour_default = defineTool14({
   name: "create_tour",
   title: "Create tour",
@@ -674,8 +702,8 @@ var create_tour_default = defineTool14({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const { data, error } = await supabaseForUser(ctx).from("tours").insert(input).select("id, name, start_date, end_date, status").single();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
@@ -724,8 +752,8 @@ var update_tour_default = defineTool15({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const clean = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== void 0)
     );
@@ -756,8 +784,8 @@ var create_itinerary_default = defineTool16({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, title }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     const { data: existing } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tour_id).eq("is_current", true).maybeSingle();
     if (existing)
@@ -803,8 +831,8 @@ var add_itinerary_day_default = defineTool17({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ itinerary_id, activity_date }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     const { data: last } = await supabase.from("tour_itinerary_days").select("day_number").eq("itinerary_id", itinerary_id).order("day_number", { ascending: false }).limit(1).maybeSingle();
     const { data, error } = await supabase.from("tour_itinerary_days").insert({
@@ -838,8 +866,8 @@ var upsert_itinerary_entry_default = defineTool18({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     if (entry_id) {
       const updates = Object.fromEntries(
@@ -879,8 +907,8 @@ var delete_itinerary_entry_default = defineTool19({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ entry_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const { error } = await supabaseForUser(ctx).from("tour_itinerary_entries").delete().eq("id", entry_id);
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
@@ -900,8 +928,8 @@ var delete_itinerary_day_default = defineTool20({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ day_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     await supabase.from("tour_itinerary_entries").delete().eq("day_id", day_id);
     const { error } = await supabase.from("tour_itinerary_days").delete().eq("id", day_id);
@@ -931,8 +959,8 @@ var add_additional_info_section_default = defineTool21({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible, include_in_email_rules }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     let order = sort_order;
     if (order === void 0) {
@@ -978,8 +1006,8 @@ var update_additional_info_section_default = defineTool22({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ section_id, ...updates }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const clean = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== void 0)
     );
@@ -1009,8 +1037,8 @@ var delete_additional_info_section_default = defineTool23({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ section_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
     const { error } = await supabaseForUser(ctx).from("tour_additional_info_sections").delete().eq("id", section_id);
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };

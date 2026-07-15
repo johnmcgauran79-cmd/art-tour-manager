@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
+import { requireAdminOrManager } from "./_perms";
 
 export default defineTool({
   name: "delete_itinerary_day",
@@ -12,8 +13,8 @@ export default defineTool({
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ day_id }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
 
     const supabase = supabaseForUser(ctx);
     await supabase.from("tour_itinerary_entries").delete().eq("day_id", day_id);

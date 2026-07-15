@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
+import { requireAdminOrManager } from "./_perms";
 
 export default defineTool({
   name: "add_additional_info_section",
@@ -23,8 +24,8 @@ export default defineTool({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible, include_in_email_rules }, ctx) => {
-    if (!ctx.isAuthenticated())
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
 
     const supabase = supabaseForUser(ctx);
     let order = sort_order;
