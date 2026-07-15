@@ -550,6 +550,98 @@
             },
             "tour_hosts_notes": {
               "type": "string"
+            },
+            "pickup_point": {
+              "type": "string"
+            },
+            "url_reference": {
+              "type": "string"
+            },
+            "instalment_required": {
+              "type": "boolean"
+            },
+            "instalment_amount": {
+              "type": "number"
+            },
+            "instalment_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "instalment_details": {
+              "type": "string"
+            },
+            "final_payment_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "travel_documents_required": {
+              "type": "boolean"
+            },
+            "pickup_location_required": {
+              "type": "boolean"
+            },
+            "is_test_tour": {
+              "type": "boolean"
+            },
+            "manual_billing": {
+              "type": "boolean"
+            },
+            "manual_emails": {
+              "type": "boolean"
+            },
+            "alerts_enabled": {
+              "type": "boolean"
+            },
+            "xero_product_id": {
+              "type": "string"
+            },
+            "xero_reference": {
+              "type": "string"
+            },
+            "keap_tag_id": {
+              "type": "string"
+            },
+            "brand_id": {
+              "type": "string"
+            },
+            "photos_videos_url": {
+              "type": "string"
+            },
+            "host_flights_status": {
+              "type": "string"
+            },
+            "outbound_flight_number": {
+              "type": "string"
+            },
+            "outbound_flight_date": {
+              "type": "string"
+            },
+            "return_flight_number": {
+              "type": "string"
+            },
+            "return_flight_date": {
+              "type": "string"
+            },
+            "cancellation_policy_enabled": {
+              "type": "boolean"
+            },
+            "cancellation_policy_override": {
+              "type": "string"
+            },
+            "welcome_message_enabled": {
+              "type": "boolean"
+            },
+            "welcome_message_heading": {
+              "type": "string"
+            },
+            "welcome_message_body": {
+              "type": "string"
+            },
+            "welcome_message_signoff": {
+              "type": "string"
+            },
+            "welcome_message_image_path": {
+              "type": "string"
             }
           },
           "required": [
