@@ -38,7 +38,7 @@ export default defineTool({
     }
     if (!fields.hotel_id || !fields.booking_id)
       return { content: [{ type: "text", text: "hotel_id and booking_id are required to create" }], isError: true };
-    const { data, error } = await sb.from("hotel_bookings").insert(clean).select("*").single();
+    const { data, error } = await sb.from("hotel_bookings").insert(clean as any).select("*").single();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return { content: [{ type: "text", text: `Created hotel booking ${data.id}` }], structuredContent: { hotel_booking: data } };
   },
