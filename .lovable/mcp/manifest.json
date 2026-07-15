@@ -1304,6 +1304,953 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "list_tour_attachments",
+        "title": "List tour attachments",
+        "description": "List all file attachments (guest docs, ops docs, etc.) uploaded against a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_external_links",
+        "title": "List tour external links",
+        "description": "List external links (docs, photos, videos, references) attached to a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_pickup_options",
+        "title": "List tour pickup options",
+        "description": "List configured pickup locations for a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_host_assignments",
+        "title": "List tour host assignments",
+        "description": "List staff/host users assigned to a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_document_images",
+        "title": "List tour document images",
+        "description": "List images uploaded against a tour's guest documents.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_ops_reviews",
+        "title": "List tour ops reviews",
+        "description": "List operations review sign-offs recorded against a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_alerts",
+        "title": "List tour alerts",
+        "description": "List capacity, cancellation, unread-email and other alerts raised for a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "include_acknowledged": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_operations_documents",
+        "title": "List tour operations documents",
+        "description": "List operations documents attached to a tour along with their sections/content.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_hotel",
+        "title": "Get hotel details",
+        "description": "Fetch a single hotel with all fields, hotel bookings, attachments and external links.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "hotel_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "hotel_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_activity_attachments",
+        "title": "List activity attachments",
+        "description": "List file attachments (contracts, briefs, tickets) uploaded against an activity.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activity_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "activity_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_activity_external_links",
+        "title": "List activity external links",
+        "description": "List external reference links attached to an activity.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activity_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "activity_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_booking_travel_docs",
+        "title": "List booking travel documents",
+        "description": "List travel documents (passports, visas, etc.) recorded against a booking, including full passport numbers, DOB and nationality (admin/manager only).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_booking_waivers",
+        "title": "List booking waivers",
+        "description": "List signed / requested waivers for a booking or for all bookings on a tour.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string"
+            },
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_booking_comments",
+        "title": "List booking comments",
+        "description": "List internal staff comments on a booking.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_email_logs",
+        "title": "List tour email logs",
+        "description": "List sent-email logs for a tour (subject, recipient, status, error, sent_at). Filter with booking_id or a limit.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "booking_id": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_scheduled_emails",
+        "title": "List scheduled emails",
+        "description": "List emails scheduled for future delivery. Filter by tour_id or booking_id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "booking_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_pending_email_approvals",
+        "title": "List pending status-change email approvals",
+        "description": "List status-change email approvals currently awaiting review. Filter by tour_id.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_email_templates",
+        "title": "List email templates",
+        "description": "List all email templates (name, subject, body, category).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_email_rule_overrides",
+        "title": "List tour-specific email rule overrides",
+        "description": "List automated-email rule overrides configured for a specific tour (custom templates, disabled rules, etc.).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_hotel",
+        "title": "Create hotel",
+        "description": "Add a new hotel to a tour.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "contact_name": {
+              "type": "string"
+            },
+            "contact_phone": {
+              "type": "string"
+            },
+            "contact_email": {
+              "type": "string"
+            },
+            "default_check_in": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "default_check_out": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "default_room_type": {
+              "type": "string"
+            },
+            "rooms_reserved": {
+              "type": "integer"
+            },
+            "operations_notes": {
+              "type": "string"
+            },
+            "booking_status": {
+              "type": "string"
+            },
+            "payment_status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tour_id",
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_hotel",
+        "title": "Update hotel",
+        "description": "Update fields on an existing hotel by id. Only supplied fields are changed.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "hotel_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "contact_name": {
+              "type": "string"
+            },
+            "contact_phone": {
+              "type": "string"
+            },
+            "contact_email": {
+              "type": "string"
+            },
+            "default_check_in": {
+              "type": "string"
+            },
+            "default_check_out": {
+              "type": "string"
+            },
+            "default_room_type": {
+              "type": "string"
+            },
+            "rooms_reserved": {
+              "type": "integer"
+            },
+            "operations_notes": {
+              "type": "string"
+            },
+            "booking_status": {
+              "type": "string"
+            },
+            "payment_status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "hotel_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_hotel",
+        "title": "Delete hotel",
+        "description": "Delete a hotel by id. This cascades to hotel bookings — confirm with the user first.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "hotel_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "hotel_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upsert_hotel_booking",
+        "title": "Create or update a hotel booking",
+        "description": "Create a hotel booking (link a booking to a hotel with dates/bedding/room) or update it if hotel_booking_id is supplied.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "hotel_booking_id": {
+              "type": "string",
+              "description": "Provide to update; omit to create."
+            },
+            "hotel_id": {
+              "type": "string"
+            },
+            "booking_id": {
+              "type": "string"
+            },
+            "check_in_date": {
+              "type": "string"
+            },
+            "check_out_date": {
+              "type": "string"
+            },
+            "nights": {
+              "type": "integer"
+            },
+            "bedding": {
+              "type": "string"
+            },
+            "allocated": {
+              "type": "boolean"
+            },
+            "room_type": {
+              "type": "string"
+            },
+            "room_upgrade": {
+              "type": "string"
+            },
+            "confirmation_number": {
+              "type": "string"
+            },
+            "room_requests": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_hotel_booking",
+        "title": "Delete a hotel booking",
+        "description": "Remove a hotel booking (unlink a booking from a hotel).",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "hotel_booking_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "hotel_booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_activity",
+        "title": "Create activity",
+        "description": "Add a new activity to a tour.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "activity_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD."
+            },
+            "start_time": {
+              "type": "string",
+              "description": "HH:MM."
+            },
+            "end_time": {
+              "type": "string",
+              "description": "HH:MM."
+            },
+            "location": {
+              "type": "string"
+            },
+            "dress_code": {
+              "type": "string"
+            },
+            "hospitality_inclusions": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "operations_notes": {
+              "type": "string"
+            },
+            "transport_mode": {
+              "type": "string"
+            },
+            "transport_company": {
+              "type": "string"
+            },
+            "transport_status": {
+              "type": "string"
+            },
+            "booking_status": {
+              "type": "string"
+            },
+            "payment_status": {
+              "type": "string"
+            },
+            "spots_available": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "tour_id",
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_activity",
+        "title": "Update activity",
+        "description": "Update fields on an existing activity. Only supplied fields are changed.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activity_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "activity_date": {
+              "type": "string"
+            },
+            "start_time": {
+              "type": "string"
+            },
+            "end_time": {
+              "type": "string"
+            },
+            "depart_for_activity": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "contact_name": {
+              "type": "string"
+            },
+            "contact_phone": {
+              "type": "string"
+            },
+            "contact_email": {
+              "type": "string"
+            },
+            "dress_code": {
+              "type": "string"
+            },
+            "hospitality_inclusions": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "operations_notes": {
+              "type": "string"
+            },
+            "transport_mode": {
+              "type": "string"
+            },
+            "transport_company": {
+              "type": "string"
+            },
+            "transport_contact_name": {
+              "type": "string"
+            },
+            "transport_phone": {
+              "type": "string"
+            },
+            "transport_email": {
+              "type": "string"
+            },
+            "transport_notes": {
+              "type": "string"
+            },
+            "transport_status": {
+              "type": "string"
+            },
+            "booking_status": {
+              "type": "string"
+            },
+            "payment_status": {
+              "type": "string"
+            },
+            "cancellation_status": {
+              "type": "string"
+            },
+            "cancellation_details": {
+              "type": "string"
+            },
+            "cancellation_terms": {
+              "type": "string"
+            },
+            "driver_name": {
+              "type": "string"
+            },
+            "driver_phone": {
+              "type": "string"
+            },
+            "pickup_location_transport": {
+              "type": "string"
+            },
+            "spots_available": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "activity_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_activity",
+        "title": "Delete activity",
+        "description": "Delete an activity by id. Cascades to activity bookings — confirm first.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activity_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "activity_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upsert_activity_booking",
+        "title": "Create or update an activity booking",
+        "description": "Assign a booking to an activity with a passenger count, or update the count. Provide activity_booking_id to update, or activity_id + booking_id to create.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activity_booking_id": {
+              "type": "string"
+            },
+            "activity_id": {
+              "type": "string"
+            },
+            "booking_id": {
+              "type": "string"
+            },
+            "passengers_attending": {
+              "type": "integer",
+              "description": "Number of passengers attending (0 to opt out)."
+            }
+          },
+          "required": [
+            "passengers_attending"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_activity_booking",
+        "title": "Delete an activity booking",
+        "description": "Remove a booking's assignment to an activity.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "activity_booking_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "activity_booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }
