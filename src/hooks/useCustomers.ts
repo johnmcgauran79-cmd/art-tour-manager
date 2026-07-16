@@ -26,8 +26,8 @@ export interface Customer {
   medical_conditions: string | null;
   accessibility_needs: string | null;
   avatar_url: string | null;
-  latest_tour_name: string | null;
-  latest_tour_end_date: string | null;
+  latest_tour_name?: string | null;
+  latest_tour_end_date?: string | null;
   created_at: string;
   updated_at: string;
 }
