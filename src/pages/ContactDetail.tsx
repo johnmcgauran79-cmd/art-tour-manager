@@ -350,6 +350,7 @@ export default function ContactDetail() {
                 extra={<WhatsAppButton phone={contact.phone} name={contact.first_name} size="icon" showLabel={false} variant="ghost" className="h-6 w-6 p-0" />}
               />
               <InfoRow label="Spouse Name" value={contact.spouse_name} />
+              <InfoRow label="Latest Tour" value={contact.latest_tour_name} />
               <InfoRow label="City" value={contact.city} />
               <InfoRow label="State" value={contact.state} />
               <InfoRow label="Country" value={contact.country} />
