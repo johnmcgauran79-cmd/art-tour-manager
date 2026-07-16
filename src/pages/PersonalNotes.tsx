@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { Plus, Search, Trash2, Pin, PinOff } from "lucide-react";
+import { Plus, Search, Trash2, Pin, PinOff, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
