@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { Plus, Search, Trash2, Pin, PinOff } from "lucide-react";
+import { Plus, Search, Trash2, Pin, PinOff, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -134,6 +134,15 @@ const PersonalNotes = () => {
                   onClick={() => persist({ pinned: !selected.pinned })}
                 >
                   {selected.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Save note"
+                  disabled={title === selected.title && content === selected.content}
+                  onClick={() => persist({ title, content })}
+                >
+                  <Save className="h-4 w-4" />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
