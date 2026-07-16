@@ -135,6 +135,15 @@ const PersonalNotes = () => {
                 >
                   {selected.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Save note"
+                  disabled={title === selected.title && content === selected.content}
+                  onClick={() => persist({ title, content })}
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon">
