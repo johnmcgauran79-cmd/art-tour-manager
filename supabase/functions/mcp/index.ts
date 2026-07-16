@@ -3686,13 +3686,383 @@ var delete_activity_booking_default = defineTool64({
   }
 });
 
+// src/lib/mcp/tools/list-tasks.ts
+import { defineTool as defineTool65 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z64 } from "npm:zod@^3.25.76";
+var list_tasks_default = defineTool65({
+  name: "list_tasks",
+  title: "List tasks",
+  description: "List tasks with optional filters. Filter by status, priority, category, tour_id, assignee_user_id, or search text in title/description. Returns up to `limit` (default 50, max 200) most recent tasks.",
+  inputSchema: {
+    status: z64.string().optional().describe("Task status enum value."),
+    priority: z64.string().optional(),
+    category: z64.string().optional(),
+    tour_id: z64.string().optional(),
+    assignee_user_id: z64.string().optional().describe("Filter tasks assigned to this user id."),
+    search: z64.string().optional().describe("Case-insensitive substring in title or description."),
+    limit: z64.number().int().min(1).max(200).optional()
+  },
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const limit = input.limit ?? 50;
+    let taskIdsForAssignee = null;
+    if (input.assignee_user_id) {
+      const { data: rows, error: error2 } = await supabase.from("task_assignments").select("task_id").eq("user_id", input.assignee_user_id);
+      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+      taskIdsForAssignee = (rows ?? []).map((r) => r.task_id);
+      if (taskIdsForAssignee.length === 0)
+        return { content: [{ type: "text", text: "No tasks for that assignee." }], structuredContent: { tasks: [] } };
+    }
+    let q = supabase.from("tasks").select("id, title, status, priority, category, due_date, tour_id, created_by, created_at, updated_at, is_automated, parent_task_id").order("updated_at", { ascending: false }).limit(limit);
+    if (input.status) q = q.eq("status", input.status);
+    if (input.priority) q = q.eq("priority", input.priority);
+    if (input.category) q = q.eq("category", input.category);
+    if (input.tour_id) q = q.eq("tour_id", input.tour_id);
+    if (taskIdsForAssignee) q = q.in("id", taskIdsForAssignee);
+    if (input.search) q = q.or(`title.ilike.%${input.search}%,description.ilike.%${input.search}%`);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} task(s).` }],
+      structuredContent: { tasks: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-task.ts
+import { defineTool as defineTool66 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z65 } from "npm:zod@^3.25.76";
+var get_task_default = defineTool66({
+  name: "get_task",
+  title: "Get task",
+  description: "Return full task detail: task row, assignments, watchers, approvers, subtasks, comments, entity links, and attachments metadata.",
+  inputSchema: { task_id: z65.string() },
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  handler: async ({ task_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const [task, assignments, watchers, approvers, subtasks, comments, links, attachments] = await Promise.all([
+      supabase.from("tasks").select("*").eq("id", task_id).maybeSingle(),
+      supabase.from("task_assignments").select("*").eq("task_id", task_id),
+      supabase.from("task_watchers").select("*").eq("task_id", task_id),
+      supabase.from("task_approvers").select("*").eq("task_id", task_id),
+      supabase.from("task_subtasks").select("*").eq("task_id", task_id).order("sort_order"),
+      supabase.from("task_comments").select("*").eq("task_id", task_id).order("created_at"),
+      supabase.from("task_entity_links").select("*").eq("task_id", task_id),
+      supabase.from("task_attachments").select("*").eq("task_id", task_id)
+    ]);
+    if (task.error) return { content: [{ type: "text", text: task.error.message }], isError: true };
+    if (!task.data) return { content: [{ type: "text", text: "Task not found" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Task: ${task.data.title}` }],
+      structuredContent: {
+        task: task.data,
+        assignments: assignments.data ?? [],
+        watchers: watchers.data ?? [],
+        approvers: approvers.data ?? [],
+        subtasks: subtasks.data ?? [],
+        comments: comments.data ?? [],
+        entity_links: links.data ?? [],
+        attachments: attachments.data ?? []
+      }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-task.ts
+import { defineTool as defineTool67 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z66 } from "npm:zod@^3.25.76";
+var create_task_default = defineTool67({
+  name: "create_task",
+  title: "Create task",
+  description: "Create a task. Optionally assign users via `assignee_user_ids` (creates task_assignments rows). Status enum: not_started|in_progress|waiting|completed|cancelled|archived|not_required|with_third_party|awaiting_further_information|approval_required|approved|changes_needed. Priority: low|medium|high|critical. Category: operations|finance|marketing|booking|maintenance|general. Due date accepts YYYY-MM-DD (stored as literal date) or full ISO timestamp.",
+  inputSchema: {
+    title: z66.string().min(1),
+    description: z66.string().optional(),
+    status: z66.string().optional(),
+    priority: z66.string().optional(),
+    category: z66.string().optional(),
+    due_date: z66.string().optional(),
+    tour_id: z66.string().optional(),
+    parent_task_id: z66.string().optional(),
+    depends_on_task_id: z66.string().optional(),
+    url_reference: z66.string().optional(),
+    assignee_user_ids: z66.array(z66.string()).optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    const { assignee_user_ids, ...taskInput } = input;
+    const insertPayload = { ...taskInput, created_by: userId };
+    const { data, error } = await supabase.from("tasks").insert(insertPayload).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (assignee_user_ids?.length) {
+      const rows = assignee_user_ids.map((uid) => ({ task_id: data.id, user_id: uid, assigned_by: userId }));
+      const { error: aerr } = await supabase.from("task_assignments").insert(rows);
+      if (aerr) return {
+        content: [{ type: "text", text: `Task ${data.id} created but assignment failed: ${aerr.message}` }],
+        structuredContent: { task: data },
+        isError: true
+      };
+    }
+    return {
+      content: [{ type: "text", text: `Created task ${data.title} (${data.id})` }],
+      structuredContent: { task: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-task.ts
+import { defineTool as defineTool68 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z67 } from "npm:zod@^3.25.76";
+var update_task_default = defineTool68({
+  name: "update_task",
+  title: "Update task",
+  description: "Update fields on an existing task. Only supplied fields are changed. Set status to 'completed' to complete a task.",
+  inputSchema: {
+    task_id: z67.string(),
+    title: z67.string().optional(),
+    description: z67.string().optional(),
+    status: z67.string().optional(),
+    priority: z67.string().optional(),
+    category: z67.string().optional(),
+    due_date: z67.string().nullable().optional(),
+    tour_id: z67.string().nullable().optional(),
+    parent_task_id: z67.string().nullable().optional(),
+    depends_on_task_id: z67.string().nullable().optional(),
+    url_reference: z67.string().nullable().optional(),
+    quick_update: z67.string().optional().describe("Short status note; timestamps set automatically.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ task_id, quick_update, ...rest }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const updates = Object.fromEntries(
+      Object.entries(rest).filter(([, v]) => v !== void 0)
+    );
+    if (quick_update !== void 0) {
+      updates.quick_update = quick_update;
+      updates.quick_update_at = (/* @__PURE__ */ new Date()).toISOString();
+      updates.quick_update_by = ctx.getUserId();
+    }
+    if (updates.status === "completed") updates.completed_at = (/* @__PURE__ */ new Date()).toISOString();
+    if (Object.keys(updates).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    const { data, error } = await supabase.from("tasks").update(updates).eq("id", task_id).select("*").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Task not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated task ${data.title}` }],
+      structuredContent: { task: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-task.ts
+import { defineTool as defineTool69 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z68 } from "npm:zod@^3.25.76";
+var delete_task_default = defineTool69({
+  name: "delete_task",
+  title: "Delete task",
+  description: "Permanently delete a task and its assignments/comments/subtasks (cascades). Confirm with the user first.",
+  inputSchema: { task_id: z68.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ task_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("tasks").delete().eq("id", task_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Deleted task ${task_id}` }] };
+  }
+});
+
+// src/lib/mcp/tools/add-task-comment.ts
+import { defineTool as defineTool70 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z69 } from "npm:zod@^3.25.76";
+var add_task_comment_default = defineTool70({
+  name: "add_task_comment",
+  title: "Add task comment",
+  description: "Add a comment to a task. Optionally reply to another comment via parent_comment_id.",
+  inputSchema: {
+    task_id: z69.string(),
+    comment: z69.string().min(1),
+    parent_comment_id: z69.string().optional()
+  },
+  annotations: { readOnlyHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("task_comments").insert({ ...input, user_id: ctx.getUserId() }).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Comment added (${data.id})` }],
+      structuredContent: { comment: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/assign-task.ts
+import { defineTool as defineTool71 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z70 } from "npm:zod@^3.25.76";
+var assign_task_default = defineTool71({
+  name: "assign_task",
+  title: "Assign task",
+  description: "Assign one or more users to a task (adds task_assignments rows; existing assignments unchanged).",
+  inputSchema: {
+    task_id: z70.string(),
+    user_ids: z70.array(z70.string()).min(1)
+  },
+  annotations: { readOnlyHint: false, openWorldHint: false },
+  handler: async ({ task_id, user_ids }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const rows = user_ids.map((uid) => ({ task_id, user_id: uid, assigned_by: ctx.getUserId() }));
+    const { data, error } = await supabaseForUser(ctx).from("task_assignments").upsert(rows, { onConflict: "task_id,user_id", ignoreDuplicates: true }).select("*");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Assigned ${user_ids.length} user(s) to task ${task_id}` }],
+      structuredContent: { assignments: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/unassign-task.ts
+import { defineTool as defineTool72 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z71 } from "npm:zod@^3.25.76";
+var unassign_task_default = defineTool72({
+  name: "unassign_task",
+  title: "Unassign task",
+  description: "Remove a user's assignment from a task.",
+  inputSchema: { task_id: z71.string(), user_id: z71.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ task_id, user_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("task_assignments").delete().eq("task_id", task_id).eq("user_id", user_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Unassigned user ${user_id} from task ${task_id}` }] };
+  }
+});
+
+// src/lib/mcp/tools/add-task-subtask.ts
+import { defineTool as defineTool73 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z72 } from "npm:zod@^3.25.76";
+var add_task_subtask_default = defineTool73({
+  name: "add_task_subtask",
+  title: "Add task subtask",
+  description: "Add a subtask (checklist item) to a task.",
+  inputSchema: {
+    task_id: z72.string(),
+    title: z72.string().min(1),
+    sort_order: z72.number().int().optional(),
+    due_date: z72.string().optional().describe("YYYY-MM-DD"),
+    assignee_id: z72.string().optional()
+  },
+  annotations: { readOnlyHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("task_subtasks").insert({ ...input, created_by: ctx.getUserId() }).select("*").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Added subtask ${data.id}` }],
+      structuredContent: { subtask: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-task-subtask.ts
+import { defineTool as defineTool74 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z73 } from "npm:zod@^3.25.76";
+var update_task_subtask_default = defineTool74({
+  name: "update_task_subtask",
+  title: "Update task subtask",
+  description: "Update a subtask. Set completed=true to mark it done (fills completed_at/by).",
+  inputSchema: {
+    subtask_id: z73.string(),
+    title: z73.string().optional(),
+    completed: z73.boolean().optional(),
+    sort_order: z73.number().int().optional(),
+    due_date: z73.string().nullable().optional(),
+    assignee_id: z73.string().nullable().optional()
+  },
+  annotations: { readOnlyHint: false, openWorldHint: false },
+  handler: async ({ subtask_id, completed, ...rest }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const updates = Object.fromEntries(
+      Object.entries(rest).filter(([, v]) => v !== void 0)
+    );
+    if (completed !== void 0) {
+      updates.completed = completed;
+      updates.completed_at = completed ? (/* @__PURE__ */ new Date()).toISOString() : null;
+      updates.completed_by = completed ? ctx.getUserId() : null;
+    }
+    if (Object.keys(updates).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("task_subtasks").update(updates).eq("id", subtask_id).select("*").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Subtask not found" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated subtask ${data.id}` }],
+      structuredContent: { subtask: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/delete-task-subtask.ts
+import { defineTool as defineTool75 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z74 } from "npm:zod@^3.25.76";
+var delete_task_subtask_default = defineTool75({
+  name: "delete_task_subtask",
+  title: "Delete task subtask",
+  description: "Delete a subtask from a task.",
+  inputSchema: { subtask_id: z74.string() },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ subtask_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("task_subtasks").delete().eq("id", subtask_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: `Deleted subtask ${subtask_id}` }] };
+  }
+});
+
+// src/lib/mcp/tools/list-task-statuses.ts
+import { defineTool as defineTool76 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_task_statuses_default = defineTool76({
+  name: "list_task_statuses",
+  title: "List task statuses",
+  description: "List configured task status values (label, value, sort order, is_finished flag).",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("task_statuses").select("*").order("sort_order");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} statuses.` }],
+      structuredContent: { statuses: data ?? [] }
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-mcp",
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, etc.) are restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
+  instructions: "Tools for the Australian Racing Tours tour manager. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -3765,7 +4135,19 @@ var mcp_default = defineMcp({
     update_activity_default,
     delete_activity_default,
     upsert_activity_booking_default,
-    delete_activity_booking_default
+    delete_activity_booking_default,
+    list_tasks_default,
+    get_task_default,
+    list_task_statuses_default,
+    create_task_default,
+    update_task_default,
+    delete_task_default,
+    add_task_comment_default,
+    assign_task_default,
+    unassign_task_default,
+    add_task_subtask_default,
+    update_task_subtask_default,
+    delete_task_subtask_default
   ]
 });
 
