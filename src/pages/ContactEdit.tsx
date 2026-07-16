@@ -41,6 +41,7 @@ export default function ContactEdit() {
         country: contact.country || '',
         spouse_name: contact.spouse_name || '',
         dietary_requirements: contact.dietary_requirements || '',
+        latest_tour_name: contact.latest_tour_name || '',
         emergency_contact_name: contact.emergency_contact_name || '',
         emergency_contact_phone: contact.emergency_contact_phone || '',
         emergency_contact_relationship: contact.emergency_contact_relationship || '',
@@ -265,6 +266,15 @@ export default function ContactEdit() {
                 id="spouse_name"
                 value={editedContact.spouse_name || ''}
                 onChange={(e) => setEditedContact({ ...editedContact, spouse_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="latest_tour_name">Latest Tour</Label>
+              <Input
+                id="latest_tour_name"
+                value={editedContact.latest_tour_name || ''}
+                onChange={(e) => setEditedContact({ ...editedContact, latest_tour_name: e.target.value })}
+                placeholder="Auto-updates when a tour completes"
               />
             </div>
           </div>
