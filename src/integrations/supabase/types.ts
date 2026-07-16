@@ -1509,6 +1509,8 @@ export type Database = {
           id: string
           keap_contact_id: string | null
           last_name: string
+          latest_tour_end_date: string | null
+          latest_tour_name: string | null
           medical_conditions: string | null
           notes: string | null
           phone: string | null
@@ -1535,6 +1537,8 @@ export type Database = {
           id?: string
           keap_contact_id?: string | null
           last_name: string
+          latest_tour_end_date?: string | null
+          latest_tour_name?: string | null
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
@@ -1561,6 +1565,8 @@ export type Database = {
           id?: string
           keap_contact_id?: string | null
           last_name?: string
+          latest_tour_end_date?: string | null
+          latest_tour_name?: string | null
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
@@ -4933,6 +4939,10 @@ export type Database = {
       }
       purge_ai_conversations: { Args: never; Returns: number }
       purge_passport_data: { Args: never; Returns: number }
+      recompute_customer_latest_tour: {
+        Args: { _customer_id: string }
+        Returns: undefined
+      }
       refresh_capacity_alerts: { Args: never; Returns: number }
       secure_customer_search: {
         Args: { search_term: string }
