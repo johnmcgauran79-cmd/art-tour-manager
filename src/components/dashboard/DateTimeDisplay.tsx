@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { NextTourCountdown } from './NextTourCountdown';
+import { StaffLeaveNotice } from './StaffLeaveNotice';
 import { useGeneralSettings } from '@/hooks/useGeneralSettings';
 
 const DEFAULT_TIMEZONES = [
@@ -69,6 +70,7 @@ export const DateTimeDisplay = () => {
         ))}
       </div>
       <NextTourCountdown />
+      <StaffLeaveNotice />
     </div>
   );
 };
