@@ -4,7 +4,7 @@ import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { DateTimeDisplay } from "@/components/dashboard/DateTimeDisplay";
+import { SecondaryContextBar } from "@/components/layout/SecondaryContextBar";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { UserDropdown } from "@/components/UserDropdown";
 import { ShareButton } from "@/components/ShareButton";
@@ -59,7 +59,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             </button>
           </div>
           <div className="flex items-center gap-3 sm:gap-5">
-            {!isMobile && <DateTimeDisplay />}
             <Button
               variant="ghost"
               size="sm"
@@ -79,6 +78,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             <UserDropdown />
           </div>
         </header>
+
+        {/* Secondary context bar: date, timezones, next tour, staff leave */}
+        {!isMobile && <SecondaryContextBar />}
 
         {/* Below header: menu on the left, main panel on the right */}
         <div className="flex flex-1 w-full min-h-0 overflow-hidden">
