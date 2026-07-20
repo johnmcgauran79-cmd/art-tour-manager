@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
@@ -140,6 +140,14 @@ const Login = () => {
                 <LogIn className="h-4 w-4" />
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </Button>
+              <div className="text-center">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-brand-navy hover:underline"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
             </form>
           </CardContent>
         </Card>

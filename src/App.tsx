@@ -12,6 +12,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import ArtAi from "./pages/ArtAi";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import TourDetail from "./pages/TourDetail";
 import TourEdit from "./pages/TourEdit";
@@ -141,6 +143,8 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               {/* Support both legacy query-param links (/update-profile?token=...) and the canonical path-param links (/update-profile/:token). */}
               <Route path="/update-profile" element={<UpdateProfile />} />
               <Route path="/update-profile/:token" element={<UpdateProfile />} />
