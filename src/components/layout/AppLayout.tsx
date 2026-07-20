@@ -79,6 +79,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         </header>
 
+        {/* Secondary context bar: date, timezones, next tour, staff leave */}
+        {!isMobile && <SecondaryContextBar />}
+
         {/* Below header: menu on the left, main panel on the right */}
         <div className="flex flex-1 w-full min-h-0 overflow-hidden">
           <AppSidebar />
