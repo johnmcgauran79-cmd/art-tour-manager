@@ -276,7 +276,9 @@ export const PendingStatusChangeApprovals = () => {
             </div>
 
             {pendingBatches.map((batch) => {
-              const batchKey = `${batch.rule_id}-${batch.batch_date}`;
+              // Include effective template in the key because batches are now
+              // split per template (e.g. ART default vs. LITP tour override).
+              const batchKey = `${batch.rule_id}-${batch.batch_date}-${batch.effective_template_name}`;
               const isExpanded = expandedBatches.has(batchKey);
               const batchFull = isBatchFullySelected(batch);
               const batchPartial = isBatchPartiallySelected(batch);
