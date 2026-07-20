@@ -104,31 +104,33 @@ export const usePendingStatusChangeApprovals = () => {
 
       if (error) throw error;
       
-      // Group by rule_id and batch_date
+      // Group by rule_id + batch_date + EFFECTIVE template so bookings that
+      // resolve to a different template (e.g. a tour-specific brand override
+      // like "Welcome Email - LITP") appear in their own approval batch and
+      // never get mislabelled under another brand's template name.
       const grouped = (data as StatusChangeQueueItem[]).reduce((acc, item) => {
-        const key = `${item.rule_id}-${item.batch_date}`;
+        const ruleTemplateName = item.rule?.email_templates?.name || 'No template';
         // Resolve the effective template name: queue-item override > rule default
-        const effectiveTemplateName = item.override_template?.name 
-          || item.rule?.email_templates?.name 
-          || 'No template';
+        const effectiveTemplateName = item.override_template?.name || ruleTemplateName;
+        // Effective template id: queue override id > rule default id > sentinel
+        const effectiveTemplateId = item.email_template_id
+          || item.rule?.email_template_id
+          || 'none';
+        const key = `${item.rule_id}-${item.batch_date}-${effectiveTemplateId}`;
         if (!acc[key]) {
           acc[key] = {
             rule_id: item.rule_id,
             rule_name: item.rule?.rule_name || 'Unknown Rule',
             batch_date: item.batch_date,
-            template_name: item.rule?.email_templates?.name || 'No template',
+            template_name: ruleTemplateName,
             effective_template_name: effectiveTemplateName,
             items: [],
           };
         }
-        // Update effective template if any item has an override
-        if (item.override_template?.name) {
-          acc[key].effective_template_name = item.override_template.name;
-        }
         acc[key].items.push(item);
         return acc;
       }, {} as Record<string, { rule_id: string; rule_name: string; batch_date: string; template_name: string; effective_template_name: string; items: StatusChangeQueueItem[] }>);
-      
+
       return Object.values(grouped);
     },
     refetchInterval: 120000, // Refresh every 2 minutes (reduced from 30s)
