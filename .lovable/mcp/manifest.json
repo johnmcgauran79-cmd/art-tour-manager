@@ -12,9 +12,9 @@
   },
   "mcp": {
     "server": {
-      "name": "art-tour-manager-mcp",
-      "version": "1.0.1",
-      "title": "Australian Racing Tours MCP"
+      "name": "art-tour-manager-wordpress-mcp",
+      "version": "2.0.0",
+      "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
       {
