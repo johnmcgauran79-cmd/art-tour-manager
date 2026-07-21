@@ -6,6 +6,8 @@ import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmail
 import { EmailIssuesWidget } from "@/components/dashboard/EmailIssuesWidget";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { MyApprovalsWidget } from "@/components/dashboard/MyApprovalsWidget";
+import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
+import { MyTodosWidget } from "@/components/dashboard/MyTodosWidget";
 import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
@@ -15,7 +17,7 @@ export interface DashboardWidgetDef {
   default: LayoutItem;
 }
 
-export const DASHBOARD_LAYOUT_VERSION = 3;
+export const DASHBOARD_LAYOUT_VERSION = 4;
 
 // 12-column grid. Default widgets span all 12 columns for a single-column start.
 // x/y in grid units, w/h in grid units. minW/minH keep widgets usable.
@@ -40,28 +42,40 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
     default: { i: "my_approvals", x: 8, y: 0, w: 4, h: 10, minW: 3, minH: 2 },
   },
   {
+    id: "my_tasks",
+    title: "My Tasks",
+    Component: MyTasksWidget,
+    default: { i: "my_tasks", x: 0, y: 10, w: 4, h: 10, minW: 3, minH: 3 },
+  },
+  {
+    id: "my_todos",
+    title: "My To-Do List",
+    Component: MyTodosWidget,
+    default: { i: "my_todos", x: 4, y: 10, w: 4, h: 10, minW: 3, minH: 3 },
+  },
+  {
     id: "info_missing",
     title: "Information Missing",
     Component: InformationMissingWidget,
-    default: { i: "info_missing", x: 0, y: 10, w: 4, h: 10, minW: 3, minH: 2 },
+    default: { i: "info_missing", x: 8, y: 10, w: 4, h: 10, minW: 3, minH: 2 },
   },
   {
     id: "email_issues",
     title: "Email Delivery Issues",
     Component: EmailIssuesWidget,
-    default: { i: "email_issues", x: 4, y: 10, w: 4, h: 10, minW: 3, minH: 3 },
+    default: { i: "email_issues", x: 0, y: 20, w: 4, h: 10, minW: 3, minH: 3 },
   },
   {
     id: "pending_email_approvals",
     title: "Pending Email Approvals",
     Component: PendingEmailApprovalsWidget,
-    default: { i: "pending_email_approvals", x: 8, y: 10, w: 4, h: 10, minW: 3, minH: 3 },
+    default: { i: "pending_email_approvals", x: 4, y: 20, w: 4, h: 10, minW: 3, minH: 3 },
   },
   {
     id: "alerts",
     title: "Alerts",
     Component: AlertsWidget,
-    default: { i: "alerts", x: 0, y: 20, w: 4, h: 10, minW: 3, minH: 4 },
+    default: { i: "alerts", x: 8, y: 20, w: 4, h: 10, minW: 3, minH: 4 },
   },
 ];
 
