@@ -44,6 +44,7 @@ import HotelAllocations from "./pages/operations/HotelAllocations";
 import BookingChanges from "./pages/operations/BookingChanges";
 import PaymentStatus from "./pages/operations/PaymentStatus";
 import MissingPhoneNumbers from "./pages/operations/MissingPhoneNumbers";
+import WordpressContent from "./pages/WordpressContent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -365,6 +366,16 @@ function App() {
                       <MissingPhoneNumbers />
                     </AppLayout>
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/wordpress-content"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <WordpressContent />
+                    </AppLayout>
+                  </TaskRoute>
                 }
               />
               <Route path="*" element={<NotFound />} />
