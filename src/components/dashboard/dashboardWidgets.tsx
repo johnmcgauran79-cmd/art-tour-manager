@@ -17,7 +17,7 @@ export interface DashboardWidgetDef {
 
 export const DASHBOARD_LAYOUT_VERSION = 2;
 
-// 12-column grid. rowHeight is 60px in the grid.
+// 12-column grid. Default widgets span all 12 columns for a single-column start.
 // x/y in grid units, w/h in grid units. minW/minH keep widgets usable.
 export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
   {
