@@ -12,6 +12,7 @@ import {
 import { GripVertical, Pencil, RotateCcw, Check, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
+  DASHBOARD_LAYOUT_VERSION,
   DASHBOARD_WIDGETS,
   DEFAULT_LAYOUT,
   DEFAULT_HIDDEN,
@@ -26,14 +27,36 @@ import "react-resizable/css/styles.css";
 
 const ResponsiveGrid = WidthProvider(RGL);
 
+const stampLayout = (items: LayoutItem[]): LayoutItem[] =>
+  items.map((item) => ({
+    ...item,
+    dashboardVersion: DASHBOARD_LAYOUT_VERSION,
+  } as LayoutItem));
+
+const cloneDefaultLayout = (): LayoutItem[] => stampLayout(DEFAULT_LAYOUT);
+
+const hasCurrentLayoutVersion = (items: LayoutItem[] | undefined) =>
+  !!items?.length &&
+  items.every((item) => (item as LayoutItem & { dashboardVersion?: number }).dashboardVersion === DASHBOARD_LAYOUT_VERSION);
+
 // Merge saved layout with defaults so newly-added widgets still show up.
 const mergeLayout = (saved: LayoutItem[] | undefined): LayoutItem[] => {
+  if (saved?.length && !hasCurrentLayoutVersion(saved)) {
+    return cloneDefaultLayout();
+  }
+
   const map = new Map<string, LayoutItem>();
-  DEFAULT_LAYOUT.forEach((d) => map.set(d.i, d));
+  DEFAULT_LAYOUT.forEach((d) => map.set(d.i, { ...d }));
   (saved ?? []).forEach((s) => {
-    if (map.has(s.i)) map.set(s.i, { ...map.get(s.i)!, ...s });
+    if (map.has(s.i)) {
+      map.set(s.i, {
+        ...map.get(s.i)!,
+        ...s,
+        dashboardVersion: DASHBOARD_LAYOUT_VERSION,
+      } as LayoutItem);
+    }
   });
-  return Array.from(map.values());
+  return stampLayout(Array.from(map.values()));
 };
 
 export const DashboardGrid = () => {
@@ -42,15 +65,19 @@ export const DashboardGrid = () => {
   const { toast } = useToast();
 
   const [editMode, setEditMode] = useState(false);
-  const [layout, setLayout] = useState<LayoutItem[]>(DEFAULT_LAYOUT);
+  const [layout, setLayout] = useState<LayoutItem[]>(cloneDefaultLayout());
   const [hidden, setHidden] = useState<string[]>(DEFAULT_HIDDEN);
+  const [gridRevision, setGridRevision] = useState(0);
   const dirty = useRef(false);
 
   // Hydrate from DB once loaded
   useEffect(() => {
     if (isLoading) return;
+    const currentSavedLayout = hasCurrentLayoutVersion(saved?.layout);
     setLayout(mergeLayout(saved?.layout));
-    setHidden(saved?.hidden_widgets ?? DEFAULT_HIDDEN);
+    setHidden(currentSavedLayout ? saved?.hidden_widgets ?? DEFAULT_HIDDEN : DEFAULT_HIDDEN);
+    setGridRevision((revision) => revision + 1);
+    dirty.current = false;
   }, [isLoading, saved]);
 
   const visibleWidgets = useMemo(
@@ -64,7 +91,7 @@ export const DashboardGrid = () => {
 
   const persist = async (nextLayout: LayoutItem[], nextHidden: string[]) => {
     try {
-      await save({ layout: nextLayout, hidden_widgets: nextHidden });
+      await save({ layout: stampLayout(nextLayout), hidden_widgets: nextHidden });
     } catch (e: any) {
       toast({
         title: "Couldn't save dashboard",
@@ -75,9 +102,11 @@ export const DashboardGrid = () => {
   };
 
   const handleLayoutChange = (next: LayoutItem[]) => {
+    if (!editMode) return;
+
     // Merge back positions for visible items, keep hidden defaults untouched
     const nextMap = new Map(next.map((n) => [n.i, n]));
-    const merged = layout.map((l) => nextMap.get(l.i) ?? l);
+    const merged = stampLayout(layout.map((l) => nextMap.get(l.i) ?? l));
     setLayout(merged);
     dirty.current = true;
   };
@@ -97,9 +126,11 @@ export const DashboardGrid = () => {
   };
 
   const resetLayout = async () => {
-    setLayout(DEFAULT_LAYOUT);
+    const defaultLayout = cloneDefaultLayout();
+    setLayout(defaultLayout);
     setHidden(DEFAULT_HIDDEN);
-    await persist(DEFAULT_LAYOUT, DEFAULT_HIDDEN);
+    setGridRevision((revision) => revision + 1);
+    await persist(defaultLayout, DEFAULT_HIDDEN);
     toast({ title: "Dashboard reset", description: "Default layout restored." });
   };
 
@@ -153,15 +184,19 @@ export const DashboardGrid = () => {
       </div>
 
       <ResponsiveGrid
-        className="layout"
+        key={gridRevision}
+        className={`dashboard-grid layout ${editMode ? "dashboard-grid--editing" : ""}`}
         layout={visibleLayout}
         cols={12}
-        rowHeight={60}
+        rowHeight={44}
         margin={[16, 16]}
         containerPadding={[0, 0]}
+        compactType="vertical"
+        isBounded
         isDraggable={editMode}
         isResizable={editMode}
         draggableHandle=".widget-drag-handle"
+        resizeHandles={["se"]}
         onLayoutChange={handleLayoutChange}
       >
         {visibleWidgets.map((w) => {
@@ -169,8 +204,8 @@ export const DashboardGrid = () => {
           return (
             <div
               key={w.id}
-              className={`relative overflow-hidden rounded-lg ${
-                editMode ? "ring-2 ring-primary/40 ring-offset-2" : ""
+              className={`relative overflow-hidden rounded-xl bg-card ${
+                editMode ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background" : ""
               }`}
             >
               {editMode && (
@@ -178,7 +213,7 @@ export const DashboardGrid = () => {
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
-              <div className="h-full w-full overflow-auto">
+              <div className="h-full w-full overflow-hidden">
                 <Widget />
               </div>
             </div>
