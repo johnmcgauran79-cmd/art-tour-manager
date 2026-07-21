@@ -3486,6 +3486,8 @@ export type Database = {
         Row: {
           channel_id: string | null
           channel_name: string | null
+          chat_id: string | null
+          chat_name: string | null
           enabled: boolean
           id: boolean
           notify_statuses: string[]
@@ -3498,6 +3500,8 @@ export type Database = {
         Insert: {
           channel_id?: string | null
           channel_name?: string | null
+          chat_id?: string | null
+          chat_name?: string | null
           enabled?: boolean
           id?: boolean
           notify_statuses?: string[]
@@ -3510,6 +3514,8 @@ export type Database = {
         Update: {
           channel_id?: string | null
           channel_name?: string | null
+          chat_id?: string | null
+          chat_name?: string | null
           enabled?: boolean
           id?: boolean
           notify_statuses?: string[]

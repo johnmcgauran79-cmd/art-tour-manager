@@ -24,10 +24,8 @@ export const TeamsChannelNotifyCard = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(false);
-  const [teamId, setTeamId] = useState("");
-  const [channelId, setChannelId] = useState("");
-  const [teamName, setTeamName] = useState("");
-  const [channelName, setChannelName] = useState("");
+  const [chatId, setChatId] = useState("");
+  const [chatName, setChatName] = useState("");
   const [posterUserId, setPosterUserId] = useState<string | null>(null);
   const [posterEmail, setPosterEmail] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<string[]>(["limited_availability", "sold_out"]);
@@ -42,10 +40,8 @@ export const TeamsChannelNotifyCard = () => {
         .maybeSingle();
       if (data) {
         setEnabled(!!data.enabled);
-        setTeamId(data.team_id || "");
-        setChannelId(data.channel_id || "");
-        setTeamName(data.team_name || "");
-        setChannelName(data.channel_name || "");
+        setChatId(data.chat_id || "");
+        setChatName(data.chat_name || "");
         setPosterUserId(data.poster_user_id || null);
         setStatuses(data.notify_statuses || ["limited_availability", "sold_out"]);
 
@@ -86,10 +82,8 @@ export const TeamsChannelNotifyCard = () => {
       .from("teams_channel_notify_config")
       .update({
         enabled,
-        team_id: teamId.trim() || null,
-        channel_id: channelId.trim() || null,
-        team_name: teamName.trim() || null,
-        channel_name: channelName.trim() || null,
+        chat_id: chatId.trim() || null,
+        chat_name: chatName.trim() || null,
         poster_user_id: posterUserId,
         notify_statuses: statuses,
         updated_at: new Date().toISOString(),
@@ -100,7 +94,7 @@ export const TeamsChannelNotifyCard = () => {
     if (error) {
       toast({ title: "Save failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Saved", description: "Teams channel notification settings updated." });
+      toast({ title: "Saved", description: "Teams chat notification settings updated." });
     }
   };
 
@@ -109,12 +103,12 @@ export const TeamsChannelNotifyCard = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Teams Channel Notifications
+          Teams Chat Notifications
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Post a message to a Microsoft Teams channel automatically when a tour status changes
+          Post a message to a Microsoft Teams group chat automatically when a tour status changes
           (e.g. Limited Availability, Sold Out). Uses the poster's connected Microsoft account.
         </p>
 
@@ -125,20 +119,20 @@ export const TeamsChannelNotifyCard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <Label>Team name (for reference)</Label>
-            <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Website Updates" />
+            <Label>Chat name (for reference)</Label>
+            <Input
+              value={chatName}
+              onChange={(e) => setChatName(e.target.value)}
+              placeholder="Website Updates"
+            />
           </div>
           <div>
-            <Label>Channel name (for reference)</Label>
-            <Input value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="General" />
-          </div>
-          <div>
-            <Label>Team ID</Label>
-            <Input value={teamId} onChange={(e) => setTeamId(e.target.value)} placeholder="19:xxxxxxxx@thread.tacv2" />
-          </div>
-          <div>
-            <Label>Channel ID</Label>
-            <Input value={channelId} onChange={(e) => setChannelId(e.target.value)} placeholder="19:xxxxxxxx@thread.tacv2" />
+            <Label>Chat ID</Label>
+            <Input
+              value={chatId}
+              onChange={(e) => setChatId(e.target.value)}
+              placeholder="19:xxxxxxxx@thread.v2"
+            />
           </div>
         </div>
 
@@ -146,7 +140,9 @@ export const TeamsChannelNotifyCard = () => {
           <Label>Poster (Microsoft account used to post)</Label>
           <div className="text-sm">
             {posterUserId ? (
-              <span>Current: <strong>{posterEmail || posterUserId}</strong></span>
+              <span>
+                Current: <strong>{posterEmail || posterUserId}</strong>
+              </span>
             ) : (
               <span className="text-muted-foreground">Not set</span>
             )}
@@ -157,7 +153,8 @@ export const TeamsChannelNotifyCard = () => {
             </Button>
             {!hasTeamsConn && (
               <span className="text-xs text-amber-600 self-center">
-                You haven't connected your Microsoft/Teams account yet — connect it from your profile menu first.
+                You haven't connected your Microsoft/Teams account yet — connect it from your
+                profile menu first.
               </span>
             )}
           </div>
