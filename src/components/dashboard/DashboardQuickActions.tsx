@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, Calendar, Settings, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Users, Calendar } from "lucide-react";
 
 interface DashboardQuickActionsProps {
   onAddTour: () => void;
@@ -45,13 +45,7 @@ export const DashboardQuickActions = ({
 
   return (
     <Card className="border-brand-navy/20 shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-brand-navy flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          Quick Actions
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {quickActions.map((action, index) => (
             <Button

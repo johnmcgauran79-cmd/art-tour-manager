@@ -40,7 +40,7 @@ export const RecentBookingsWidget = () => {
             <Calendar className="h-4 w-4 text-primary" />
             Recent Bookings
             <span className="text-xs font-normal text-muted-foreground">
-              ({bookingsThisMonth} {bookingsThisMonth === 1 ? 'booking' : 'bookings'} this month)
+              ({bookingsThisMonth} this month)
             </span>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardTitle>
@@ -67,7 +67,7 @@ export const RecentBookingsWidget = () => {
             <Calendar className="h-4 w-4 text-primary" />
             Recent Bookings
             <span className="text-xs font-normal text-muted-foreground">
-              ({bookingsThisMonth} {bookingsThisMonth === 1 ? 'booking' : 'bookings'} this month)
+              ({bookingsThisMonth} this month)
             </span>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardTitle>
