@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GripVertical, Pencil, RotateCcw, Check, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { UpcomingToursInline } from "@/components/dashboard/UpcomingToursInline";
 import {
   DASHBOARD_LAYOUT_VERSION,
   DASHBOARD_WIDGETS,
@@ -136,7 +137,9 @@ export const DashboardGrid = () => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center gap-3">
+        <UpcomingToursInline />
+        <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
@@ -181,6 +184,7 @@ export const DashboardGrid = () => {
             Edit layout
           </Button>
         )}
+        </div>
       </div>
 
       <ResponsiveGrid
