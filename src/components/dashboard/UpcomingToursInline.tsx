@@ -1,5 +1,6 @@
 import { useTours } from "@/hooks/useTours";
 import { isAfter, parseISO, startOfDay } from "date-fns";
+import { Link } from "react-router-dom";
 
 export const UpcomingToursInline = () => {
   const { data: tours } = useTours();
@@ -23,8 +24,13 @@ export const UpcomingToursInline = () => {
     );
     return (
       <span key={t.id}>
-        {i > 0 && <span className="text-muted-foreground"> then </span>}
-        <span className="font-semibold text-brand-navy">{t.name}</span>
+        {i > 0 && <span className="text-muted-foreground">, then </span>}
+        <Link
+          to={`/tours/${t.id}`}
+          className="font-semibold text-brand-navy hover:text-brand-yellow hover:underline"
+        >
+          {t.name}
+        </Link>
         <span className="text-muted-foreground"> in </span>
         <span className="font-semibold text-brand-navy">
           {days} day{days !== 1 ? "s" : ""}
