@@ -4111,8 +4111,10 @@ function buildAuthHeader(cfg) {
   return `Basic ${base64(`${cfg.username}:${cfg.applicationPassword}`)}`;
 }
 function isAllowedEndpoint(endpoint) {
+  const list = WORDPRESS_ALLOWED_ENDPOINTS;
+  if (list.includes(endpoint)) return true;
   const first = endpoint.split("/")[0];
-  return WORDPRESS_ALLOWED_ENDPOINTS.includes(first);
+  return list.includes(first);
 }
 async function wordpressRequest(opts) {
   const cfg = opts.cfg ?? loadWordpressConfig();
