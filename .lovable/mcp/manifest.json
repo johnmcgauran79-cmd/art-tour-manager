@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-mcp",
-      "version": "0.2.0",
+      "version": "1.0.1",
       "title": "Australian Racing Tours MCP"
     },
     "tools": [
