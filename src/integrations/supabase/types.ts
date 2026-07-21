@@ -4681,6 +4681,60 @@ export type Database = {
         }
         Relationships: []
       }
+      wordpress_integration_audit_logs: {
+        Row: {
+          action: string
+          after_snapshot: Json | null
+          before_snapshot: Json | null
+          correlation_id: string
+          created_at: string
+          dry_run: boolean
+          error_message: string | null
+          id: string
+          request_summary: Json | null
+          response_code: number | null
+          result_status: string
+          source: string
+          user_id: string | null
+          wordpress_object_id: number | null
+          wordpress_object_type: string | null
+        }
+        Insert: {
+          action: string
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          correlation_id?: string
+          created_at?: string
+          dry_run?: boolean
+          error_message?: string | null
+          id?: string
+          request_summary?: Json | null
+          response_code?: number | null
+          result_status: string
+          source: string
+          user_id?: string | null
+          wordpress_object_id?: number | null
+          wordpress_object_type?: string | null
+        }
+        Update: {
+          action?: string
+          after_snapshot?: Json | null
+          before_snapshot?: Json | null
+          correlation_id?: string
+          created_at?: string
+          dry_run?: boolean
+          error_message?: string | null
+          id?: string
+          request_summary?: Json | null
+          response_code?: number | null
+          result_status?: string
+          source?: string
+          user_id?: string | null
+          wordpress_object_id?: number | null
+          wordpress_object_type?: string | null
+        }
+        Relationships: []
+      }
       xero_integration_settings: {
         Row: {
           access_token: string | null
