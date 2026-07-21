@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
-import { useTours } from "@/hooks/useTours";
-import { isAfter, parseISO, isWithinInterval, startOfDay, isSameDay } from "date-fns";
+import { parseISO, isWithinInterval, startOfDay, isSameDay } from "date-fns";
 import { useStaffLeave, useStaffMembers, staffDisplayName } from "@/hooks/useStaffLeave";
 
 const DEFAULT_TIMEZONES = [
@@ -26,7 +25,6 @@ export const SecondaryContextBar = () => {
   const defaultTimezone =
     (settings?.find((s) => s.setting_key === "display_timezone")?.setting_value as string) ||
     "Australia/Melbourne";
-  const { data: tours } = useTours();
   const { data: leave } = useStaffLeave();
   const { data: staff } = useStaffMembers();
 
