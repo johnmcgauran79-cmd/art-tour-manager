@@ -13,10 +13,274 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "Australian Racing Tours MCP"
     },
     "tools": [
+      {
+        "name": "wordpress_health_check",
+        "title": "WordPress health check",
+        "description": "Confirm the WordPress REST API is reachable, authentication works, and the tour/pages/media endpoints are exposed. Never returns credentials. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_list_tours",
+        "title": "List WordPress tours",
+        "description": "List tours from the public WordPress site (custom post type 'tour'). Returns concise summaries only — no full HTML content. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "description": "Default 'publish'."
+            },
+            "category_id": {
+              "type": "integer"
+            },
+            "tour_taxonomy_id": {
+              "type": "integer"
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "per_page": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "order": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
+            "orderby": {
+              "type": "string",
+              "enum": [
+                "date",
+                "modified",
+                "title",
+                "menu_order"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_get_tour",
+        "title": "Get WordPress tour",
+        "description": "Fetch a single WordPress tour by ID including raw editable content (context=edit), taxonomies, ACF/meta fields where exposed, and a content analysis flagging YOOtheme/scripts/iframes. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_find_tour",
+        "title": "Find WordPress tour",
+        "description": "Search the WordPress tour custom post type by free text (title/slug/content). Returns likely matches with IDs and public URLs. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_list_pages",
+        "title": "List WordPress pages",
+        "description": "List standard WordPress pages. Concise summaries only. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "per_page": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_get_page",
+        "title": "Get WordPress page",
+        "description": "Fetch a WordPress page by ID with raw and rendered content plus a content analysis flagging YOOtheme layouts and other builder markers. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "page_id": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "page_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_get_media",
+        "title": "Get WordPress media item",
+        "description": "Fetch a WordPress media item by ID. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "media_id": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "media_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_search_media",
+        "title": "Search WordPress media",
+        "description": "Search the WordPress media library. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "minLength": 1
+            },
+            "media_type": {
+              "type": "string",
+              "enum": [
+                "image",
+                "video",
+                "audio",
+                "application"
+              ]
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "per_page": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "required": [
+            "search"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_get_taxonomies",
+        "title": "Get WordPress taxonomies",
+        "description": "Return WordPress standard categories, tags, and the custom 'tours' taxonomy terms with their IDs. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
       {
         "name": "list_tours",
         "title": "List tours",
@@ -2681,270 +2945,6 @@
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_health_check",
-        "title": "WordPress health check",
-        "description": "Confirm the WordPress REST API is reachable, authentication works, and the tour/pages/media endpoints are exposed. Never returns credentials. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {}
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_list_tours",
-        "title": "List WordPress tours",
-        "description": "List tours from the public WordPress site (custom post type 'tour'). Returns concise summaries only — no full HTML content. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "search": {
-              "type": "string"
-            },
-            "status": {
-              "type": "string",
-              "description": "Default 'publish'."
-            },
-            "category_id": {
-              "type": "integer"
-            },
-            "tour_taxonomy_id": {
-              "type": "integer"
-            },
-            "page": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "per_page": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            },
-            "order": {
-              "type": "string",
-              "enum": [
-                "asc",
-                "desc"
-              ]
-            },
-            "orderby": {
-              "type": "string",
-              "enum": [
-                "date",
-                "modified",
-                "title",
-                "menu_order"
-              ]
-            }
-          },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_get_tour",
-        "title": "Get WordPress tour",
-        "description": "Fetch a single WordPress tour by ID including raw editable content (context=edit), taxonomies, ACF/meta fields where exposed, and a content analysis flagging YOOtheme/scripts/iframes. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "tour_id": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          "required": [
-            "tour_id"
-          ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_find_tour",
-        "title": "Find WordPress tour",
-        "description": "Search the WordPress tour custom post type by free text (title/slug/content). Returns likely matches with IDs and public URLs. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "query": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": [
-            "query"
-          ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_list_pages",
-        "title": "List WordPress pages",
-        "description": "List standard WordPress pages. Concise summaries only. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "search": {
-              "type": "string"
-            },
-            "status": {
-              "type": "string"
-            },
-            "page": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "per_page": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          },
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_get_page",
-        "title": "Get WordPress page",
-        "description": "Fetch a WordPress page by ID with raw and rendered content plus a content analysis flagging YOOtheme layouts and other builder markers. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "page_id": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          "required": [
-            "page_id"
-          ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_get_media",
-        "title": "Get WordPress media item",
-        "description": "Fetch a WordPress media item by ID. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "media_id": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          "required": [
-            "media_id"
-          ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_search_media",
-        "title": "Search WordPress media",
-        "description": "Search the WordPress media library. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "search": {
-              "type": "string",
-              "minLength": 1
-            },
-            "media_type": {
-              "type": "string",
-              "enum": [
-                "image",
-                "video",
-                "audio",
-                "application"
-              ]
-            },
-            "page": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "per_page": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          },
-          "required": [
-            "search"
-          ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
-      },
-      {
-        "name": "wordpress_get_taxonomies",
-        "title": "Get WordPress taxonomies",
-        "description": "Return WordPress standard categories, tags, and the custom 'tours' taxonomy terms with their IDs. Admin/manager only.",
-        "annotations": {
-          "readOnlyHint": true,
-          "idempotentHint": true,
-          "openWorldHint": true
-        },
-        "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {}
         },
         "outputSchema": null
       }
