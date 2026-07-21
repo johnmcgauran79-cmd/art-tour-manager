@@ -115,7 +115,10 @@ Deno.serve(async (req) => {
       .eq("id", true)
       .maybeSingle();
 
-    if (!cfg || !cfg.enabled || !cfg.team_id || !cfg.channel_id || !cfg.poster_user_id) {
+    const hasChat = cfg?.chat_id;
+    const hasChannel = cfg?.team_id && cfg?.channel_id;
+
+    if (!cfg || !cfg.enabled || !cfg.poster_user_id || (!hasChat && !hasChannel)) {
       return new Response(JSON.stringify({ skipped: "not_configured" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -149,25 +152,29 @@ Deno.serve(async (req) => {
 <p>Please update the website accordingly.</p>
 `.trim();
 
-    const resp = await fetch(
-      `${GRAPH_BASE}/teams/${encodeURIComponent(cfg.team_id)}/channels/${encodeURIComponent(
+    let endpoint: string;
+    if (hasChat) {
+      endpoint = `${GRAPH_BASE}/chats/${encodeURIComponent(cfg.chat_id)}/messages`;
+    } else {
+      endpoint = `${GRAPH_BASE}/teams/${encodeURIComponent(cfg.team_id)}/channels/${encodeURIComponent(
         cfg.channel_id,
-      )}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${ctx.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ body: { contentType: "html", content: html } }),
+      )}/messages`;
+    }
+
+    const resp = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ctx.accessToken}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({ body: { contentType: "html", content: html } }),
+    });
 
     if (!resp.ok) {
       const text = await resp.text();
-      console.error(`Teams channel post failed [${resp.status}]:`, text);
+      console.error(`Teams ${hasChat ? "chat" : "channel"} post failed [${resp.status}]:`, text);
       return new Response(
-        JSON.stringify({ error: "channel_post_failed", status: resp.status, details: text }),
+        JSON.stringify({ error: "post_failed", status: resp.status, details: text }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
