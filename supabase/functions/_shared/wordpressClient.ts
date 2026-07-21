@@ -42,8 +42,10 @@ export function loadWordpressConfig(): WordpressConfig {
 }
 
 function isAllowed(endpoint: string): boolean {
+  const list = WORDPRESS_ALLOWED_ENDPOINTS as readonly string[];
+  if (list.includes(endpoint)) return true;
   const first = endpoint.split("/")[0];
-  return (WORDPRESS_ALLOWED_ENDPOINTS as readonly string[]).includes(first);
+  return list.includes(first);
 }
 
 export interface WpRequestOpts {
