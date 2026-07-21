@@ -18,13 +18,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
-import { RecentBookingsWidget } from "@/components/dashboard/RecentBookingsWidget";
-import { StatusAlertWidget } from "@/components/dashboard/StatusAlertWidget";
-import { InformationMissingWidget } from "@/components/dashboard/InformationMissingWidget";
-import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmailApprovalsWidget";
-import { EmailIssuesWidget } from "@/components/dashboard/EmailIssuesWidget";
-import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
-import { MyApprovalsWidget } from "@/components/dashboard/MyApprovalsWidget";
+import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -149,18 +143,8 @@ const Index = () => {
           />
 
           <DashboardMetrics onRevenueClick={() => setCustomerAnalyticsOpen(true)} />
-          
-          <div className="flex flex-col md:flex-row gap-6">
-            <RecentBookingsWidget />
-            <div className="w-full md:w-1/3 space-y-6">
-              <StatusAlertWidget />
-              <MyApprovalsWidget />
-              <InformationMissingWidget />
-              <EmailIssuesWidget />
-              <PendingEmailApprovalsWidget />
-            </div>
-            <AlertsWidget />
-          </div>
+
+          <DashboardGrid />
         </TabsContent>
       )}
 
