@@ -13,9 +13,6 @@ const SCOPES = [
   "User.ReadBasic.All",
   "Chat.Create",
   "ChatMessage.Send",
-  "ChannelMessage.Send",
-  "Team.ReadBasic.All",
-  "Channel.ReadBasic.All",
 ].join(" ");
 
 function encodeReturnUrl(value: string) {
