@@ -1,0 +1,277 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { wordpressRequest, WordpressClientError } from "../_shared/wordpressClient.ts";
+
+// Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
+// JWT and admin/manager role, then executes ONE of a fixed set of read-only
+// operations. Never accepts a caller-supplied endpoint path.
+
+type Op =
+  | { op: "health" }
+  | { op: "list_tours"; search?: string; page?: number; per_page?: number; status?: string }
+  | { op: "get_tour"; tour_id: number }
+  | { op: "list_pages"; search?: string; page?: number; per_page?: number }
+  | { op: "get_page"; page_id: number }
+  | { op: "search_media"; search: string; per_page?: number };
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY =
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+async function auditLog(userId: string | null, rec: {
+  action: string;
+  result_status: "success" | "error";
+  response_code: number | null;
+  error_message?: string | null;
+  wordpress_object_type?: string | null;
+  wordpress_object_id?: number | null;
+  request_summary?: unknown;
+}) {
+  try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    await admin.from("wordpress_integration_audit_logs").insert({
+      user_id: userId,
+      source: "ui",
+      action: rec.action,
+      result_status: rec.result_status,
+      response_code: rec.response_code,
+      error_message: rec.error_message ?? null,
+      wordpress_object_type: rec.wordpress_object_type ?? null,
+      wordpress_object_id: rec.wordpress_object_id ?? null,
+      request_summary: rec.request_summary ?? null,
+    });
+  } catch {
+    // audit must never break
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return json({ error: "Unauthorized" }, 401);
+  }
+  const token = authHeader.slice("Bearer ".length);
+
+  // Verify user and role using the user's token (RLS scoped)
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: userRes, error: userErr } = await userClient.auth.getUser(token);
+  if (userErr || !userRes?.user) return json({ error: "Unauthorized" }, 401);
+  const userId = userRes.user.id;
+
+  const [{ data: isAdmin }, { data: isManager }] = await Promise.all([
+    userClient.rpc("has_role", { _user_id: userId, _role: "admin" }),
+    userClient.rpc("has_role", { _user_id: userId, _role: "manager" }),
+  ]);
+  if (isAdmin !== true && isManager !== true) {
+    return json({ error: "Forbidden — admin or manager only" }, 403);
+  }
+
+  let body: Op;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  try {
+    switch (body.op) {
+      case "health": {
+        const errors: Array<{ where: string; message: string; category: string; status: number }> = [];
+        const out = {
+          reachable: false,
+          authenticated: false,
+          tour_endpoint: false,
+          pages_endpoint: false,
+          media_endpoint: false,
+          username: null as string | null,
+          errors,
+          recommendations: [] as string[],
+        };
+        try {
+          const me = await wordpressRequest<{ id: number; slug?: string; name?: string }>({
+            endpoint: "users/me",
+            query: { context: "edit" },
+            timeoutMs: 10000,
+            retries: 0,
+          });
+          out.reachable = true;
+          out.authenticated = true;
+          out.username = me.data?.slug ?? me.data?.name ?? String(me.data?.id ?? "");
+        } catch (err) {
+          const e = err as WordpressClientError;
+          if (e.category !== "unreachable" && e.category !== "timeout") out.reachable = true;
+          errors.push({ where: "users/me", message: e.message, category: e.category, status: e.status });
+          if (e.category === "unauthorized") {
+            out.recommendations.push(
+              "Verify the WordPress username and Application Password. LiteSpeed or a security plugin may be stripping the Authorization header.",
+            );
+          }
+        }
+        for (const [ep, key] of [
+          ["tour", "tour_endpoint"],
+          ["pages", "pages_endpoint"],
+          ["media", "media_endpoint"],
+        ] as const) {
+          try {
+            const res = await wordpressRequest({ endpoint: ep, query: { per_page: 1, context: "edit" }, timeoutMs: 10000, retries: 0 });
+            if (res.status >= 200 && res.status < 300) (out as Record<string, unknown>)[key] = true;
+            out.reachable = true;
+          } catch (err) {
+            const e = err as WordpressClientError;
+            errors.push({ where: ep, message: e.message, category: e.category, status: e.status });
+          }
+        }
+        if (!out.tour_endpoint) {
+          out.recommendations.push(
+            "The /wp-json/wp/v2/tour endpoint did not respond OK. Ensure the 'tour' CPT has show_in_rest: true.",
+          );
+        }
+        await auditLog(userId, {
+          action: "health_check",
+          result_status: out.authenticated ? "success" : "error",
+          response_code: out.authenticated ? 200 : null,
+          request_summary: { endpoint: "health", method: "GET", query_keys: [] },
+        });
+        return json(out);
+      }
+      case "list_tours": {
+        const q = {
+          search: body.search,
+          status: body.status ?? "publish",
+          page: body.page ?? 1,
+          per_page: Math.min(body.per_page ?? 20, 50),
+          orderby: "modified",
+          order: "desc",
+          context: "edit",
+          _fields: "id,title,slug,status,link,modified,excerpt,featured_media",
+        };
+        const res = await wordpressRequest<Array<Record<string, unknown>>>({ endpoint: "tour", query: q });
+        await auditLog(userId, {
+          action: "list_tours",
+          wordpress_object_type: "tour",
+          result_status: "success",
+          response_code: res.status,
+          request_summary: { endpoint: "tour", method: "GET", query_keys: Object.keys(q).sort() },
+        });
+        return json({
+          total_items: res.totalItems ?? null,
+          total_pages: res.totalPages ?? null,
+          page: q.page,
+          per_page: q.per_page,
+          tours: (res.data ?? []).map((t) => ({
+            id: t.id,
+            title: (t.title as { rendered?: string })?.rendered ?? null,
+            slug: t.slug,
+            status: t.status,
+            link: t.link,
+            modified: t.modified,
+            excerpt: (t.excerpt as { rendered?: string })?.rendered ?? null,
+          })),
+        });
+      }
+      case "get_tour": {
+        const res = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${body.tour_id}`,
+          query: { context: "edit" },
+        });
+        await auditLog(userId, {
+          action: "get_tour",
+          wordpress_object_type: "tour",
+          wordpress_object_id: body.tour_id,
+          result_status: "success",
+          response_code: res.status,
+          request_summary: { endpoint: `tour/${body.tour_id}`, method: "GET", query_keys: ["context"] },
+        });
+        return json(res.data);
+      }
+      case "list_pages": {
+        const q = {
+          search: body.search,
+          page: body.page ?? 1,
+          per_page: Math.min(body.per_page ?? 20, 50),
+          orderby: "modified",
+          order: "desc",
+          context: "edit",
+          _fields: "id,title,slug,status,link,modified",
+        };
+        const res = await wordpressRequest<Array<Record<string, unknown>>>({ endpoint: "pages", query: q });
+        await auditLog(userId, {
+          action: "list_pages",
+          wordpress_object_type: "page",
+          result_status: "success",
+          response_code: res.status,
+          request_summary: { endpoint: "pages", method: "GET", query_keys: Object.keys(q).sort() },
+        });
+        return json({
+          total_items: res.totalItems ?? null,
+          total_pages: res.totalPages ?? null,
+          pages: (res.data ?? []).map((p) => ({
+            id: p.id,
+            title: (p.title as { rendered?: string })?.rendered ?? null,
+            slug: p.slug,
+            status: p.status,
+            link: p.link,
+            modified: p.modified,
+          })),
+        });
+      }
+      case "get_page": {
+        const res = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `pages/${body.page_id}`,
+          query: { context: "edit" },
+        });
+        await auditLog(userId, {
+          action: "get_page",
+          wordpress_object_type: "page",
+          wordpress_object_id: body.page_id,
+          result_status: "success",
+          response_code: res.status,
+          request_summary: { endpoint: `pages/${body.page_id}`, method: "GET", query_keys: ["context"] },
+        });
+        return json(res.data);
+      }
+      case "search_media": {
+        const q = {
+          search: body.search,
+          per_page: Math.min(body.per_page ?? 20, 50),
+          context: "edit",
+          _fields: "id,title,source_url,mime_type,alt_text,date",
+        };
+        const res = await wordpressRequest<Array<Record<string, unknown>>>({ endpoint: "media", query: q });
+        await auditLog(userId, {
+          action: "search_media",
+          wordpress_object_type: "media",
+          result_status: "success",
+          response_code: res.status,
+          request_summary: { endpoint: "media", method: "GET", query_keys: Object.keys(q).sort() },
+        });
+        return json({ media: res.data });
+      }
+      default:
+        return json({ error: "Unknown op" }, 400);
+    }
+  } catch (err) {
+    const e = err as WordpressClientError;
+    await auditLog(userId, {
+      action: (body as { op?: string }).op ?? "unknown",
+      result_status: "error",
+      response_code: e.status ?? 500,
+      error_message: e.message,
+    });
+    return json({ error: e.message, category: e.category ?? "unknown" }, e.status ?? 500);
+  }
+});

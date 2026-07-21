@@ -1192,7 +1192,7 @@ function backoffDelayMs(retryNumber, rnd = Math.random) {
 }
 async function requestWithRetry(doFetch, initialToken, forceRefresh2, opts) {
   const cfg = opts?.config ?? DEFAULT_RETRY_CONFIG;
-  const sleep = opts?.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const sleep2 = opts?.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
   const rnd = opts?.rnd ?? Math.random;
   const metrics = opts?.metrics;
   const bump = () => {
@@ -1232,7 +1232,7 @@ async function requestWithRetry(doFetch, initialToken, forceRefresh2, opts) {
       if (retries429 >= cfg.max429Retries) return { ok: false, status, code: "XERO_RATE_LIMITED" };
       retries429++;
       bump();
-      await sleep(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
+      await sleep2(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
       continue;
     }
     if (RETRYABLE_5XX.includes(status)) {
@@ -1241,7 +1241,7 @@ async function requestWithRetry(doFetch, initialToken, forceRefresh2, opts) {
       if (retries5xx >= cfg.max5xxRetries) return { ok: false, status, code: "INTERNAL_ERROR" };
       retries5xx++;
       bump();
-      await sleep(backoffDelayMs(retries5xx, rnd));
+      await sleep2(backoffDelayMs(retries5xx, rnd));
       continue;
     }
     if (status === 404) {
@@ -4056,6 +4056,830 @@ var list_task_statuses_default = defineTool76({
   }
 });
 
+// src/lib/mcp/tools/wordpress-health-check.ts
+import { defineTool as defineTool77 } from "npm:@lovable.dev/mcp-js@0.20.0";
+
+// src/lib/mcp/wordpress/_client.ts
+var WORDPRESS_ALLOWED_ENDPOINTS = [
+  "tour",
+  "pages",
+  "media",
+  "categories",
+  "tags",
+  "tours",
+  "types",
+  "taxonomies",
+  "users/me"
+];
+var WordpressClientError = class extends Error {
+  status;
+  category;
+  detail;
+  constructor(message, status, category, detail) {
+    super(message);
+    this.name = "WordpressClientError";
+    this.status = status;
+    this.category = category;
+    this.detail = detail;
+  }
+};
+function readEnv(name) {
+  const denoEnv = globalThis.Deno;
+  const fromDeno = denoEnv?.env?.get?.(name);
+  if (fromDeno) return fromDeno;
+  if (typeof process !== "undefined" && process.env) return process.env[name];
+  return void 0;
+}
+function loadWordpressConfig() {
+  const baseUrl = readEnv("WORDPRESS_BASE_URL");
+  const username = readEnv("WORDPRESS_USERNAME");
+  const applicationPassword = readEnv("WORDPRESS_APPLICATION_PASSWORD");
+  if (!baseUrl || !username || !applicationPassword) {
+    throw new WordpressClientError(
+      "WordPress integration is not configured. Missing WORDPRESS_BASE_URL, WORDPRESS_USERNAME or WORDPRESS_APPLICATION_PASSWORD.",
+      500,
+      "unknown"
+    );
+  }
+  return { baseUrl: baseUrl.replace(/\/+$/, ""), username, applicationPassword };
+}
+function base64(input) {
+  if (typeof btoa === "function") return btoa(input);
+  return Buffer.from(input, "utf8").toString("base64");
+}
+function buildAuthHeader(cfg) {
+  return `Basic ${base64(`${cfg.username}:${cfg.applicationPassword}`)}`;
+}
+function isAllowedEndpoint(endpoint) {
+  const first = endpoint.split("/")[0];
+  return WORDPRESS_ALLOWED_ENDPOINTS.includes(first);
+}
+async function wordpressRequest(opts) {
+  const cfg = opts.cfg ?? loadWordpressConfig();
+  const method = opts.method ?? "GET";
+  const timeoutMs = opts.timeoutMs ?? 15e3;
+  const maxAttempts = 1 + Math.max(0, opts.retries ?? 2);
+  const trimmedEndpoint = opts.endpoint.replace(/^\/+/, "");
+  if (!isAllowedEndpoint(trimmedEndpoint)) {
+    throw new WordpressClientError(
+      `Endpoint '${trimmedEndpoint}' is not on the WordPress integration allowlist.`,
+      400,
+      "validation"
+    );
+  }
+  if (!cfg.baseUrl.startsWith("https://")) {
+    throw new WordpressClientError(
+      "WORDPRESS_BASE_URL must be an https URL.",
+      500,
+      "validation"
+    );
+  }
+  const url = new URL(`${cfg.baseUrl}/wp-json/wp/v2/${trimmedEndpoint}`);
+  if (opts.query) {
+    for (const [k, v] of Object.entries(opts.query)) {
+      if (v === void 0 || v === null) continue;
+      url.searchParams.set(k, String(v));
+    }
+  }
+  const headers = {
+    Authorization: buildAuthHeader(cfg),
+    Accept: "application/json",
+    "User-Agent": "ART-Admin-WordPress-Integration/1.0"
+  };
+  if (opts.body !== void 0) headers["Content-Type"] = "application/json";
+  let attempt = 0;
+  let lastError;
+  while (attempt < maxAttempts) {
+    attempt++;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url.toString(), {
+        method,
+        headers,
+        body: opts.body !== void 0 ? JSON.stringify(opts.body) : void 0,
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      const total = Number(res.headers.get("X-WP-Total") ?? "");
+      const totalPages = Number(res.headers.get("X-WP-TotalPages") ?? "");
+      let data = null;
+      const text = await res.text();
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text.slice(0, 500) };
+        }
+      }
+      if (res.ok) {
+        return {
+          status: res.status,
+          data,
+          headers: {
+            totalItems: Number.isFinite(total) ? total : void 0,
+            totalPages: Number.isFinite(totalPages) ? totalPages : void 0
+          }
+        };
+      }
+      const category = res.status === 401 ? "unauthorized" : res.status === 403 ? "forbidden" : res.status === 404 ? "not_found" : res.status === 409 ? "conflict" : res.status >= 500 ? "server_error" : res.status >= 400 ? "validation" : "unknown";
+      const msg = extractWpErrorMessage(data) ?? `WordPress returned ${res.status} for ${trimmedEndpoint}`;
+      if (category === "server_error" && attempt < maxAttempts) {
+        lastError = new WordpressClientError(msg, res.status, category);
+        await sleep(200 * attempt);
+        continue;
+      }
+      throw new WordpressClientError(msg, res.status, category);
+    } catch (err) {
+      clearTimeout(timer);
+      if (err instanceof WordpressClientError) throw err;
+      const aborted = err?.name === "AbortError";
+      const category = aborted ? "timeout" : "unreachable";
+      lastError = new WordpressClientError(
+        aborted ? "WordPress request timed out." : "WordPress is unreachable.",
+        aborted ? 504 : 502,
+        category
+      );
+      if (attempt < maxAttempts) {
+        await sleep(200 * attempt);
+        continue;
+      }
+      throw lastError;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new WordpressClientError("Unknown WordPress error", 500, "unknown");
+}
+function extractWpErrorMessage(data) {
+  if (!data || typeof data !== "object") return void 0;
+  const d = data;
+  if (typeof d.message === "string") return d.message;
+  if (typeof d.code === "string") return d.code;
+  return void 0;
+}
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+function requestSummary(endpoint, method, query) {
+  return {
+    endpoint,
+    method,
+    query_keys: query ? Object.keys(query).sort() : []
+  };
+}
+
+// src/lib/mcp/wordpress/_audit.ts
+async function auditWordpressCall(ctx, rec) {
+  try {
+    await supabaseForUser(ctx).from("wordpress_integration_audit_logs").insert({
+      user_id: ctx.getUserId(),
+      source: rec.source,
+      action: rec.action,
+      wordpress_object_type: rec.wordpress_object_type ?? null,
+      wordpress_object_id: rec.wordpress_object_id ?? null,
+      request_summary: rec.request_summary ?? null,
+      result_status: rec.result_status,
+      response_code: rec.response_code ?? null,
+      error_message: rec.error_message ?? null,
+      dry_run: rec.dry_run ?? false,
+      before_snapshot: rec.before_snapshot ?? null,
+      after_snapshot: rec.after_snapshot ?? null
+    });
+  } catch {
+  }
+}
+function categoriseError(err) {
+  const e = err;
+  const anyE = e;
+  return {
+    message: anyE?.message ?? "Unknown WordPress error",
+    status: anyE?.status ?? 500,
+    category: anyE?.category ?? "unknown"
+  };
+}
+
+// src/lib/mcp/tools/wordpress-health-check.ts
+var wordpress_health_check_default = defineTool77({
+  name: "wordpress_health_check",
+  title: "WordPress health check",
+  description: "Confirm the WordPress REST API is reachable, authentication works, and the tour/pages/media endpoints are exposed. Never returns credentials. Admin/manager only.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async (_input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const result = {
+      reachable: false,
+      authenticated: false,
+      tour_endpoint: false,
+      pages_endpoint: false,
+      media_endpoint: false,
+      wp_v2_namespace: false,
+      username: null,
+      errors: [],
+      recommendations: []
+    };
+    async function probe(endpoint, label) {
+      try {
+        const res = await wordpressRequest({
+          endpoint,
+          query: { per_page: 1, context: "edit" },
+          timeoutMs: 1e4,
+          retries: 0
+        });
+        result.reachable = true;
+        if (res.status >= 200 && res.status < 300) result[label] = true;
+      } catch (err) {
+        const c = categoriseError(err);
+        if (c.category !== "unreachable" && c.category !== "timeout") result.reachable = true;
+        result.errors.push({ where: endpoint, ...c });
+      }
+    }
+    try {
+      const me = await wordpressRequest({
+        endpoint: "users/me",
+        query: { context: "edit" },
+        timeoutMs: 1e4,
+        retries: 0
+      });
+      result.reachable = true;
+      result.authenticated = true;
+      result.wp_v2_namespace = true;
+      result.username = me.data?.slug ?? me.data?.name ?? String(me.data?.id ?? "");
+    } catch (err) {
+      const c = categoriseError(err);
+      if (c.category !== "unreachable" && c.category !== "timeout") result.reachable = true;
+      result.errors.push({ where: "users/me", ...c });
+      if (c.category === "unauthorized") {
+        result.recommendations.push(
+          "Verify the WordPress username and Application Password. LiteSpeed or a security plugin may be stripping the Authorization header \u2014 allow HTTP Basic auth in .htaccess."
+        );
+      }
+    }
+    await probe("tour", "tour_endpoint");
+    await probe("pages", "pages_endpoint");
+    await probe("media", "media_endpoint");
+    if (!result.tour_endpoint) {
+      result.recommendations.push(
+        "The /wp-json/wp/v2/tour endpoint did not respond OK. Ensure the 'tour' custom post type is registered with show_in_rest: true."
+      );
+    }
+    await auditWordpressCall(ctx, {
+      source: "mcp",
+      action: "health_check",
+      request_summary: requestSummary("health_check", "GET"),
+      result_status: result.authenticated ? "success" : "error",
+      response_code: result.authenticated ? 200 : null,
+      error_message: result.errors[0]?.message ?? null
+    });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/wordpress-list-tours.ts
+import { defineTool as defineTool78 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z75 } from "npm:zod@^3.25.76";
+var wordpress_list_tours_default = defineTool78({
+  name: "wordpress_list_tours",
+  title: "List WordPress tours",
+  description: "List tours from the public WordPress site (custom post type 'tour'). Returns concise summaries only \u2014 no full HTML content. Admin/manager only.",
+  inputSchema: {
+    search: z75.string().optional(),
+    status: z75.string().optional().describe("Default 'publish'."),
+    category_id: z75.number().int().optional(),
+    tour_taxonomy_id: z75.number().int().optional(),
+    page: z75.number().int().min(1).optional(),
+    per_page: z75.number().int().min(1).max(50).optional(),
+    order: z75.enum(["asc", "desc"]).optional(),
+    orderby: z75.enum(["date", "modified", "title", "menu_order"]).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const query = {
+      search: input.search,
+      status: input.status ?? "publish",
+      categories: input.category_id,
+      tours: input.tour_taxonomy_id,
+      page: input.page ?? 1,
+      per_page: input.per_page ?? 20,
+      order: input.order ?? "desc",
+      orderby: input.orderby ?? "modified",
+      context: "edit",
+      _fields: "id,title,slug,status,link,modified,excerpt,featured_media,categories,tags,tours,menu_order"
+    };
+    try {
+      const res = await wordpressRequest({ endpoint: "tour", query });
+      const summary = {
+        page: query.page,
+        per_page: query.per_page,
+        total_items: res.headers.totalItems ?? null,
+        total_pages: res.headers.totalPages ?? null,
+        tours: (res.data ?? []).map((t) => ({
+          id: t.id,
+          title: t.title?.rendered ?? null,
+          slug: t.slug,
+          status: t.status,
+          link: t.link,
+          modified: t.modified,
+          excerpt: t.excerpt?.rendered ?? null,
+          featured_media: t.featured_media,
+          categories: t.categories ?? [],
+          tours: t.tours ?? [],
+          menu_order: t.menu_order
+        }))
+      };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "list_tours",
+        wordpress_object_type: "tour",
+        request_summary: requestSummary("tour", "GET", query),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(summary) }], structuredContent: summary };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "list_tours",
+        wordpress_object_type: "tour",
+        request_summary: requestSummary("tour", "GET", query),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-get-tour.ts
+import { defineTool as defineTool79 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z76 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/wordpress/_analyzer.ts
+function analyseContent(raw) {
+  const text = (raw ?? "").trim();
+  const warnings = [];
+  const containsYoo = /<!--\s*YOOtheme/i.test(text) || /<!--\s*wp:yoo/i.test(text) || /"builder":\s*\{/i.test(text) && /yoo(theme)?/i.test(text);
+  const containsBlocks = /<!--\s*wp:[a-z0-9-\/]+/i.test(text);
+  const containsShortcodes = /\[[a-z][a-z0-9_-]*[^\]]*\]/i.test(text);
+  const containsScripts = /<script\b/i.test(text);
+  const containsIframes = /<iframe\b/i.test(text);
+  const containsForms = /<form\b/i.test(text);
+  const containsClassicHtml = !containsBlocks && /<(p|div|h[1-6]|ul|ol|table|section|article)\b/i.test(text);
+  if (containsScripts) warnings.push("Content contains <script> tags.");
+  if (containsIframes) warnings.push("Content contains <iframe> tags.");
+  if (containsForms) warnings.push("Content contains <form> tags.");
+  if (containsYoo) warnings.push("Content contains YOOtheme layout markup \u2014 do not mutate in Phase 1.");
+  let editable_content_type = "unknown";
+  if (!text) editable_content_type = "unknown";
+  else if (containsYoo && (containsBlocks || containsClassicHtml)) editable_content_type = "mixed";
+  else if (containsYoo) editable_content_type = "yootheme_layout";
+  else if (containsBlocks && containsClassicHtml) editable_content_type = "mixed";
+  else if (containsBlocks) editable_content_type = "standard_blocks";
+  else if (containsClassicHtml) editable_content_type = "classic_html";
+  return {
+    contains_yootheme_layout: containsYoo,
+    contains_gutenberg_blocks: containsBlocks,
+    contains_classic_html: containsClassicHtml,
+    contains_shortcodes: containsShortcodes,
+    contains_scripts: containsScripts,
+    contains_iframes: containsIframes,
+    contains_forms: containsForms,
+    editable_content_type,
+    warnings
+  };
+}
+
+// src/lib/mcp/tools/wordpress-get-tour.ts
+var wordpress_get_tour_default = defineTool79({
+  name: "wordpress_get_tour",
+  title: "Get WordPress tour",
+  description: "Fetch a single WordPress tour by ID including raw editable content (context=edit), taxonomies, ACF/meta fields where exposed, and a content analysis flagging YOOtheme/scripts/iframes. Admin/manager only.",
+  inputSchema: { tour_id: z76.number().int().min(1) },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const endpoint = `tour/${tour_id}`;
+    try {
+      const res = await wordpressRequest({ endpoint, query: { context: "edit" } });
+      const t = res.data;
+      const contentObj = t.content;
+      const excerptObj = t.excerpt;
+      const titleObj = t.title;
+      const analysis = analyseContent(contentObj?.raw ?? contentObj?.rendered ?? "");
+      const out = {
+        id: t.id,
+        title_raw: titleObj?.raw ?? null,
+        title_rendered: titleObj?.rendered ?? null,
+        slug: t.slug,
+        status: t.status,
+        link: t.link,
+        date: t.date,
+        modified: t.modified,
+        content_raw: contentObj?.raw ?? null,
+        content_rendered: contentObj?.rendered ?? null,
+        excerpt_raw: excerptObj?.raw ?? null,
+        excerpt_rendered: excerptObj?.rendered ?? null,
+        featured_media: t.featured_media,
+        categories: t.categories ?? [],
+        tags: t.tags ?? [],
+        tours: t.tours ?? [],
+        menu_order: t.menu_order,
+        author: t.author,
+        meta: t.meta ?? null,
+        acf: t.acf ?? null,
+        content_analysis: analysis
+      };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "get_tour",
+        wordpress_object_type: "tour",
+        wordpress_object_id: tour_id,
+        request_summary: requestSummary(endpoint, "GET", { context: "edit" }),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "get_tour",
+        wordpress_object_type: "tour",
+        wordpress_object_id: tour_id,
+        request_summary: requestSummary(endpoint, "GET"),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-find-tour.ts
+import { defineTool as defineTool80 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z77 } from "npm:zod@^3.25.76";
+var wordpress_find_tour_default = defineTool80({
+  name: "wordpress_find_tour",
+  title: "Find WordPress tour",
+  description: "Search the WordPress tour custom post type by free text (title/slug/content). Returns likely matches with IDs and public URLs. Admin/manager only.",
+  inputSchema: { query: z77.string().min(1) },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ query }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const q = {
+      search: query,
+      per_page: 20,
+      orderby: "relevance",
+      status: "publish,draft,pending,future,private",
+      context: "edit",
+      _fields: "id,title,slug,status,link,modified,excerpt"
+    };
+    try {
+      const res = await wordpressRequest({ endpoint: "tour", query: q });
+      const matches = (res.data ?? []).map((t) => ({
+        id: t.id,
+        title: t.title?.rendered ?? null,
+        slug: t.slug,
+        status: t.status,
+        link: t.link,
+        modified: t.modified
+      }));
+      const out = { count: matches.length, matches };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "find_tour",
+        wordpress_object_type: "tour",
+        request_summary: requestSummary("tour", "GET", q),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "find_tour",
+        wordpress_object_type: "tour",
+        request_summary: requestSummary("tour", "GET", q),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-list-pages.ts
+import { defineTool as defineTool81 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z78 } from "npm:zod@^3.25.76";
+var wordpress_list_pages_default = defineTool81({
+  name: "wordpress_list_pages",
+  title: "List WordPress pages",
+  description: "List standard WordPress pages. Concise summaries only. Admin/manager only.",
+  inputSchema: {
+    search: z78.string().optional(),
+    status: z78.string().optional(),
+    page: z78.number().int().min(1).optional(),
+    per_page: z78.number().int().min(1).max(50).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const q = {
+      search: input.search,
+      status: input.status ?? "publish",
+      page: input.page ?? 1,
+      per_page: input.per_page ?? 20,
+      orderby: "modified",
+      order: "desc",
+      context: "edit",
+      _fields: "id,title,slug,status,link,modified,parent,menu_order"
+    };
+    try {
+      const res = await wordpressRequest({ endpoint: "pages", query: q });
+      const out = {
+        page: q.page,
+        per_page: q.per_page,
+        total_items: res.headers.totalItems ?? null,
+        total_pages: res.headers.totalPages ?? null,
+        pages: (res.data ?? []).map((p) => ({
+          id: p.id,
+          title: p.title?.rendered ?? null,
+          slug: p.slug,
+          status: p.status,
+          link: p.link,
+          modified: p.modified,
+          parent: p.parent,
+          menu_order: p.menu_order
+        }))
+      };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "list_pages",
+        wordpress_object_type: "page",
+        request_summary: requestSummary("pages", "GET", q),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "list_pages",
+        wordpress_object_type: "page",
+        request_summary: requestSummary("pages", "GET", q),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-get-page.ts
+import { defineTool as defineTool82 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z79 } from "npm:zod@^3.25.76";
+var wordpress_get_page_default = defineTool82({
+  name: "wordpress_get_page",
+  title: "Get WordPress page",
+  description: "Fetch a WordPress page by ID with raw and rendered content plus a content analysis flagging YOOtheme layouts and other builder markers. Admin/manager only.",
+  inputSchema: { page_id: z79.number().int().min(1) },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ page_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const endpoint = `pages/${page_id}`;
+    try {
+      const res = await wordpressRequest({ endpoint, query: { context: "edit" } });
+      const p = res.data;
+      const contentObj = p.content;
+      const titleObj = p.title;
+      const analysis = analyseContent(contentObj?.raw ?? contentObj?.rendered ?? "");
+      const out = {
+        id: p.id,
+        title_raw: titleObj?.raw ?? null,
+        title_rendered: titleObj?.rendered ?? null,
+        slug: p.slug,
+        status: p.status,
+        link: p.link,
+        modified: p.modified,
+        parent: p.parent,
+        menu_order: p.menu_order,
+        content_raw: contentObj?.raw ?? null,
+        content_rendered: contentObj?.rendered ?? null,
+        contains_yootheme_layout: analysis.contains_yootheme_layout,
+        editable_content_type: analysis.editable_content_type,
+        content_analysis: analysis
+      };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "get_page",
+        wordpress_object_type: "page",
+        wordpress_object_id: page_id,
+        request_summary: requestSummary(endpoint, "GET"),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "get_page",
+        wordpress_object_type: "page",
+        wordpress_object_id: page_id,
+        request_summary: requestSummary(endpoint, "GET"),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-get-media.ts
+import { defineTool as defineTool83 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z80 } from "npm:zod@^3.25.76";
+var wordpress_get_media_default = defineTool83({
+  name: "wordpress_get_media",
+  title: "Get WordPress media item",
+  description: "Fetch a WordPress media item by ID. Admin/manager only.",
+  inputSchema: { media_id: z80.number().int().min(1) },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ media_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const endpoint = `media/${media_id}`;
+    try {
+      const res = await wordpressRequest({ endpoint, query: { context: "edit" } });
+      const m = res.data;
+      const titleObj = m.title;
+      const captionObj = m.caption;
+      const out = {
+        id: m.id,
+        title: titleObj?.rendered ?? null,
+        filename: m.media_details?.file ?? null,
+        mime_type: m.mime_type,
+        source_url: m.source_url,
+        alt_text: m.alt_text ?? null,
+        caption: captionObj?.rendered ?? null,
+        media_details: m.media_details ?? null,
+        date: m.date
+      };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "get_media",
+        wordpress_object_type: "media",
+        wordpress_object_id: media_id,
+        request_summary: requestSummary(endpoint, "GET"),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "get_media",
+        wordpress_object_type: "media",
+        wordpress_object_id: media_id,
+        request_summary: requestSummary(endpoint, "GET"),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-search-media.ts
+import { defineTool as defineTool84 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z81 } from "npm:zod@^3.25.76";
+var wordpress_search_media_default = defineTool84({
+  name: "wordpress_search_media",
+  title: "Search WordPress media",
+  description: "Search the WordPress media library. Admin/manager only.",
+  inputSchema: {
+    search: z81.string().min(1),
+    media_type: z81.enum(["image", "video", "audio", "application"]).optional(),
+    page: z81.number().int().min(1).optional(),
+    per_page: z81.number().int().min(1).max(50).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const q = {
+      search: input.search,
+      media_type: input.media_type,
+      page: input.page ?? 1,
+      per_page: input.per_page ?? 20,
+      orderby: "date",
+      order: "desc",
+      context: "edit",
+      _fields: "id,title,source_url,mime_type,alt_text,date,media_details"
+    };
+    try {
+      const res = await wordpressRequest({ endpoint: "media", query: q });
+      const out = {
+        page: q.page,
+        per_page: q.per_page,
+        total_items: res.headers.totalItems ?? null,
+        total_pages: res.headers.totalPages ?? null,
+        media: (res.data ?? []).map((m) => ({
+          id: m.id,
+          title: m.title?.rendered ?? null,
+          source_url: m.source_url,
+          mime_type: m.mime_type,
+          alt_text: m.alt_text ?? null,
+          date: m.date,
+          filename: m.media_details?.file ?? null
+        }))
+      };
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "search_media",
+        wordpress_object_type: "media",
+        request_summary: requestSummary("media", "GET", q),
+        result_status: "success",
+        response_code: res.status
+      });
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "search_media",
+        wordpress_object_type: "media",
+        request_summary: requestSummary("media", "GET", q),
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-get-taxonomies.ts
+import { defineTool as defineTool85 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var wordpress_get_taxonomies_default = defineTool85({
+  name: "wordpress_get_taxonomies",
+  title: "Get WordPress taxonomies",
+  description: "Return WordPress standard categories, tags, and the custom 'tours' taxonomy terms with their IDs. Admin/manager only.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async (_input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const q = { per_page: 100, context: "edit", _fields: "id,name,slug,count,taxonomy" };
+    const out = {};
+    const errors = [];
+    for (const endpoint of ["categories", "tags", "tours"]) {
+      try {
+        const res = await wordpressRequest({ endpoint, query: q });
+        out[endpoint] = (res.data ?? []).map((t) => ({
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          count: t.count,
+          taxonomy: t.taxonomy
+        }));
+      } catch (err) {
+        const c = categoriseError(err);
+        out[endpoint] = [];
+        errors.push({ where: endpoint, message: c.message, status: c.status });
+      }
+    }
+    const result = { ...out, errors };
+    await auditWordpressCall(ctx, {
+      source: "mcp",
+      action: "get_taxonomies",
+      request_summary: requestSummary("categories,tags,tours", "GET"),
+      result_status: errors.length === 3 ? "error" : "success",
+      response_code: errors.length === 3 ? errors[0]?.status ?? 500 : 200,
+      error_message: errors.length === 3 ? errors[0]?.message ?? null : null
+    });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
@@ -4147,7 +4971,17 @@ var mcp_default = defineMcp({
     unassign_task_default,
     add_task_subtask_default,
     update_task_subtask_default,
-    delete_task_subtask_default
+    delete_task_subtask_default,
+    // WordPress content (read-only, Phase 1)
+    wordpress_health_check_default,
+    wordpress_list_tours_default,
+    wordpress_get_tour_default,
+    wordpress_find_tour_default,
+    wordpress_list_pages_default,
+    wordpress_get_page_default,
+    wordpress_get_media_default,
+    wordpress_search_media_default,
+    wordpress_get_taxonomies_default
   ]
 });
 

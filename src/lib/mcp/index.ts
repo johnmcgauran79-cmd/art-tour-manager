@@ -78,6 +78,16 @@ import addTaskSubtaskTool from "./tools/add-task-subtask";
 import updateTaskSubtaskTool from "./tools/update-task-subtask";
 import deleteTaskSubtaskTool from "./tools/delete-task-subtask";
 import listTaskStatusesTool from "./tools/list-task-statuses";
+// WordPress content integration (Phase 1 — read-only, admin/manager gated)
+import wordpressHealthCheckTool from "./tools/wordpress-health-check";
+import wordpressListToursTool from "./tools/wordpress-list-tours";
+import wordpressGetTourTool from "./tools/wordpress-get-tour";
+import wordpressFindTourTool from "./tools/wordpress-find-tour";
+import wordpressListPagesTool from "./tools/wordpress-list-pages";
+import wordpressGetPageTool from "./tools/wordpress-get-page";
+import wordpressGetMediaTool from "./tools/wordpress-get-media";
+import wordpressSearchMediaTool from "./tools/wordpress-search-media";
+import wordpressGetTaxonomiesTool from "./tools/wordpress-get-taxonomies";
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
@@ -175,5 +185,15 @@ export default defineMcp({
     addTaskSubtaskTool,
     updateTaskSubtaskTool,
     deleteTaskSubtaskTool,
+    // WordPress content (read-only, Phase 1)
+    wordpressHealthCheckTool,
+    wordpressListToursTool,
+    wordpressGetTourTool,
+    wordpressFindTourTool,
+    wordpressListPagesTool,
+    wordpressGetPageTool,
+    wordpressGetMediaTool,
+    wordpressSearchMediaTool,
+    wordpressGetTaxonomiesTool,
   ],
 });

@@ -155,3 +155,6 @@ verify_jwt = false
 
 [functions.notify-tour-status-teams]
 verify_jwt = false
+
+[functions.wp-content-proxy]
+verify_jwt = false
