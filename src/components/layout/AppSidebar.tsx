@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { usePersonalTodos } from "@/hooks/usePersonalTodos";
 import { useMyTasks } from "@/hooks/useTaskQueries";
+import { useBookings } from "@/hooks/useBookings";
 
 interface NavItem {
   key: string;
@@ -52,6 +53,21 @@ export const AppSidebar = () => {
   // Counts for nav badges.
   const { data: todos = [] } = usePersonalTodos();
   const { data: myTasks = [] } = useMyTasks();
+  const { data: allBookings = [] } = useBookings();
+  const estimatedMonthlyRevenue = (() => {
+    const now = new Date();
+    return allBookings
+      .filter((b: any) => {
+        if (!b.created_at) return false;
+        const d = new Date(b.created_at);
+        return (
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear() &&
+          b.status !== 'cancelled'
+        );
+      })
+      .reduce((sum: number, b: any) => sum + (b.revenue || 0), 0);
+  })();
   const todoCount = todos.filter((t) => !t.completed).length;
   const overdueTaskCount = (() => {
     const today = new Date();
@@ -169,6 +185,16 @@ export const AppSidebar = () => {
           {workspaceItems.map((item) => (
             <NavButton key={item.key} item={item} />
           ))}
+          {isAdminOrManager && (!collapsed || isMobile) && (
+            <div className="mt-3 rounded-md border border-sidebar-border bg-sidebar-accent/40 p-3">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/60">
+                Est. Monthly Revenue
+              </div>
+              <div className="mt-1 text-lg font-bold text-sidebar-foreground">
+                ${estimatedMonthlyRevenue.toLocaleString()}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </nav>
