@@ -6,13 +6,13 @@ import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmail
 import { EmailIssuesWidget } from "@/components/dashboard/EmailIssuesWidget";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { MyApprovalsWidget } from "@/components/dashboard/MyApprovalsWidget";
-import type { Layout } from "react-grid-layout";
+import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
   id: string;
   title: string;
   Component: ComponentType;
-  default: Layout;
+  default: LayoutItem;
 }
 
 // 12-column grid. rowHeight is 60px in the grid.
@@ -62,5 +62,5 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
   },
 ];
 
-export const DEFAULT_LAYOUT: Layout[] = DASHBOARD_WIDGETS.map((w) => w.default);
+export const DEFAULT_LAYOUT: LayoutItem[] = DASHBOARD_WIDGETS.map((w) => w.default);
 export const DEFAULT_HIDDEN: string[] = [];
