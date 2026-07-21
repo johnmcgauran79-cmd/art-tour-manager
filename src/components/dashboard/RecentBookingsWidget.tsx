@@ -18,6 +18,17 @@ export const RecentBookingsWidget = () => {
     setSearchParams({ tab: 'bookings' });
   };
 
+  const now = new Date();
+  const bookingsThisMonth = (bookings || []).filter((b) => {
+    if (!b.created_at) return false;
+    const d = new Date(b.created_at);
+    return (
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear() &&
+      b.status !== 'cancelled'
+    );
+  }).length;
+
   if (isLoading) {
     return (
       <Card className="h-full flex flex-col">
@@ -28,6 +39,9 @@ export const RecentBookingsWidget = () => {
           <CardTitle className="flex items-center gap-2 text-base">
             <Calendar className="h-4 w-4 text-primary" />
             Recent Bookings
+            <span className="text-xs font-normal text-muted-foreground">
+              ({bookingsThisMonth} {bookingsThisMonth === 1 ? 'booking' : 'bookings'} this month)
+            </span>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardTitle>
         </CardHeader>
@@ -52,6 +66,9 @@ export const RecentBookingsWidget = () => {
           <CardTitle className="flex items-center gap-2 text-base">
             <Calendar className="h-4 w-4 text-primary" />
             Recent Bookings
+            <span className="text-xs font-normal text-muted-foreground">
+              ({bookingsThisMonth} {bookingsThisMonth === 1 ? 'booking' : 'bookings'} this month)
+            </span>
             <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardTitle>
         </CardHeader>

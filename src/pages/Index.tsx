@@ -17,7 +17,6 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
-import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
@@ -141,8 +140,6 @@ const Index = () => {
             onAddContact={() => setAddContactModalOpen(true)}
             onAddTask={() => setAddTaskModalOpen(true)}
           />
-
-          <DashboardMetrics onRevenueClick={() => setCustomerAnalyticsOpen(true)} />
 
           <DashboardGrid />
         </TabsContent>
