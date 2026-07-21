@@ -12,6 +12,7 @@ import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 import { WaiverSettingsCard } from "./WaiverSettingsCard";
 import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
 import { AiRetentionSettingsCard } from "./AiRetentionSettingsCard";
+import { TeamsChannelNotifyCard } from "./TeamsChannelNotifyCard";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -225,6 +226,12 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Accounting Integration</h2>
         <XeroIntegrationSettings />
+      </div>
+
+      {/* Microsoft Teams Notifications */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Microsoft Teams Notifications</h2>
+        <TeamsChannelNotifyCard />
       </div>
 
       {/* System Status */}

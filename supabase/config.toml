@@ -152,3 +152,6 @@ verify_jwt = false
 
 [functions.purge-ai-conversations]
 verify_jwt = false
+
+[functions.notify-tour-status-teams]
+verify_jwt = false

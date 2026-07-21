@@ -3482,6 +3482,45 @@ export type Database = {
           },
         ]
       }
+      teams_channel_notify_config: {
+        Row: {
+          channel_id: string | null
+          channel_name: string | null
+          enabled: boolean
+          id: boolean
+          notify_statuses: string[]
+          poster_user_id: string | null
+          team_id: string | null
+          team_name: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          channel_name?: string | null
+          enabled?: boolean
+          id?: boolean
+          notify_statuses?: string[]
+          poster_user_id?: string | null
+          team_id?: string | null
+          team_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          channel_name?: string | null
+          enabled?: boolean
+          id?: boolean
+          notify_statuses?: string[]
+          poster_user_id?: string | null
+          team_id?: string | null
+          team_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       teams_oauth_states: {
         Row: {
           created_at: string
