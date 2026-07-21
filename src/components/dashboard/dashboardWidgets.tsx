@@ -15,52 +15,53 @@ export interface DashboardWidgetDef {
   default: LayoutItem;
 }
 
-export const DASHBOARD_LAYOUT_VERSION = 2;
+export const DASHBOARD_LAYOUT_VERSION = 3;
 
 // 12-column grid. Default widgets span all 12 columns for a single-column start.
 // x/y in grid units, w/h in grid units. minW/minH keep widgets usable.
+// 12-col grid, three columns => w=4. Each widget occupies one column.
 export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
   {
     id: "recent_bookings",
     title: "Recent Bookings",
     Component: RecentBookingsWidget,
-    default: { i: "recent_bookings", x: 0, y: 0, w: 12, h: 10, minW: 4, minH: 4 },
+    default: { i: "recent_bookings", x: 0, y: 0, w: 4, h: 10, minW: 3, minH: 4 },
   },
   {
     id: "status_alerts",
     title: "Status Alerts",
     Component: StatusAlertWidget,
-    default: { i: "status_alerts", x: 0, y: 10, w: 12, h: 4, minW: 3, minH: 3 },
+    default: { i: "status_alerts", x: 4, y: 0, w: 4, h: 10, minW: 3, minH: 3 },
   },
   {
     id: "my_approvals",
     title: "My Approvals",
     Component: MyApprovalsWidget,
-    default: { i: "my_approvals", x: 0, y: 14, w: 12, h: 3, minW: 3, minH: 2 },
+    default: { i: "my_approvals", x: 8, y: 0, w: 4, h: 10, minW: 3, minH: 2 },
   },
   {
     id: "info_missing",
     title: "Information Missing",
     Component: InformationMissingWidget,
-    default: { i: "info_missing", x: 0, y: 17, w: 12, h: 3, minW: 3, minH: 2 },
+    default: { i: "info_missing", x: 0, y: 10, w: 4, h: 10, minW: 3, minH: 2 },
   },
   {
     id: "email_issues",
     title: "Email Delivery Issues",
     Component: EmailIssuesWidget,
-    default: { i: "email_issues", x: 0, y: 20, w: 12, h: 4, minW: 3, minH: 3 },
+    default: { i: "email_issues", x: 4, y: 10, w: 4, h: 10, minW: 3, minH: 3 },
   },
   {
     id: "pending_email_approvals",
     title: "Pending Email Approvals",
     Component: PendingEmailApprovalsWidget,
-    default: { i: "pending_email_approvals", x: 0, y: 24, w: 12, h: 4, minW: 3, minH: 3 },
+    default: { i: "pending_email_approvals", x: 8, y: 10, w: 4, h: 10, minW: 3, minH: 3 },
   },
   {
     id: "alerts",
     title: "Alerts",
     Component: AlertsWidget,
-    default: { i: "alerts", x: 0, y: 28, w: 12, h: 10, minW: 4, minH: 4 },
+    default: { i: "alerts", x: 0, y: 20, w: 4, h: 10, minW: 3, minH: 4 },
   },
 ];
 
