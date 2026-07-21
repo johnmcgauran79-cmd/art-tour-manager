@@ -49,15 +49,19 @@ export const PendingEmailApprovalsWidget = () => {
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3">
+      <CardHeader
+        className="pb-3 cursor-pointer hover:bg-muted/40 rounded-t-xl transition-colors"
+        onClick={handleClick}
+      >
         <CardTitle className="flex items-center gap-2 text-base">
           <Mail className="h-4 w-4 text-primary" />
           Email Approvals
           {totalCount > 0 && (
-            <Badge variant="secondary" className="ml-auto">
+            <Badge variant="secondary" className="ml-1">
               {totalCount}
             </Badge>
           )}
+          <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 overflow-auto space-y-3">
