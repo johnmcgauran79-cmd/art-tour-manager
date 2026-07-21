@@ -137,7 +137,11 @@ export const UnifiedEmailApprovals = () => {
       const itemIds = b.items.map((i: any) => i.id);
       const hasOverride = b.items.some((i: any) => i.email_template_id);
       out.push({
-        uid: `sc-${b.rule_id}-${b.batch_date}`,
+        // Include the effective template in the uid so batches that share the
+        // same rule + date but resolve to different templates (e.g. standard
+        // "Welcome Email" vs "Welcome Email - LITP") don't collide and cause
+        // one row's checkbox to select the other batch's emails.
+        uid: `sc-${b.rule_id}-${b.batch_date}-${b.effective_template_name || b.template_name || "none"}`,
         source: "status_change",
         statusChangeItemIds: itemIds,
         title: b.rule_name,
