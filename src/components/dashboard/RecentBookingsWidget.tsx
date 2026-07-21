@@ -21,10 +21,14 @@ export const RecentBookingsWidget = () => {
   if (isLoading) {
     return (
       <Card className="h-full flex flex-col">
-        <CardHeader className="pb-3">
+        <CardHeader
+          className="pb-3 cursor-pointer hover:bg-muted/40 rounded-t-xl transition-colors"
+          onClick={handleViewAll}
+        >
           <CardTitle className="flex items-center gap-2 text-base">
             <Calendar className="h-4 w-4 text-primary" />
             Recent Bookings
+            <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 min-h-0 overflow-auto">
@@ -41,10 +45,14 @@ export const RecentBookingsWidget = () => {
 
   return (
     <Card className="h-full flex flex-col">
-        <CardHeader className="pb-3">
+        <CardHeader
+          className="pb-3 cursor-pointer hover:bg-muted/40 rounded-t-xl transition-colors"
+          onClick={handleViewAll}
+        >
           <CardTitle className="flex items-center gap-2 text-base">
             <Calendar className="h-4 w-4 text-primary" />
             Recent Bookings
+            <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 min-h-0 overflow-auto space-y-2">
