@@ -19,7 +19,7 @@ export const StatusAlertWidget = () => {
   };
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <AlertTriangle className="h-4 w-4 text-primary" />
@@ -31,7 +31,7 @@ export const StatusAlertWidget = () => {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="flex-1 min-h-0 overflow-auto space-y-3">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : totalCount === 0 ? (

@@ -89,7 +89,7 @@ export const MyApprovalsWidget = () => {
     p ? `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.email || "Someone" : "Someone";
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <CheckSquare className="h-4 w-4 text-primary" />
@@ -99,7 +99,7 @@ export const MyApprovalsWidget = () => {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="flex-1 min-h-0 overflow-auto space-y-2">
         {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
         {!isLoading && (!approvals || approvals.length === 0) && (
           <p className="text-sm text-muted-foreground">Nothing waiting on you 🎉</p>
