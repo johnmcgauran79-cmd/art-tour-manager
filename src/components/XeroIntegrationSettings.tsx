@@ -324,7 +324,7 @@ export const XeroIntegrationSettings = () => {
               {/* Sync Actions */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Sync Actions</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                   <Button
                     variant="outline"
                     onClick={handleSyncInvoices}
@@ -360,6 +360,18 @@ export const XeroIntegrationSettings = () => {
                       <RefreshCw className="w-4 h-4 mr-2" />
                     )}
                     Sync Phone Numbers
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleSyncReceipts}
+                    disabled={isSyncing}
+                  >
+                    {syncingType === 'receipts' ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4 mr-2" />
+                    )}
+                    Sync Payment Receipts
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
