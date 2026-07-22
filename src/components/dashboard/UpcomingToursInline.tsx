@@ -40,7 +40,7 @@ export const UpcomingToursInline = () => {
   });
 
   return (
-    <div className="hidden md:flex flex-1 items-center text-sm text-muted-foreground min-w-0 truncate">
+    <div className="hidden md:flex flex-1 items-center pl-6 text-sm text-muted-foreground min-w-0 truncate">
       {parts}
     </div>
   );
