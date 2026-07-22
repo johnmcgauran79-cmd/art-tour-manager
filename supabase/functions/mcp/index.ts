@@ -4277,7 +4277,9 @@ var wordpress_health_check_default = defineTool77({
       media_endpoint: false,
       wp_v2_namespace: false,
       username: null,
+      profile_endpoint: false,
       errors: [],
+      warnings: [],
       recommendations: []
     };
     async function probe(endpoint, label) {
@@ -4306,20 +4308,34 @@ var wordpress_health_check_default = defineTool77({
       result.reachable = true;
       result.authenticated = true;
       result.wp_v2_namespace = true;
+      result.profile_endpoint = true;
       result.username = me.data?.slug ?? me.data?.name ?? String(me.data?.id ?? "");
     } catch (err) {
       const c = categoriseError(err);
       if (c.category !== "unreachable" && c.category !== "timeout") result.reachable = true;
-      result.errors.push({ where: "users/me", ...c });
+      result.warnings.push({ where: "users/me", ...c });
       if (c.category === "unauthorized") {
         result.recommendations.push(
           "Verify the WordPress username and Application Password. LiteSpeed or a security plugin may be stripping the Authorization header \u2014 allow HTTP Basic auth in .htaccess."
+        );
+      } else if (c.category === "forbidden") {
+        result.recommendations.push(
+          "The optional /users/me profile check is blocked by WordPress, but content authentication can still be confirmed by successful context=edit tour/pages/media requests."
         );
       }
     }
     await probe("tour", "tour_endpoint");
     await probe("pages", "pages_endpoint");
     await probe("media", "media_endpoint");
+    const authenticatedContentEndpoints = [
+      result.tour_endpoint,
+      result.pages_endpoint,
+      result.media_endpoint
+    ].filter(Boolean).length;
+    if (!result.authenticated && authenticatedContentEndpoints > 0) {
+      result.authenticated = true;
+      result.wp_v2_namespace = true;
+    }
     if (!result.tour_endpoint) {
       result.recommendations.push(
         "The /wp-json/wp/v2/tour endpoint did not respond OK. Ensure the 'tour' custom post type is registered with show_in_rest: true."
@@ -4331,7 +4347,7 @@ var wordpress_health_check_default = defineTool77({
       request_summary: requestSummary("health_check", "GET"),
       result_status: result.authenticated ? "success" : "error",
       response_code: result.authenticated ? 200 : null,
-      error_message: result.errors[0]?.message ?? null
+      error_message: result.errors[0]?.message ?? result.warnings[0]?.message ?? null
     });
     return {
       content: [{ type: "text", text: JSON.stringify(result) }],
@@ -4887,7 +4903,7 @@ var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.0.0",
+  version: "2.0.1",
   instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`. These WordPress tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,

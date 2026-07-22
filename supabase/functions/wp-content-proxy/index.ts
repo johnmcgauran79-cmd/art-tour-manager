@@ -97,8 +97,11 @@ Deno.serve(async (req) => {
           tour_endpoint: false,
           pages_endpoint: false,
           media_endpoint: false,
+          wp_v2_namespace: false,
           username: null as string | null,
+          profile_endpoint: false,
           errors,
+          warnings: [] as Array<{ where: string; message: string; category: string; status: number }>,
           recommendations: [] as string[],
         };
         try {
@@ -110,14 +113,20 @@ Deno.serve(async (req) => {
           });
           out.reachable = true;
           out.authenticated = true;
+          out.wp_v2_namespace = true;
+          out.profile_endpoint = true;
           out.username = me.data?.slug ?? me.data?.name ?? String(me.data?.id ?? "");
         } catch (err) {
           const e = err as WordpressClientError;
           if (e.category !== "unreachable" && e.category !== "timeout") out.reachable = true;
-          errors.push({ where: "users/me", message: e.message, category: e.category, status: e.status });
+          out.warnings.push({ where: "users/me", message: e.message, category: e.category, status: e.status });
           if (e.category === "unauthorized") {
             out.recommendations.push(
               "Verify the WordPress username and Application Password. LiteSpeed or a security plugin may be stripping the Authorization header.",
+            );
+          } else if (e.category === "forbidden") {
+            out.recommendations.push(
+              "The optional /users/me profile check is blocked by WordPress, but content authentication can still be confirmed by successful context=edit tour/pages/media requests.",
             );
           }
         }
@@ -134,6 +143,10 @@ Deno.serve(async (req) => {
             const e = err as WordpressClientError;
             errors.push({ where: ep, message: e.message, category: e.category, status: e.status });
           }
+        }
+        if (!out.authenticated && [out.tour_endpoint, out.pages_endpoint, out.media_endpoint].some(Boolean)) {
+          out.authenticated = true;
+          out.wp_v2_namespace = true;
         }
         if (!out.tour_endpoint) {
           out.recommendations.push(
