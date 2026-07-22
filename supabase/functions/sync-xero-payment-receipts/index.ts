@@ -146,14 +146,29 @@ serve(async (req) => {
       || "bookings@australianracingtours.com.au";
     const fromField = `${senderName} <${defaultFrom}>`;
 
-    // Pull all active mappings with booking + tour + customer
+    // Fetch default brand for fallback theming
+    const { data: defaultBrandRow } = await supabase
+      .from("brands")
+      .select("*")
+      .eq("is_default", true)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    // Pull all active mappings with booking + tour + brand + customer
     const { data: mappings, error: mErr } = await supabase
       .from("xero_invoice_mappings")
       .select(`
         xero_invoice_id, xero_invoice_number, booking_id,
         bookings:booking_id (
           id, tour_id, status, lead_passenger_id,
-          tours:tour_id ( id, name, payment_receipts_enabled ),
+          tours:tour_id (
+            id, name, payment_receipts_enabled, brand_id,
+            brand:brand_id (
+              id, name, sender_name, from_email_client, email_header_image_url,
+              color_primary, color_border, color_button, color_button_text, color_accent,
+              footer_text, company_website, company_phone
+            )
+          ),
           customers:lead_passenger_id ( id, first_name, last_name, email )
         )
       `);
@@ -259,6 +274,12 @@ serve(async (req) => {
         if (skippedReason === "tour_opt_out") { stats.skipped_opt_out++; continue; }
         if (skippedReason === "no_recipient_email") { stats.skipped_no_email++; continue; }
 
+        // Resolve brand (tour brand or default)
+        const brand = (tour as any)?.brand || defaultBrandRow || null;
+        const brandFromField = brand?.sender_name && brand?.from_email_client
+          ? `${brand.sender_name} <${brand.from_email_client}>`
+          : fromField;
+
         // Render + send
         const vars: Record<string, string> = {
           lead_passenger_first_name: cust?.first_name || "",
@@ -274,6 +295,18 @@ serve(async (req) => {
           invoice_amount_due: formatMoney(invoiceDue, currency),
           balance_remaining: formatMoney(invoiceDue, currency),
           currency,
+          // Brand / theme merge fields
+          brand_name: brand?.name || "Australian Racing Tours",
+          brand_sender_name: brand?.sender_name || senderName,
+          brand_header_image_url: brand?.email_header_image_url || "",
+          brand_color_primary: brand?.color_primary || "#0a1929",
+          brand_color_border: brand?.color_border || "#0a1929",
+          brand_color_button: brand?.color_button || "#0a1929",
+          brand_color_button_text: brand?.color_button_text || "#d4a017",
+          brand_color_accent: brand?.color_accent || "#d4a017",
+          brand_footer_text: brand?.footer_text || "",
+          brand_website: brand?.company_website || "",
+          brand_phone: brand?.company_phone || "",
         };
 
         const subject = mergeTemplate(template.subject_template || "Payment received", vars);
@@ -281,7 +314,7 @@ serve(async (req) => {
 
         try {
           const sent = await resend.emails.send({
-            from: fromField,
+            from: brandFromField,
             to: [recipient!],
             subject,
             html,
