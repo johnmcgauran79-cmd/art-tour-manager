@@ -36,6 +36,7 @@ import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
 import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestButton";
 import { PassengerDetailsSection } from "@/components/booking/PassengerDetailsSection";
 import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
+import { PaymentReceiptsHistory } from "@/components/PaymentReceiptsHistory";
 import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
 import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
@@ -682,6 +683,8 @@ export default function BookingDetail() {
                 )}
               </div>
             </div>
+
+            <PaymentReceiptsHistory bookingId={booking.id} />
 
             {/* Accommodation Info */}
             {booking.accommodation_required && (

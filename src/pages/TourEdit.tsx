@@ -64,6 +64,7 @@ export default function TourEdit() {
     is_test_tour: false,
     manual_billing: false,
     manual_emails: false,
+    payment_receipts_enabled: true,
     photos_videos_url: "",
   });
 
@@ -108,7 +109,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, photos_videos_url')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url')
           .eq('id', id)
           .single();
         
@@ -144,6 +145,7 @@ export default function TourEdit() {
             is_test_tour: (data as any).is_test_tour || false,
             manual_billing: (data as any).manual_billing || false,
             manual_emails: (data as any).manual_emails || false,
+            payment_receipts_enabled: (data as any).payment_receipts_enabled ?? true,
             photos_videos_url: (data as any).photos_videos_url || "",
           });
         }
@@ -213,6 +215,7 @@ export default function TourEdit() {
       is_test_tour: formData.is_test_tour,
       manual_billing: formData.manual_billing,
       manual_emails: formData.manual_emails,
+      payment_receipts_enabled: formData.payment_receipts_enabled,
       photos_videos_url: formData.photos_videos_url || null,
     } as any;
 
@@ -917,6 +920,25 @@ export default function TourEdit() {
               checked={formData.manual_emails}
               onCheckedChange={(checked) =>
                 setFormData(prev => ({ ...prev, manual_emails: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border bg-background p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="payment_receipts_enabled" className="text-sm font-medium cursor-pointer">
+                Automated payment receipts
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically email a branded receipt to passengers when a Xero payment is recorded against
+                a booking on this tour. Turn off for corporate/group bookings where receipts are handled manually.
+              </p>
+            </div>
+            <Switch
+              id="payment_receipts_enabled"
+              checked={formData.payment_receipts_enabled}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, payment_receipts_enabled: checked }))
               }
             />
           </div>

@@ -22,6 +22,7 @@ import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSectio
 import { useContactCommunications } from "@/hooks/useCommunications";
 import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
 import { MessageSquare } from "lucide-react";
+import { PaymentReceiptsHistory } from "@/components/PaymentReceiptsHistory";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -392,6 +393,7 @@ export default function ContactDetail() {
 
         <TabsContent value="bookings" className="space-y-4 mt-6">
           <ContactBookingsList contactId={contact.id} />
+          <PaymentReceiptsHistory customerId={contact.id} title="Payment History" />
           <RelatedTasksSection entityType="contact" entityId={contact.id} />
         </TabsContent>
 
