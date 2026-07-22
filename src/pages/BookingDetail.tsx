@@ -684,6 +684,8 @@ export default function BookingDetail() {
               </div>
             </div>
 
+            <PaymentReceiptsHistory bookingId={booking.id} />
+
             {/* Accommodation Info */}
             {booking.accommodation_required && (
               <div className="bg-card rounded-lg border p-6 space-y-4">
