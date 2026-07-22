@@ -161,23 +161,34 @@ export const XeroIntegrationSettings = () => {
     };
     let offset = 0;
     const limit = 40;
-    // Safety cap so we never loop forever.
-    for (let i = 0; i < 20; i++) {
-      const { data, error } = await supabase.functions.invoke('sync-xero-payment-receipts', {
-        body: { offset, limit, trigger: 'manual' },
-      });
-      if (error) throw new Error(error.message || 'Payment receipt sync failed');
-      if (!data?.success) throw new Error((data as any)?.error || 'Payment receipt sync failed');
-      for (const k of Object.keys(totals) as (keyof typeof totals)[]) {
-        totals[k] += Number((data as any)[k] || 0);
+    const pageErrors: string[] = [];
+    // Safety cap so we never loop forever. 40 pages × 40 mappings = 1600, well
+    // above current volume.
+    for (let i = 0; i < 40; i++) {
+      try {
+        const { data, error } = await supabase.functions.invoke('sync-xero-payment-receipts', {
+          body: { offset, limit, trigger: 'manual' },
+        });
+        if (error) throw new Error(error.message || 'Payment receipt sync failed');
+        if (!data?.success) throw new Error((data as any)?.error || 'Payment receipt sync failed');
+        for (const k of Object.keys(totals) as (keyof typeof totals)[]) {
+          totals[k] += Number((data as any)[k] || 0);
+        }
+        if (!data.has_more) break;
+        offset = data.next_offset;
+      } catch (pageErr: any) {
+        // Don't abort the whole run if one page times out — record and move on
+        // so later pages still get processed.
+        console.error(`Receipt sync page failed at offset ${offset}:`, pageErr);
+        pageErrors.push(`offset ${offset}: ${pageErr?.message || pageErr}`);
+        totals.errors += 1;
+        offset += limit;
       }
-      if (!data.has_more) break;
-      offset = data.next_offset;
     }
     if (silentIfZero && totals.receipts_queued === 0 && totals.errors === 0) return totals;
     toast({
       title: totals.receipts_queued > 0 ? 'Payment receipts queued for approval' : 'Payment receipt sync complete',
-      description: `${totals.invoices_checked} invoices checked · ${totals.receipts_queued} queued · ${totals.skipped_opt_out} tour opted-out · ${totals.skipped_historical} outside 7-day window · ${totals.skipped_no_email} no email · ${totals.errors} errors`,
+      description: `${totals.invoices_checked} invoices checked · ${totals.receipts_queued} queued · ${totals.skipped_opt_out} tour opted-out · ${totals.skipped_historical} outside 7-day window · ${totals.skipped_no_email} no email · ${totals.errors} errors${pageErrors.length ? ` (${pageErrors.length} page(s) retried next run)` : ''}`,
       variant: totals.errors > 0 ? 'destructive' : 'default',
     });
     return totals;
