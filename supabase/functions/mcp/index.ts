@@ -4299,7 +4299,7 @@ var wordpress_health_check_default = defineTool77({
     try {
       const me = await wordpressRequest({
         endpoint: "users/me",
-        query: { context: "edit" },
+        query: { context: "view" },
         timeoutMs: 1e4,
         retries: 0
       });

@@ -46,7 +46,7 @@ export default defineTool({
     try {
       const me = await wordpressRequest<{ id: number; slug?: string; name?: string }>({
         endpoint: "users/me",
-        query: { context: "edit" },
+        query: { context: "view" },
         timeoutMs: 10000,
         retries: 0,
       });
