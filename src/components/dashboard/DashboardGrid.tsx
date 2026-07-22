@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GripVertical, Pencil, RotateCcw, Check, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { UpcomingToursInline } from "@/components/dashboard/UpcomingToursInline";
 import {
   DASHBOARD_LAYOUT_VERSION,
@@ -64,6 +65,7 @@ export const DashboardGrid = () => {
   const { data: saved, isLoading } = useDashboardLayout();
   const { mutateAsync: save, isPending: saving } = useSaveDashboardLayout();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const [editMode, setEditMode] = useState(false);
   const [layout, setLayout] = useState<LayoutItem[]>(cloneDefaultLayout());
@@ -90,6 +92,27 @@ export const DashboardGrid = () => {
     [layout, hidden]
   );
 
+  // On mobile, force a single-column stacked layout using the widget order
+  // from DASHBOARD_WIDGETS. Ignores saved x/y/w positions but keeps h.
+  const mobileLayout = useMemo<LayoutItem[]>(() => {
+    let y = 0;
+    return visibleWidgets.map((w) => {
+      const existing = layout.find((l) => l.i === w.id);
+      const h = existing?.h ?? w.default.h ?? 10;
+      const item: LayoutItem = {
+        i: w.id,
+        x: 0,
+        y,
+        w: 12,
+        h,
+        minW: 12,
+        minH: w.default.minH ?? 3,
+      };
+      y += h;
+      return item;
+    });
+  }, [visibleWidgets, layout]);
+
   const persist = async (nextLayout: LayoutItem[], nextHidden: string[]) => {
     try {
       await save({ layout: stampLayout(nextLayout), hidden_widgets: nextHidden });
@@ -104,6 +127,8 @@ export const DashboardGrid = () => {
 
   const handleLayoutChange = (next: LayoutItem[]) => {
     if (!editMode) return;
+    // Never persist mobile's forced single-column layout back to the DB.
+    if (isMobile) return;
 
     // Merge back positions for visible items, keep hidden defaults untouched
     const nextMap = new Map(next.map((n) => [n.i, n]));
@@ -173,7 +198,7 @@ export const DashboardGrid = () => {
           Reset
         </Button>
 
-        {editMode ? (
+        {!isMobile && (editMode ? (
           <Button size="sm" onClick={handleDoneEditing} disabled={saving}>
             <Check className="h-4 w-4 mr-2" />
             Done
@@ -183,22 +208,22 @@ export const DashboardGrid = () => {
             <Pencil className="h-4 w-4 mr-2" />
             Edit layout
           </Button>
-        )}
+        ))}
         </div>
       </div>
 
       <ResponsiveGrid
         key={gridRevision}
         className={`dashboard-grid layout ${editMode ? "dashboard-grid--editing" : ""}`}
-        layout={visibleLayout}
+        layout={isMobile ? mobileLayout : visibleLayout}
         cols={12}
         rowHeight={44}
         margin={[16, 16]}
         containerPadding={[0, 0]}
         compactType="vertical"
         isBounded
-        isDraggable={editMode}
-        isResizable={editMode}
+        isDraggable={editMode && !isMobile}
+        isResizable={editMode && !isMobile}
         draggableHandle=".widget-drag-handle"
         resizeHandles={["se"]}
         onLayoutChange={handleLayoutChange}
