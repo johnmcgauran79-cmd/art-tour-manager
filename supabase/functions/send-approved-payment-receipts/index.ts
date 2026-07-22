@@ -113,7 +113,8 @@ serve(async (req) => {
               footer_text, company_website, company_phone
             )
           ),
-          customers:lead_passenger_id ( id, first_name, last_name, email )
+          customers:lead_passenger_id ( id, first_name, last_name, email ),
+          passenger_2:passenger_2_id ( id, first_name, last_name, email )
         )
       `)
       .in("id", receiptIds);
@@ -140,6 +141,11 @@ serve(async (req) => {
       const fromField = brand?.sender_name && brand?.from_email_client
         ? `${brand.sender_name} <${brand.from_email_client}>`
         : fallbackFromField;
+
+      const pax2Email = b?.passenger_2?.email;
+      const ccList = pax2Email && pax2Email.toLowerCase() !== String(recipient).toLowerCase()
+        ? [pax2Email]
+        : undefined;
 
       const currency = r.currency_code || "AUD";
       const vars: Record<string, string> = {
@@ -176,6 +182,7 @@ serve(async (req) => {
         const result = await resend.emails.send({
           from: fromField,
           to: [recipient!],
+          cc: ccList,
           subject,
           html,
         });
