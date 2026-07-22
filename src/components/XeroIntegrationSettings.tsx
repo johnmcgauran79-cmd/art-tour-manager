@@ -133,25 +133,64 @@ export const XeroIntegrationSettings = () => {
       setTotalChecked(result.total_checked || 0);
       setShowReviewModal(true);
 
-      // Fire-and-forget: also sync payment receipts so customers get receipt emails
-      // for any new payments Xero has recorded since the last run.
-      supabase.functions.invoke('sync-xero-payment-receipts', { body: { trigger: 'sync_invoices_button' } })
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Payment receipt sync error:', error);
-            return;
-          }
-          if (data?.receipts_sent) {
-            toast({
-              title: 'Payment receipts sent',
-              description: `${data.receipts_sent} receipt email(s) sent to customers.`,
-            });
-          }
-        })
-        .catch((e) => console.warn('Payment receipt sync failed:', e));
+      // Fire-and-forget: also sync payment receipts (paginated) so customers get
+      // receipt emails for new payments Xero has recorded since the last run.
+      runPaymentReceiptSync({ silentIfZero: true }).catch((e) =>
+        console.warn('Payment receipt sync failed:', e),
+      );
     } catch (error: any) {
       console.error('Error previewing invoices:', error);
       toast({ title: "Preview Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSyncing(false);
+      setSyncingType(null);
+    }
+  };
+
+  // Paginated payment receipt sync — loops through all invoice mappings in
+  // chunks so we don't blow the edge function CPU budget on 300+ mappings.
+  const runPaymentReceiptSync = async ({ silentIfZero = false }: { silentIfZero?: boolean } = {}) => {
+    const totals = {
+      invoices_checked: 0,
+      new_payments: 0,
+      receipts_sent: 0,
+      skipped_historical: 0,
+      skipped_opt_out: 0,
+      skipped_no_email: 0,
+      errors: 0,
+    };
+    let offset = 0;
+    const limit = 40;
+    // Safety cap so we never loop forever.
+    for (let i = 0; i < 20; i++) {
+      const { data, error } = await supabase.functions.invoke('sync-xero-payment-receipts', {
+        body: { offset, limit, trigger: 'manual' },
+      });
+      if (error) throw new Error(error.message || 'Payment receipt sync failed');
+      if (!data?.success) throw new Error((data as any)?.error || 'Payment receipt sync failed');
+      for (const k of Object.keys(totals) as (keyof typeof totals)[]) {
+        totals[k] += Number((data as any)[k] || 0);
+      }
+      if (!data.has_more) break;
+      offset = data.next_offset;
+    }
+    if (silentIfZero && totals.receipts_sent === 0 && totals.errors === 0) return totals;
+    toast({
+      title: totals.receipts_sent > 0 ? 'Payment receipts sent' : 'Payment receipt sync complete',
+      description: `${totals.invoices_checked} invoices checked · ${totals.receipts_sent} sent · ${totals.skipped_opt_out} opted-out · ${totals.skipped_historical} outside 7-day window · ${totals.skipped_no_email} no email · ${totals.errors} errors`,
+      variant: totals.errors > 0 ? 'destructive' : 'default',
+    });
+    return totals;
+  };
+
+  const handleSyncReceipts = async () => {
+    setIsSyncing(true);
+    setSyncingType('receipts');
+    try {
+      await runPaymentReceiptSync({ silentIfZero: false });
+    } catch (error: any) {
+      console.error('Error syncing payment receipts:', error);
+      toast({ title: 'Payment receipt sync failed', description: error.message, variant: 'destructive' });
     } finally {
       setIsSyncing(false);
       setSyncingType(null);
