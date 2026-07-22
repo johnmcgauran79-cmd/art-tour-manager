@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { acquireXeroLock, releaseXeroLock } from '../_shared/xeroLock.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,6 +64,16 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
+
+  const lockHolder = `sync-xero-contacts:${crypto.randomUUID()}`;
+  const gotLock = await acquireXeroLock(supabase, lockHolder, 120);
+  if (!gotLock) {
+    console.log('[sync-xero-contacts] skipped: xero_api lock held by another operation');
+    return new Response(
+      JSON.stringify({ success: true, skipped: true, reason: 'xero_api lock held' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 
   try {
     const auth = await getValidAccessToken(supabase);
@@ -309,5 +320,7 @@ serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
+  } finally {
+    await releaseXeroLock(supabase, lockHolder);
   }
 });
