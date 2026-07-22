@@ -110,6 +110,8 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
     const historicalWindowDays = 7;
+    const limit = Math.max(1, Math.min(Number(body?.limit) || 50, 100));
+    const offset = Math.max(0, Number(body?.offset) || 0);
 
     const auth = await getXeroAuth(supabase);
     if (!auth) {
@@ -154,7 +156,12 @@ serve(async (req) => {
       .eq("is_active", true)
       .maybeSingle();
 
-    // Pull all active mappings with booking + tour + brand + customer
+    // Count total for pagination reporting
+    const { count: totalMappings } = await supabase
+      .from("xero_invoice_mappings")
+      .select("xero_invoice_id", { count: "exact", head: true });
+
+    // Pull a page of active mappings with booking + tour + brand + customer
     const { data: mappings, error: mErr } = await supabase
       .from("xero_invoice_mappings")
       .select(`
@@ -171,7 +178,9 @@ serve(async (req) => {
           ),
           customers:lead_passenger_id ( id, first_name, last_name, email )
         )
-      `);
+      `)
+      .order("xero_invoice_id", { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (mErr) throw mErr;
 
@@ -353,7 +362,18 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, ...stats }), {
+    const nextOffset = offset + (mappings?.length || 0);
+    const hasMore = nextOffset < (totalMappings || 0);
+    return new Response(JSON.stringify({
+      success: true,
+      offset,
+      limit,
+      processed: mappings?.length || 0,
+      total: totalMappings || 0,
+      next_offset: nextOffset,
+      has_more: hasMore,
+      ...stats,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
