@@ -392,6 +392,7 @@ export default function ContactDetail() {
 
         <TabsContent value="bookings" className="space-y-4 mt-6">
           <ContactBookingsList contactId={contact.id} />
+          <PaymentReceiptsHistory customerId={contact.id} title="Payment History" />
           <RelatedTasksSection entityType="contact" entityId={contact.id} />
         </TabsContent>
 
