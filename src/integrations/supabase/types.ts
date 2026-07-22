@@ -4333,6 +4333,7 @@ export type Database = {
           ops_transport_notes: string | null
           outbound_flight_date: string | null
           outbound_flight_number: string | null
+          payment_receipts_enabled: boolean
           photos_videos_url: string | null
           pickup_location_required: boolean
           pickup_point: string | null
@@ -4395,6 +4396,7 @@ export type Database = {
           ops_transport_notes?: string | null
           outbound_flight_date?: string | null
           outbound_flight_number?: string | null
+          payment_receipts_enabled?: boolean
           photos_videos_url?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
@@ -4457,6 +4459,7 @@ export type Database = {
           ops_transport_notes?: string | null
           outbound_flight_date?: string | null
           outbound_flight_number?: string | null
+          payment_receipts_enabled?: boolean
           photos_videos_url?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
@@ -4826,6 +4829,80 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "xero_invoice_mappings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      xero_payment_receipts: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          created_at: string
+          currency_code: string | null
+          id: string
+          invoice_amount_due: number | null
+          invoice_amount_paid: number | null
+          invoice_total: number | null
+          payment_date: string | null
+          payment_reference: string | null
+          receipt_email_id: string | null
+          receipt_email_sent_at: string | null
+          recipient_email: string | null
+          send_error: string | null
+          skipped_reason: string | null
+          updated_at: string
+          xero_invoice_id: string
+          xero_invoice_number: string | null
+          xero_payment_id: string
+        }
+        Insert: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          currency_code?: string | null
+          id?: string
+          invoice_amount_due?: number | null
+          invoice_amount_paid?: number | null
+          invoice_total?: number | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          receipt_email_id?: string | null
+          receipt_email_sent_at?: string | null
+          recipient_email?: string | null
+          send_error?: string | null
+          skipped_reason?: string | null
+          updated_at?: string
+          xero_invoice_id: string
+          xero_invoice_number?: string | null
+          xero_payment_id: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          currency_code?: string | null
+          id?: string
+          invoice_amount_due?: number | null
+          invoice_amount_paid?: number | null
+          invoice_total?: number | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          receipt_email_id?: string | null
+          receipt_email_sent_at?: string | null
+          recipient_email?: string | null
+          send_error?: string | null
+          skipped_reason?: string | null
+          updated_at?: string
+          xero_invoice_id?: string
+          xero_invoice_number?: string | null
+          xero_payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xero_payment_receipts_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
