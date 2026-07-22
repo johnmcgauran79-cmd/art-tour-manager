@@ -19,6 +19,7 @@ import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
+import { PendingPaymentReceipts } from "@/components/operations/PendingPaymentReceipts";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
@@ -163,6 +164,7 @@ const Index = () => {
       
       <TabsContent value="bookings" className="space-y-4 mt-0">
         {!isAgent && <UnifiedEmailApprovals />}
+        {!isAgent && <PendingPaymentReceipts />}
         <BookingsTable 
           onAddBooking={handleAddBooking} 
           onViewAnalytics={() => setCustomerAnalyticsOpen(true)}

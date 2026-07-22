@@ -187,7 +187,7 @@ serve(async (req) => {
     const stats = {
       invoices_checked: 0,
       new_payments: 0,
-      receipts_sent: 0,
+      receipts_queued: 0,
       skipped_historical: 0,
       skipped_opt_out: 0,
       skipped_no_email: 0,
@@ -237,13 +237,20 @@ serve(async (req) => {
         const cust = b.customers;
         const recipient = cust?.email || null;
 
-        // Decide send vs skip
+        // Decide queue vs skip. When the tour has receipts disabled we do
+        // NOT create a receipt at all (per product decision: the toggle
+        // suppresses generation entirely).
         let skippedReason: string | null = null;
-        if (!tour?.payment_receipts_enabled) skippedReason = "tour_opt_out";
-        else if (!recipient) skippedReason = "no_recipient_email";
+        if (!tour?.payment_receipts_enabled) {
+          // Skip generation entirely — do not queue anything.
+          stats.skipped_opt_out++;
+          continue;
+        }
+        if (!recipient) skippedReason = "no_recipient_email";
         else if (paymentDate && new Date(paymentDate) < cutoff) skippedReason = "historical_backfill";
 
-        // Insert receipt row (pending state) or with skip reason
+        // Insert receipt row: pending approval unless it's skipped
+        // (historical backfill or missing email).
         const insertRow = {
           booking_id: b.id,
           xero_invoice_id: m.xero_invoice_id,
@@ -258,16 +265,17 @@ serve(async (req) => {
           invoice_amount_due: invoiceDue,
           recipient_email: recipient,
           skipped_reason: skippedReason,
+          approval_status: skippedReason ? "skipped" : "pending",
         };
 
         if (dryRun) {
           if (skippedReason === "historical_backfill") stats.skipped_historical++;
-          else if (skippedReason === "tour_opt_out") stats.skipped_opt_out++;
           else if (skippedReason === "no_recipient_email") stats.skipped_no_email++;
+          else stats.receipts_queued++;
           continue;
         }
 
-        const { data: inserted, error: insErr } = await supabase
+        const { error: insErr } = await supabase
           .from("xero_payment_receipts")
           .insert(insertRow)
           .select()
@@ -280,85 +288,10 @@ serve(async (req) => {
         }
 
         if (skippedReason === "historical_backfill") { stats.skipped_historical++; continue; }
-        if (skippedReason === "tour_opt_out") { stats.skipped_opt_out++; continue; }
         if (skippedReason === "no_recipient_email") { stats.skipped_no_email++; continue; }
 
-        // Resolve brand (tour brand or default)
-        const brand = (tour as any)?.brand || defaultBrandRow || null;
-        const brandFromField = brand?.sender_name && brand?.from_email_client
-          ? `${brand.sender_name} <${brand.from_email_client}>`
-          : fromField;
-
-        // Render + send
-        const vars: Record<string, string> = {
-          lead_passenger_first_name: cust?.first_name || "",
-          lead_passenger_last_name: cust?.last_name || "",
-          lead_passenger_name: [cust?.first_name, cust?.last_name].filter(Boolean).join(" "),
-          tour_name: tour?.name || "",
-          payment_amount: formatMoney(amount, currency),
-          payment_date: formatDateAU(paymentDate),
-          payment_reference: p.Reference || "",
-          invoice_number: m.xero_invoice_number || "",
-          invoice_total: formatMoney(invoiceTotal, currency),
-          invoice_amount_paid: formatMoney(invoicePaid, currency),
-          invoice_amount_due: formatMoney(invoiceDue, currency),
-          balance_remaining: formatMoney(invoiceDue, currency),
-          currency,
-          // Brand / theme merge fields
-          brand_name: brand?.name || "Australian Racing Tours",
-          brand_sender_name: brand?.sender_name || senderName,
-          brand_header_image_url: brand?.email_header_image_url || "",
-          brand_color_primary: brand?.color_primary || "#0a1929",
-          brand_color_border: brand?.color_border || "#0a1929",
-          brand_color_button: brand?.color_button || "#0a1929",
-          brand_color_button_text: brand?.color_button_text || "#d4a017",
-          brand_color_accent: brand?.color_accent || "#d4a017",
-          brand_footer_text: brand?.footer_text || "",
-          brand_website: brand?.company_website || "",
-          brand_phone: brand?.company_phone || "",
-        };
-
-        const subject = mergeTemplate(template.subject_template || "Payment received", vars);
-        const html = mergeTemplate(template.content_template || "", vars);
-
-        try {
-          const sent = await resend.emails.send({
-            from: brandFromField,
-            to: [recipient!],
-            subject,
-            html,
-          });
-
-          if ((sent as any).error) throw new Error((sent as any).error?.message || "resend error");
-
-          const messageId = (sent as any).data?.id || null;
-
-          await supabase.from("xero_payment_receipts").update({
-            receipt_email_sent_at: new Date().toISOString(),
-            receipt_email_id: messageId,
-          }).eq("id", inserted!.id);
-
-          await supabase.from("email_logs").insert({
-            message_id: messageId,
-            booking_id: b.id,
-            tour_id: tour?.id ?? null,
-            recipient_email: recipient,
-            recipient_name: vars.lead_passenger_name,
-            subject,
-            template_name: template.name,
-            template_id: template.id,
-          });
-
-          stats.receipts_sent++;
-          // 600ms pause between sends to respect Resend 2/sec limit
-          await new Promise((r) => setTimeout(r, 600));
-        } catch (sendErr: any) {
-          stats.errors++;
-          await supabase.from("xero_payment_receipts").update({
-            send_error: String(sendErr?.message || sendErr).slice(0, 500),
-          }).eq("id", inserted!.id);
-          console.error("Receipt send failed", { paymentId, err: sendErr });
-        }
+        // Queued for approval — no email sent here.
+        stats.receipts_queued++;
       }
     }
 

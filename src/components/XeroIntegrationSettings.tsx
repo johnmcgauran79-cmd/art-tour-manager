@@ -153,7 +153,7 @@ export const XeroIntegrationSettings = () => {
     const totals = {
       invoices_checked: 0,
       new_payments: 0,
-      receipts_sent: 0,
+      receipts_queued: 0,
       skipped_historical: 0,
       skipped_opt_out: 0,
       skipped_no_email: 0,
@@ -174,10 +174,10 @@ export const XeroIntegrationSettings = () => {
       if (!data.has_more) break;
       offset = data.next_offset;
     }
-    if (silentIfZero && totals.receipts_sent === 0 && totals.errors === 0) return totals;
+    if (silentIfZero && totals.receipts_queued === 0 && totals.errors === 0) return totals;
     toast({
-      title: totals.receipts_sent > 0 ? 'Payment receipts sent' : 'Payment receipt sync complete',
-      description: `${totals.invoices_checked} invoices checked · ${totals.receipts_sent} sent · ${totals.skipped_opt_out} opted-out · ${totals.skipped_historical} outside 7-day window · ${totals.skipped_no_email} no email · ${totals.errors} errors`,
+      title: totals.receipts_queued > 0 ? 'Payment receipts queued for approval' : 'Payment receipt sync complete',
+      description: `${totals.invoices_checked} invoices checked · ${totals.receipts_queued} queued · ${totals.skipped_opt_out} tour opted-out · ${totals.skipped_historical} outside 7-day window · ${totals.skipped_no_email} no email · ${totals.errors} errors`,
       variant: totals.errors > 0 ? 'destructive' : 'default',
     });
     return totals;
