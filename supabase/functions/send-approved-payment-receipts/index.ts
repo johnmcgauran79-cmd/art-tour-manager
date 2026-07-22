@@ -84,9 +84,10 @@ serve(async (req) => {
       .select("setting_key, setting_value")
       .in("setting_key", ["default_sender_name", "default_from_email_client"]);
     const gsMap = new Map((gs ?? []).map((r: any) => [r.setting_key, r.setting_value]));
-    const senderName = gsMap.get("default_sender_name") || "Australian Racing Tours";
-    const defaultFrom = template.from_email
-      || gsMap.get("default_from_email_client")
+    const clean = (v: unknown) => String(v ?? "").replace(/^"+|"+$/g, "").trim();
+    const senderName = clean(gsMap.get("default_sender_name")) || "Australian Racing Tours";
+    const defaultFrom = clean(template.from_email)
+      || clean(gsMap.get("default_from_email_client"))
       || "bookings@australianracingtours.com.au";
     const fallbackFromField = `${senderName} <${defaultFrom}>`;
 
@@ -138,8 +139,10 @@ serve(async (req) => {
       }
 
       const brand = tour?.brand || defaultBrandRow || null;
-      const fromField = brand?.sender_name && brand?.from_email_client
-        ? `${brand.sender_name} <${brand.from_email_client}>`
+      const brandSender = clean(brand?.sender_name);
+      const brandFrom = clean(brand?.from_email_client);
+      const fromField = brandSender && brandFrom
+        ? `${brandSender} <${brandFrom}>`
         : fallbackFromField;
 
       const pax2Email = b?.passenger_2?.email;
