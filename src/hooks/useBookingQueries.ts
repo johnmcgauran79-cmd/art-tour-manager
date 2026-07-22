@@ -122,12 +122,14 @@ export const usePaginatedBookings = (
           const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
           const groupName = (booking.group_name || '').toLowerCase();
           const tourName = (booking.tours?.name || '').toLowerCase();
-          
+          const invoiceReference = (booking.invoice_reference || '').toString().toLowerCase();
+
           return leadPassengerName.includes(searchTerm) ||
                  passenger2Name.includes(searchTerm) ||
                  passenger3Name.includes(searchTerm) ||
                  groupName.includes(searchTerm) ||
-                 tourName.includes(searchTerm);
+                 tourName.includes(searchTerm) ||
+                 invoiceReference.includes(searchTerm);
         });
         
         const paginatedData = filtered.slice(start, end + 1);
