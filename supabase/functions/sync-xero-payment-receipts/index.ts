@@ -134,16 +134,16 @@ serve(async (req) => {
       );
     }
 
-    // Fetch default from-address
-    const { data: settingsRow } = await supabase
+    // Fetch default from-address from key/value general_settings
+    const { data: gs } = await supabase
       .from("general_settings")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
+      .select("setting_key, setting_value")
+      .in("setting_key", ["default_sender_name", "default_from_email_client"]);
+    const gsMap = new Map((gs ?? []).map((r: any) => [r.setting_key, r.setting_value]));
+    const senderName = gsMap.get("default_sender_name") || "Australian Racing Tours";
     const defaultFrom = template.from_email
-      || settingsRow?.default_from_email
-      || "receipts@australianracingtours.com.au";
-    const senderName = settingsRow?.default_sender_name || "Australian Racing Tours";
+      || gsMap.get("default_from_email_client")
+      || "bookings@australianracingtours.com.au";
     const fromField = `${senderName} <${defaultFrom}>`;
 
     // Pull all active mappings with booking + tour + customer
