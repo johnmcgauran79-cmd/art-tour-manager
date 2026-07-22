@@ -4839,6 +4839,9 @@ export type Database = {
       xero_payment_receipts: {
         Row: {
           amount: number
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           booking_id: string | null
           created_at: string
           currency_code: string | null
@@ -4851,6 +4854,8 @@ export type Database = {
           receipt_email_id: string | null
           receipt_email_sent_at: string | null
           recipient_email: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
           send_error: string | null
           skipped_reason: string | null
           updated_at: string
@@ -4860,6 +4865,9 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           booking_id?: string | null
           created_at?: string
           currency_code?: string | null
@@ -4872,6 +4880,8 @@ export type Database = {
           receipt_email_id?: string | null
           receipt_email_sent_at?: string | null
           recipient_email?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
           send_error?: string | null
           skipped_reason?: string | null
           updated_at?: string
@@ -4881,6 +4891,9 @@ export type Database = {
         }
         Update: {
           amount?: number
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           booking_id?: string | null
           created_at?: string
           currency_code?: string | null
@@ -4893,6 +4906,8 @@ export type Database = {
           receipt_email_id?: string | null
           receipt_email_sent_at?: string | null
           recipient_email?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
           send_error?: string | null
           skipped_reason?: string | null
           updated_at?: string
