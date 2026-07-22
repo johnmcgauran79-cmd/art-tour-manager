@@ -132,6 +132,23 @@ export const XeroIntegrationSettings = () => {
       setInvoiceProposals(result.proposals || []);
       setTotalChecked(result.total_checked || 0);
       setShowReviewModal(true);
+
+      // Fire-and-forget: also sync payment receipts so customers get receipt emails
+      // for any new payments Xero has recorded since the last run.
+      supabase.functions.invoke('sync-xero-payment-receipts', { body: { trigger: 'sync_invoices_button' } })
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn('Payment receipt sync error:', error);
+            return;
+          }
+          if (data?.receipts_sent) {
+            toast({
+              title: 'Payment receipts sent',
+              description: `${data.receipts_sent} receipt email(s) sent to customers.`,
+            });
+          }
+        })
+        .catch((e) => console.warn('Payment receipt sync failed:', e));
     } catch (error: any) {
       console.error('Error previewing invoices:', error);
       toast({ title: "Preview Failed", description: error.message, variant: "destructive" });
