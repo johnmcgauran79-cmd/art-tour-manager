@@ -4738,6 +4738,27 @@ export type Database = {
         }
         Relationships: []
       }
+      xero_api_locks: {
+        Row: {
+          acquired_at: string
+          expires_at: string
+          holder: string
+          lock_name: string
+        }
+        Insert: {
+          acquired_at?: string
+          expires_at: string
+          holder: string
+          lock_name: string
+        }
+        Update: {
+          acquired_at?: string
+          expires_at?: string
+          holder?: string
+          lock_name?: string
+        }
+        Relationships: []
+      }
       xero_integration_settings: {
         Row: {
           access_token: string | null
@@ -5159,6 +5180,10 @@ export type Database = {
         Returns: undefined
       }
       refresh_capacity_alerts: { Args: never; Returns: number }
+      release_xero_lock: {
+        Args: { _holder: string; _lock_name: string }
+        Returns: undefined
+      }
       secure_customer_search: {
         Args: { search_term: string }
         Returns: {
@@ -5168,6 +5193,10 @@ export type Database = {
           id: string
           last_name: string
         }[]
+      }
+      try_acquire_xero_lock: {
+        Args: { _holder: string; _lock_name: string; _ttl_seconds?: number }
+        Returns: boolean
       }
       user_has_department: {
         Args: {

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { waitForXeroLock, releaseXeroLock } from '../_shared/xeroLock.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -407,6 +408,16 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
+  const lockHolder = `xero-create-invoice:${crypto.randomUUID()}`;
+  const gotLock = await waitForXeroLock(supabase, lockHolder, {
+    ttlSeconds: 90,
+    maxWaitMs: 20000,
+    pollMs: 500,
+  });
+  if (!gotLock) {
+    console.warn('[xero-create-invoice] proceeding without lock (timed out waiting)');
+  }
+
   try {
     const { bookingId } = await req.json();
 
@@ -791,5 +802,7 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  } finally {
+    if (gotLock) await releaseXeroLock(supabase, lockHolder);
   }
 });
