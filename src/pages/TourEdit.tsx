@@ -923,6 +923,25 @@ export default function TourEdit() {
               }
             />
           </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border bg-background p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="payment_receipts_enabled" className="text-sm font-medium cursor-pointer">
+                Automated payment receipts
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically email a branded receipt to passengers when a Xero payment is recorded against
+                a booking on this tour. Turn off for corporate/group bookings where receipts are handled manually.
+              </p>
+            </div>
+            <Switch
+              id="payment_receipts_enabled"
+              checked={formData.payment_receipts_enabled}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, payment_receipts_enabled: checked }))
+              }
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
