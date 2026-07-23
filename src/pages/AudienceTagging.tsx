@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getGender } from "gender-detection-from-name";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,8 @@ const MALE_OVERRIDES = new Set(
 );
 
 export default function AudienceTagging() {
-  const { isAdminOrManager, isLoading: roleLoading } = useIsAdminOrManager();
+  const { data: roles = [], isLoading: roleLoading } = useUserRoles();
+  const isAdmin = roles.includes("admin");
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Row[]>([]);
   const [tagId, setTagId] = useState<string>("397");
@@ -52,7 +53,7 @@ export default function AudienceTagging() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!isAdminOrManager) return;
+    if (!isAdmin) return;
     (async () => {
       setLoading(true);
       try {
@@ -104,7 +105,7 @@ export default function AudienceTagging() {
       }
     })();
      
-  }, [isAdminOrManager, tagId]);
+  }, [isAdmin, tagId]);
 
   const females = useMemo(
     () => rows.filter((r) => r.classification === "female" && !r.alreadyTagged && !femaleExcluded.has(r.id)),
@@ -185,8 +186,8 @@ export default function AudienceTagging() {
   };
 
   if (roleLoading) return null;
-  if (!isAdminOrManager) {
-    return <div className="p-6 text-sm text-muted-foreground">Admin/Manager access only.</div>;
+  if (!isAdmin) {
+    return <div className="p-6 text-sm text-muted-foreground">Admin access only.</div>;
   }
 
   const runMatchByEmail = async (ids?: string[]) => {
