@@ -43,6 +43,7 @@ export default function AudienceTagging() {
   const [femaleExcluded, setFemaleExcluded] = useState<Set<string>>(new Set());
   const [femaleSearch, setFemaleSearch] = useState("");
   const [pushing, setPushing] = useState(false);
+  const [matching, setMatching] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export default function AudienceTagging() {
     [rows, femaleExcluded]
   );
   const femalesInKeap = useMemo(() => females.filter((r) => r.inKeap), [females]);
+  const femalesNotInKeap = useMemo(() => females.filter((r) => !r.inKeap && !!r.email), [females]);
   const males = useMemo(() => rows.filter((r) => r.classification === "male"), [rows]);
   const unknowns = useMemo(() => rows.filter((r) => r.classification === "unknown" && !r.alreadyTagged && r.inKeap), [rows]);
   const alreadyTagged = useMemo(() => rows.filter((r) => r.alreadyTagged), [rows]);
@@ -181,6 +183,45 @@ export default function AudienceTagging() {
     return <div className="p-6 text-sm text-muted-foreground">Admin/Manager access only.</div>;
   }
 
+  const runMatchByEmail = async (ids?: string[]) => {
+    setMatching(true);
+    try {
+      let totalMatched = 0, totalNotFound = 0, totalFailed = 0, totalProcessed = 0;
+      // Chunk to keep each invocation snappy.
+      const CHUNK = 200;
+      const list = ids && ids.length > 0 ? ids : undefined;
+      const chunks: (string[] | undefined)[] = list
+        ? Array.from({ length: Math.ceil(list.length / CHUNK) }, (_, i) => list.slice(i * CHUNK, (i + 1) * CHUNK))
+        : [undefined];
+      for (const chunk of chunks) {
+        const { data, error } = await supabase.functions.invoke("keap-match-contacts-by-email", {
+          body: chunk ? { customerIds: chunk } : { limit: 500 },
+        });
+        if (error) throw error;
+        totalMatched += data?.matched || 0;
+        totalNotFound += data?.notFound || 0;
+        totalFailed += data?.failed || 0;
+        totalProcessed += data?.processed || 0;
+      }
+      toast.success("Keap email match complete", {
+        description: `Processed ${totalProcessed} · Matched ${totalMatched} · Not in Keap ${totalNotFound} · Failed ${totalFailed}`,
+      });
+      // Refresh page data by bumping tagId dependency isn't ideal; do a light reload of rows
+      const { data: refreshed } = await supabase
+        .from("customers")
+        .select("id, keap_contact_id")
+        .in("id", (ids && ids.length > 0) ? ids : rows.map((r) => r.id));
+      if (refreshed) {
+        const map = new Map(refreshed.map((r: any) => [r.id, r.keap_contact_id]));
+        setRows((prev) => prev.map((r) => map.has(r.id) ? { ...r, inKeap: !!map.get(r.id), keap_contact_id: map.get(r.id) as any } : r));
+      }
+    } catch (e: any) {
+      toast.error("Match failed", { description: e?.message });
+    } finally {
+      setMatching(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
       <div className="flex items-start justify-between gap-4">
@@ -209,6 +250,30 @@ export default function AudienceTagging() {
             <Input id="tag-label" value={tagLabel} onChange={(e) => setTagLabel(e.target.value)} />
           </div>
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Match contacts to Keap by email</CardTitle>
+            <CardDescription>
+              Many ART contacts aren't linked to Keap yet. This looks up unlinked emails in Keap and, when a match exists, stores the Keap contact ID (no new Keap contacts created). Run this before pushing tags to widen the pushable pool.
+            </CardDescription>
+          </div>
+          <div className="flex flex-col gap-2 items-end">
+            <Button variant="outline" disabled={matching} onClick={() => runMatchByEmail()}>
+              {matching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Match next 500 unlinked
+            </Button>
+            <Button
+              disabled={matching || femalesNotInKeap.length === 0}
+              onClick={() => runMatchByEmail(femalesNotInKeap.map((r) => r.id))}
+            >
+              {matching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Match {femalesNotInKeap.length} likely-female unlinked
+            </Button>
+          </div>
+        </CardHeader>
       </Card>
 
       {loading ? (
