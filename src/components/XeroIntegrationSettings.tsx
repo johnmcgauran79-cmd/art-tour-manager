@@ -150,48 +150,31 @@ export const XeroIntegrationSettings = () => {
   // Paginated payment receipt sync — loops through all invoice mappings in
   // chunks so we don't blow the edge function CPU budget on 300+ mappings.
   const runPaymentReceiptSync = async ({ silentIfZero = false }: { silentIfZero?: boolean } = {}) => {
-    const totals = {
-      invoices_checked: 0,
-      new_payments: 0,
-      receipts_queued: 0,
-      skipped_historical: 0,
-      skipped_opt_out: 0,
-      skipped_no_email: 0,
-      errors: 0,
-    };
-    let offset = 0;
-    const limit = 40;
-    const pageErrors: string[] = [];
-    // Safety cap so we never loop forever. 40 pages × 40 mappings = 1600, well
-    // above current volume.
-    for (let i = 0; i < 40; i++) {
-      try {
-        const { data, error } = await supabase.functions.invoke('sync-xero-payment-receipts', {
-          body: { offset, limit, trigger: 'manual' },
-        });
-        if (error) throw new Error(error.message || 'Payment receipt sync failed');
-        if (!data?.success) throw new Error((data as any)?.error || 'Payment receipt sync failed');
-        for (const k of Object.keys(totals) as (keyof typeof totals)[]) {
-          totals[k] += Number((data as any)[k] || 0);
-        }
-        if (!data.has_more) break;
-        offset = data.next_offset;
-      } catch (pageErr: any) {
-        // Don't abort the whole run if one page times out — record and move on
-        // so later pages still get processed.
-        console.error(`Receipt sync page failed at offset ${offset}:`, pageErr);
-        pageErrors.push(`offset ${offset}: ${pageErr?.message || pageErr}`);
-        totals.errors += 1;
-        offset += limit;
+    // Kick off page 1 and let the edge function chain the remaining pages
+    // server-side via EdgeRuntime.waitUntil. This makes the run resilient to
+    // the browser tab being closed or the user navigating away.
+    const limit = 50;
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-xero-payment-receipts', {
+        body: { offset: 0, limit, trigger: 'manual', auto_continue: true, max_pages: 40 },
+      });
+      if (error) throw new Error(error.message || 'Payment receipt sync failed');
+      if (!data?.success) throw new Error((data as any)?.error || 'Payment receipt sync failed');
+      const firstQueued = Number((data as any).receipts_queued || 0);
+      const total = Number((data as any).total || 0);
+      if (silentIfZero && firstQueued === 0) return data;
+      toast({
+        title: 'Payment receipt sync running',
+        description: `Checking ${total} invoices in the background. New receipts will appear in the Pending Payment Receipts queue as they're found.`,
+      });
+      return data;
+    } catch (err: any) {
+      console.error('Receipt sync start failed:', err);
+      if (!silentIfZero) {
+        toast({ title: 'Payment receipt sync failed', description: err?.message || String(err), variant: 'destructive' });
       }
+      throw err;
     }
-    if (silentIfZero && totals.receipts_queued === 0 && totals.errors === 0) return totals;
-    toast({
-      title: totals.receipts_queued > 0 ? 'Payment receipts queued for approval' : 'Payment receipt sync complete',
-      description: `${totals.invoices_checked} invoices checked · ${totals.receipts_queued} queued · ${totals.skipped_opt_out} tour opted-out · ${totals.skipped_historical} outside 7-day window · ${totals.skipped_no_email} no email · ${totals.errors} errors${pageErrors.length ? ` (${pageErrors.length} page(s) retried next run)` : ''}`,
-      variant: totals.errors > 0 ? 'destructive' : 'default',
-    });
-    return totals;
   };
 
   const handleSyncReceipts = async () => {
