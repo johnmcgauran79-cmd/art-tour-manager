@@ -48,6 +48,7 @@
     "date-fns": "^3.6.0",
     "date-fns-tz": "^3.2.0",
     "embla-carousel-react": "^8.3.0",
+    "gender-detection-from-name": "^1.11.4",
     "html2pdf.js": "^0.12.1",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
