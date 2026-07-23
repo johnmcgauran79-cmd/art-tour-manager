@@ -24,7 +24,7 @@ import {
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { useIsAdminOrManager, useUserRoles } from "@/hooks/useUserRoles";
 import { usePersonalTodos } from "@/hooks/usePersonalTodos";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useBookings } from "@/hooks/useBookings";
@@ -46,6 +46,8 @@ export const AppSidebar = () => {
   const [searchParams] = useSearchParams();
   const { userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
+  const { data: roles = [] } = useUserRoles();
+  const isAdmin = roles.includes("admin");
   const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -93,7 +95,7 @@ export const AppSidebar = () => {
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });
-  if (isAdminOrManager) mainItems.push({ key: "audience-tagging", label: "Audience Tagging", icon: Tag, path: "/audience-tagging" });
+  if (isAdmin) mainItems.push({ key: "audience-tagging", label: "Audience Tagging", icon: Tag, path: "/audience-tagging" });
 
   const workspaceItems: NavItem[] = [
     { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos", badge: todoCount },
