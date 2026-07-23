@@ -33,6 +33,11 @@ type Row = Customer & { classification: Classification; alreadyTagged: boolean; 
 
 const BATCH = 25;
 
+// Names the classifier sometimes mis-labels as female — force to male.
+const MALE_OVERRIDES = new Set(
+  ["adam", "nathan", "neil", "keith", "chris", "damien", "damian", "aaron"]
+);
+
 export default function AudienceTagging() {
   const { isAdminOrManager, isLoading: roleLoading } = useIsAdminOrManager();
   const [loading, setLoading] = useState(true);
@@ -82,7 +87,8 @@ export default function AudienceTagging() {
 
         const classified: Row[] = all.map((c) => {
           const raw = (c.first_name || "").trim().split(/[\s-]+/)[0]; // first token only
-          const g = raw ? getGender(raw) : "unknown";
+          const lower = raw.toLowerCase();
+          const g = MALE_OVERRIDES.has(lower) ? "male" : (raw ? getGender(raw) : "unknown");
           return {
             ...c,
             classification: (g === "male" || g === "female") ? g : "unknown",
