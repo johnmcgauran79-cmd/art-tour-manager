@@ -123,6 +123,9 @@ serve(async (req) => {
     const historicalWindowDays = Math.max(1, Math.min(Number(body?.window_days) || 7, 90));
     const limit = Math.max(1, Math.min(Number(body?.limit) || 50, 100));
     const offset = Math.max(0, Number(body?.offset) || 0);
+    const autoContinue = body?.auto_continue === true;
+    const maxPages = Math.max(1, Math.min(Number(body?.max_pages) || 40, 100));
+    const pageIndex = Math.max(0, Number(body?.page_index) || 0);
 
     const auth = await getXeroAuth(supabase);
     if (!auth) {
@@ -308,6 +311,36 @@ serve(async (req) => {
 
     const nextOffset = offset + (mappings?.length || 0);
     const hasMore = nextOffset < (totalMappings || 0);
+
+    // Server-side self-pagination: if the caller opted in, chain the next
+    // page via EdgeRuntime.waitUntil so the sync runs to completion even if
+    // the browser closes the tab. Each page holds its own short-lived lock.
+    if (autoContinue && hasMore && !dryRun && pageIndex + 1 < maxPages) {
+      const nextBody = {
+        ...body,
+        offset: nextOffset,
+        page_index: pageIndex + 1,
+      };
+      const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-xero-payment-receipts`;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const chain = fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+        },
+        body: JSON.stringify(nextBody),
+      }).then(async (r) => {
+        try { await r.text(); } catch { /* noop */ }
+      }).catch((e) => console.error("[sync-xero-payment-receipts] chain error", e));
+      // @ts-ignore EdgeRuntime provided by Supabase runtime
+      if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+        // @ts-ignore
+        EdgeRuntime.waitUntil(chain);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       offset,
@@ -316,6 +349,8 @@ serve(async (req) => {
       total: totalMappings || 0,
       next_offset: nextOffset,
       has_more: hasMore,
+      auto_continue: autoContinue,
+      page_index: pageIndex,
       ...stats,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
