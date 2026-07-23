@@ -45,6 +45,7 @@ import BookingChanges from "./pages/operations/BookingChanges";
 import PaymentStatus from "./pages/operations/PaymentStatus";
 import MissingPhoneNumbers from "./pages/operations/MissingPhoneNumbers";
 import WordpressContent from "./pages/WordpressContent";
+import AudienceTagging from "./pages/AudienceTagging";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -376,6 +377,16 @@ function App() {
                       <WordpressContent />
                     </AppLayout>
                   </TaskRoute>
+                }
+              />
+              <Route
+                path="/audience-tagging"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <AudienceTagging />
+                    </AppLayout>
+                  </ProtectedRoute>
                 }
               />
               <Route path="*" element={<NotFound />} />
