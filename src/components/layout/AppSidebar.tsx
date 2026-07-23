@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Bot,
   Globe,
+  Tag,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -92,6 +93,7 @@ export const AppSidebar = () => {
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });
+  if (isAdminOrManager) mainItems.push({ key: "audience-tagging", label: "Audience Tagging", icon: Tag, path: "/audience-tagging" });
 
   const workspaceItems: NavItem[] = [
     { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos", badge: todoCount },
