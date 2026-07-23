@@ -29,7 +29,7 @@ type Customer = {
 
 type Classification = "female" | "male" | "unknown";
 
-type Row = Customer & { classification: Classification; alreadyTagged: boolean };
+type Row = Customer & { classification: Classification; alreadyTagged: boolean; inKeap: boolean };
 
 const BATCH = 25;
 
@@ -40,6 +40,8 @@ export default function AudienceTagging() {
   const [tagId, setTagId] = useState<string>("397");
   const [tagLabel, setTagLabel] = useState<string>("Females (Ladies Tour)");
   const [manualSelected, setManualSelected] = useState<Set<string>>(new Set());
+  const [femaleExcluded, setFemaleExcluded] = useState<Set<string>>(new Set());
+  const [femaleSearch, setFemaleSearch] = useState("");
   const [pushing, setPushing] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -48,7 +50,7 @@ export default function AudienceTagging() {
     (async () => {
       setLoading(true);
       try {
-        // Load all customers with a Keap contact ID + first name
+        // Load ALL customers with a first name (Keap presence is a separate flag)
         const all: Customer[] = [];
         const pageSize = 1000;
         let from = 0;
@@ -56,7 +58,6 @@ export default function AudienceTagging() {
           const { data, error } = await supabase
             .from("customers")
             .select("id, first_name, last_name, email, keap_contact_id")
-            .not("keap_contact_id", "is", null)
             .not("first_name", "is", null)
             .order("last_name", { ascending: true })
             .range(from, from + pageSize - 1);
@@ -85,6 +86,7 @@ export default function AudienceTagging() {
             ...c,
             classification: (g === "male" || g === "female") ? g : "unknown",
             alreadyTagged: taggedSet.has(c.id),
+            inKeap: !!c.keap_contact_id,
           };
         });
         setRows(classified);
@@ -97,10 +99,22 @@ export default function AudienceTagging() {
      
   }, [isAdminOrManager, tagId]);
 
-  const females = useMemo(() => rows.filter((r) => r.classification === "female" && !r.alreadyTagged), [rows]);
+  const females = useMemo(
+    () => rows.filter((r) => r.classification === "female" && !r.alreadyTagged && !femaleExcluded.has(r.id)),
+    [rows, femaleExcluded]
+  );
+  const femalesInKeap = useMemo(() => females.filter((r) => r.inKeap), [females]);
   const males = useMemo(() => rows.filter((r) => r.classification === "male"), [rows]);
-  const unknowns = useMemo(() => rows.filter((r) => r.classification === "unknown" && !r.alreadyTagged), [rows]);
+  const unknowns = useMemo(() => rows.filter((r) => r.classification === "unknown" && !r.alreadyTagged && r.inKeap), [rows]);
   const alreadyTagged = useMemo(() => rows.filter((r) => r.alreadyTagged), [rows]);
+
+  const filteredFemales = useMemo(() => {
+    const q = femaleSearch.trim().toLowerCase();
+    if (!q) return females;
+    return females.filter((r) =>
+      [r.first_name, r.last_name, r.email].some((v) => (v || "").toLowerCase().includes(q))
+    );
+  }, [females, femaleSearch]);
 
   const filteredUnknowns = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -205,9 +219,9 @@ export default function AudienceTagging() {
         <>
           <div className="grid gap-3 md:grid-cols-4">
             <StatCard label="Likely female (ready)" value={females.length} tone="ready" />
+            <StatCard label={`In Keap (pushable)`} value={femalesInKeap.length} tone="ready" />
             <StatCard label="Needs review (unknown/unisex)" value={unknowns.length} tone="review" />
             <StatCard label="Likely male (skipped)" value={males.length} tone="muted" />
-            <StatCard label="Already tagged" value={alreadyTagged.length} tone="muted" />
           </div>
 
           <Card>
@@ -217,59 +231,89 @@ export default function AudienceTagging() {
                   <Users className="h-4 w-4" /> Auto-push queue — likely female
                 </CardTitle>
                 <CardDescription>
-                  {females.length} contacts. Confirm to push tag <strong>{tagId}</strong> to all of them in Keap.
+                  {females.length} likely female · {femalesInKeap.length} exist in Keap and will receive tag <strong>{tagId}</strong>. Contacts not in Keap are skipped automatically. Remove anyone you know isn't female by clicking the X.
                 </CardDescription>
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button disabled={females.length === 0 || pushing}>
+                  <Button disabled={femalesInKeap.length === 0 || pushing}>
                     {pushing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Push tag to {females.length} contacts
+                    Push tag to {femalesInKeap.length} Keap contacts
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Push Keap tag {tagId}?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will apply tag <strong>{tagId}</strong> ({tagLabel}) to {females.length} Keap
-                      contacts classified as likely female. This action is logged and can be undone in Keap by removing the tag.
+                      This will apply tag <strong>{tagId}</strong> ({tagLabel}) to {femalesInKeap.length} contacts
+                      that already exist in Keap and are classified as likely female. Logged and reversible in Keap.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => pushTag(females.map((r) => r.id), "Auto push")}>
+                    <AlertDialogAction onClick={() => pushTag(femalesInKeap.map((r) => r.id), "Auto push")}>
                       Push to Keap
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             </CardHeader>
-            <CardContent>
-              <div className="max-h-72 overflow-auto rounded-md border">
+            <CardContent className="space-y-3">
+              <Input
+                placeholder="Search name or email…"
+                value={femaleSearch}
+                onChange={(e) => setFemaleSearch(e.target.value)}
+                className="max-w-sm"
+              />
+              <div className="max-h-96 overflow-auto rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>First name</TableHead>
                       <TableHead>Last name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>In Keap</TableHead>
+                      <TableHead className="w-16 text-right">Remove</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {females.slice(0, 500).map((r) => (
+                    {filteredFemales.slice(0, 1000).map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>{r.first_name}</TableCell>
                         <TableCell>{r.last_name}</TableCell>
                         <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                        <TableCell>
+                          {r.inKeap
+                            ? <Badge variant="secondary">Yes</Badge>
+                            : <Badge variant="outline" className="text-muted-foreground">No</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setFemaleExcluded((prev) => new Set(prev).add(r.id))}
+                          >
+                            Remove
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                {females.length > 500 && (
+                {filteredFemales.length > 1000 && (
                   <div className="p-2 text-xs text-muted-foreground">
-                    Showing first 500 of {females.length}. All will be tagged on push.
+                    Showing first 1000 of {filteredFemales.length}. All matching Keap contacts will be tagged on push.
                   </div>
                 )}
               </div>
+              {femaleExcluded.size > 0 && (
+                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                  Removed {femaleExcluded.size} from queue.
+                  <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setFemaleExcluded(new Set())}>
+                    Undo all
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
