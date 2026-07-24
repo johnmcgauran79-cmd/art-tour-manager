@@ -570,6 +570,36 @@ serve(async (req) => {
         }
       }
 
+      // Kick off targeted payment-receipt generation for the affected
+      // bookings so newly-recorded payments produce approval-queue rows
+      // immediately, instead of waiting for the daily cron.
+      try {
+        const affectedBookingIds = Array.from(new Set(
+          changes.map((c) => c.booking_id).filter((v) => typeof v === 'string' && v.length > 0)
+        ));
+        if (affectedBookingIds.length > 0) {
+          const recUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-xero-payment-receipts`;
+          const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+          const chain = fetch(recUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${serviceKey}`,
+              apikey: serviceKey,
+            },
+            body: JSON.stringify({ booking_ids: affectedBookingIds }),
+          }).then(async (r) => { try { await r.text(); } catch { /* noop */ } })
+            .catch((e) => console.error('[apply-invoice-changes] receipt chain error', e));
+          // @ts-ignore EdgeRuntime provided by Supabase runtime
+          if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) {
+            // @ts-ignore
+            EdgeRuntime.waitUntil(chain);
+          }
+        }
+      } catch (e) {
+        console.error('[apply-invoice-changes] failed to trigger receipts sync', e);
+      }
+
       return new Response(JSON.stringify({
         success: true,
         applied,
