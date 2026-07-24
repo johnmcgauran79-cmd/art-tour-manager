@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getGender } from "gender-detection-from-name";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,12 @@ const loadExcluded = (): Set<string> => {
 
 export default function AudienceTagging() {
   const { data: roles = [], isLoading: roleLoading } = useUserRoles();
-  const isAdmin = roles.includes("admin");
+  const { user } = useAuth();
+  // Audience Tagging is Admin-only, with a specific allowlist for trusted staff.
+  const AUDIENCE_TAGGING_ALLOWLIST = new Set<string>([
+    "5d5288f8-2e24-432b-b0b8-61e0534c8371", // Jane Newham
+  ]);
+  const isAdmin = roles.includes("admin") || (!!user?.id && AUDIENCE_TAGGING_ALLOWLIST.has(user.id));
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Row[]>([]);
   const [tagId, setTagId] = useState<string>("397");
