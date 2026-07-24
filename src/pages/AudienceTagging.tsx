@@ -25,6 +25,7 @@ type Customer = {
   last_name: string | null;
   email: string | null;
   keap_contact_id: string | null;
+  keap_match_checked_at: string | null;
 };
 
 type Classification = "female" | "male" | "unknown";
@@ -85,7 +86,7 @@ export default function AudienceTagging() {
         while (true) {
           const { data, error } = await supabase
             .from("customers")
-            .select("id, first_name, last_name, email, keap_contact_id")
+            .select("id, first_name, last_name, email, keap_contact_id, keap_match_checked_at")
             .not("first_name", "is", null)
             .order("last_name", { ascending: true })
             .range(from, from + pageSize - 1);
@@ -134,6 +135,14 @@ export default function AudienceTagging() {
   );
   const femalesInKeap = useMemo(() => females.filter((r) => r.inKeap), [females]);
   const femalesNotInKeap = useMemo(() => females.filter((r) => !r.inKeap && !!r.email), [females]);
+  const femalesUncheckedInKeap = useMemo(
+    () => femalesNotInKeap.filter((r) => !r.keap_match_checked_at),
+    [femalesNotInKeap]
+  );
+  const femalesCheckedNoMatch = useMemo(
+    () => femalesNotInKeap.filter((r) => !!r.keap_match_checked_at),
+    [femalesNotInKeap]
+  );
   const males = useMemo(() => rows.filter((r) => r.classification === "male"), [rows]);
   const unknowns = useMemo(() => rows.filter((r) => r.classification === "unknown" && !r.alreadyTagged && r.inKeap), [rows]);
   const alreadyTagged = useMemo(() => rows.filter((r) => r.alreadyTagged), [rows]);
@@ -251,11 +260,21 @@ export default function AudienceTagging() {
       // Refresh page data by bumping tagId dependency isn't ideal; do a light reload of rows
       const { data: refreshed } = await supabase
         .from("customers")
-        .select("id, keap_contact_id")
+        .select("id, keap_contact_id, keap_match_checked_at")
         .in("id", (ids && ids.length > 0) ? ids : rows.map((r) => r.id));
       if (refreshed) {
-        const map = new Map(refreshed.map((r: any) => [r.id, r.keap_contact_id]));
-        setRows((prev) => prev.map((r) => map.has(r.id) ? { ...r, inKeap: !!map.get(r.id), keap_contact_id: map.get(r.id) as any } : r));
+        const map = new Map(refreshed.map((r: any) => [r.id, r]));
+        setRows((prev) => prev.map((r) => {
+          const updated = map.get(r.id);
+          return updated
+            ? {
+                ...r,
+                inKeap: !!updated.keap_contact_id,
+                keap_contact_id: updated.keap_contact_id,
+                keap_match_checked_at: updated.keap_match_checked_at,
+              }
+            : r;
+        }));
       }
     } catch (e: any) {
       toast.error("Match failed", { description: e?.message });
@@ -301,6 +320,9 @@ export default function AudienceTagging() {
             <CardDescription>
               Many ART contacts aren't linked to Keap yet. This looks up unlinked emails in Keap and, when a match exists, stores the Keap contact ID (no new Keap contacts created). Run this before pushing tags to widen the pushable pool.
             </CardDescription>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Likely-female email matches left to check: {femalesUncheckedInKeap.length.toLocaleString()} · Checked with no Keap match: {femalesCheckedNoMatch.length.toLocaleString()}
+            </p>
           </div>
           <div className="flex flex-col gap-2 items-end">
             <Button variant="outline" disabled={matching} onClick={() => runMatchByEmail()}>
@@ -308,11 +330,11 @@ export default function AudienceTagging() {
               Match next 500 unlinked
             </Button>
             <Button
-              disabled={matching || femalesNotInKeap.length === 0}
-              onClick={() => runMatchByEmail(femalesNotInKeap.map((r) => r.id))}
+              disabled={matching || femalesUncheckedInKeap.length === 0}
+              onClick={() => runMatchByEmail(femalesUncheckedInKeap.map((r) => r.id))}
             >
               {matching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Match {femalesNotInKeap.length} likely-female unlinked
+              Match {femalesUncheckedInKeap.length} likely-female unchecked
             </Button>
           </div>
         </CardHeader>
@@ -380,6 +402,7 @@ export default function AudienceTagging() {
                       <TableHead>Last name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>In Keap</TableHead>
+                    <TableHead>Keap match</TableHead>
                       <TableHead className="w-16 text-right">Remove</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -393,6 +416,13 @@ export default function AudienceTagging() {
                           {r.inKeap
                             ? <Badge variant="secondary">Yes</Badge>
                             : <Badge variant="outline" className="text-muted-foreground">No</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          {r.inKeap
+                            ? <Badge variant="secondary">Linked</Badge>
+                            : r.keap_match_checked_at
+                              ? <Badge variant="outline" className="text-muted-foreground">Checked — no match</Badge>
+                              : <Badge variant="outline">Not checked</Badge>}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
