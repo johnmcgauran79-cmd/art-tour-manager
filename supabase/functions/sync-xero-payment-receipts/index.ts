@@ -126,6 +126,10 @@ serve(async (req) => {
     const autoContinue = body?.auto_continue === true;
     const maxPages = Math.max(1, Math.min(Number(body?.max_pages) || 40, 100));
     const pageIndex = Math.max(0, Number(body?.page_index) || 0);
+    const bookingIds: string[] = Array.isArray(body?.booking_ids)
+      ? body.booking_ids.filter((v: any) => typeof v === "string" && v.length > 0)
+      : [];
+    const targeted = bookingIds.length > 0;
 
     const auth = await getXeroAuth(supabase);
     if (!auth) {
@@ -175,8 +179,11 @@ serve(async (req) => {
       .from("xero_invoice_mappings")
       .select("xero_invoice_id", { count: "exact", head: true });
 
-    // Pull a page of active mappings with booking + tour + brand + customer
-    const { data: mappings, error: mErr } = await supabase
+    // Pull a page of active mappings with booking + tour + brand + customer.
+    // When booking_ids is supplied, target just those bookings (used right
+    // after "Apply invoice changes" so newly-recorded payments generate
+    // receipts immediately instead of waiting for the daily cron).
+    let query = supabase
       .from("xero_invoice_mappings")
       .select(`
         xero_invoice_id, xero_invoice_number, booking_id,
@@ -193,8 +200,13 @@ serve(async (req) => {
           customers:lead_passenger_id ( id, first_name, last_name, email )
         )
       `)
-      .order("xero_invoice_id", { ascending: true })
-      .range(offset, offset + limit - 1);
+      .order("xero_invoice_id", { ascending: true });
+    if (targeted) {
+      query = query.in("booking_id", bookingIds);
+    } else {
+      query = query.range(offset, offset + limit - 1);
+    }
+    const { data: mappings, error: mErr } = await query;
 
     if (mErr) throw mErr;
 
