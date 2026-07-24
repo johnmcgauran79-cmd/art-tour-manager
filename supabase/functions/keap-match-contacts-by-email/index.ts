@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const customerIds: string[] | undefined = Array.isArray(body?.customerIds) ? body.customerIds : undefined;
-    const limit = Math.min(Math.max(Number(body?.limit) || 500, 1), 1000);
+    // Keep per-invocation batch small so we finish inside the edge timeout.
+    const limit = Math.min(Math.max(Number(body?.limit) || 100, 1), 250);
 
     let query = supabase
       .from('customers')
@@ -45,7 +46,12 @@ Deno.serve(async (req) => {
       .not('email', 'is', null)
       .neq('email', '')
       .limit(limit);
-    if (customerIds && customerIds.length > 0) query = query.in('id', customerIds);
+    if (customerIds && customerIds.length > 0) {
+      query = query.in('id', customerIds);
+    } else {
+      // Skip customers we've already checked and not found in Keap.
+      query = query.is('keap_match_checked_at', null);
+    }
 
     const { data: customers, error } = await query;
     if (error) throw error;
@@ -62,7 +68,10 @@ Deno.serve(async (req) => {
         const result = await keapRequest(`/contacts?email=${encodeURIComponent(email)}`);
         const contact = result?.contacts?.[0];
         if (contact?.id) {
-          await supabase.from('customers').update({ keap_contact_id: String(contact.id) }).eq('id', c.id);
+          await supabase
+            .from('customers')
+            .update({ keap_contact_id: String(contact.id), keap_match_checked_at: new Date().toISOString() })
+            .eq('id', c.id);
           await supabase.from('audit_log').insert({
             user_id: c.id,
             operation_type: 'KEAP_MATCH_BY_EMAIL',
@@ -72,9 +81,13 @@ Deno.serve(async (req) => {
           });
           matched++;
         } else {
+          await supabase
+            .from('customers')
+            .update({ keap_match_checked_at: new Date().toISOString() })
+            .eq('id', c.id);
           notFound++;
         }
-        await sleep(120);
+        await sleep(80);
       } catch (err: any) {
         failed++;
         errors.push({ customerId: c.id, error: err?.message || String(err) });
