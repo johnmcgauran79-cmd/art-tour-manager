@@ -250,10 +250,14 @@ serve(async (req) => {
       const payments = Array.isArray(invoice.Payments) ? invoice.Payments : [];
       if (payments.length === 0) continue;
 
-      // Existing payment IDs already recorded
+      // Existing (payment, invoice) pairs already recorded. Xero batch
+      // deposits reuse the same PaymentID across multiple invoices, so we
+      // must scope this check per-invoice — otherwise the first invoice in
+      // the batch inserts and the rest are silently skipped as duplicates.
       const { data: existing } = await supabase
         .from("xero_payment_receipts")
         .select("xero_payment_id")
+        .eq("xero_invoice_id", m.xero_invoice_id)
         .in("xero_payment_id", payments.map((p: any) => p.PaymentID).filter(Boolean));
       const known = new Set((existing ?? []).map((r: any) => r.xero_payment_id));
 
