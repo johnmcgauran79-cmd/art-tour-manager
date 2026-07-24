@@ -215,21 +215,35 @@ export default function AudienceTagging() {
     setMatching(true);
     try {
       let totalMatched = 0, totalNotFound = 0, totalFailed = 0, totalProcessed = 0;
-      // Chunk to keep each invocation snappy.
-      const CHUNK = 200;
-      const list = ids && ids.length > 0 ? ids : undefined;
-      const chunks: (string[] | undefined)[] = list
-        ? Array.from({ length: Math.ceil(list.length / CHUNK) }, (_, i) => list.slice(i * CHUNK, (i + 1) * CHUNK))
-        : [undefined];
-      for (const chunk of chunks) {
-        const { data, error } = await supabase.functions.invoke("keap-match-contacts-by-email", {
-          body: chunk ? { customerIds: chunk } : { limit: 500 },
-        });
-        if (error) throw error;
-        totalMatched += data?.matched || 0;
-        totalNotFound += data?.notFound || 0;
-        totalFailed += data?.failed || 0;
-        totalProcessed += data?.processed || 0;
+      // Small per-invocation batches so each edge call finishes well within the timeout.
+      const CHUNK = 100;
+      if (ids && ids.length > 0) {
+        for (let i = 0; i < ids.length; i += CHUNK) {
+          const chunk = ids.slice(i, i + CHUNK);
+          const { data, error } = await supabase.functions.invoke("keap-match-contacts-by-email", {
+            body: { customerIds: chunk },
+          });
+          if (error) throw error;
+          totalMatched += data?.matched || 0;
+          totalNotFound += data?.notFound || 0;
+          totalFailed += data?.failed || 0;
+          totalProcessed += data?.processed || 0;
+        }
+      } else {
+        // "Next 500 unlinked" — run up to 5 batches of 100 unchecked customers.
+        const TARGET = 500;
+        while (totalProcessed < TARGET) {
+          const { data, error } = await supabase.functions.invoke("keap-match-contacts-by-email", {
+            body: { limit: CHUNK },
+          });
+          if (error) throw error;
+          const processed = data?.processed || 0;
+          totalMatched += data?.matched || 0;
+          totalNotFound += data?.notFound || 0;
+          totalFailed += data?.failed || 0;
+          totalProcessed += processed;
+          if (processed === 0) break; // nothing left to check
+        }
       }
       toast.success("Keap email match complete", {
         description: `Processed ${totalProcessed} · Matched ${totalMatched} · Not in Keap ${totalNotFound} · Failed ${totalFailed}`,

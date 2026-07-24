@@ -1508,6 +1508,7 @@ export type Database = {
           first_name: string
           id: string
           keap_contact_id: string | null
+          keap_match_checked_at: string | null
           last_name: string
           latest_tour_end_date: string | null
           latest_tour_name: string | null
@@ -1536,6 +1537,7 @@ export type Database = {
           first_name: string
           id?: string
           keap_contact_id?: string | null
+          keap_match_checked_at?: string | null
           last_name: string
           latest_tour_end_date?: string | null
           latest_tour_name?: string | null
@@ -1564,6 +1566,7 @@ export type Database = {
           first_name?: string
           id?: string
           keap_contact_id?: string | null
+          keap_match_checked_at?: string | null
           last_name?: string
           latest_tour_end_date?: string | null
           latest_tour_name?: string | null
