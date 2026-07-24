@@ -1,0 +1,2 @@
+ALTER TABLE public.xero_payment_receipts DROP CONSTRAINT IF EXISTS xero_payment_receipts_xero_payment_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS xero_payment_receipts_payment_invoice_key ON public.xero_payment_receipts (xero_payment_id, xero_invoice_id);
