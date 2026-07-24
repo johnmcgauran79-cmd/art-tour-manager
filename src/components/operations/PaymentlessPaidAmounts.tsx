@@ -87,7 +87,7 @@ export const PaymentlessPaidAmounts = () => {
       </CardHeader>
       <CardContent>
         <div className="border rounded-md">
-          <div className="grid grid-cols-[1.2fr_1.6fr_1fr_1fr_1fr] gap-3 items-center px-3 py-2 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
+          <div className="hidden md:grid grid-cols-[1.2fr_1.6fr_1fr_1fr_1fr] gap-3 items-center px-3 py-2 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
             <div>Customer</div>
             <div>Tour · Invoice</div>
             <div>Paid</div>
@@ -103,9 +103,31 @@ export const PaymentlessPaidAmounts = () => {
               return (
                 <div
                   key={r.id}
-                  className="grid grid-cols-[1.2fr_1.6fr_1fr_1fr_1fr] gap-3 items-center px-3 py-2 text-sm hover:bg-muted/30"
+                  className="block md:grid md:grid-cols-[1.2fr_1.6fr_1fr_1fr_1fr] md:gap-3 md:items-center px-3 py-3 md:py-2 text-sm hover:bg-muted/30"
                 >
-                  <div className="min-w-0">
+                  {/* Mobile layout */}
+                  <div className="md:hidden space-y-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      {r.booking_id ? (
+                        <Link to={`/bookings/${r.booking_id}`} className="truncate font-medium text-primary hover:underline inline-flex items-center gap-1 min-w-0">
+                          <span className="truncate">{name}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </Link>
+                      ) : (
+                        <div className="truncate font-medium">{name}</div>
+                      )}
+                      <div className="font-semibold whitespace-nowrap">{formatMoney(r.amount_paid, ccy)}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{email}</div>
+                    <div className="text-xs text-muted-foreground truncate">{tourName}</div>
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>Inv {r.xero_invoice_number || "—"}</span>
+                      <span>Bal {formatMoney(r.amount_due, ccy)}</span>
+                      <span>{r.updated_at ? format(new Date(r.updated_at), "dd/MM/yyyy") : "—"}</span>
+                    </div>
+                  </div>
+                  {/* Desktop layout */}
+                  <div className="hidden md:block min-w-0">
                     {r.booking_id ? (
                       <Link
                         to={`/bookings/${r.booking_id}`}
@@ -119,15 +141,15 @@ export const PaymentlessPaidAmounts = () => {
                     )}
                     <div className="truncate text-xs text-muted-foreground">{email}</div>
                   </div>
-                  <div className="min-w-0">
+                  <div className="hidden md:block min-w-0">
                     <div className="truncate">{tourName}</div>
                     <div className="truncate text-xs text-muted-foreground">
                       Invoice {r.xero_invoice_number || "—"}
                     </div>
                   </div>
-                  <div className="font-medium">{formatMoney(r.amount_paid, ccy)}</div>
-                  <div>{formatMoney(r.amount_due, ccy)}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="hidden md:block font-medium">{formatMoney(r.amount_paid, ccy)}</div>
+                  <div className="hidden md:block">{formatMoney(r.amount_due, ccy)}</div>
+                  <div className="hidden md:block text-xs text-muted-foreground">
                     {r.updated_at ? format(new Date(r.updated_at), "dd/MM/yyyy") : "—"}
                   </div>
                 </div>
