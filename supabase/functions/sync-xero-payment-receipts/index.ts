@@ -120,7 +120,18 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
-    const historicalWindowDays = Math.max(1, Math.min(Number(body?.window_days) || 7, 90));
+    // Default 7-day window for cron backfill. Targeted runs (booking_ids)
+    // widen to 90 days so a recently-approved older payment still generates.
+    const requestedWindow = Number(body?.window_days);
+    const historicalWindowDays = Math.max(
+      1,
+      Math.min(
+        Number.isFinite(requestedWindow) && requestedWindow > 0
+          ? requestedWindow
+          : (Array.isArray(body?.booking_ids) && body.booking_ids.length > 0 ? 90 : 7),
+        90,
+      ),
+    );
     const limit = Math.max(1, Math.min(Number(body?.limit) || 50, 100));
     const offset = Math.max(0, Number(body?.offset) || 0);
     const autoContinue = body?.auto_continue === true;
