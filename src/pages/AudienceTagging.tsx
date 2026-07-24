@@ -38,6 +38,19 @@ const MALE_OVERRIDES = new Set(
   ["adam", "nathan", "neil", "keith", "chris", "damien", "damian", "aaron"]
 );
 
+const EXCLUDED_STORAGE_KEY = "audience-tagging:female-excluded";
+
+const loadExcluded = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem(EXCLUDED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+};
+
 export default function AudienceTagging() {
   const { data: roles = [], isLoading: roleLoading } = useUserRoles();
   const isAdmin = roles.includes("admin");
@@ -46,11 +59,19 @@ export default function AudienceTagging() {
   const [tagId, setTagId] = useState<string>("397");
   const [tagLabel, setTagLabel] = useState<string>("Females (Ladies Tour)");
   const [manualSelected, setManualSelected] = useState<Set<string>>(new Set());
-  const [femaleExcluded, setFemaleExcluded] = useState<Set<string>>(new Set());
+  const [femaleExcluded, setFemaleExcluded] = useState<Set<string>>(() => loadExcluded());
   const [femaleSearch, setFemaleSearch] = useState("");
   const [pushing, setPushing] = useState(false);
   const [matching, setMatching] = useState(false);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXCLUDED_STORAGE_KEY, JSON.stringify(Array.from(femaleExcluded)));
+    } catch {
+      // ignore quota errors
+    }
+  }, [femaleExcluded]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -380,7 +401,7 @@ export default function AudienceTagging() {
               </div>
               {femaleExcluded.size > 0 && (
                 <div className="text-xs text-muted-foreground flex items-center gap-2">
-                  Removed {femaleExcluded.size} from queue.
+                  Removed {femaleExcluded.size} from queue (saved on this device).
                   <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setFemaleExcluded(new Set())}>
                     Undo all
                   </Button>
