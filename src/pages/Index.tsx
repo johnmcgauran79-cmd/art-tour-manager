@@ -166,7 +166,8 @@ const Index = () => {
       <TabsContent value="bookings" className="space-y-4 mt-0">
         {!isAgent && <UnifiedEmailApprovals />}
         {!isAgent && <PendingPaymentReceipts />}
-        {!isAgent && <PaymentlessPaidAmounts />}
+        {/* PaymentlessPaidAmounts hidden — batch-deposit fix in place; keep code for potential future re-enable */}
+        {/* {!isAgent && <PaymentlessPaidAmounts />} */}
         <BookingsTable 
           onAddBooking={handleAddBooking} 
           onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
