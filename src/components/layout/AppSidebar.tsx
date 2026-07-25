@@ -100,7 +100,8 @@ export const AppSidebar = () => {
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });
-  if (canAccessAudienceTagging) mainItems.push({ key: "audience-tagging", label: "Audience Tagging", icon: Tag, path: "/audience-tagging" });
+  // Audience Tagging temporarily hidden from menu (route still exists for direct access if needed)
+  // if (canAccessAudienceTagging) mainItems.push({ key: "audience-tagging", label: "Audience Tagging", icon: Tag, path: "/audience-tagging" });
 
   const workspaceItems: NavItem[] = [
     { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos", badge: todoCount },
