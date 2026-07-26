@@ -20,7 +20,7 @@ import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActi
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { PendingPaymentReceipts } from "@/components/operations/PendingPaymentReceipts";
-import { PaymentlessPaidAmounts } from "@/components/operations/PaymentlessPaidAmounts";
+// import { PaymentlessPaidAmounts } from "@/components/operations/PaymentlessPaidAmounts";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
