@@ -3,6 +3,7 @@ import listToursTool from "./tools/list-tours";
 import getNextDepartingTourTool from "./tools/get-next-departing-tour";
 import getTourTool from "./tools/get-tour";
 import listBookingsTool from "./tools/list-bookings";
+import listRecentBookingsTool from "./tools/list-recent-bookings";
 import listTourActivitiesTool from "./tools/list-tour-activities";
 import getActivityTool from "./tools/get-activity";
 import listTourHotelsTool from "./tools/list-tour-hotels";
@@ -124,6 +125,7 @@ export default defineMcp({
     getNextDepartingTourTool,
     getTourTool,
     listBookingsTool,
+    listRecentBookingsTool,
     listTourActivitiesTool,
     getActivityTool,
     listTourHotelsTool,
