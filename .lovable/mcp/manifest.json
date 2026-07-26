@@ -413,6 +413,60 @@
         "outputSchema": null
       },
       {
+        "name": "list_recent_bookings",
+        "title": "List recent bookings",
+        "description": "List bookings across all tours, filtered by created_at or updated_at date range. Use for questions like 'bookings in the last 7 days'. Defaults to last 7 days by created_at. Restricted to admin or manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "description": "Look back this many days from today (default 7). Ignored if start_date/end_date provided."
+            },
+            "start_date": {
+              "type": "string",
+              "description": "Start date YYYY-MM-DD (inclusive)."
+            },
+            "end_date": {
+              "type": "string",
+              "description": "End date YYYY-MM-DD (inclusive)."
+            },
+            "date_field": {
+              "type": "string",
+              "enum": [
+                "created_at",
+                "updated_at"
+              ],
+              "description": "Which date column to filter on (default created_at)."
+            },
+            "status": {
+              "type": "string",
+              "description": "Optional status filter (e.g. paid, deposited, waitlist, cancelled)."
+            },
+            "tour_id": {
+              "type": "string",
+              "description": "Optional tour id (uuid) filter."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "description": "Max rows (default 200, max 500)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
         "name": "list_tour_activities",
         "title": "List tour activities",
         "description": "List activities for a given tour id, including dates, times, locations, transport and dress code.",
