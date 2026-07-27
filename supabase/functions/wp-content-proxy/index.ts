@@ -25,7 +25,9 @@ type Op =
   | { op: "push_tour_diff"; art_tour_id: string; art_keys: string[] }
   | { op: "discover_wp_fields"; wp_tour_id?: number; art_tour_id?: string }
   | { op: "list_field_mappings" }
-  | { op: "save_field_mappings"; mappings: Array<{ wp_field_key: string; wp_group?: string; wp_label?: string | null; wp_kind?: string; art_source: string | null; enabled?: boolean; notes?: string | null }> };
+  | { op: "save_field_mappings"; mappings: Array<{ wp_field_key: string; wp_group?: string; wp_label?: string | null; wp_kind?: string; art_source: string | null; enabled?: boolean; notes?: string | null }> }
+  | { op: "bulk_suggest_matches"; include_archived?: boolean }
+  | { op: "bulk_link_tours"; pairs: Array<{ art_tour_id: string; wp_tour_id: number }> };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY =
