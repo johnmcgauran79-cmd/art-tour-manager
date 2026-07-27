@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { wordpressRequest, WordpressClientError } from "../_shared/wordpressClient.ts";
 import { sanitiseAcfUpdate, EDITABLE_ACF_SCALAR_FIELDS, EDITABLE_ACF_REPEATER_FIELDS } from "../_shared/wordpressEditableFields.ts";
-import { TOUR_FIELD_MAP, buildFieldDiff } from "../_shared/wordpressFieldMap.ts";
+import { TOUR_FIELD_MAP, buildFieldDiff, semanticEqual } from "../_shared/wordpressFieldMap.ts";
 import { ART_SOURCES, tourColumnsForSources, resolveArtSourceValue } from "../_shared/wordpressArtSources.ts";
 
 // Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
@@ -609,7 +609,7 @@ Deno.serve(async (req) => {
           if (!requested.has(f.artKey)) continue;
           const nextVal = f.toWp((artTour as Record<string, unknown>)[f.artKey] as never);
           const wpVal = f.fromWp((beforeAcf as Record<string, unknown>)[f.wpKey]);
-          if (nextVal.trim() !== wpVal.trim()) {
+          if (!semanticEqual(f.kind, nextVal, wpVal)) {
             acfPayload[f.wpKey] = nextVal;
             changed.push({ art_key: f.artKey, wp_key: f.wpKey, before: wpVal, after: nextVal });
           }
