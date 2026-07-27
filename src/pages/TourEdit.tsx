@@ -51,6 +51,7 @@ export default function TourEdit() {
     instalment_required: false,
     instalment_amount: "",
     instalment_date: "",
+    instalment_details: "",
     final_payment_date: "",
     travel_documents_required: false,
     pickup_location_required: false,
@@ -132,6 +133,7 @@ export default function TourEdit() {
             instalment_required: data.instalment_required || false,
             instalment_amount: tour.instalment_amount?.toString() || "",
             instalment_date: tour.instalment_date ? formatDateForInput(tour.instalment_date) : "",
+            instalment_details: (tour as any).instalment_details || "",
             final_payment_date: tour.final_payment_date ? formatDateForInput(tour.final_payment_date) : "",
             travel_documents_required: data.travel_documents_required || false,
             pickup_location_required: data.pickup_location_required || false,
@@ -202,6 +204,7 @@ export default function TourEdit() {
       instalment_required: formData.instalment_required,
       instalment_amount: formData.instalment_required && formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
       instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
+      instalment_details: formData.instalment_required ? (formData.instalment_details || null) : null,
       final_payment_date: formData.final_payment_date || null,
       travel_documents_required: formData.travel_documents_required,
       pickup_location_required: formData.pickup_location_required,
@@ -754,6 +757,22 @@ export default function TourEdit() {
             />
           </div>
         </div>
+
+        {formData.instalment_required && (
+          <div className="space-y-2">
+            <Label htmlFor="instalment_details">Instalment / Payment Details</Label>
+            <Textarea
+              id="instalment_details"
+              value={formData.instalment_details}
+              onChange={(e) => handleInputChange("instalment_details", e.target.value)}
+              rows={5}
+              placeholder="e.g. $500 deposit on booking, instalment of $X due 28/01/2026, balance due 30/04/2026."
+            />
+            <p className="text-xs text-muted-foreground">
+              Used in booking confirmation emails via <code>{"{{tour_instalment_details}}"}</code> and synced to the WordPress "Payment Details" field.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
