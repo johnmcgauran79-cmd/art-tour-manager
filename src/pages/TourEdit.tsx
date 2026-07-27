@@ -22,6 +22,7 @@ import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSe
 import { useTourEmailOverrides, useUpsertTourEmailOverride, useDeleteTourEmailOverride } from "@/hooks/useTourEmailOverrides";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 import { renderInstalmentDetails, DEFAULT_INSTALMENT_TEMPLATE } from "@/lib/instalmentDetailsTemplate";
+import { TourEditWordpressSyncPrompt } from "@/components/TourEditWordpressSyncPrompt";
 
 export default function TourEdit() {
   const { id } = useParams();
@@ -83,6 +84,7 @@ export default function TourEdit() {
   const [cancelCounts, setCancelCounts] = useState({ bookings: 0, activities: 0 });
   const [isCancelling, setIsCancelling] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
+  const [wpSyncNonce, setWpSyncNonce] = useState(0);
 
   // "Manual handling" toggle confirmation: when manual_billing or manual_emails
   // is turned ON, ask staff what to do with already-queued automations.
@@ -346,7 +348,10 @@ export default function TourEdit() {
             : "Tour details have been successfully updated.",
           duration: 6000,
         });
-        goBack(`/tours/${id}`);
+        // Trigger the WordPress sync prompt. It handles: unlinked (ack dialog),
+        // linked-with-changes (diff dialog + push), and linked-no-changes (silent pass-through).
+        // In all cases it calls onDone which navigates back.
+        setWpSyncNonce((n) => n + 1);
       },
       onError: (error: any) => {
         toast({
