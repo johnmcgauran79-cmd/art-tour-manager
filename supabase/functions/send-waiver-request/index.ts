@@ -141,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { bookingId, customerIds } = await req.json();
+    const { bookingId } = await req.json();
 
     if (!bookingId) {
       return new Response(
@@ -182,7 +182,7 @@ const handler = async (req: Request): Promise<Response> => {
     } catch (e) { console.error('Brand resolution failed:', e); }
     const baseUrl = Deno.env.get("PUBLIC_SITE_URL") || Deno.env.get("SITE_URL") || "https://art-tour-manager.lovable.app";
 
-    // Collect passengers with emails
+    // Waiver is signed by the lead passenger on behalf of the whole booking.
     interface PassengerInfo {
       id: string;
       first_name: string;
@@ -191,44 +191,20 @@ const handler = async (req: Request): Promise<Response> => {
       preferred_name: string | null;
     }
     const passengers: PassengerInfo[] = [];
-
-    const allowedIds: Set<string> | null = Array.isArray(customerIds) && customerIds.length > 0
-      ? new Set(customerIds.map((v: any) => String(v)))
-      : null;
-
-    // If any selected passenger has no email of their own, redirect that selection
-    // to the lead passenger — the lead's waiver token grants signing rights over
-    // any pax slot that lacks its own email address.
     const lead = booking.customers;
-    if (allowedIds) {
-      const paxById: Record<string, any> = {};
-      [booking.customers, booking.passenger_2, booking.passenger_3].forEach((c: any) => {
-        if (c?.id) paxById[c.id] = c;
+    if (lead?.email) {
+      passengers.push({
+        id: lead.id,
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        preferred_name: lead.preferred_name,
       });
-      const redirected = new Set<string>();
-      for (const id of Array.from(allowedIds)) {
-        const c = paxById[id];
-        if (c && !c.email && lead?.id && lead.email) {
-          allowedIds.delete(id);
-          redirected.add(lead.id);
-        }
-      }
-      redirected.forEach(id => allowedIds.add(id));
     }
-
-    const maybePush = (c: any) => {
-      if (!c?.email) return;
-      if (allowedIds && !allowedIds.has(c.id)) return;
-      if (passengers.some(p => p.id === c.id)) return; // dedupe
-      passengers.push({ id: c.id, first_name: c.first_name, last_name: c.last_name, email: c.email, preferred_name: c.preferred_name });
-    };
-    maybePush(booking.customers);
-    maybePush(booking.passenger_2);
-    maybePush(booking.passenger_3);
 
     if (passengers.length === 0) {
       return new Response(
-        JSON.stringify({ error: allowedIds ? "None of the selected passengers have email addresses" : "No passengers with email addresses found" }),
+        JSON.stringify({ error: "Lead passenger has no email address" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
