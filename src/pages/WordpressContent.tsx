@@ -338,6 +338,8 @@ export default function WordpressContent() {
         </CardContent>
       </Card>
 
+      <WordpressFieldMappingSection />
+
       <Card>
         <CardHeader>
           <CardTitle>Tours</CardTitle>
