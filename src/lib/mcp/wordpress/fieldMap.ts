@@ -20,7 +20,29 @@ function asStr(v: unknown): string {
 function toWpDate(v: ArtScalar): string {
   const s = asStr(v).trim();
   if (!s) return "";
-  return s;
+  const digits = s.replace(/\D+/g, "");
+  return digits.length === 8 ? digits : s;
+}
+
+function normalizeNumber(v: string): string {
+  const s = v.replace(/[^\d.\-]/g, "").trim();
+  if (s === "" || s === "-" || s === ".") return "";
+  const n = Number(s);
+  return Number.isFinite(n) ? String(n) : s;
+}
+function normalizeDate(v: string): string { return v.replace(/\D+/g, ""); }
+function normalizeText(v: string): string { return v.replace(/\s+/g, " ").trim().toLowerCase(); }
+function normalizeHtml(v: string): string {
+  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ").trim().toLowerCase();
+}
+export function semanticEqual(kind: FieldMapEntry["kind"], a: string, b: string): boolean {
+  switch (kind) {
+    case "number": return normalizeNumber(a) === normalizeNumber(b);
+    case "date":   return normalizeDate(a) === normalizeDate(b);
+    case "html":   return normalizeHtml(a) === normalizeHtml(b);
+    default:       return normalizeText(a) === normalizeText(b);
+  }
 }
 
 export const TOUR_FIELD_MAP: FieldMapEntry[] = [
