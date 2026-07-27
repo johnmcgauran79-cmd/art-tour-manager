@@ -44,6 +44,17 @@ interface SuggestMatch {
   score: number;
 }
 
+interface WpTourListItem {
+  id: number;
+  title: string | null;
+  slug: string;
+  status: string;
+  link: string;
+  modified: string;
+  start_date: string | null;
+  end_date: string | null;
+}
+
 async function callProxy<T>(op: string, payload: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("wp-content-proxy", {
     body: { op, ...payload },
@@ -64,6 +75,13 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<SuggestMatch[] | null>(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseSearch, setBrowseSearch] = useState("");
+  const [browsePage, setBrowsePage] = useState(1);
+  const [browseTotalPages, setBrowseTotalPages] = useState(1);
+  const [browseItems, setBrowseItems] = useState<WpTourListItem[]>([]);
+  const [browseStatus, setBrowseStatus] = useState<string>("publish,draft,private,future");
   const [diff, setDiff] = useState<DiffRow[] | null>(null);
   const [wpModified, setWpModified] = useState<string | null>(null);
   const [driftFlag, setDriftFlag] = useState(false);
@@ -103,6 +121,39 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
     } finally {
       setSuggestLoading(false);
     }
+  }
+
+  async function loadBrowse(page = 1, search = browseSearch) {
+    setBrowseLoading(true);
+    try {
+      const res = await callProxy<{ tours: WpTourListItem[]; total_pages: number | null; page: number }>("list_tours", {
+        search: search || undefined,
+        page,
+        per_page: 30,
+        status: browseStatus,
+      });
+      setBrowseItems(res.tours ?? []);
+      setBrowsePage(res.page ?? page);
+      setBrowseTotalPages(res.total_pages ?? 1);
+    } catch (e) {
+      toast.error(`Failed to load WordPress tours: ${(e as Error).message}`);
+    } finally {
+      setBrowseLoading(false);
+    }
+  }
+
+  function openBrowse() {
+    setBrowseOpen(true);
+    if (browseItems.length === 0) void loadBrowse(1, "");
+  }
+
+  function displayTourLabel(t: WpTourListItem): string {
+    const base = t.title || `(untitled) #${t.id}`;
+    const yearSrc = t.start_date || t.end_date;
+    if (!yearSrc) return base;
+    const y = String(yearSrc).slice(0, 4);
+    if (!/^\d{4}$/.test(y)) return base;
+    return base.includes(y) ? base : `${y} ${base}`;
   }
 
   async function linkTo(wpTourId: number) {
@@ -211,7 +262,10 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
           {suggestions && (
             <div className="border rounded divide-y text-sm">
               {suggestions.length === 0 ? (
-                <div className="p-3 text-muted-foreground">No candidate WordPress tours found.</div>
+                <div className="p-3 text-sm text-muted-foreground flex items-center justify-between gap-3">
+                  <span>No auto-match found.</span>
+                  <Button size="sm" variant="outline" onClick={openBrowse}>Browse all WordPress tours</Button>
+                </div>
               ) : suggestions.map((m) => (
                 <div key={m.wp_tour_id} className="p-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -235,6 +289,20 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
               ))}
             </div>
           )}
+          {suggestions && suggestions.length > 0 && (
+            <div>
+              <Button size="sm" variant="outline" onClick={openBrowse}>
+                None of these match — browse all WordPress tours
+              </Button>
+            </div>
+          )}
+          {!suggestions && (
+            <div>
+              <Button size="sm" variant="ghost" onClick={openBrowse}>
+                Or browse all WordPress tours
+              </Button>
+            </div>
+          )}
           <details className="text-xs">
             <summary className="cursor-pointer text-muted-foreground">Or link by WordPress tour ID manually</summary>
             <form
@@ -252,6 +320,73 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
           </details>
         </CardContent>
       </Card>
+
+      <Dialog open={browseOpen} onOpenChange={(o) => setBrowseOpen(o)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Browse WordPress tours</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-2 items-center">
+            <input
+              className="border rounded px-2 py-1 text-sm flex-1"
+              placeholder="Search title / slug…"
+              value={browseSearch}
+              onChange={(e) => setBrowseSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void loadBrowse(1, browseSearch); }}
+            />
+            <select
+              className="border rounded px-2 py-1 text-sm"
+              value={browseStatus}
+              onChange={(e) => { setBrowseStatus(e.target.value); }}
+            >
+              <option value="publish,draft,private,future">All statuses</option>
+              <option value="publish">Published</option>
+              <option value="draft">Draft</option>
+              <option value="private">Private</option>
+              <option value="future">Scheduled</option>
+            </select>
+            <Button size="sm" onClick={() => loadBrowse(1, browseSearch)} disabled={browseLoading}>
+              {browseLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Search"}
+            </Button>
+          </div>
+          <div className="border rounded divide-y text-sm max-h-[55vh] overflow-y-auto mt-2">
+            {browseLoading && browseItems.length === 0 ? (
+              <div className="p-3 text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+            ) : browseItems.length === 0 ? (
+              <div className="p-3 text-muted-foreground">No WordPress tours found.</div>
+            ) : browseItems.map((t) => (
+              <div key={t.id} className="p-2 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{displayTourLabel(t)}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline">{t.status}</Badge>
+                    <span>#{t.id}</span>
+                    {t.start_date && <span>Start: {t.start_date}</span>}
+                    <a href={t.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+                      View <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+                <Button size="sm" onClick={async () => { await linkTo(t.id); setBrowseOpen(false); }}>
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" /> Link
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+            <span>Page {browsePage} of {browseTotalPages}</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" disabled={browseLoading || browsePage <= 1} onClick={() => loadBrowse(browsePage - 1, browseSearch)}>
+                Previous
+              </Button>
+              <Button size="sm" variant="outline" disabled={browseLoading || browsePage >= browseTotalPages} onClick={() => loadBrowse(browsePage + 1, browseSearch)}>
+                Next
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   }
 
