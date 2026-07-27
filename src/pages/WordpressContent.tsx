@@ -361,7 +361,7 @@ export default function WordpressContent() {
                 <div key={t.id} className="flex items-center justify-between p-3 hover:bg-muted/50">
                   <div className="min-w-0">
                     <button className="text-left font-medium hover:underline truncate block" onClick={() => openTour(t.id)}>
-                      {t.title ?? `(untitled) #${t.id}`}
+                      {displayTourTitle(t)}
                     </button>
                     <div className="text-xs text-muted-foreground">
                       <Badge variant="outline" className="mr-2">{t.status}</Badge>
