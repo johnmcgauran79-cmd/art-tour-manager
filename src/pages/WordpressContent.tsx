@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { WordpressFieldMappingSection } from "@/components/wordpress/WordpressFieldMappingSection";
 import { WordpressBulkMatchSection } from "@/components/wordpress/WordpressBulkMatchSection";
+import { WordpressBulkDiffSection } from "@/components/wordpress/WordpressBulkDiffSection";
 
 // ---------------------------------------------------------------------------
 // ACF field summary helpers
@@ -342,6 +343,8 @@ export default function WordpressContent() {
       <WordpressFieldMappingSection />
 
       <WordpressBulkMatchSection />
+
+      <WordpressBulkDiffSection />
 
       <Card>
         <CardHeader>
