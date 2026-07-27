@@ -443,6 +443,12 @@ export default function TourDetail() {
                 <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Comms</span>
               </TabsTrigger>
+              {isAdminOrManager && (
+                <TabsTrigger value="website" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Website</span>
+                </TabsTrigger>
+              )}
             </TabsList>
           )}
         </div>
@@ -550,6 +556,12 @@ export default function TourDetail() {
         <TabsContent value="comms" className="space-y-4 mt-6">
           <TourCommsSettingsTab tourId={tour.id} tourName={tour.name} />
         </TabsContent>
+
+        {isAdminOrManager && (
+          <TabsContent value="website" className="space-y-4 mt-6">
+            <TourWebsiteSyncTab tourId={tour.id} tourName={tour.name} />
+          </TabsContent>
+        )}
 
         <TabsContent value="operations" className="space-y-4 mt-6">
           <TourOperationsTab
