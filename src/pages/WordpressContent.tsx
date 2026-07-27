@@ -268,7 +268,7 @@ export default function WordpressContent() {
       <div>
         <h1 className="text-2xl font-bold">WordPress Content Integration</h1>
         <p className="text-sm text-muted-foreground">
-          Read-only view of tours and pages on australianracingtours.com.au. Phase 1 — no write actions.
+          Browse tours and pages on australianracingtours.com.au. Headline ACF fields on tours are editable with confirmation and audit logging.
         </p>
       </div>
 
