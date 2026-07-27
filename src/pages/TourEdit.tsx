@@ -758,6 +758,22 @@ export default function TourEdit() {
           </div>
         </div>
 
+        {formData.instalment_required && (
+          <div className="space-y-2">
+            <Label htmlFor="instalment_details">Instalment / Payment Details</Label>
+            <Textarea
+              id="instalment_details"
+              value={formData.instalment_details}
+              onChange={(e) => handleInputChange("instalment_details", e.target.value)}
+              rows={5}
+              placeholder="e.g. $500 deposit on booking, instalment of $X due 28/01/2026, balance due 30/04/2026."
+            />
+            <p className="text-xs text-muted-foreground">
+              Used in booking confirmation emails via <code>{"{{tour_instalment_details}}"}</code> and synced to the WordPress "Payment Details" field.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="travel_documents_required">Passport Details Required</Label>
