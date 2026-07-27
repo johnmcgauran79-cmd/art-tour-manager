@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ShareButton } from "@/components/ShareButton";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen, MessageSquareQuote, Image as ImageIcon } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen, MessageSquareQuote, Image as ImageIcon, Globe } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -33,6 +33,7 @@ import { TourAdditionalInfoTab } from "@/components/TourAdditionalInfoTab";
 import { TourWelcomeMessageTab } from "@/components/TourWelcomeMessageTab";
 import { TourDocumentImagesTab } from "@/components/TourDocumentImagesTab";
 import { TourCommsSettingsTab } from "@/components/TourCommsSettingsTab";
+import { TourWebsiteSyncTab } from "@/components/TourWebsiteSyncTab";
 import { TourWaiverStatusSection } from "@/components/TourWaiverStatusSection";
 import { Separator } from "@/components/ui/separator";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
@@ -49,6 +50,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
+import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 
 const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
   const [subTab, setSubTab] = useState("itinerary");
@@ -143,6 +145,7 @@ export default function TourDetail() {
   const secureDeleteTour = useSecureDeleteTour();
   const { alerts } = useTourAlerts(id || '', false);
   const { isViewOnly, hasEditAccess } = usePermissions();
+  const isAdminOrManager = useIsAdminOrManager();
 
   // Transform tour data immediately - don't wait for useEffect
   const transformedTour = tour ? {
