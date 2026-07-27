@@ -658,6 +658,177 @@ Deno.serve(async (req) => {
 
         return json({ ok: true, changed, acf: afterAcf });
       }
+      case "bulk_tour_diffs": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: links, error: linksErr } = await admin
+          .from("wordpress_tour_links")
+          .select("tour_id, wp_tour_id, wp_title_snapshot, last_synced_at, last_wp_modified_at");
+        if (linksErr) return json({ error: linksErr.message }, 400);
+        const linkList = links ?? [];
+        if (linkList.length === 0) {
+          return json({ tour_diffs: [], scanned: 0, with_changes: 0, truncated: false });
+        }
+        const artCols = ["id", "name", "status", "start_date", ...TOUR_FIELD_MAP.map((f) => f.artKey)].join(",");
+        const tourIds = linkList.map((l) => l.tour_id as string);
+        const artQuery = admin.from("tours").select(artCols).in("id", tourIds);
+        if (!body.include_archived) artQuery.neq("status", "archived");
+        const { data: artTours, error: artErr } = await artQuery;
+        if (artErr) return json({ error: artErr.message }, 400);
+        const artById = new Map<string, Record<string, unknown>>();
+        for (const t of artTours ?? []) artById.set(t.id as string, t as Record<string, unknown>);
+
+        const HARD_CAP = 150;
+        const scannable = linkList.filter((l) => artById.has(l.tour_id as string)).slice(0, HARD_CAP);
+        const tour_diffs: Array<{
+          art_tour_id: string;
+          art_name: string | null;
+          art_start_date: string | null;
+          wp_tour_id: number;
+          wp_title: string | null;
+          wp_link: string | null;
+          wp_modified: string | null;
+          drift_since_last_sync: boolean;
+          changed_rows: Array<{ artKey: string; wpKey: string; label: string; kind: string; artValue: string; wpValue: string }>;
+          error?: string;
+        }> = [];
+        let withChanges = 0;
+        for (const l of scannable) {
+          const art = artById.get(l.tour_id as string)!;
+          try {
+            const wpRes = await wordpressRequest<Record<string, unknown>>({
+              endpoint: `tour/${l.wp_tour_id}`,
+              query: { context: "edit", _fields: "id,link,modified,acf" },
+            });
+            const wpAcf = (wpRes.data as { acf?: Record<string, unknown> }).acf ?? {};
+            const wpModified = wpRes.data.modified ? new Date(String(wpRes.data.modified)).toISOString() : null;
+            const wpLink = (wpRes.data.link as string) ?? null;
+            const diff = buildFieldDiff(art, wpAcf);
+            const changed = diff.filter((r) => r.changed).map((r) => ({
+              artKey: r.artKey, wpKey: r.wpKey, label: r.label, kind: r.kind, artValue: r.artValue, wpValue: r.wpValue,
+            }));
+            if (changed.length > 0) withChanges += 1;
+            const drift = !!(l.last_synced_at && wpModified && new Date(wpModified) > new Date(l.last_synced_at as string));
+            tour_diffs.push({
+              art_tour_id: art.id as string,
+              art_name: (art.name as string) ?? null,
+              art_start_date: (art.start_date as string) ?? null,
+              wp_tour_id: l.wp_tour_id as number,
+              wp_title: (l.wp_title_snapshot as string) ?? null,
+              wp_link: wpLink,
+              wp_modified: wpModified,
+              drift_since_last_sync: drift,
+              changed_rows: changed,
+            });
+          } catch (err) {
+            tour_diffs.push({
+              art_tour_id: art.id as string,
+              art_name: (art.name as string) ?? null,
+              art_start_date: (art.start_date as string) ?? null,
+              wp_tour_id: l.wp_tour_id as number,
+              wp_title: (l.wp_title_snapshot as string) ?? null,
+              wp_link: null,
+              wp_modified: null,
+              drift_since_last_sync: false,
+              changed_rows: [],
+              error: (err as Error).message,
+            });
+          }
+        }
+        // Only return tours with changes or errors
+        const filtered = tour_diffs.filter((t) => t.changed_rows.length > 0 || t.error);
+        filtered.sort((a, b) => (a.art_start_date ?? "").localeCompare(b.art_start_date ?? "") || (a.art_name ?? "").localeCompare(b.art_name ?? ""));
+        await auditLog(userId, {
+          action: "bulk_tour_diffs",
+          result_status: "success",
+          response_code: 200,
+          request_summary: { scanned: scannable.length, with_changes: withChanges },
+        });
+        return json({
+          tour_diffs: filtered,
+          scanned: scannable.length,
+          with_changes: withChanges,
+          truncated: linkList.length > HARD_CAP,
+        });
+      }
+      case "bulk_push_diffs": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        if (!Array.isArray(body.changes) || body.changes.length === 0) {
+          return json({ error: "changes array required" }, 400);
+        }
+        const results: Array<{ art_tour_id: string; wp_tour_id: number | null; ok: boolean; changed_count: number; error?: string }> = [];
+        for (const c of body.changes) {
+          if (!c.art_tour_id || !Array.isArray(c.art_keys) || c.art_keys.length === 0) {
+            results.push({ art_tour_id: c.art_tour_id, wp_tour_id: null, ok: false, changed_count: 0, error: "No fields selected" });
+            continue;
+          }
+          try {
+            const { data: link } = await admin
+              .from("wordpress_tour_links")
+              .select("*")
+              .eq("tour_id", c.art_tour_id)
+              .maybeSingle();
+            if (!link) throw new Error("Tour is not linked");
+            const artCols = ["id", ...TOUR_FIELD_MAP.map((f) => f.artKey)].join(",");
+            const { data: artTour, error: artErr } = await admin
+              .from("tours")
+              .select(artCols)
+              .eq("id", c.art_tour_id)
+              .maybeSingle();
+            if (artErr || !artTour) throw new Error("ART tour not found");
+            const beforeRes = await wordpressRequest<Record<string, unknown>>({
+              endpoint: `tour/${link.wp_tour_id}`,
+              query: { context: "edit", _fields: "id,acf,modified" },
+            });
+            const beforeAcf = (beforeRes.data as { acf?: Record<string, unknown> }).acf ?? {};
+            const acfPayload: Record<string, unknown> = {};
+            const changed: Array<{ art_key: string; wp_key: string; before: string; after: string }> = [];
+            const requested = new Set(c.art_keys);
+            for (const f of TOUR_FIELD_MAP) {
+              if (!requested.has(f.artKey)) continue;
+              const nextVal = f.toWp((artTour as Record<string, unknown>)[f.artKey] as never);
+              const wpVal = f.fromWp((beforeAcf as Record<string, unknown>)[f.wpKey]);
+              if (!semanticEqual(f.kind, nextVal, wpVal)) {
+                acfPayload[f.wpKey] = nextVal;
+                changed.push({ art_key: f.artKey, wp_key: f.wpKey, before: wpVal, after: nextVal });
+              }
+            }
+            if (Object.keys(acfPayload).length === 0) {
+              results.push({ art_tour_id: c.art_tour_id, wp_tour_id: link.wp_tour_id as number, ok: true, changed_count: 0 });
+              continue;
+            }
+            const clean = sanitiseAcfUpdate(acfPayload);
+            const res = await wordpressRequest<Record<string, unknown>>({
+              endpoint: `tour/${link.wp_tour_id}`,
+              method: "POST",
+              body: { acf: clean },
+            });
+            const afterAcf = (res.data as { acf?: Record<string, unknown> })?.acf ?? {};
+            const afterModified = res.data.modified ? new Date(String(res.data.modified)).toISOString() : new Date().toISOString();
+            await admin
+              .from("wordpress_tour_links")
+              .update({ last_synced_at: new Date().toISOString(), last_wp_modified_at: afterModified })
+              .eq("tour_id", c.art_tour_id);
+            try {
+              await admin.from("wordpress_integration_audit_logs").insert({
+                user_id: userId,
+                source: "ui",
+                action: "bulk_push_diffs",
+                wordpress_object_type: "tour",
+                wordpress_object_id: link.wp_tour_id,
+                result_status: "success",
+                response_code: res.status,
+                request_summary: { art_tour_id: c.art_tour_id, changed_fields: changed.map((x) => x.wp_key).sort() },
+                before_snapshot: beforeAcf,
+                after_snapshot: afterAcf,
+              });
+            } catch { /* audit must not break */ }
+            results.push({ art_tour_id: c.art_tour_id, wp_tour_id: link.wp_tour_id as number, ok: true, changed_count: changed.length });
+          } catch (err) {
+            results.push({ art_tour_id: c.art_tour_id, wp_tour_id: null, ok: false, changed_count: 0, error: (err as Error).message });
+          }
+        }
+        return json({ results });
+      }
       case "bulk_suggest_matches": {
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         // 1. Load ART tours (non-archived by default), skip already-linked
