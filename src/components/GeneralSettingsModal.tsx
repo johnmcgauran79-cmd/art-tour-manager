@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Clock, Palette, Globe, Bell, Mail, Link2, Save } from "lucide-react";
+import { Settings, Clock, Palette, Globe, Bell, Mail, Link2, Save, FileText } from "lucide-react";
 import { TimezoneSettingsModal } from "./TimezoneSettingsModal";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  DEFAULT_INSTALMENT_TEMPLATE,
+  renderInstalmentDetails,
+} from "@/lib/instalmentDetailsTemplate";
 
 interface GeneralSettingsModalProps {
   open: boolean;
@@ -36,6 +41,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
   const [fromEmailClient, setFromEmailClient] = useState('');
   const [fromEmailInternal, setFromEmailInternal] = useState('');
   const [tokenExpiry, setTokenExpiry] = useState(168);
+  const [instalmentTemplate, setInstalmentTemplate] = useState(DEFAULT_INSTALMENT_TEMPLATE);
 
   useEffect(() => {
     if (settings) {
@@ -43,6 +49,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
       setFromEmailClient(getSetting('default_from_email_client', 'bookings@australianracingtours.com.au'));
       setFromEmailInternal(getSetting('default_from_email_internal', 'info@australianracingtours.com.au'));
       setTokenExpiry(getNumSetting('token_expiry_hours', 168));
+      setInstalmentTemplate(getSetting('instalment_details_template', DEFAULT_INSTALMENT_TEMPLATE));
     }
   }, [settings]);
 
@@ -57,6 +64,19 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
   const handleSaveToken = async () => {
     await updateSetting.mutateAsync({ settingKey: 'token_expiry_hours', value: tokenExpiry });
   };
+
+  const handleSaveInstalmentTemplate = async () => {
+    await updateSetting.mutateAsync({
+      settingKey: 'instalment_details_template',
+      value: instalmentTemplate,
+    });
+  };
+
+  const instalmentPreview = renderInstalmentDetails(instalmentTemplate, {
+    deposit_required: 500,
+    instalment_amount: 3500,
+    start_date: "2026-11-05",
+  });
 
   return (
     <>
@@ -167,6 +187,51 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
                   onClick={() => setTimezoneSettingsOpen(true)}
                 >
                   Manage Timezones
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Instalment Details Template */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Instalment Details Template
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  Auto-generates each tour's <strong>Instalment / Payment Details</strong> from its deposit,
+                  instalment amount and start date. Feeds{" "}
+                  <code>{"{{tour_instalment_details}}"}</code> in booking emails and the WordPress
+                  "Payment Details" field. Recomputed whenever a tour is saved.
+                </div>
+                <Textarea
+                  value={instalmentTemplate}
+                  onChange={(e) => setInstalmentTemplate(e.target.value)}
+                  rows={5}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Merge fields:{" "}
+                  <code>{"{{deposit_amount}}"}</code>,{" "}
+                  <code>{"{{instalment_amount}}"}</code>,{" "}
+                  <code>{"{{six_months_before_start}}"}</code>,{" "}
+                  <code>{"{{three_months_before_start}}"}</code>. Amounts render as{" "}
+                  <code>1,234</code> (no cents); month fields render as{" "}
+                  <code>May 2026</code>.
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">
+                    Preview (deposit $500, instalment $3,500, start 5 Nov 2026)
+                  </div>
+                  {instalmentPreview}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSaveInstalmentTemplate}
+                  disabled={updateSetting.isPending}
+                >
+                  <Save className="h-4 w-4 mr-1" /> Save Template
                 </Button>
               </CardContent>
             </Card>
