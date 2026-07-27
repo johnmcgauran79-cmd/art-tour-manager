@@ -438,6 +438,97 @@ Deno.serve(async (req) => {
         });
         return json({ ok: true });
       }
+      case "discover_wp_fields": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        let wpTourId: number | null = body.wp_tour_id ?? null;
+        if (!wpTourId && body.art_tour_id) {
+          const { data: link } = await admin
+            .from("wordpress_tour_links")
+            .select("wp_tour_id")
+            .eq("tour_id", body.art_tour_id)
+            .maybeSingle();
+          wpTourId = (link?.wp_tour_id as number | undefined) ?? null;
+        }
+        if (!wpTourId) {
+          // Pick the most recently linked tour, else the newest WP tour.
+          const { data: anyLink } = await admin
+            .from("wordpress_tour_links")
+            .select("wp_tour_id")
+            .order("linked_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (anyLink?.wp_tour_id) {
+            wpTourId = anyLink.wp_tour_id as number;
+          } else {
+            const listRes = await wordpressRequest<Array<Record<string, unknown>>>({
+              endpoint: "tour",
+              query: { per_page: 1, orderby: "modified", order: "desc", context: "edit", _fields: "id" },
+            });
+            wpTourId = (listRes.data?.[0]?.id as number | undefined) ?? null;
+          }
+        }
+        if (!wpTourId) return json({ error: "No WordPress tour available to discover fields from" }, 404);
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${wpTourId}`,
+          query: { context: "edit", _fields: "id,title,acf" },
+        });
+        const acf = ((wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {}) as Record<string, unknown>;
+        const fields = Object.keys(acf)
+          .sort()
+          .map((k) => {
+            const v = acf[k];
+            let group: "headline" | "hotel" | "itinerary" | "repeater" | "other" = "other";
+            if (/^hotel_\d/i.test(k)) group = "hotel";
+            else if (/itinerary/i.test(k)) group = "itinerary";
+            else if (Array.isArray(v)) group = "repeater";
+            else if (["price","status","radio_book_now","start_date","end_date","time_frame","location","capacity","single_room_price","twin_room_per_person_price","double_room_per_person_price","payment_details","add_download_brochure"].includes(k)) group = "headline";
+            const isArr = Array.isArray(v);
+            const sample = isArr
+              ? `[array, ${(v as unknown[]).length} rows]`
+              : (v === null || v === undefined ? "" : String(v).slice(0, 120));
+            return { wp_field_key: k, kind: isArr ? "repeater" : typeof v, sample, group };
+          });
+        return json({ wp_tour_id: wpTourId, fields });
+      }
+      case "list_field_mappings": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data, error } = await admin
+          .from("wordpress_field_mappings")
+          .select("*")
+          .order("wp_group", { ascending: true })
+          .order("wp_field_key", { ascending: true });
+        if (error) return json({ error: error.message }, 400);
+        return json({ mappings: data ?? [], art_sources: ART_SOURCES });
+      }
+      case "save_field_mappings": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        if (!Array.isArray(body.mappings) || body.mappings.length === 0) {
+          return json({ error: "mappings array required" }, 400);
+        }
+        const allowedSources = new Set(ART_SOURCES.map((s) => s.key));
+        const rows = body.mappings.map((m) => ({
+          wp_field_key: String(m.wp_field_key),
+          wp_group: m.wp_group ?? "headline",
+          wp_label: m.wp_label ?? null,
+          wp_kind: m.wp_kind ?? "text",
+          art_source: m.art_source && allowedSources.has(m.art_source) ? m.art_source : null,
+          enabled: m.enabled ?? true,
+          notes: m.notes ?? null,
+          updated_at: new Date().toISOString(),
+        }));
+        const { data, error } = await admin
+          .from("wordpress_field_mappings")
+          .upsert(rows, { onConflict: "wp_field_key" })
+          .select();
+        if (error) return json({ error: error.message }, 400);
+        await auditLog(userId, {
+          action: "save_field_mappings",
+          result_status: "success",
+          response_code: 200,
+          request_summary: { count: rows.length, keys: rows.map((r) => r.wp_field_key).sort() },
+        });
+        return json({ mappings: data ?? [] });
+      }
       case "get_tour_link": {
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const { data } = await admin
