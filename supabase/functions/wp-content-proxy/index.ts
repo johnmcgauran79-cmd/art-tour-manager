@@ -656,6 +656,157 @@ Deno.serve(async (req) => {
 
         return json({ ok: true, changed, acf: afterAcf });
       }
+      case "bulk_suggest_matches": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        // 1. Load ART tours (non-archived by default), skip already-linked
+        const artQuery = admin.from("tours").select("id,name,start_date,end_date,status");
+        if (!body.include_archived) artQuery.neq("status", "archived");
+        const { data: artTours, error: artErr } = await artQuery;
+        if (artErr) return json({ error: artErr.message }, 400);
+        const { data: existingLinks } = await admin
+          .from("wordpress_tour_links")
+          .select("tour_id,wp_tour_id");
+        const linkedSet = new Set((existingLinks ?? []).map((l) => l.tour_id as string));
+        const unlinked = (artTours ?? []).filter((t) => !linkedSet.has(t.id as string));
+
+        // 2. Load all WP tours (paginate up to a hard cap)
+        const wpTours: Array<{ id: number; title: string; slug: string; status: string; link: string; modified: string; start_date: string | null; end_date: string | null }> = [];
+        const perPage = 100;
+        let page = 1;
+        let totalPages = 1;
+        const HARD_CAP_PAGES = 10; // 1000 tours max
+        while (page <= totalPages && page <= HARD_CAP_PAGES) {
+          const res = await wordpressRequest<Array<Record<string, unknown>>>({
+            endpoint: "tour",
+            query: {
+              status: "publish,draft,pending,private,future",
+              per_page: perPage,
+              page,
+              orderby: "modified",
+              order: "desc",
+              context: "edit",
+              _fields: "id,title,slug,status,link,modified,acf.start_date,acf.end_date",
+            },
+          });
+          totalPages = res.totalPages ?? 1;
+          for (const t of res.data ?? []) {
+            wpTours.push({
+              id: t.id as number,
+              title: (t.title as { rendered?: string })?.rendered ?? "",
+              slug: t.slug as string,
+              status: t.status as string,
+              link: t.link as string,
+              modified: t.modified as string,
+              start_date: ((t.acf as { start_date?: unknown })?.start_date ?? null) as string | null,
+              end_date: ((t.acf as { end_date?: unknown })?.end_date ?? null) as string | null,
+            });
+          }
+          page += 1;
+        }
+
+        // 3. Score
+        const linkedWpSet = new Set((existingLinks ?? []).map((l) => l.wp_tour_id as number));
+        const stop = new Set(["tour", "the", "a", "an", "and", "of", "to", "for", "-", "&"]);
+        function tokenize(s: string): string[] {
+          return s.toLowerCase().replace(/[^\w\s]/g, " ").split(/\s+/).filter((t) => t.length > 2 && !stop.has(t));
+        }
+        function yearOf(...vals: Array<string | null | undefined>): string | null {
+          for (const v of vals) {
+            if (!v) continue;
+            const m = String(v).match(/(19|20)\d{2}/);
+            if (m) return m[0];
+          }
+          return null;
+        }
+
+        const suggestions = unlinked.map((art) => {
+          const artYear = yearOf(art.start_date as string | null, art.end_date as string | null, art.name as string);
+          const artTokens = tokenize((art.name as string) ?? "");
+          const scored = wpTours.map((wp) => {
+            const wpYear = yearOf(wp.start_date, wp.end_date, wp.title);
+            const wpTokens = tokenize(wp.title);
+            let tokenScore = 0;
+            for (const t of artTokens) if (wpTokens.includes(t)) tokenScore += 1;
+            const tokenOverlapRatio = artTokens.length ? tokenScore / artTokens.length : 0;
+            const yearMatch = !!(artYear && wpYear && artYear === wpYear);
+            const alreadyLinked = linkedWpSet.has(wp.id);
+            // Penalise WP tours already linked to a different ART tour (avoid double-linking)
+            const score = tokenScore * 2 + (yearMatch ? 5 : 0) + tokenOverlapRatio - (alreadyLinked ? 100 : 0);
+            return { wp_tour_id: wp.id, title: wp.title, slug: wp.slug, status: wp.status, link: wp.link, wp_start_date: wp.start_date, wp_end_date: wp.end_date, year_match: yearMatch, token_score: tokenScore, score, already_linked: alreadyLinked };
+          }).filter((m) => m.token_score > 0 || m.year_match).sort((a, b) => b.score - a.score).slice(0, 5);
+
+          const best = scored[0] ?? null;
+          // Confidence: high = year match + >=2 token overlap; medium = year match OR (>=2 tokens & overlap>=0.5); low otherwise
+          let confidence: "high" | "medium" | "low" | "none" = "none";
+          if (best) {
+            if (best.year_match && best.token_score >= 2) confidence = "high";
+            else if (best.year_match || (best.token_score >= 2 && (artTokens.length ? best.token_score / artTokens.length : 0) >= 0.5)) confidence = "medium";
+            else confidence = "low";
+          }
+          return {
+            art_tour_id: art.id as string,
+            art_name: (art.name as string) ?? "",
+            art_start_date: art.start_date as string | null,
+            art_end_date: art.end_date as string | null,
+            art_status: art.status as string,
+            art_year: artYear,
+            best_match: best,
+            alternatives: scored.slice(1),
+            confidence,
+          };
+        }).sort((a, b) => {
+          const order = { high: 0, medium: 1, low: 2, none: 3 } as const;
+          if (order[a.confidence] !== order[b.confidence]) return order[a.confidence] - order[b.confidence];
+          return (a.art_name ?? "").localeCompare(b.art_name ?? "");
+        });
+
+        return json({
+          unlinked_count: unlinked.length,
+          wp_tour_count: wpTours.length,
+          truncated: page > HARD_CAP_PAGES && page <= totalPages,
+          suggestions,
+        });
+      }
+      case "bulk_link_tours": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        if (!Array.isArray(body.pairs) || body.pairs.length === 0) {
+          return json({ error: "pairs array required" }, 400);
+        }
+        const results: Array<{ art_tour_id: string; wp_tour_id: number; ok: boolean; error?: string }> = [];
+        for (const pair of body.pairs) {
+          try {
+            const wpRes = await wordpressRequest<Record<string, unknown>>({
+              endpoint: `tour/${pair.wp_tour_id}`,
+              query: { context: "edit", _fields: "id,title,slug,modified" },
+            });
+            const title = (wpRes.data.title as { rendered?: string })?.rendered ?? null;
+            const slug = (wpRes.data.slug as string) ?? null;
+            const modified = wpRes.data.modified ? new Date(String(wpRes.data.modified)).toISOString() : null;
+            const { error } = await admin
+              .from("wordpress_tour_links")
+              .upsert({
+                tour_id: pair.art_tour_id,
+                wp_tour_id: pair.wp_tour_id,
+                wp_slug: slug,
+                wp_title_snapshot: title,
+                linked_by: userId,
+                linked_at: new Date().toISOString(),
+                last_wp_modified_at: modified,
+              }, { onConflict: "tour_id" });
+            if (error) throw new Error(error.message);
+            results.push({ art_tour_id: pair.art_tour_id, wp_tour_id: pair.wp_tour_id, ok: true });
+          } catch (err) {
+            results.push({ art_tour_id: pair.art_tour_id, wp_tour_id: pair.wp_tour_id, ok: false, error: (err as Error).message });
+          }
+        }
+        await auditLog(userId, {
+          action: "bulk_link_tours",
+          result_status: "success",
+          response_code: 200,
+          request_summary: { count: results.length, ok: results.filter((r) => r.ok).length },
+        });
+        return json({ results });
+      }
       default:
         return json({ error: "Unknown op" }, 400);
     }
