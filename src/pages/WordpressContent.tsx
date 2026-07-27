@@ -12,6 +12,66 @@ import { CheckCircle2, XCircle, RefreshCcw, ExternalLink, Loader2, Search } from
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+// ---------------------------------------------------------------------------
+// ACF field summary helpers
+// ---------------------------------------------------------------------------
+// Flat "headline" ACF fields we want to surface prominently for review /
+// future editing. Keys match the ACF field "Name" column in the field group
+// (Australian_Racing_Tours_-_ACF_Fields_Names_and_Keys.pdf).
+const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "html" }> = [
+  { key: "price", label: "Price (display)", kind: "text" },
+  { key: "status", label: "Status", kind: "text" },
+  { key: "radio_book_now", label: "Display Book Now button?", kind: "text" },
+  { key: "start_date", label: "Start date", kind: "text" },
+  { key: "end_date", label: "End date", kind: "text" },
+  { key: "time_frame", label: "Time frame", kind: "text" },
+  { key: "location", label: "Location", kind: "text" },
+  { key: "capacity", label: "Capacity", kind: "text" },
+  { key: "single_room_price", label: "Single room price", kind: "text" },
+  { key: "twin_room_per_person_price", label: "Twin room (per person)", kind: "text" },
+  { key: "double_room_per_person_price", label: "Double room (per person)", kind: "text" },
+  { key: "payment_details", label: "Payment details", kind: "html" },
+  { key: "add_download_brochure", label: "Show 'Download brochure'?", kind: "text" },
+];
+
+type AcfSummary = { key: string; type: string; detail: string };
+
+function summariseAcf(acf: unknown): AcfSummary[] {
+  if (!acf || typeof acf !== "object" || Array.isArray(acf)) return [];
+  const rows: AcfSummary[] = [];
+  for (const [key, value] of Object.entries(acf as Record<string, unknown>)) {
+    if (value === null || value === undefined || value === "") {
+      rows.push({ key, type: "empty", detail: "—" });
+      continue;
+    }
+    if (Array.isArray(value)) {
+      rows.push({ key, type: "array", detail: `${value.length} item${value.length === 1 ? "" : "s"}` });
+      continue;
+    }
+    if (typeof value === "object") {
+      const keys = Object.keys(value as Record<string, unknown>);
+      rows.push({ key, type: "group", detail: `${keys.length} sub-field${keys.length === 1 ? "" : "s"}` });
+      continue;
+    }
+    if (typeof value === "boolean") {
+      rows.push({ key, type: "boolean", detail: value ? "true" : "false" });
+      continue;
+    }
+    const str = String(value);
+    rows.push({
+      key,
+      type: typeof value,
+      detail: str.length > 80 ? `${str.slice(0, 80)}…` : str,
+    });
+  }
+  return rows.sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function stripHtml(s: unknown): string {
+  if (typeof s !== "string") return "";
+  return s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
 interface HealthResult {
   reachable: boolean;
   authenticated: boolean;
@@ -66,6 +126,12 @@ export default function WordpressContent() {
 
   const [selectedTour, setSelectedTour] = useState<Record<string, unknown> | null>(null);
   const [tourDetailLoading, setTourDetailLoading] = useState(false);
+
+  const acfRaw = selectedTour && typeof (selectedTour as { acf?: unknown }).acf === "object"
+    ? ((selectedTour as { acf?: Record<string, unknown> }).acf ?? null)
+    : null;
+  const acfSummary = summariseAcf(acfRaw);
+  const acfExposed = acfSummary.length > 0;
 
   const [auditRows, setAuditRows] = useState<AuditRow[]>([]);
 
@@ -266,9 +332,66 @@ export default function WordpressContent() {
           {tourDetailLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
           ) : selectedTour ? (
-            <pre className="text-xs whitespace-pre-wrap break-words bg-muted p-3 rounded">
-              {JSON.stringify(selectedTour, null, 2)}
-            </pre>
+            <div className="space-y-4">
+              <div className="rounded border p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-medium text-sm">ACF custom fields</div>
+                  {acfExposed ? (
+                    <Badge variant="secondary" className="gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-600" /> Exposed via REST</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Not exposed</Badge>
+                  )}
+                </div>
+                {!acfExposed ? (
+                  <p className="text-xs text-muted-foreground">
+                    No <code>acf</code> object was returned for this tour. Confirm the "Tour" ACF field group has "Show in REST API" enabled and that the individual fields also have <code>show_in_rest</code> set.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Headline fields</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                        {HEADLINE_ACF_FIELDS.map((f) => {
+                          const v = (acfRaw as Record<string, unknown>)?.[f.key];
+                          const has = v !== undefined && v !== null && v !== "";
+                          const display = !has
+                            ? "—"
+                            : f.kind === "html"
+                              ? stripHtml(v).slice(0, 120) + (stripHtml(v).length > 120 ? "…" : "")
+                              : String(v);
+                          return (
+                            <div key={f.key} className="flex justify-between gap-2 border-b py-1">
+                              <span className="text-muted-foreground truncate">{f.label} <code className="ml-1 opacity-60">{f.key}</code></span>
+                              <span className={has ? "font-medium text-right truncate max-w-[60%]" : "text-muted-foreground"}>{display}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">
+                        All ACF keys ({acfSummary.length})
+                      </div>
+                      <div className="text-xs border rounded divide-y max-h-64 overflow-y-auto">
+                        {acfSummary.map((r) => (
+                          <div key={r.key} className="grid grid-cols-6 gap-2 p-1.5">
+                            <code className="col-span-2 truncate">{r.key}</code>
+                            <div className="col-span-1"><Badge variant="outline">{r.type}</Badge></div>
+                            <div className="col-span-3 text-muted-foreground truncate">{r.detail}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              <details>
+                <summary className="cursor-pointer text-xs text-muted-foreground">Raw JSON response</summary>
+                <pre className="text-xs whitespace-pre-wrap break-words bg-muted p-3 rounded mt-2">
+                  {JSON.stringify(selectedTour, null, 2)}
+                </pre>
+              </details>
+            </div>
           ) : null}
         </DialogContent>
       </Dialog>
