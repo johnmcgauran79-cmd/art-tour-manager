@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CheckCircle2, XCircle, RefreshCcw, ExternalLink, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 // ---------------------------------------------------------------------------
 // ACF field summary helpers
@@ -33,6 +35,14 @@ const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "h
   { key: "payment_details", label: "Payment details", kind: "html" },
   { key: "add_download_brochure", label: "Show 'Download brochure'?", kind: "text" },
 ];
+
+// Repeaters we surface item counts for and pass through unchanged on save.
+const REPEATER_ACF_FIELDS = [
+  { key: "inclusions", label: "Inclusions" },
+  { key: "exclusions_details", label: "Exclusions" },
+  { key: "faqs_list", label: "FAQs" },
+  { key: "add_review", label: "Reviews" },
+] as const;
 
 type AcfSummary = { key: string; type: string; detail: string };
 
@@ -126,12 +136,24 @@ export default function WordpressContent() {
 
   const [selectedTour, setSelectedTour] = useState<Record<string, unknown> | null>(null);
   const [tourDetailLoading, setTourDetailLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const acfRaw = selectedTour && typeof (selectedTour as { acf?: unknown }).acf === "object"
     ? ((selectedTour as { acf?: Record<string, unknown> }).acf ?? null)
     : null;
   const acfSummary = summariseAcf(acfRaw);
   const acfExposed = acfSummary.length > 0;
+  const selectedTourId = typeof (selectedTour as { id?: unknown })?.id === "number"
+    ? ((selectedTour as { id: number }).id)
+    : null;
+  const changedFields = HEADLINE_ACF_FIELDS.filter((f) => {
+    const original = (acfRaw as Record<string, unknown>)?.[f.key];
+    const originalStr = original === null || original === undefined ? "" : String(original);
+    return (formValues[f.key] ?? "") !== originalStr;
+  });
 
   const [auditRows, setAuditRows] = useState<AuditRow[]>([]);
 
@@ -179,14 +201,53 @@ export default function WordpressContent() {
   async function openTour(id: number) {
     setTourDetailLoading(true);
     setSelectedTour({ id });
+    setEditing(false);
+    setFormValues({});
     try {
       const res = await callProxy<Record<string, unknown>>({ op: "get_tour", tour_id: id });
       setSelectedTour(res);
+      const acf = (res as { acf?: Record<string, unknown> }).acf ?? {};
+      const initial: Record<string, string> = {};
+      for (const f of HEADLINE_ACF_FIELDS) {
+        const v = acf?.[f.key];
+        initial[f.key] = v === null || v === undefined ? "" : String(v);
+      }
+      setFormValues(initial);
     } catch (err) {
       toast.error((err as Error).message);
       setSelectedTour(null);
     } finally {
       setTourDetailLoading(false);
+    }
+  }
+
+  async function saveChanges() {
+    if (!selectedTourId || changedFields.length === 0) return;
+    setSaving(true);
+    try {
+      const acfPayload: Record<string, unknown> = {};
+      for (const f of changedFields) acfPayload[f.key] = formValues[f.key];
+      const res = await callProxy<{ ok: boolean; changed_fields: string[]; acf: Record<string, unknown> }>({
+        op: "update_tour",
+        tour_id: selectedTourId,
+        acf: acfPayload,
+      });
+      toast.success(`Updated ${res.changed_fields.length} field${res.changed_fields.length === 1 ? "" : "s"} on WordPress`);
+      // Refresh the detail view with the WP-returned acf
+      setSelectedTour((prev) => (prev ? { ...prev, acf: res.acf } : prev));
+      const refreshed: Record<string, string> = {};
+      for (const f of HEADLINE_ACF_FIELDS) {
+        const v = res.acf?.[f.key];
+        refreshed[f.key] = v === null || v === undefined ? "" : String(v);
+      }
+      setFormValues(refreshed);
+      setConfirmOpen(false);
+      setEditing(false);
+      void loadAudit();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -349,24 +410,86 @@ export default function WordpressContent() {
                 ) : (
                   <>
                     <div className="mb-3">
-                      <div className="text-xs font-medium text-muted-foreground mb-1">Headline fields</div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-medium text-muted-foreground">Headline fields (editable)</div>
+                        {!editing ? (
+                          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>Edit</Button>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => {
+                              // reset from acfRaw
+                              const initial: Record<string, string> = {};
+                              for (const f of HEADLINE_ACF_FIELDS) {
+                                const v = (acfRaw as Record<string, unknown>)?.[f.key];
+                                initial[f.key] = v === null || v === undefined ? "" : String(v);
+                              }
+                              setFormValues(initial);
+                              setEditing(false);
+                            }}>Cancel</Button>
+                            <Button size="sm" onClick={() => setConfirmOpen(true)} disabled={changedFields.length === 0}>
+                              Save {changedFields.length > 0 ? `(${changedFields.length})` : ""}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-xs">
                         {HEADLINE_ACF_FIELDS.map((f) => {
-                          const v = (acfRaw as Record<string, unknown>)?.[f.key];
-                          const has = v !== undefined && v !== null && v !== "";
-                          const display = !has
-                            ? "—"
-                            : f.kind === "html"
-                              ? stripHtml(v).slice(0, 120) + (stripHtml(v).length > 120 ? "…" : "")
-                              : String(v);
+                          const currentValue = formValues[f.key] ?? "";
+                          const original = (acfRaw as Record<string, unknown>)?.[f.key];
+                          const originalStr = original === null || original === undefined ? "" : String(original);
+                          const dirty = editing && currentValue !== originalStr;
                           return (
-                            <div key={f.key} className="flex justify-between gap-2 border-b py-1">
-                              <span className="text-muted-foreground truncate">{f.label} <code className="ml-1 opacity-60">{f.key}</code></span>
-                              <span className={has ? "font-medium text-right truncate max-w-[60%]" : "text-muted-foreground"}>{display}</span>
+                            <div key={f.key} className={`space-y-1 border-b pb-2 ${dirty ? "bg-amber-50/60 -mx-1 px-1 rounded" : ""}`}>
+                              <Label className="text-[11px] text-muted-foreground flex justify-between">
+                                <span>{f.label}</span>
+                                <code className="opacity-60">{f.key}</code>
+                              </Label>
+                              {editing ? (
+                                f.kind === "html" ? (
+                                  <Textarea
+                                    className="text-xs min-h-[80px]"
+                                    value={currentValue}
+                                    onChange={(e) => setFormValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                                  />
+                                ) : (
+                                  <Input
+                                    className="h-7 text-xs"
+                                    value={currentValue}
+                                    onChange={(e) => setFormValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                                  />
+                                )
+                              ) : (
+                                <div className="text-xs">
+                                  {originalStr === ""
+                                    ? <span className="text-muted-foreground">—</span>
+                                    : f.kind === "html"
+                                      ? <span className="text-muted-foreground">{stripHtml(originalStr).slice(0, 140)}{stripHtml(originalStr).length > 140 ? "…" : ""}</span>
+                                      : <span className="font-medium">{originalStr}</span>}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
                       </div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Repeaters (read-only preview)</div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        {REPEATER_ACF_FIELDS.map((r) => {
+                          const v = (acfRaw as Record<string, unknown>)?.[r.key];
+                          const count = Array.isArray(v) ? v.length : 0;
+                          return (
+                            <div key={r.key} className="rounded border p-2">
+                              <div className="font-medium">{r.label}</div>
+                              <div className="text-muted-foreground">{count} item{count === 1 ? "" : "s"}</div>
+                              <code className="opacity-60">{r.key}</code>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Row-level editing for these repeaters, plus Hotels 1–5 and the Itinerary, is queued for the next phase — the MCP <code>wordpress_get_tour</code> already returns their full sub-field data for Codex/Claude Code to read.
+                      </p>
                     </div>
                     <div>
                       <div className="text-xs font-medium text-muted-foreground mb-1">
@@ -393,6 +516,43 @@ export default function WordpressContent() {
               </details>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmOpen} onOpenChange={(o) => { if (!o && !saving) setConfirmOpen(false); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm changes to WordPress</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            These changes will be written to the live WordPress tour immediately. Every save is recorded in the integration audit log.
+          </p>
+          <div className="border rounded divide-y text-xs mt-2 max-h-[50vh] overflow-y-auto">
+            {changedFields.length === 0 ? (
+              <div className="p-3 text-muted-foreground">No changes.</div>
+            ) : changedFields.map((f) => {
+              const original = (acfRaw as Record<string, unknown>)?.[f.key];
+              const originalStr = original === null || original === undefined ? "" : String(original);
+              const newStr = formValues[f.key] ?? "";
+              return (
+                <div key={f.key} className="p-2 grid grid-cols-1 md:grid-cols-[160px,1fr,1fr] gap-2">
+                  <div className="font-medium">{f.label}<div className="text-[10px] text-muted-foreground"><code>{f.key}</code></div></div>
+                  <div className="bg-red-50 border border-red-100 rounded p-2 line-through opacity-80 break-words">
+                    {originalStr === "" ? <span className="opacity-50">(empty)</span> : originalStr}
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded p-2 break-words">
+                    {newStr === "" ? <span className="opacity-50">(empty)</span> : newStr}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-2 mt-3">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={saveChanges} disabled={saving || changedFields.length === 0}>
+              {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving…</> : `Save ${changedFields.length} field${changedFields.length === 1 ? "" : "s"}`}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
