@@ -56,7 +56,9 @@ export const SendWaiverRequestButton = ({
     if (leadPassenger) list.push({ slot: 1, passenger: leadPassenger });
     if ((passengerCount ?? 3) >= 2 && passenger2) list.push({ slot: 2, passenger: passenger2 });
     if ((passengerCount ?? 3) >= 3 && passenger3) list.push({ slot: 3, passenger: passenger3 });
-    return list.filter(s => !!s.passenger?.email);
+    // Include all passengers — pax without a personal email are signable via the lead's token,
+    // so they should still be selectable (the request will be routed to the lead's email).
+    return list;
   }, [leadPassenger, passenger2, passenger3, passengerCount]);
 
   const signedSlotSet = useMemo(() => new Set(waivers.map(w => w.passenger_slot)), [waivers]);
@@ -154,7 +156,8 @@ export const SendWaiverRequestButton = ({
                     {slots.map(({ slot, passenger }) => {
                       const alreadySigned = signedSlotSet.has(slot);
                       const id = passenger.id;
-                      const label = `${passenger.first_name ?? ''} ${passenger.last_name ?? ''}`.trim() || passenger.email;
+                      const label = `${passenger.first_name ?? ''} ${passenger.last_name ?? ''}`.trim() || passenger.email || `Pax ${slot}`;
+                      const hasOwnEmail = !!passenger.email;
                       return (
                         <label
                           key={id}
@@ -172,7 +175,11 @@ export const SendWaiverRequestButton = ({
                                 <span className="ml-2 text-xs text-green-600 font-normal">(already signed)</span>
                               )}
                             </div>
-                            <div className="text-muted-foreground">{passenger.email}</div>
+                            <div className="text-muted-foreground">
+                              {hasOwnEmail
+                                ? passenger.email
+                                : `No email — request will be sent to the lead passenger (${customerEmail})`}
+                            </div>
                           </div>
                         </label>
                       );
