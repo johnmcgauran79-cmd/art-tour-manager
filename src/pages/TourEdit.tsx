@@ -20,6 +20,8 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
 import { useTourEmailOverrides, useUpsertTourEmailOverride, useDeleteTourEmailOverride } from "@/hooks/useTourEmailOverrides";
+import { useGeneralSettings } from "@/hooks/useGeneralSettings";
+import { renderInstalmentDetails, DEFAULT_INSTALMENT_TEMPLATE } from "@/lib/instalmentDetailsTemplate";
 
 export default function TourEdit() {
   const { id } = useParams();
@@ -31,6 +33,13 @@ export default function TourEdit() {
   const { toast } = useToast();
   const { data: brands = [] } = useBrands();
   const { data: tours, isLoading } = useTours();
+  const { data: generalSettings } = useGeneralSettings();
+  const instalmentTemplate = (() => {
+    const s = generalSettings?.find((x) => x.setting_key === "instalment_details_template");
+    if (!s) return DEFAULT_INSTALMENT_TEMPLATE;
+    const v = s.setting_value;
+    return (typeof v === "string" ? v : String(v ?? "")) || DEFAULT_INSTALMENT_TEMPLATE;
+  })();
   const tour = tours?.find(t => t.id === id);
   
   const [formData, setFormData] = useState({
@@ -204,7 +213,13 @@ export default function TourEdit() {
       instalment_required: formData.instalment_required,
       instalment_amount: formData.instalment_required && formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
       instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
-      instalment_details: formData.instalment_required ? (formData.instalment_details || null) : null,
+      instalment_details: formData.instalment_required
+        ? renderInstalmentDetails(instalmentTemplate, {
+            deposit_required: formData.deposit_required,
+            instalment_amount: formData.instalment_amount,
+            start_date: formData.start_date,
+          })
+        : null,
       final_payment_date: formData.final_payment_date || null,
       travel_documents_required: formData.travel_documents_required,
       pickup_location_required: formData.pickup_location_required,
@@ -761,15 +776,25 @@ export default function TourEdit() {
         {formData.instalment_required && (
           <div className="space-y-2">
             <Label htmlFor="instalment_details">Instalment / Payment Details</Label>
-            <Textarea
+            <div
               id="instalment_details"
-              value={formData.instalment_details}
-              onChange={(e) => handleInputChange("instalment_details", e.target.value)}
-              rows={5}
-              placeholder="e.g. $500 deposit on booking, instalment of $X due 28/01/2026, balance due 30/04/2026."
-            />
+              className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap"
+            >
+              {renderInstalmentDetails(instalmentTemplate, {
+                deposit_required: formData.deposit_required,
+                instalment_amount: formData.instalment_amount,
+                start_date: formData.start_date,
+              }) || (
+                <span className="text-muted-foreground">
+                  Enter deposit, instalment amount and start date to generate.
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Used in booking confirmation emails via <code>{"{{tour_instalment_details}}"}</code> and synced to the WordPress "Payment Details" field.
+              Auto-generated from the deposit, instalment amount and tour start date. Edit the template in
+              <strong> Settings → General Settings → Instalment Details Template</strong>. Used in booking
+              confirmation emails via <code>{"{{tour_instalment_details}}"}</code> and synced to the WordPress
+              "Payment Details" field on save.
             </p>
           </div>
         )}
