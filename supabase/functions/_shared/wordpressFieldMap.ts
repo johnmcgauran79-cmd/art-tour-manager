@@ -26,13 +26,52 @@ function asStr(v: unknown): string {
   return String(v);
 }
 
-// ACF date fields on this site are stored as ISO-ish "YYYY-MM-DD" strings.
-// If the value already looks like a date, pass it through; otherwise leave blank.
+// ACF date fields on this site are stored as compact "YYYYMMDD" strings
+// (e.g. "20260729"). Push ART's canonical "YYYY-MM-DD" as digits-only so the
+// format matches what WordPress already stores and the site display logic
+// keeps working.
 function toWpDate(v: ArtScalar): string {
   const s = asStr(v).trim();
   if (!s) return "";
-  // Accept YYYY-MM-DD directly. Anything else pass through unchanged.
-  return s;
+  const digits = s.replace(/\D+/g, "");
+  // Only rewrite when we clearly have a full date (8 digits). Otherwise pass through.
+  return digits.length === 8 ? digits : s;
+}
+
+// Semantic comparison helpers — used ONLY to decide whether a field "changed".
+// Raw values are still shown in the diff UI so nothing about the WP display or
+// the ART source format is altered.
+function normalizeNumber(v: string): string {
+  const s = v.replace(/[^\d.\-]/g, "").trim();
+  if (s === "" || s === "-" || s === ".") return "";
+  const n = Number(s);
+  if (!Number.isFinite(n)) return s;
+  // Drop trailing zeros for stable equality ("7495" == "7495.00").
+  return String(n);
+}
+function normalizeDate(v: string): string {
+  return v.replace(/\D+/g, "");
+}
+function normalizeText(v: string): string {
+  return v.replace(/\s+/g, " ").trim().toLowerCase();
+}
+function normalizeHtml(v: string): string {
+  return v
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+export function semanticEqual(kind: FieldMapEntry["kind"], a: string, b: string): boolean {
+  switch (kind) {
+    case "number": return normalizeNumber(a) === normalizeNumber(b);
+    case "date":   return normalizeDate(a) === normalizeDate(b);
+    case "html":   return normalizeHtml(a) === normalizeHtml(b);
+    case "text":
+    default:       return normalizeText(a) === normalizeText(b);
+  }
 }
 
 export const TOUR_FIELD_MAP: FieldMapEntry[] = [
@@ -125,7 +164,7 @@ export function buildFieldDiff(
       kind: f.kind,
       artValue,
       wpValue,
-      changed: artValue.trim() !== wpValue.trim(),
+      changed: !semanticEqual(f.kind, artValue, wpValue),
     };
   });
 }
