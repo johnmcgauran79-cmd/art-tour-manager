@@ -50,6 +50,7 @@ export default function SignWaiver() {
   const [waiverVersion, setWaiverVersion] = useState(1);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [signatures, setSignatures] = useState<SignatureData[]>([]);
+  const [leadSignature, setLeadSignature] = useState({ signed_name: "", agreed: false });
 
   useEffect(() => {
     validateToken();
@@ -128,16 +129,8 @@ export default function SignWaiver() {
     e.preventDefault();
     if (!token) return;
 
-    // Validate all signatures
-    const validSignatures = signatures.filter(s => s.agreed && s.signed_name.trim());
-    if (validSignatures.length === 0) {
-      toast.error("Please agree to the terms and type your full name for each passenger");
-      return;
-    }
-
-    const incompleteSignatures = signatures.filter(s => !s.agreed || !s.signed_name.trim());
-    if (incompleteSignatures.length > 0) {
-      toast.error("Please complete all waiver signatures before submitting");
+    if (!leadSignature.agreed || !leadSignature.signed_name.trim()) {
+      toast.error("Please agree to the terms and type your full name");
       return;
     }
 
@@ -147,11 +140,7 @@ export default function SignWaiver() {
       const { data, error: fnError } = await supabase.functions.invoke("submit-waiver", {
         body: {
           token,
-          signatures: validSignatures.map(s => ({
-            slot: s.slot,
-            customer_id: s.customer_id,
-            signed_name: s.signed_name,
-          })),
+          signed_name: leadSignature.signed_name.trim(),
         },
       });
 
@@ -275,6 +264,12 @@ export default function SignWaiver() {
   const alreadySignedSlotNumbers = signedSlots.map(s => s.slot);
   const allSigned = editableSlots.every(s => alreadySignedSlotNumbers.includes(s));
 
+  // Passengers covered by this signature (whole booking)
+  const coveredPassengers = passengers;
+  const coveredNames = coveredPassengers
+    .map(p => `${p.first_name} ${p.last_name}`.trim())
+    .filter(Boolean);
+
   return (
     <div className="min-h-screen bg-muted/30 py-8 px-4">
       <div className="max-w-3xl mx-auto">
@@ -348,6 +343,27 @@ export default function SignWaiver() {
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
+                {/* Passengers this waiver covers */}
+                {coveredNames.length > 0 && (
+                  <div className="mb-4 rounded-lg border bg-white p-4">
+                    <h3 className="font-semibold flex items-center gap-2 mb-2">
+                      <User className="h-5 w-5 text-primary" />
+                      This waiver covers
+                    </h3>
+                    <ul className="text-sm space-y-1">
+                      {coveredPassengers.map(p => (
+                        <li key={p.slot}>
+                          <span className="font-medium">{getPassengerLabel(p.slot)}:</span>{" "}
+                          {p.first_name} {p.last_name}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      As the lead passenger you are signing on behalf of all passengers listed above.
+                    </p>
+                  </div>
+                )}
+
                 {/* Waiver Terms */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -359,93 +375,70 @@ export default function SignWaiver() {
                   </ScrollArea>
                 </div>
 
-                {/* Signature sections per passenger */}
-                {signatures.map(sig => {
-                  const passenger = passengers.find(p => p.slot === sig.slot);
-                  if (!passenger) return null;
-
-                  return (
-                    <div
-                      key={sig.slot}
-                      className="mt-6 space-y-4 p-4 rounded-lg border bg-white"
-                    >
-                      <div className="flex items-center gap-2 border-b pb-2">
-                        <User className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">
-                          {getPassengerLabel(sig.slot)}: {passenger.first_name} {passenger.last_name}
-                        </h3>
-                        {passenger.is_token_owner && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                            You
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id={`agree_${sig.slot}`}
-                          checked={sig.agreed}
-                          onCheckedChange={(checked) =>
-                            handleSignatureChange(sig.slot, "agreed", checked === true)
-                          }
-                          className="mt-1"
-                        />
-                        <Label
-                          htmlFor={`agree_${sig.slot}`}
-                          className="text-sm leading-relaxed cursor-pointer"
-                        >
-                          I have carefully read and understood the terms of this waiver and release
-                          form. I voluntarily agree to release, indemnify, and hold harmless the
-                          Company from any and all claims, liabilities, actions, or expenses
-                          (including legal fees) arising from my participation in the tour.
-                        </Label>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor={`name_${sig.slot}`} className="font-medium">
-                          Type your full legal name as your digital signature *
-                        </Label>
-                        <Input
-                          id={`name_${sig.slot}`}
-                          value={sig.signed_name}
-                          onChange={(e) =>
-                            handleSignatureChange(sig.slot, "signed_name", e.target.value)
-                          }
-                          placeholder={`${passenger.first_name} ${passenger.last_name}`}
-                          required
-                          className="text-lg font-medium italic"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          By typing your name above, you are providing your digital signature
-                          which is legally binding.
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Non-editable passengers info */}
-                {passengers.filter(p => !editableSlots.includes(p.slot) && !alreadySignedSlotNumbers.includes(p.slot)).length > 0 && (
-                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-sm text-amber-800">
-                      The following passengers have their own email and will receive a separate waiver link:
-                    </p>
-                    <ul className="mt-2 space-y-1">
-                      {passengers
-                        .filter(p => !editableSlots.includes(p.slot) && !alreadySignedSlotNumbers.includes(p.slot))
-                        .map(p => (
-                          <li key={p.slot} className="text-sm text-amber-700">
-                            • {p.first_name} {p.last_name} ({p.email})
-                          </li>
-                        ))}
-                    </ul>
+                {/* Single lead-passenger signature covering the whole booking */}
+                <div className="mt-6 space-y-4 p-4 rounded-lg border bg-white">
+                  <div className="flex items-center gap-2 border-b pb-2">
+                    <User className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-lg">
+                      Lead Passenger Signature
+                      {customer && (
+                        <span className="ml-2 text-base font-normal text-muted-foreground">
+                          — {customer.first_name} {customer.last_name}
+                        </span>
+                      )}
+                    </h3>
                   </div>
-                )}
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="agree_lead"
+                      checked={leadSignature.agreed}
+                      onCheckedChange={(checked) =>
+                        setLeadSignature(s => ({ ...s, agreed: checked === true }))
+                      }
+                      className="mt-1"
+                    />
+                    <Label htmlFor="agree_lead" className="text-sm leading-relaxed cursor-pointer">
+                      I have carefully read and understood the terms of this waiver and release
+                      form. On behalf of {coveredNames.length > 1 ? "all passengers listed above" : "myself"},
+                      I voluntarily agree to release, indemnify, and hold harmless the Company
+                      from any and all claims, liabilities, actions, or expenses (including legal
+                      fees) arising from participation in the tour.
+                    </Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="name_lead" className="font-medium">
+                      Type your full legal name as your digital signature *
+                    </Label>
+                    <Input
+                      id="name_lead"
+                      value={leadSignature.signed_name}
+                      onChange={(e) =>
+                        setLeadSignature(s => ({ ...s, signed_name: e.target.value }))
+                      }
+                      placeholder={customer ? `${customer.first_name} ${customer.last_name}` : "Full legal name"}
+                      required
+                      className="text-lg font-medium italic"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      By typing your name above, you are providing a digital signature which is
+                      legally binding for all passengers listed on this booking.
+                    </p>
+                  </div>
+
+                  {coveredNames.length > 0 && (
+                    <div className="pt-3 mt-2 border-t text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Signed on behalf of:</span>{" "}
+                      {coveredNames.join(", ")}
+                    </div>
+                  )}
+                </div>
 
                 <div className="mt-6 flex justify-end">
                   <Button
                     type="submit"
-                    disabled={submitting || signatures.some(s => !s.agreed || !s.signed_name.trim())}
+                    disabled={submitting || !leadSignature.agreed || !leadSignature.signed_name.trim()}
                     className="font-semibold px-8 opacity-100 hover:opacity-90"
                     style={brandButtonStyle(brand)}
                     size="lg"

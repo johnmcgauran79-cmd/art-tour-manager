@@ -122,10 +122,8 @@ const handler = async (req: Request): Promise<Response> => {
     if (booking.passenger_count >= 2 && booking.passenger_2) addPassenger(2, booking.passenger_2);
     if (booking.passenger_count >= 3 && booking.passenger_3) addPassenger(3, booking.passenger_3);
 
-    // Token owner can sign for themselves + passengers without email
-    const editableSlots = passengers
-      .filter(p => p.is_token_owner || !p.has_email)
-      .map(p => p.slot);
+    // Lead passenger signs on behalf of every passenger on the booking.
+    const editableSlots = passengers.map(p => p.slot);
 
     // Check which passengers have already signed
     const { data: allWaivers } = await supabase

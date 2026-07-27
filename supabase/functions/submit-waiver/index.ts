@@ -25,11 +25,14 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { token, signatures }: WaiverSubmission = await req.json();
+    const body = await req.json();
+    const token: string = body.token;
+    let signatures: WaiverSubmission["signatures"] = body.signatures || [];
+    const signedName: string | undefined = body.signed_name;
 
-    if (!token || !signatures || signatures.length === 0) {
+    if (!token || (signatures.length === 0 && !signedName)) {
       return new Response(
-        JSON.stringify({ error: "Token and signatures are required" }),
+        JSON.stringify({ error: "Token and signature are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -52,6 +55,40 @@ const handler = async (req: Request): Promise<Response> => {
     if (new Date(tokenData.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ error: "This link has expired" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If a single "sign on behalf of booking" signature was submitted, expand it
+    // into one row per passenger slot on the booking.
+    if (signedName && signatures.length === 0) {
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("passenger_count, lead_passenger_id, passenger_2_id, passenger_3_id")
+        .eq("id", tokenData.booking_id)
+        .single();
+
+      if (booking) {
+        const slots: Array<{ slot: number; customer_id: string | null }> = [];
+        if (booking.lead_passenger_id) slots.push({ slot: 1, customer_id: booking.lead_passenger_id });
+        if ((booking.passenger_count ?? 1) >= 2 && booking.passenger_2_id) slots.push({ slot: 2, customer_id: booking.passenger_2_id });
+        if ((booking.passenger_count ?? 1) >= 3 && booking.passenger_3_id) slots.push({ slot: 3, customer_id: booking.passenger_3_id });
+
+        const { data: existing } = await supabase
+          .from("booking_waivers")
+          .select("passenger_slot")
+          .eq("booking_id", tokenData.booking_id);
+        const already = new Set((existing || []).map((w: any) => w.passenger_slot));
+
+        signatures = slots
+          .filter(s => !already.has(s.slot))
+          .map(s => ({ slot: s.slot, customer_id: s.customer_id, signed_name: signedName }));
+      }
+    }
+
+    if (signatures.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "All passengers have already signed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
