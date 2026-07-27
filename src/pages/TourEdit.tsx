@@ -1167,6 +1167,13 @@ export default function TourEdit() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Auto-push mapped tour fields to WordPress after successful save. */}
+      <TourEditWordpressSyncPrompt
+        triggerNonce={wpSyncNonce}
+        tourId={id!}
+        onDone={() => goBack(`/tours/${id}`)}
+      />
     </div>
   );
 }
