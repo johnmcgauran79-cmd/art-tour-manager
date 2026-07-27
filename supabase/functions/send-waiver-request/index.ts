@@ -141,7 +141,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { bookingId } = await req.json();
+    const { bookingId, customerIds } = await req.json();
 
     if (!bookingId) {
       return new Response(
@@ -192,19 +192,21 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const passengers: PassengerInfo[] = [];
 
-    if (booking.customers?.email) {
-      passengers.push({ id: booking.customers.id, first_name: booking.customers.first_name, last_name: booking.customers.last_name, email: booking.customers.email, preferred_name: booking.customers.preferred_name });
-    }
-    if (booking.passenger_2?.email) {
-      passengers.push({ id: booking.passenger_2.id, first_name: booking.passenger_2.first_name, last_name: booking.passenger_2.last_name, email: booking.passenger_2.email, preferred_name: booking.passenger_2.preferred_name });
-    }
-    if (booking.passenger_3?.email) {
-      passengers.push({ id: booking.passenger_3.id, first_name: booking.passenger_3.first_name, last_name: booking.passenger_3.last_name, email: booking.passenger_3.email, preferred_name: booking.passenger_3.preferred_name });
-    }
+    const allowedIds: Set<string> | null = Array.isArray(customerIds) && customerIds.length > 0
+      ? new Set(customerIds.map((v: any) => String(v)))
+      : null;
+    const maybePush = (c: any) => {
+      if (!c?.email) return;
+      if (allowedIds && !allowedIds.has(c.id)) return;
+      passengers.push({ id: c.id, first_name: c.first_name, last_name: c.last_name, email: c.email, preferred_name: c.preferred_name });
+    };
+    maybePush(booking.customers);
+    maybePush(booking.passenger_2);
+    maybePush(booking.passenger_3);
 
     if (passengers.length === 0) {
       return new Response(
-        JSON.stringify({ error: "No passengers with email addresses found" }),
+        JSON.stringify({ error: allowedIds ? "None of the selected passengers have email addresses" : "No passengers with email addresses found" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
