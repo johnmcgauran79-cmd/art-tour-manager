@@ -89,6 +89,7 @@ import wordpressGetPageTool from "./tools/wordpress-get-page";
 import wordpressGetMediaTool from "./tools/wordpress-get-media";
 import wordpressSearchMediaTool from "./tools/wordpress-search-media";
 import wordpressGetTaxonomiesTool from "./tools/wordpress-get-taxonomies";
+import wordpressUpdateTourFieldsTool from "./tools/wordpress-update-tour-fields";
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
@@ -121,6 +122,7 @@ export default defineMcp({
     wordpressGetMediaTool,
     wordpressSearchMediaTool,
     wordpressGetTaxonomiesTool,
+    wordpressUpdateTourFieldsTool,
     listToursTool,
     getNextDepartingTourTool,
     getTourTool,

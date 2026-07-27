@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { wordpressRequest, WordpressClientError } from "../_shared/wordpressClient.ts";
+import { sanitiseAcfUpdate, EDITABLE_ACF_SCALAR_FIELDS, EDITABLE_ACF_REPEATER_FIELDS } from "../_shared/wordpressEditableFields.ts";
 
 // Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
 // JWT and admin/manager role, then executes ONE of a fixed set of read-only
@@ -12,7 +13,8 @@ type Op =
   | { op: "get_tour"; tour_id: number }
   | { op: "list_pages"; search?: string; page?: number; per_page?: number }
   | { op: "get_page"; page_id: number }
-  | { op: "search_media"; search: string; per_page?: number };
+  | { op: "search_media"; search: string; per_page?: number }
+  | { op: "update_tour"; tour_id: number; acf: Record<string, unknown> };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY =
@@ -273,6 +275,56 @@ Deno.serve(async (req) => {
           request_summary: { endpoint: "media", method: "GET", query_keys: Object.keys(q).sort() },
         });
         return json({ media: res.data });
+      }
+      case "update_tour": {
+        if (!body.tour_id || typeof body.tour_id !== "number") {
+          return json({ error: "tour_id is required" }, 400);
+        }
+        const acfClean = sanitiseAcfUpdate(body.acf);
+        const changedKeys = Object.keys(acfClean);
+        if (changedKeys.length === 0) {
+          return json({ error: "No editable ACF fields supplied", allowed: [...EDITABLE_ACF_SCALAR_FIELDS, ...EDITABLE_ACF_REPEATER_FIELDS] }, 400);
+        }
+        // Fetch a before-snapshot for audit/diff
+        let before: Record<string, unknown> | null = null;
+        try {
+          const beforeRes = await wordpressRequest<Record<string, unknown>>({
+            endpoint: `tour/${body.tour_id}`,
+            query: { context: "edit", _fields: "id,acf" },
+          });
+          before = (beforeRes.data as { acf?: Record<string, unknown> })?.acf ?? null;
+        } catch { /* non-fatal for the update itself */ }
+
+        const res = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${body.tour_id}`,
+          method: "POST", // WordPress accepts POST for updates too, and this avoids some hosts blocking PATCH
+          body: { acf: acfClean },
+        });
+        const after = (res.data as { acf?: Record<string, unknown> })?.acf ?? null;
+
+        // Best-effort audit with before/after ACF snapshots
+        try {
+          const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+          await admin.from("wordpress_integration_audit_logs").insert({
+            user_id: userId,
+            source: "ui",
+            action: "update_tour",
+            wordpress_object_type: "tour",
+            wordpress_object_id: body.tour_id,
+            result_status: "success",
+            response_code: res.status,
+            request_summary: {
+              endpoint: `tour/${body.tour_id}`,
+              method: "POST",
+              query_keys: [],
+              changed_fields: changedKeys.sort(),
+            },
+            before_snapshot: before,
+            after_snapshot: after,
+          });
+        } catch { /* audit must never break the tool */ }
+
+        return json({ ok: true, id: body.tour_id, changed_fields: changedKeys, acf: after });
       }
       default:
         return json({ error: "Unknown op" }, 400);

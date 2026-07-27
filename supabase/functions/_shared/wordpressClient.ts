@@ -50,8 +50,9 @@ function isAllowed(endpoint: string): boolean {
 
 export interface WpRequestOpts {
   endpoint: string;
-  method?: "GET";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   query?: Record<string, string | number | boolean | undefined | null>;
+  body?: unknown;
   timeoutMs?: number;
   retries?: number;
 }
@@ -90,6 +91,7 @@ export async function wordpressRequest<T = unknown>(opts: WpRequestOpts): Promis
     Accept: "application/json",
     "User-Agent": "ART-Admin-WordPress-Integration/1.0",
   };
+  if (opts.body !== undefined) headers["Content-Type"] = "application/json";
 
   let attempt = 0;
   let lastError: unknown;
@@ -98,7 +100,12 @@ export async function wordpressRequest<T = unknown>(opts: WpRequestOpts): Promis
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url.toString(), { method, headers, signal: controller.signal });
+      const res = await fetch(url.toString(), {
+        method,
+        headers,
+        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+        signal: controller.signal,
+      });
       clearTimeout(timer);
       const text = await res.text();
       let data: unknown = null;
