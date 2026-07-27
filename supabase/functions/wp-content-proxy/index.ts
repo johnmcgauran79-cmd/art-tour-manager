@@ -3,6 +3,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { wordpressRequest, WordpressClientError } from "../_shared/wordpressClient.ts";
 import { sanitiseAcfUpdate, EDITABLE_ACF_SCALAR_FIELDS, EDITABLE_ACF_REPEATER_FIELDS } from "../_shared/wordpressEditableFields.ts";
 import { TOUR_FIELD_MAP, buildFieldDiff } from "../_shared/wordpressFieldMap.ts";
+import { ART_SOURCES, tourColumnsForSources, resolveArtSourceValue } from "../_shared/wordpressArtSources.ts";
 
 // Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
 // JWT and admin/manager role, then executes ONE of a fixed set of read-only
@@ -21,7 +22,10 @@ type Op =
   | { op: "unlink_tour"; art_tour_id: string }
   | { op: "get_tour_link"; art_tour_id: string }
   | { op: "get_tour_diff"; art_tour_id: string }
-  | { op: "push_tour_diff"; art_tour_id: string; art_keys: string[] };
+  | { op: "push_tour_diff"; art_tour_id: string; art_keys: string[] }
+  | { op: "discover_wp_fields"; wp_tour_id?: number; art_tour_id?: string }
+  | { op: "list_field_mappings" }
+  | { op: "save_field_mappings"; mappings: Array<{ wp_field_key: string; wp_group?: string; wp_label?: string | null; wp_kind?: string; art_source: string | null; enabled?: boolean; notes?: string | null }> };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY =
