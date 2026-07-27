@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
           orderby: "modified",
           order: "desc",
           context: "edit",
-          _fields: "id,title,slug,status,link,modified,excerpt,featured_media",
+          _fields: "id,title,slug,status,link,modified,excerpt,featured_media,acf.start_date,acf.end_date",
         };
         const res = await wordpressRequest<Array<Record<string, unknown>>>({ endpoint: "tour", query: q });
         await auditLog(userId, {
@@ -195,6 +195,8 @@ Deno.serve(async (req) => {
             link: t.link,
             modified: t.modified,
             excerpt: (t.excerpt as { rendered?: string })?.rendered ?? null,
+            start_date: ((t.acf as { start_date?: unknown })?.start_date ?? null) as string | null,
+            end_date: ((t.acf as { end_date?: unknown })?.end_date ?? null) as string | null,
           })),
         });
       }
