@@ -298,6 +298,10 @@ export default function BookingDetail() {
                 customerEmail={booking.customers.email || null}
                 tourName={tour?.name || 'Unknown Tour'}
                 size="sm"
+                leadPassenger={booking.customers}
+                passenger2={(booking as any).passenger_2}
+                passenger3={(booking as any).passenger_3}
+                passengerCount={booking.passenger_count}
               />
               {tour?.pickup_location_required && (
                 <SendPickupRequestButton
@@ -453,6 +457,10 @@ export default function BookingDetail() {
                   customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
                   customerEmail={booking.customers.email || null}
                   tourName={tour?.name || 'Unknown Tour'}
+                  leadPassenger={booking.customers}
+                  passenger2={(booking as any).passenger_2}
+                  passenger3={(booking as any).passenger_3}
+                  passengerCount={booking.passenger_count}
                 />
                 {tour?.pickup_location_required && (
                   <SendPickupRequestButton
@@ -830,6 +838,10 @@ export default function BookingDetail() {
                     customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
                     customerEmail={booking.customers.email || null}
                     tourName={tour?.name || 'Unknown Tour'}
+                    leadPassenger={booking.customers}
+                    passenger2={(booking as any).passenger_2}
+                    passenger3={(booking as any).passenger_3}
+                    passengerCount={booking.passenger_count}
                   />
                 )}
               </div>
