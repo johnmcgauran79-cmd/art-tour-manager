@@ -101,6 +101,8 @@ interface TourRow {
   link: string;
   modified: string;
   excerpt: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 interface AuditRow {
