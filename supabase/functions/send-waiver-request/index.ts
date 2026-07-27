@@ -195,9 +195,31 @@ const handler = async (req: Request): Promise<Response> => {
     const allowedIds: Set<string> | null = Array.isArray(customerIds) && customerIds.length > 0
       ? new Set(customerIds.map((v: any) => String(v)))
       : null;
+
+    // If any selected passenger has no email of their own, redirect that selection
+    // to the lead passenger — the lead's waiver token grants signing rights over
+    // any pax slot that lacks its own email address.
+    const lead = booking.customers;
+    if (allowedIds) {
+      const paxById: Record<string, any> = {};
+      [booking.customers, booking.passenger_2, booking.passenger_3].forEach((c: any) => {
+        if (c?.id) paxById[c.id] = c;
+      });
+      const redirected = new Set<string>();
+      for (const id of Array.from(allowedIds)) {
+        const c = paxById[id];
+        if (c && !c.email && lead?.id && lead.email) {
+          allowedIds.delete(id);
+          redirected.add(lead.id);
+        }
+      }
+      redirected.forEach(id => allowedIds.add(id));
+    }
+
     const maybePush = (c: any) => {
       if (!c?.email) return;
       if (allowedIds && !allowedIds.has(c.id)) return;
+      if (passengers.some(p => p.id === c.id)) return; // dedupe
       passengers.push({ id: c.id, first_name: c.first_name, last_name: c.last_name, email: c.email, preferred_name: c.preferred_name });
     };
     maybePush(booking.customers);
