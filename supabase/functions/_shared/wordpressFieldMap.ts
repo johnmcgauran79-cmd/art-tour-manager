@@ -38,6 +38,22 @@ function toWpDate(v: ArtScalar): string {
   return digits.length === 8 ? digits : s;
 }
 
+// Prices on the WordPress site are plain text fields rendered verbatim
+// (e.g. "$5,995"). Push ART's numeric price with the "$" prefix and
+// thousands separators so the site keeps its expected display.
+function toWpMoney(v: ArtScalar): string {
+  if (v === null || v === undefined || v === "") return "";
+  const s = String(v).replace(/[^\d.\-]/g, "").trim();
+  if (s === "" || s === "-" || s === ".") return "";
+  const n = Number(s);
+  if (!Number.isFinite(n)) return String(v);
+  const hasCents = Math.round(n * 100) % 100 !== 0;
+  return "$" + n.toLocaleString("en-AU", {
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 // Semantic comparison helpers — used ONLY to decide whether a field "changed".
 // Raw values are still shown in the diff UI so nothing about the WP display or
 // the ART source format is altered.
@@ -80,7 +96,7 @@ export const TOUR_FIELD_MAP: FieldMapEntry[] = [
     wpKey: "single_room_price",
     label: "Single room price",
     kind: "number",
-    toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)),
+    toWp: toWpMoney,
     fromWp: asStr,
   },
   {
@@ -88,7 +104,7 @@ export const TOUR_FIELD_MAP: FieldMapEntry[] = [
     wpKey: "twin_room_per_person_price",
     label: "Twin room (per person)",
     kind: "number",
-    toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)),
+    toWp: toWpMoney,
     fromWp: asStr,
   },
   {
@@ -96,7 +112,7 @@ export const TOUR_FIELD_MAP: FieldMapEntry[] = [
     wpKey: "double_room_per_person_price",
     label: "Double room (per person)",
     kind: "number",
-    toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)),
+    toWp: toWpMoney,
     fromWp: asStr,
   },
   {

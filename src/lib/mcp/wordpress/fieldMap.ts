@@ -24,6 +24,22 @@ function toWpDate(v: ArtScalar): string {
   return digits.length === 8 ? digits : s;
 }
 
+// Prices on the WordPress site are rendered as-is from a text field
+// (e.g. "$5,995"). Push ART's numeric price through the same display
+// format so the site keeps its "$" + thousands separators.
+function toWpMoney(v: ArtScalar): string {
+  if (v === null || v === undefined || v === "") return "";
+  const s = String(v).replace(/[^\d.\-]/g, "").trim();
+  if (s === "" || s === "-" || s === ".") return "";
+  const n = Number(s);
+  if (!Number.isFinite(n)) return String(v);
+  const hasCents = Math.round(n * 100) % 100 !== 0;
+  return "$" + n.toLocaleString("en-AU", {
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 function normalizeNumber(v: string): string {
   const s = v.replace(/[^\d.\-]/g, "").trim();
   if (s === "" || s === "-" || s === ".") return "";
@@ -46,9 +62,9 @@ export function semanticEqual(kind: FieldMapEntry["kind"], a: string, b: string)
 }
 
 export const TOUR_FIELD_MAP: FieldMapEntry[] = [
-  { artKey: "price_single", wpKey: "single_room_price", label: "Single room price", kind: "number", toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)), fromWp: asStr },
-  { artKey: "price_twin", wpKey: "twin_room_per_person_price", label: "Twin room (per person)", kind: "number", toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)), fromWp: asStr },
-  { artKey: "price_double", wpKey: "double_room_per_person_price", label: "Double room (per person)", kind: "number", toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)), fromWp: asStr },
+  { artKey: "price_single", wpKey: "single_room_price", label: "Single room price", kind: "number", toWp: toWpMoney, fromWp: asStr },
+  { artKey: "price_twin", wpKey: "twin_room_per_person_price", label: "Twin room (per person)", kind: "number", toWp: toWpMoney, fromWp: asStr },
+  { artKey: "price_double", wpKey: "double_room_per_person_price", label: "Double room (per person)", kind: "number", toWp: toWpMoney, fromWp: asStr },
   { artKey: "start_date", wpKey: "start_date", label: "Start date", kind: "date", toWp: toWpDate, fromWp: asStr },
   { artKey: "end_date", wpKey: "end_date", label: "End date", kind: "date", toWp: toWpDate, fromWp: asStr },
   { artKey: "location", wpKey: "location", label: "Location", kind: "text", toWp: asStr, fromWp: asStr },
