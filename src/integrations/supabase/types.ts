@@ -4741,6 +4741,56 @@ export type Database = {
         }
         Relationships: []
       }
+      wordpress_tour_links: {
+        Row: {
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          last_wp_modified_at: string | null
+          linked_at: string
+          linked_by: string | null
+          tour_id: string
+          updated_at: string
+          wp_slug: string | null
+          wp_title_snapshot: string | null
+          wp_tour_id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          last_wp_modified_at?: string | null
+          linked_at?: string
+          linked_by?: string | null
+          tour_id: string
+          updated_at?: string
+          wp_slug?: string | null
+          wp_title_snapshot?: string | null
+          wp_tour_id: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          last_wp_modified_at?: string | null
+          linked_at?: string
+          linked_by?: string | null
+          tour_id?: string
+          updated_at?: string
+          wp_slug?: string | null
+          wp_title_snapshot?: string | null
+          wp_tour_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wordpress_tour_links_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: true
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       xero_api_locks: {
         Row: {
           acquired_at: string
