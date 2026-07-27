@@ -4687,6 +4687,45 @@ export type Database = {
         }
         Relationships: []
       }
+      wordpress_field_mappings: {
+        Row: {
+          art_source: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          notes: string | null
+          updated_at: string
+          wp_field_key: string
+          wp_group: string
+          wp_kind: string
+          wp_label: string | null
+        }
+        Insert: {
+          art_source?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          wp_field_key: string
+          wp_group?: string
+          wp_kind?: string
+          wp_label?: string | null
+        }
+        Update: {
+          art_source?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          wp_field_key?: string
+          wp_group?: string
+          wp_kind?: string
+          wp_label?: string | null
+        }
+        Relationships: []
+      }
       wordpress_integration_audit_logs: {
         Row: {
           action: string
