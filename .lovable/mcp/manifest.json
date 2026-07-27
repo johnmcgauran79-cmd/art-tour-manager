@@ -282,6 +282,104 @@
         "outputSchema": null
       },
       {
+        "name": "wordpress_update_tour_fields",
+        "title": "Update WordPress tour ACF fields",
+        "description": "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, location, capacity, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 and the itinerary repeater are NOT writable here yet — use wordpress_get_tour to inspect them.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "acf": {
+              "type": "object",
+              "properties": {
+                "price": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "radio_book_now": {
+                  "type": "string"
+                },
+                "start_date": {
+                  "type": "string"
+                },
+                "end_date": {
+                  "type": "string"
+                },
+                "time_frame": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                },
+                "capacity": {
+                  "type": "string"
+                },
+                "single_room_price": {
+                  "type": "string"
+                },
+                "twin_room_per_person_price": {
+                  "type": "string"
+                },
+                "double_room_per_person_price": {
+                  "type": "string"
+                },
+                "payment_details": {
+                  "type": "string"
+                },
+                "add_download_brochure": {
+                  "type": "string"
+                },
+                "inclusions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                },
+                "exclusions_details": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/properties/acf/properties/inclusions/items"
+                  }
+                },
+                "faqs_list": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/properties/acf/properties/inclusions/items"
+                  }
+                },
+                "add_review": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/properties/acf/properties/inclusions/items"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "description": "Partial ACF payload. Only listed keys are accepted; unknown keys are stripped."
+            }
+          },
+          "required": [
+            "tour_id",
+            "acf"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
         "name": "list_tours",
         "title": "List tours",
         "description": "List tours the signed-in user can access. By default returns SOONEST start date first (ascending), which is what you want for questions about the 'next departing tour' — the FIRST row is the next tour to depart. To reliably answer 'next departing tour', set `upcoming_only: true` (excludes tours that already started) and read the first row. Returns up to 200 tours by default (raise `limit` up to 500). Optionally filter by name/location search term, status, or upcoming-only. Set `sort: 'desc'` for most-recent-first.",

@@ -4955,6 +4955,136 @@ var wordpress_get_taxonomies_default = defineTool86({
   }
 });
 
+// src/lib/mcp/tools/wordpress-update-tour-fields.ts
+import { defineTool as defineTool87 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z83 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/wordpress/editableFields.ts
+var EDITABLE_ACF_SCALAR_FIELDS = [
+  "price",
+  "status",
+  "radio_book_now",
+  "start_date",
+  "end_date",
+  "time_frame",
+  "location",
+  "capacity",
+  "single_room_price",
+  "twin_room_per_person_price",
+  "double_room_per_person_price",
+  "payment_details",
+  "add_download_brochure"
+];
+var EDITABLE_ACF_REPEATER_FIELDS = [
+  "inclusions",
+  "exclusions_details",
+  "faqs_list",
+  "add_review"
+];
+function sanitiseAcfUpdate(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  const out = {};
+  const src = input;
+  for (const key of EDITABLE_ACF_SCALAR_FIELDS) {
+    if (key in src) out[key] = src[key];
+  }
+  for (const key of EDITABLE_ACF_REPEATER_FIELDS) {
+    if (key in src) {
+      const v = src[key];
+      out[key] = Array.isArray(v) ? v : [];
+    }
+  }
+  return out;
+}
+
+// src/lib/mcp/tools/wordpress-update-tour-fields.ts
+var repeaterItemSchema = z83.record(z83.string(), z83.unknown());
+var wordpress_update_tour_fields_default = defineTool87({
+  name: "wordpress_update_tour_fields",
+  title: "Update WordPress tour ACF fields",
+  description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, location, capacity, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 and the itinerary repeater are NOT writable here yet \u2014 use wordpress_get_tour to inspect them.",
+  inputSchema: {
+    tour_id: z83.number().int().min(1),
+    acf: z83.object({
+      price: z83.string().optional(),
+      status: z83.string().optional(),
+      radio_book_now: z83.string().optional(),
+      start_date: z83.string().optional(),
+      end_date: z83.string().optional(),
+      time_frame: z83.string().optional(),
+      location: z83.string().optional(),
+      capacity: z83.string().optional(),
+      single_room_price: z83.string().optional(),
+      twin_room_per_person_price: z83.string().optional(),
+      double_room_per_person_price: z83.string().optional(),
+      payment_details: z83.string().optional(),
+      add_download_brochure: z83.string().optional(),
+      inclusions: z83.array(repeaterItemSchema).optional(),
+      exclusions_details: z83.array(repeaterItemSchema).optional(),
+      faqs_list: z83.array(repeaterItemSchema).optional(),
+      add_review: z83.array(repeaterItemSchema).optional()
+    }).describe("Partial ACF payload. Only listed keys are accepted; unknown keys are stripped.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, acf }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const clean = sanitiseAcfUpdate(acf);
+    const changed = Object.keys(clean);
+    if (changed.length === 0) {
+      return {
+        content: [{
+          type: "text",
+          text: `No editable ACF fields supplied. Allowed: ${[...EDITABLE_ACF_SCALAR_FIELDS, ...EDITABLE_ACF_REPEATER_FIELDS].join(", ")}`
+        }],
+        isError: true
+      };
+    }
+    const endpoint = `tour/${tour_id}`;
+    let before = null;
+    try {
+      const b = await wordpressRequest({ endpoint, query: { context: "edit", _fields: "id,acf" } });
+      before = b.data?.acf ?? null;
+    } catch {
+    }
+    try {
+      const res = await wordpressRequest({
+        endpoint,
+        method: "POST",
+        body: { acf: clean }
+      });
+      const after = res.data?.acf ?? null;
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "update_tour_fields",
+        wordpress_object_type: "tour",
+        wordpress_object_id: tour_id,
+        request_summary: { ...requestSummary(endpoint, "POST"), changed_fields: changed.sort() },
+        result_status: "success",
+        response_code: res.status,
+        before_snapshot: before,
+        after_snapshot: after
+      });
+      const out = { id: tour_id, changed_fields: changed, acf: after };
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "update_tour_fields",
+        wordpress_object_type: "tour",
+        wordpress_object_id: tour_id,
+        request_summary: { ...requestSummary(endpoint, "POST"), changed_fields: changed.sort() },
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message,
+        before_snapshot: before
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
@@ -4982,6 +5112,7 @@ var mcp_default = defineMcp({
     wordpress_get_media_default,
     wordpress_search_media_default,
     wordpress_get_taxonomies_default,
+    wordpress_update_tour_fields_default,
     list_tours_default,
     get_next_departing_tour_default,
     get_tour_default,
