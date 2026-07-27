@@ -245,6 +245,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
   // -------- Unlinked view --------
   if (!link) {
     return (
+      <>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
