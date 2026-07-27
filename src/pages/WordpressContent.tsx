@@ -82,6 +82,22 @@ function stripHtml(s: unknown): string {
   return s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 }
 
+function extractYear(...vals: Array<string | null | undefined>): string | null {
+  for (const v of vals) {
+    if (!v) continue;
+    const m = String(v).match(/(20\d{2}|19\d{2})/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function displayTourTitle(t: { title: string | null; id: number; start_date?: string | null; end_date?: string | null; modified?: string }): string {
+  const raw = t.title ?? `(untitled) #${t.id}`;
+  if (/(19|20)\d{2}/.test(raw)) return raw;
+  const year = extractYear(t.start_date, t.end_date);
+  return year ? `${year} ${raw}` : raw;
+}
+
 interface HealthResult {
   reachable: boolean;
   authenticated: boolean;
