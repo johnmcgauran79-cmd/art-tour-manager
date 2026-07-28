@@ -22,7 +22,7 @@ async function generateRoomingListData(supabase: any, tourId: string) {
     `)
     .eq('tour_id', tourId)
     .eq('hotel_bookings.allocated', true)
-    .neq('hotel_bookings.bookings.status', 'cancelled')
+    .not('hotel_bookings.bookings.status', 'in', '("cancelled","waitlisted")')
     .order('default_check_in', { ascending: true, nullsFirst: false });
 
   if (!hotels || hotels.length === 0) {
@@ -48,7 +48,7 @@ function generateRoomingListHTML(hotels: any[], tourName: string): string {
     const hotelBookings = hotel.hotel_bookings || [];
     for (const hb of hotelBookings) {
       const booking = hb.bookings;
-      if (!booking || booking.status === 'cancelled') continue;
+      if (!booking || booking.status === 'cancelled' || booking.status === 'waitlisted') continue;
       
       const customer = booking.customers || {};
       const guestName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown';
