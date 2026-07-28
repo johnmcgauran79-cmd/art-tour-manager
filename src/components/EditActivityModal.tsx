@@ -119,7 +119,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
       .from('activity_bookings')
       .select('passengers_attending, bookings!inner(status)')
       .eq('activity_id', activityId)
-      .neq('bookings.status', 'cancelled');
+      .not('bookings.status', 'in', '("cancelled","waitlisted")');
 
     if (error) {
       setPaxAttending(0);
