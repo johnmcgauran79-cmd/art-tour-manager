@@ -12,7 +12,7 @@ async function generatePassengerListData(supabase: any, tourId: string) {
     .from('bookings')
     .select('*, customers!bookings_lead_passenger_id_fkey(*), passenger_2:customers!passenger_2_id(*), passenger_3:customers!passenger_3_id(*)')
     .eq('tour_id', tourId)
-    .neq('status', 'cancelled')
+    .not('status', 'in', '("cancelled","waitlisted")')
     .order('created_at');
 
   if (!bookings || bookings.length === 0) {
