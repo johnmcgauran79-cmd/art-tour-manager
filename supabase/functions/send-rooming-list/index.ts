@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('hotel_id', hotelId)
       .eq('allocated', true)
       .eq('bookings.tour_id', tourId)
-      .neq('bookings.status', 'cancelled')
+      .not('bookings.status', 'in', '("cancelled","waitlisted")')
       .order('created_at', { ascending: true });
 
     if (bookingsError) {
