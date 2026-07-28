@@ -130,6 +130,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
 
   const updateActivity = useMutation({
     mutationFn: async (activityData: any) => {
+      const wasCancelled = activity?.booking_status === 'cancelled';
+      const isNowCancelled = activityData.booking_status === 'cancelled';
       const { data, error } = await supabase
         .from('activities')
         .update({
@@ -168,6 +170,22 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
 
       if (error) throw error;
 
+      // If activity is cancelled, zero out passenger allocations and clear related alerts
+      if (activity?.id && isNowCancelled) {
+        const { error: allocErr } = await supabase
+          .from('activity_bookings')
+          .update({ passengers_attending: 0 })
+          .eq('activity_id', activity.id)
+          .neq('passengers_attending', 0);
+        if (allocErr) console.error('Error zeroing activity allocations:', allocErr);
+
+        const { error: alertErr } = await supabase
+          .from('tour_alerts')
+          .delete()
+          .eq('activity_id', activity.id);
+        if (alertErr) console.error('Error clearing activity alerts:', alertErr);
+      }
+
       // Update journeys: delete all, re-insert
       if (activity?.id) {
         await supabase.from('activity_journeys').delete().eq('activity_id', activity.id);
@@ -189,6 +207,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activities', activity?.tour_id] });
+      queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['tour-alerts', activity?.tour_id] });
+      queryClient.invalidateQueries({ queryKey: ['global-tour-alerts'] });
       toast({ title: "Activity Updated", description: "Activity has been successfully updated." });
       onOpenChange(false);
     },
