@@ -61,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
       `)
       .eq('activity_id', activityId)
       .gt('passengers_attending', 0)
-      .neq('bookings.status', 'cancelled');
+      .not('bookings.status', 'in', '("cancelled","waitlisted")');
 
     if (passengersError) {
       console.error("Error fetching passengers:", passengersError);
