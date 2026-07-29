@@ -22,6 +22,8 @@ interface RoomingListRequest {
   bccEmail?: string;
   subject?: string;
   message?: string;
+  includeRoomTypeReport?: boolean;
+  includeRoomingList?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -45,7 +47,9 @@ const handler = async (req: Request): Promise<Response> => {
       ccEmail = '',
       bccEmail = '',
       subject,
-      message 
+      message,
+      includeRoomTypeReport = true,
+      includeRoomingList = true,
     }: RoomingListRequest = await req.json();
 
     // Fetch hotel data
@@ -340,9 +344,9 @@ const handler = async (req: Request): Promise<Response> => {
           <p style="margin: 5px 0;"><strong>Total Rooms:</strong> ${roomingData.length}</p>
         </div>
         
-        ${tableHTML}
+        ${includeRoomTypeReport ? roomTypeMatrixHTML : ''}
         
-        ${roomTypeMatrixHTML}
+        ${includeRoomingList ? tableHTML : ''}
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
           <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
