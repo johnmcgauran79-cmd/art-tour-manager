@@ -16,7 +16,9 @@ export const useSendRoomingList = () => {
       ccEmail,
       bccEmail,
       subject,
-      message
+      message,
+      includeRoomTypeReport,
+      includeRoomingList,
     }: { 
       hotelId: string; 
       tourId: string; 
@@ -28,11 +30,13 @@ export const useSendRoomingList = () => {
       bccEmail?: string;
       subject?: string;
       message?: string;
+      includeRoomTypeReport?: boolean;
+      includeRoomingList?: boolean;
     }) => {
-      console.log('Sending rooming list:', { hotelId, tourId, tourName, hotelEmail, fromEmail, ccEmail, bccEmail, subject });
+      console.log('Sending rooming list:', { hotelId, tourId, tourName, hotelEmail, fromEmail, ccEmail, bccEmail, subject, includeRoomTypeReport, includeRoomingList });
       
       const { data, error } = await supabase.functions.invoke('send-rooming-list', {
-        body: { hotelId, tourId, tourName, hotelEmail, hotelName, fromEmail, ccEmail, bccEmail, subject, message }
+        body: { hotelId, tourId, tourName, hotelEmail, hotelName, fromEmail, ccEmail, bccEmail, subject, message, includeRoomTypeReport, includeRoomingList }
       });
 
       console.log('Edge function response:', { data, error });
