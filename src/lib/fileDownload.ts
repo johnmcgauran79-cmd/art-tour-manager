@@ -53,7 +53,22 @@ export async function downloadFromStorage(
   if (error || !data?.signedUrl) {
     throw error || new Error("Could not create signed URL");
   }
-  openExternal(data.signedUrl);
+  // In Teams' webview, blob/anchor downloads are blocked — hand off to the
+  // system browser via window.open. In normal browsers, opening the signed
+  // URL with window.open can cause a double download (new tab fetches the
+  // attachment, then some browsers re-issue the request on close), so use a
+  // hidden anchor click instead.
+  if (isTeamsWebview()) {
+    openExternal(data.signedUrl);
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = data.signedUrl;
+  if (fileName) a.download = fileName;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 /**
