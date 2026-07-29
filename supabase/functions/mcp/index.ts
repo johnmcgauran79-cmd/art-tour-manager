@@ -5100,12 +5100,172 @@ var wordpress_update_tour_fields_default = defineTool87({
   }
 });
 
+// src/lib/mcp/tools/wordpress-upload-media.ts
+import { defineTool as defineTool88 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z84 } from "npm:zod@^3.25.76";
+var ALLOWED_CONTENT_TYPES = /* @__PURE__ */ new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif"
+]);
+var MAX_BYTES = 20 * 1024 * 1024;
+function b64ToBytes(input) {
+  if (typeof atob === "function") {
+    const bin = atob(input);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  return new Uint8Array(
+    globalThis.Buffer.from(input, "base64")
+  );
+}
+function b64Auth(user, pass) {
+  if (typeof btoa === "function") return btoa(`${user}:${pass}`);
+  return globalThis.Buffer.from(`${user}:${pass}`, "utf8").toString("base64");
+}
+var wordpress_upload_media_default = defineTool88({
+  name: "wordpress_upload_media",
+  title: "Upload a file to the WordPress media library",
+  description: "Upload a PDF or image (JPEG/PNG/WEBP/GIF) into the connected WordPress site's media library and return the new attachment id + source_url. Max 20MB. Provide the file as base64 in `data_base64`. Typical use: uploading a brochure PDF, then passing the returned id into `wordpress_update_tour_fields` under `acf.attach_brochure_here` (and setting `acf.add_download_brochure` to enable the download button). Admin/manager only; every upload is written to wordpress_integration_audit_logs.",
+  inputSchema: {
+    filename: z84.string().min(1).max(255).describe("Filename including extension, e.g. '2027-darwin-cup-brochure.pdf'."),
+    content_type: z84.string().min(1).describe("MIME type. Allowed: application/pdf, image/jpeg, image/png, image/webp, image/gif."),
+    data_base64: z84.string().min(1).describe("Base64-encoded file contents (no data: prefix). Max 20MB after decoding."),
+    title: z84.string().max(255).optional().describe("Optional attachment title shown in WordPress. Defaults to the filename.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  handler: async ({ filename, content_type, data_base64, title }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!ALLOWED_CONTENT_TYPES.has(content_type)) {
+      return {
+        content: [{
+          type: "text",
+          text: `Unsupported content_type '${content_type}'. Allowed: ${[...ALLOWED_CONTENT_TYPES].join(", ")}`
+        }],
+        isError: true
+      };
+    }
+    let bytes;
+    try {
+      bytes = b64ToBytes(data_base64);
+    } catch {
+      return { content: [{ type: "text", text: "data_base64 is not valid base64." }], isError: true };
+    }
+    if (bytes.byteLength === 0) {
+      return { content: [{ type: "text", text: "Decoded file is empty." }], isError: true };
+    }
+    if (bytes.byteLength > MAX_BYTES) {
+      return { content: [{ type: "text", text: `File exceeds 20MB limit (${bytes.byteLength} bytes).` }], isError: true };
+    }
+    let cfg;
+    try {
+      cfg = loadWordpressConfig();
+    } catch (err) {
+      const c = categoriseError(err);
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+    if (!cfg.baseUrl.startsWith("https://")) {
+      return { content: [{ type: "text", text: "WORDPRESS_BASE_URL must be an https URL." }], isError: true };
+    }
+    const safeName = filename.replace(/[^\w.\-]+/g, "_");
+    const url = `${cfg.baseUrl.replace(/\/+$/, "")}/wp-json/wp/v2/media`;
+    const requestSummary2 = {
+      endpoint: "media",
+      method: "POST",
+      filename: safeName,
+      size: bytes.byteLength,
+      content_type
+    };
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${b64Auth(cfg.username, cfg.applicationPassword)}`,
+          "Content-Type": content_type,
+          "Content-Disposition": `attachment; filename="${safeName}"`,
+          Accept: "application/json",
+          "User-Agent": "ART-Admin-WordPress-Integration/1.0"
+        },
+        body: bytes
+      });
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { raw: text.slice(0, 500) };
+      }
+      if (!res.ok) {
+        const msg = data?.message ?? `WordPress returned ${res.status}`;
+        await auditWordpressCall(ctx, {
+          source: "mcp",
+          action: "upload_media",
+          wordpress_object_type: "media",
+          request_summary: requestSummary2,
+          result_status: "error",
+          response_code: res.status,
+          error_message: msg
+        });
+        return { content: [{ type: "text", text: msg }], isError: true };
+      }
+      const attachmentId = data.id ?? null;
+      if (title && attachmentId) {
+        try {
+          await fetch(`${url}/${attachmentId}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${b64Auth(cfg.username, cfg.applicationPassword)}`,
+              "Content-Type": "application/json",
+              Accept: "application/json"
+            },
+            body: JSON.stringify({ title })
+          });
+        } catch {
+        }
+      }
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "upload_media",
+        wordpress_object_type: "media",
+        wordpress_object_id: attachmentId,
+        request_summary: requestSummary2,
+        result_status: "success",
+        response_code: res.status
+      });
+      const out = {
+        id: attachmentId,
+        source_url: data.source_url ?? null,
+        mime_type: data.mime_type ?? null,
+        title: data.title?.rendered ?? title ?? safeName,
+        size: bytes.byteLength
+      };
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = err instanceof WordpressClientError ? { message: err.message, status: err.status } : categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "upload_media",
+        wordpress_object_type: "media",
+        request_summary: requestSummary2,
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.0.2",
+  version: "2.0.3",
   instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`. These WordPress tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
@@ -5128,6 +5288,7 @@ var mcp_default = defineMcp({
     wordpress_search_media_default,
     wordpress_get_taxonomies_default,
     wordpress_update_tour_fields_default,
+    wordpress_upload_media_default,
     list_tours_default,
     get_next_departing_tour_default,
     get_tour_default,
