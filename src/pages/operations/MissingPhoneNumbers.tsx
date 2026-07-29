@@ -3,17 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, PhoneOff, CheckCircle } from "lucide-react";
+import { ArrowLeft, PhoneOff, CheckCircle, RefreshCw, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { isPlaceholderBooking } from "@/lib/placeholderBookings";
+import { toast } from "sonner";
 
 export default function MissingPhoneNumbers() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["missing-phone-numbers"],
@@ -22,7 +24,7 @@ export default function MissingPhoneNumbers() {
       const { data, error } = await supabase
         .from("bookings")
         .select(
-          "id, group_name, status, tour_id, tours!inner(name, start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name, phone)"
+          "id, group_name, status, tour_id, lead_passenger_id, tours!inner(name, start_date), customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, phone, phone_missing_acknowledged_at)"
         )
         .neq("status", "cancelled")
         .gte("tours.start_date", today)
@@ -35,9 +37,42 @@ export default function MissingPhoneNumbers() {
         const hasPhone = c?.phone && c.phone.trim() !== "";
         if (hasPhone) return false;
         if (isPlaceholderBooking(b.status, c?.first_name, c?.last_name)) return false;
+        if (c?.phone_missing_acknowledged_at) return false;
         return true;
       });
     },
+  });
+
+  const acknowledge = useMutation({
+    mutationFn: async (customerId: string) => {
+      const { error } = await supabase
+        .from("customers")
+        .update({ phone_missing_acknowledged_at: new Date().toISOString() })
+        .eq("id", customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["missing-phone-numbers"] });
+      queryClient.invalidateQueries({ queryKey: ["missing-phone-count"] });
+      toast.success("Acknowledged — hidden from report");
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to acknowledge"),
+  });
+
+  const refreshAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("customers")
+        .update({ phone_missing_acknowledged_at: null })
+        .not("phone_missing_acknowledged_at", "is", null);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["missing-phone-numbers"] });
+      queryClient.invalidateQueries({ queryKey: ["missing-phone-count"] });
+      toast.success("Report refreshed — previously acknowledged entries are back");
+    },
+    onError: (e: any) => toast.error(e?.message || "Failed to refresh"),
   });
 
   const groups = useMemo(() => {
@@ -83,11 +118,26 @@ export default function MissingPhoneNumbers() {
             Future bookings whose lead passenger has no contact phone number on file
           </p>
         </div>
-        {rows.length > 0 && (
-          <Badge variant="destructive" className="ml-auto text-lg px-3 py-1">
-            {rows.length} booking{rows.length !== 1 ? "s" : ""}
-          </Badge>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {rows.length > 0 && (
+            <Badge variant="destructive" className="text-lg px-3 py-1">
+              {rows.length} booking{rows.length !== 1 ? "s" : ""}
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("Refresh the report? This clears all acknowledgments so any lead passenger still missing a phone number will re-appear.")) {
+                refreshAll.mutate();
+              }
+            }}
+            disabled={refreshAll.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshAll.isPending ? "animate-spin" : ""}`} />
+            Refresh Report
+          </Button>
+        </div>
       </div>
 
       <Card className="border-brand-navy/20">
@@ -123,6 +173,7 @@ export default function MissingPhoneNumbers() {
                           <TableHead>Lead Passenger</TableHead>
                           <TableHead>Group</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead className="w-[140px] text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -132,13 +183,35 @@ export default function MissingPhoneNumbers() {
                           return (
                             <TableRow
                               key={b.id}
-                              className="cursor-pointer hover:bg-muted/50"
-                              onClick={() => navigate(`/bookings/${b.id}`)}
+                              className="hover:bg-muted/50"
                             >
-                              <TableCell className="font-medium">{name || "Unknown"}</TableCell>
-                              <TableCell>{b.group_name || "—"}</TableCell>
-                              <TableCell>
+                              <TableCell
+                                className="font-medium cursor-pointer"
+                                onClick={() => navigate(`/bookings/${b.id}`)}
+                              >
+                                {name || "Unknown"}
+                              </TableCell>
+                              <TableCell className="cursor-pointer" onClick={() => navigate(`/bookings/${b.id}`)}>
+                                {b.group_name || "—"}
+                              </TableCell>
+                              <TableCell className="cursor-pointer" onClick={() => navigate(`/bookings/${b.id}`)}>
                                 <Badge className={getBookingStatusColor(b.status)}>{formatStatusText(b.status)}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {c?.id && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      acknowledge.mutate(c.id);
+                                    }}
+                                    disabled={acknowledge.isPending}
+                                  >
+                                    <Check className="h-3.5 w-3.5 mr-1" />
+                                    Acknowledge
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           );
