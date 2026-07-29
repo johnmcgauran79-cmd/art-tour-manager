@@ -23,7 +23,7 @@ import { WordpressBulkDiffSection } from "@/components/wordpress/WordpressBulkDi
 // Flat "headline" ACF fields we want to surface prominently for review /
 // future editing. Keys match the ACF field "Name" column in the field group
 // (Australian_Racing_Tours_-_ACF_Fields_Names_and_Keys.pdf).
-const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "html" }> = [
+const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "html" | "file" }> = [
   { key: "price", label: "Price (display)", kind: "text" },
   { key: "status", label: "Status", kind: "text" },
   { key: "radio_book_now", label: "Display Book Now button?", kind: "text" },
@@ -37,6 +37,7 @@ const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "h
   { key: "double_room_per_person_price", label: "Double room (per person)", kind: "text" },
   { key: "payment_details", label: "Payment details", kind: "html" },
   { key: "add_download_brochure", label: "Show 'Download brochure'?", kind: "text" },
+  { key: "attach_brochure_here", label: "Brochure file", kind: "file" },
 ];
 
 // Repeaters we surface item counts for and pass through unchanged on save.
@@ -83,6 +84,32 @@ function summariseAcf(acf: unknown): AcfSummary[] {
 function stripHtml(s: unknown): string {
   if (typeof s !== "string") return "";
   return s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+// ACF File field can arrive as an ID (number/string) or as an object with
+// { id, url, filename, ... }. Normalise both shapes to the numeric attachment
+// ID as a string, which is what we store in formValues and post back.
+function fileFieldId(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string") return /^\d+$/.test(v) ? v : "";
+  if (typeof v === "object" && v && "id" in (v as Record<string, unknown>)) {
+    const id = (v as Record<string, unknown>).id;
+    if (typeof id === "number") return String(id);
+    if (typeof id === "string" && /^\d+$/.test(id)) return id;
+  }
+  return "";
+}
+function fileFieldMeta(v: unknown): { id: string; url: string | null; filename: string | null } {
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    const o = v as Record<string, unknown>;
+    return {
+      id: fileFieldId(o),
+      url: (typeof o.url === "string" ? o.url : null) ?? (typeof o.source_url === "string" ? o.source_url : null),
+      filename: (typeof o.filename === "string" ? o.filename : null) ?? (typeof o.title === "string" ? o.title : null),
+    };
+  }
+  return { id: fileFieldId(v), url: null, filename: null };
 }
 
 function extractYear(...vals: Array<string | null | undefined>): string | null {
