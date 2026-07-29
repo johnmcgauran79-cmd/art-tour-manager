@@ -261,7 +261,9 @@ export default function WordpressContent() {
       const initial: Record<string, string> = {};
       for (const f of HEADLINE_ACF_FIELDS) {
         const v = acf?.[f.key];
-        initial[f.key] = v === null || v === undefined ? "" : String(v);
+        initial[f.key] = f.kind === "file"
+          ? fileFieldId(v)
+          : v === null || v === undefined ? "" : String(v);
       }
       setFormValues(initial);
     } catch (err) {
@@ -289,7 +291,9 @@ export default function WordpressContent() {
       const refreshed: Record<string, string> = {};
       for (const f of HEADLINE_ACF_FIELDS) {
         const v = res.acf?.[f.key];
-        refreshed[f.key] = v === null || v === undefined ? "" : String(v);
+        refreshed[f.key] = f.kind === "file"
+          ? fileFieldId(v)
+          : v === null || v === undefined ? "" : String(v);
       }
       setFormValues(refreshed);
       setConfirmOpen(false);
@@ -478,7 +482,9 @@ export default function WordpressContent() {
                               const initial: Record<string, string> = {};
                               for (const f of HEADLINE_ACF_FIELDS) {
                                 const v = (acfRaw as Record<string, unknown>)?.[f.key];
-                                initial[f.key] = v === null || v === undefined ? "" : String(v);
+                                initial[f.key] = f.kind === "file"
+                                  ? fileFieldId(v)
+                                  : v === null || v === undefined ? "" : String(v);
                               }
                               setFormValues(initial);
                               setEditing(false);
