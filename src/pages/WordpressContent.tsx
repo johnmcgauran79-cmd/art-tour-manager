@@ -534,15 +534,60 @@ export default function WordpressContent() {
                         {HEADLINE_ACF_FIELDS.map((f) => {
                           const currentValue = formValues[f.key] ?? "";
                           const original = (acfRaw as Record<string, unknown>)?.[f.key];
-                          const originalStr = original === null || original === undefined ? "" : String(original);
+                          const originalStr = f.kind === "file"
+                            ? fileFieldId(original)
+                            : original === null || original === undefined ? "" : String(original);
                           const dirty = editing && currentValue !== originalStr;
+                          const fileMeta = f.kind === "file" ? fileFieldMeta(original) : null;
+                          const currentFileChanged = f.kind === "file" && currentValue !== originalStr;
                           return (
                             <div key={f.key} className={`space-y-1 border-b pb-2 ${dirty ? "bg-amber-50/60 -mx-1 px-1 rounded" : ""}`}>
                               <Label className="text-[11px] text-muted-foreground flex justify-between">
                                 <span>{f.label}</span>
                                 <code className="opacity-60">{f.key}</code>
                               </Label>
-                              {editing ? (
+                              {f.kind === "file" ? (
+                                <div className="space-y-1">
+                                  <div className="text-xs">
+                                    {fileMeta?.url ? (
+                                      <a href={fileMeta.url} target="_blank" rel="noreferrer" className="text-primary underline break-all">
+                                        {fileMeta.filename ?? fileMeta.url}
+                                      </a>
+                                    ) : originalStr ? (
+                                      <span className="font-medium">Attachment ID {originalStr}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">— no brochure attached</span>
+                                    )}
+                                    {currentFileChanged && (
+                                      <span className="ml-2 text-amber-700">→ new ID {currentValue || "(cleared)"} (unsaved)</span>
+                                    )}
+                                  </div>
+                                  {editing && (
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                      <Input
+                                        type="file"
+                                        accept="application/pdf,image/*"
+                                        className="h-7 text-xs w-auto"
+                                        disabled={uploadingBrochure}
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) void uploadBrochure(file);
+                                          e.currentTarget.value = "";
+                                        }}
+                                      />
+                                      {uploadingBrochure && <span className="text-[11px] text-muted-foreground">Uploading…</span>}
+                                      {currentValue && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-6 text-xs"
+                                          onClick={() => setFormValues((v) => ({ ...v, [f.key]: "" }))}
+                                        >Clear</Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : editing ? (
                                 f.kind === "html" ? (
                                   <Textarea
                                     className="text-xs min-h-[80px]"
