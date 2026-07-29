@@ -188,6 +188,7 @@ export default function WordpressContent() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingBrochure, setUploadingBrochure] = useState(false);
 
   const acfRaw = selectedTour && typeof (selectedTour as { acf?: unknown }).acf === "object"
     ? ((selectedTour as { acf?: Record<string, unknown> }).acf ?? null)
@@ -199,7 +200,9 @@ export default function WordpressContent() {
     : null;
   const changedFields = HEADLINE_ACF_FIELDS.filter((f) => {
     const original = (acfRaw as Record<string, unknown>)?.[f.key];
-    const originalStr = original === null || original === undefined ? "" : String(original);
+    const originalStr = f.kind === "file"
+      ? fileFieldId(original)
+      : original === null || original === undefined ? "" : String(original);
     return (formValues[f.key] ?? "") !== originalStr;
   });
 
