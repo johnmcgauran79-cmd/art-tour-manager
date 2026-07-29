@@ -29,7 +29,8 @@ type Op =
   | { op: "bulk_suggest_matches"; include_archived?: boolean }
   | { op: "bulk_link_tours"; pairs: Array<{ art_tour_id: string; wp_tour_id: number }> }
   | { op: "bulk_tour_diffs"; include_archived?: boolean }
-  | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> };
+  | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> }
+  | { op: "upload_media"; filename: string; content_type: string; data_base64: string; title?: string };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY =
@@ -485,7 +486,7 @@ Deno.serve(async (req) => {
             if (/^hotel_\d/i.test(k)) group = "hotel";
             else if (/itinerary/i.test(k)) group = "itinerary";
             else if (Array.isArray(v)) group = "repeater";
-            else if (["price","status","radio_book_now","start_date","end_date","time_frame","location","capacity","single_room_price","twin_room_per_person_price","double_room_per_person_price","payment_details","add_download_brochure"].includes(k)) group = "headline";
+            else if (["price","status","radio_book_now","start_date","end_date","time_frame","location","capacity","single_room_price","twin_room_per_person_price","double_room_per_person_price","payment_details","add_download_brochure","attach_brochure_here"].includes(k)) group = "headline";
             const isArr = Array.isArray(v);
             const sample = isArr
               ? `[array, ${(v as unknown[]).length} rows]`
