@@ -56,7 +56,7 @@ export const BookingsReviewsChecks = () => {
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('bookings')
-        .select('status, tours!inner(start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name, phone)')
+        .select('status, tours!inner(start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name, phone, phone_missing_acknowledged_at)')
         .neq('status', 'cancelled')
         .gte('tours.start_date', today);
       if (error) throw error;
@@ -64,6 +64,7 @@ export const BookingsReviewsChecks = () => {
         const c = b.customers;
         const hasPhone = c?.phone && c.phone.trim() !== '';
         if (hasPhone) return false;
+        if (c?.phone_missing_acknowledged_at) return false;
         return !isPlaceholderBooking(b.status, c?.first_name, c?.last_name);
       }).length;
     },

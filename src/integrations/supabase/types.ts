@@ -1515,6 +1515,7 @@ export type Database = {
           medical_conditions: string | null
           notes: string | null
           phone: string | null
+          phone_missing_acknowledged_at: string | null
           preferred_name: string | null
           spouse_name: string | null
           state: string | null
@@ -1544,6 +1545,7 @@ export type Database = {
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
+          phone_missing_acknowledged_at?: string | null
           preferred_name?: string | null
           spouse_name?: string | null
           state?: string | null
@@ -1573,6 +1575,7 @@ export type Database = {
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
+          phone_missing_acknowledged_at?: string | null
           preferred_name?: string | null
           spouse_name?: string | null
           state?: string | null
