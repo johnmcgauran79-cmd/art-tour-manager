@@ -23,7 +23,7 @@ import { WordpressBulkDiffSection } from "@/components/wordpress/WordpressBulkDi
 // Flat "headline" ACF fields we want to surface prominently for review /
 // future editing. Keys match the ACF field "Name" column in the field group
 // (Australian_Racing_Tours_-_ACF_Fields_Names_and_Keys.pdf).
-const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "html" }> = [
+const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "html" | "file" }> = [
   { key: "price", label: "Price (display)", kind: "text" },
   { key: "status", label: "Status", kind: "text" },
   { key: "radio_book_now", label: "Display Book Now button?", kind: "text" },
@@ -37,6 +37,7 @@ const HEADLINE_ACF_FIELDS: Array<{ key: string; label: string; kind: "text" | "h
   { key: "double_room_per_person_price", label: "Double room (per person)", kind: "text" },
   { key: "payment_details", label: "Payment details", kind: "html" },
   { key: "add_download_brochure", label: "Show 'Download brochure'?", kind: "text" },
+  { key: "attach_brochure_here", label: "Brochure file", kind: "file" },
 ];
 
 // Repeaters we surface item counts for and pass through unchanged on save.
@@ -83,6 +84,32 @@ function summariseAcf(acf: unknown): AcfSummary[] {
 function stripHtml(s: unknown): string {
   if (typeof s !== "string") return "";
   return s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+// ACF File field can arrive as an ID (number/string) or as an object with
+// { id, url, filename, ... }. Normalise both shapes to the numeric attachment
+// ID as a string, which is what we store in formValues and post back.
+function fileFieldId(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string") return /^\d+$/.test(v) ? v : "";
+  if (typeof v === "object" && v && "id" in (v as Record<string, unknown>)) {
+    const id = (v as Record<string, unknown>).id;
+    if (typeof id === "number") return String(id);
+    if (typeof id === "string" && /^\d+$/.test(id)) return id;
+  }
+  return "";
+}
+function fileFieldMeta(v: unknown): { id: string; url: string | null; filename: string | null } {
+  if (v && typeof v === "object" && !Array.isArray(v)) {
+    const o = v as Record<string, unknown>;
+    return {
+      id: fileFieldId(o),
+      url: (typeof o.url === "string" ? o.url : null) ?? (typeof o.source_url === "string" ? o.source_url : null),
+      filename: (typeof o.filename === "string" ? o.filename : null) ?? (typeof o.title === "string" ? o.title : null),
+    };
+  }
+  return { id: fileFieldId(v), url: null, filename: null };
 }
 
 function extractYear(...vals: Array<string | null | undefined>): string | null {
@@ -161,6 +188,7 @@ export default function WordpressContent() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingBrochure, setUploadingBrochure] = useState(false);
 
   const acfRaw = selectedTour && typeof (selectedTour as { acf?: unknown }).acf === "object"
     ? ((selectedTour as { acf?: Record<string, unknown> }).acf ?? null)
@@ -172,7 +200,9 @@ export default function WordpressContent() {
     : null;
   const changedFields = HEADLINE_ACF_FIELDS.filter((f) => {
     const original = (acfRaw as Record<string, unknown>)?.[f.key];
-    const originalStr = original === null || original === undefined ? "" : String(original);
+    const originalStr = f.kind === "file"
+      ? fileFieldId(original)
+      : original === null || original === undefined ? "" : String(original);
     return (formValues[f.key] ?? "") !== originalStr;
   });
 
@@ -231,7 +261,9 @@ export default function WordpressContent() {
       const initial: Record<string, string> = {};
       for (const f of HEADLINE_ACF_FIELDS) {
         const v = acf?.[f.key];
-        initial[f.key] = v === null || v === undefined ? "" : String(v);
+        initial[f.key] = f.kind === "file"
+          ? fileFieldId(v)
+          : v === null || v === undefined ? "" : String(v);
       }
       setFormValues(initial);
     } catch (err) {
@@ -259,7 +291,9 @@ export default function WordpressContent() {
       const refreshed: Record<string, string> = {};
       for (const f of HEADLINE_ACF_FIELDS) {
         const v = res.acf?.[f.key];
-        refreshed[f.key] = v === null || v === undefined ? "" : String(v);
+        refreshed[f.key] = f.kind === "file"
+          ? fileFieldId(v)
+          : v === null || v === undefined ? "" : String(v);
       }
       setFormValues(refreshed);
       setConfirmOpen(false);
@@ -279,6 +313,41 @@ export default function WordpressContent() {
       .order("created_at", { ascending: false })
       .limit(30);
     setAuditRows((data ?? []) as AuditRow[]);
+  }
+
+  async function uploadBrochure(file: File) {
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Brochure must be 20MB or less");
+      return;
+    }
+    setUploadingBrochure(true);
+    try {
+      // Read file → base64
+      const buf = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)) as unknown as number[]);
+      }
+      const b64 = btoa(binary);
+      const res = await callProxy<{ id: number; source_url: string | null; title: string | null }>({
+        op: "upload_media",
+        filename: file.name,
+        content_type: file.type || "application/pdf",
+        data_base64: b64,
+        title: file.name.replace(/\.[a-z0-9]+$/i, ""),
+      });
+      if (!res.id) throw new Error("WordPress did not return a media ID");
+      setFormValues((v) => ({ ...v, attach_brochure_here: String(res.id) }));
+      setEditing(true);
+      toast.success(`Uploaded "${file.name}" — click Save to attach it`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploadingBrochure(false);
+    }
   }
 
   const statusIcon = (ok: boolean) =>
@@ -448,7 +517,9 @@ export default function WordpressContent() {
                               const initial: Record<string, string> = {};
                               for (const f of HEADLINE_ACF_FIELDS) {
                                 const v = (acfRaw as Record<string, unknown>)?.[f.key];
-                                initial[f.key] = v === null || v === undefined ? "" : String(v);
+                                initial[f.key] = f.kind === "file"
+                                  ? fileFieldId(v)
+                                  : v === null || v === undefined ? "" : String(v);
                               }
                               setFormValues(initial);
                               setEditing(false);
@@ -463,15 +534,60 @@ export default function WordpressContent() {
                         {HEADLINE_ACF_FIELDS.map((f) => {
                           const currentValue = formValues[f.key] ?? "";
                           const original = (acfRaw as Record<string, unknown>)?.[f.key];
-                          const originalStr = original === null || original === undefined ? "" : String(original);
+                          const originalStr = f.kind === "file"
+                            ? fileFieldId(original)
+                            : original === null || original === undefined ? "" : String(original);
                           const dirty = editing && currentValue !== originalStr;
+                          const fileMeta = f.kind === "file" ? fileFieldMeta(original) : null;
+                          const currentFileChanged = f.kind === "file" && currentValue !== originalStr;
                           return (
                             <div key={f.key} className={`space-y-1 border-b pb-2 ${dirty ? "bg-amber-50/60 -mx-1 px-1 rounded" : ""}`}>
                               <Label className="text-[11px] text-muted-foreground flex justify-between">
                                 <span>{f.label}</span>
                                 <code className="opacity-60">{f.key}</code>
                               </Label>
-                              {editing ? (
+                              {f.kind === "file" ? (
+                                <div className="space-y-1">
+                                  <div className="text-xs">
+                                    {fileMeta?.url ? (
+                                      <a href={fileMeta.url} target="_blank" rel="noreferrer" className="text-primary underline break-all">
+                                        {fileMeta.filename ?? fileMeta.url}
+                                      </a>
+                                    ) : originalStr ? (
+                                      <span className="font-medium">Attachment ID {originalStr}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">— no brochure attached</span>
+                                    )}
+                                    {currentFileChanged && (
+                                      <span className="ml-2 text-amber-700">→ new ID {currentValue || "(cleared)"} (unsaved)</span>
+                                    )}
+                                  </div>
+                                  {editing && (
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                      <Input
+                                        type="file"
+                                        accept="application/pdf,image/*"
+                                        className="h-7 text-xs w-auto"
+                                        disabled={uploadingBrochure}
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) void uploadBrochure(file);
+                                          e.currentTarget.value = "";
+                                        }}
+                                      />
+                                      {uploadingBrochure && <span className="text-[11px] text-muted-foreground">Uploading…</span>}
+                                      {currentValue && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-6 text-xs"
+                                          onClick={() => setFormValues((v) => ({ ...v, [f.key]: "" }))}
+                                        >Clear</Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : editing ? (
                                 f.kind === "html" ? (
                                   <Textarea
                                     className="text-xs min-h-[80px]"

@@ -18,6 +18,7 @@ export const EDITABLE_ACF_SCALAR_FIELDS = [
   "double_room_per_person_price",
   "payment_details",
   "add_download_brochure",
+  "attach_brochure_here",
 ] as const;
 
 // Repeaters we accept a full replacement array for. Sub-field shape is
@@ -38,7 +39,21 @@ export function sanitiseAcfUpdate(input: unknown): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const src = input as Record<string, unknown>;
   for (const key of EDITABLE_ACF_SCALAR_FIELDS) {
-    if (key in src) out[key] = src[key];
+    if (key in src) {
+      let v = src[key];
+      // ACF File field: coerce to an attachment ID (integer) or null for clear.
+      if (key === "attach_brochure_here") {
+        if (v === "" || v === null || v === undefined) {
+          v = null;
+        } else if (typeof v === "string" && /^\d+$/.test(v)) {
+          v = Number(v);
+        } else if (typeof v === "object" && v && "id" in (v as Record<string, unknown>)) {
+          const idVal = (v as Record<string, unknown>).id;
+          v = typeof idVal === "number" ? idVal : Number(idVal);
+        }
+      }
+      out[key] = v;
+    }
   }
   for (const key of EDITABLE_ACF_REPEATER_FIELDS) {
     if (key in src) {

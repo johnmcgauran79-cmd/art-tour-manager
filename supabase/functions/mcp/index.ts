@@ -4973,7 +4973,8 @@ var EDITABLE_ACF_SCALAR_FIELDS = [
   "twin_room_per_person_price",
   "double_room_per_person_price",
   "payment_details",
-  "add_download_brochure"
+  "add_download_brochure",
+  "attach_brochure_here"
 ];
 var EDITABLE_ACF_REPEATER_FIELDS = [
   "inclusions",
@@ -4986,7 +4987,20 @@ function sanitiseAcfUpdate(input) {
   const out = {};
   const src = input;
   for (const key of EDITABLE_ACF_SCALAR_FIELDS) {
-    if (key in src) out[key] = src[key];
+    if (key in src) {
+      let v = src[key];
+      if (key === "attach_brochure_here") {
+        if (v === "" || v === null || v === void 0) {
+          v = null;
+        } else if (typeof v === "string" && /^\d+$/.test(v)) {
+          v = Number(v);
+        } else if (typeof v === "object" && v && "id" in v) {
+          const idVal = v.id;
+          v = typeof idVal === "number" ? idVal : Number(idVal);
+        }
+      }
+      out[key] = v;
+    }
   }
   for (const key of EDITABLE_ACF_REPEATER_FIELDS) {
     if (key in src) {
@@ -5002,7 +5016,7 @@ var repeaterItemSchema = z83.record(z83.string(), z83.unknown());
 var wordpress_update_tour_fields_default = defineTool87({
   name: "wordpress_update_tour_fields",
   title: "Update WordPress tour ACF fields",
-  description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, location, capacity, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 and the itinerary repeater are NOT writable here yet \u2014 use wordpress_get_tour to inspect them.",
+  description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, attach_brochure_here (WordPress media attachment ID for the brochure PDF, or null to clear), location, capacity, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 and the itinerary repeater are NOT writable here yet \u2014 use wordpress_get_tour to inspect them.",
   inputSchema: {
     tour_id: z83.number().int().min(1),
     acf: z83.object({
@@ -5019,6 +5033,7 @@ var wordpress_update_tour_fields_default = defineTool87({
       double_room_per_person_price: z83.string().optional(),
       payment_details: z83.string().optional(),
       add_download_brochure: z83.string().optional(),
+      attach_brochure_here: z83.union([z83.number().int().min(1), z83.null()]).optional(),
       inclusions: z83.array(repeaterItemSchema).optional(),
       exclusions_details: z83.array(repeaterItemSchema).optional(),
       faqs_list: z83.array(repeaterItemSchema).optional(),
