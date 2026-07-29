@@ -315,6 +315,41 @@ export default function WordpressContent() {
     setAuditRows((data ?? []) as AuditRow[]);
   }
 
+  async function uploadBrochure(file: File) {
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Brochure must be 20MB or less");
+      return;
+    }
+    setUploadingBrochure(true);
+    try {
+      // Read file → base64
+      const buf = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)) as unknown as number[]);
+      }
+      const b64 = btoa(binary);
+      const res = await callProxy<{ id: number; source_url: string | null; title: string | null }>({
+        op: "upload_media",
+        filename: file.name,
+        content_type: file.type || "application/pdf",
+        data_base64: b64,
+        title: file.name.replace(/\.[a-z0-9]+$/i, ""),
+      });
+      if (!res.id) throw new Error("WordPress did not return a media ID");
+      setFormValues((v) => ({ ...v, attach_brochure_here: String(res.id) }));
+      setEditing(true);
+      toast.success(`Uploaded "${file.name}" — click Save to attach it`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploadingBrochure(false);
+    }
+  }
+
   const statusIcon = (ok: boolean) =>
     ok ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <XCircle className="h-4 w-4 text-red-600" />;
 
