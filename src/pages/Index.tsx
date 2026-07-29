@@ -20,6 +20,7 @@ import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActi
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { PendingPaymentReceipts } from "@/components/operations/PendingPaymentReceipts";
+import { BookingsReviewsChecks } from "@/components/bookings/BookingsReviewsChecks";
 // import { PaymentlessPaidAmounts } from "@/components/operations/PaymentlessPaidAmounts";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -164,6 +165,7 @@ const Index = () => {
       </TabsContent>
       
       <TabsContent value="bookings" className="space-y-4 mt-0">
+        {!isAgent && <BookingsReviewsChecks />}
         {!isAgent && <UnifiedEmailApprovals />}
         {!isAgent && <PendingPaymentReceipts />}
         {/* PaymentlessPaidAmounts hidden — batch-deposit fix in place; keep code for potential future re-enable */}
