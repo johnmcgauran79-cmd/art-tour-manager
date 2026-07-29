@@ -107,7 +107,7 @@ export default defineTool({
           Accept: "application/json",
           "User-Agent": "ART-Admin-WordPress-Integration/1.0",
         },
-        body: bytes,
+        body: bytes as BodyInit,
       });
       const text = await res.text();
       let data: Record<string, unknown> = {};
