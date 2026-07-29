@@ -2,33 +2,15 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail, Tag, AlertTriangle, PhoneOff } from "lucide-react";
+import { ClipboardCheck, Hotel, FileText, DollarSign, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { isPlaceholderBooking } from "@/lib/placeholderBookings";
 import { SentEmailsReportModal } from "./SentEmailsReportModal";
-import { NameTagGeneratorModal } from "./NameTagGeneratorModal";
-import { BouncedEmailsReportModal } from "./BouncedEmailsReportModal";
 
 export const OperationsQuickActions = () => {
   const navigate = useNavigate();
   const [sentEmailsOpen, setSentEmailsOpen] = useState(false);
-  const [nameTagOpen, setNameTagOpen] = useState(false);
-  const [bouncedEmailsOpen, setBouncedEmailsOpen] = useState(false);
-
-  // Bounced Emails count (active suppressions)
-  const { data: bouncedEmailsCount = 0 } = useQuery({
-    queryKey: ['bounced-emails-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('email_suppressions')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
-      if (error) throw error;
-      return count ?? 0;
-    },
-  });
 
   // Hotel Allocation Check count
   const { data: hotelIssuesCount = 0 } = useQuery({
@@ -53,36 +35,6 @@ export const OperationsQuickActions = () => {
       const issues = bookings.filter(booking => !bookingsWithHotels.has(booking.id));
 
       return issues.length;
-    },
-  });
-
-  // Non-standard Activity Bookings count (respects acknowledgments)
-  const { data: activityMatrixIssuesCount = 0 } = useQuery({
-    queryKey: ['activity-matrix-issues-count'],
-    queryFn: async () => {
-      // Use the RPC to get discrepancies consistently with the report
-      const [discResult, ackResult] = await Promise.all([
-        supabase.rpc('get_activity_allocation_discrepancies'),
-        supabase.from('activity_discrepancy_acknowledgments').select('booking_id, activity_id, snapshot_passenger_count, snapshot_allocated_count')
-      ]);
-
-      if (discResult.error) throw discResult.error;
-      const allDiscrepancies = discResult.data || [];
-      const acknowledgments = ackResult.data || [];
-
-      // Filter out acknowledged items where snapshot still matches
-      const unacknowledged = allDiscrepancies.filter((disc: any) => {
-        const ack = acknowledgments.find(
-          (a: any) => a.booking_id === disc.booking_id && a.activity_id === disc.activity_id
-        );
-        if (!ack) return true;
-        return ack.snapshot_passenger_count !== disc.passenger_count ||
-               ack.snapshot_allocated_count !== disc.allocated_count;
-      });
-
-      // Count unique bookings with unacknowledged discrepancies
-      const bookingsWithIssues = new Set(unacknowledged.map((d: any) => d.booking_id));
-      return bookingsWithIssues.size;
     },
   });
 
@@ -123,34 +75,7 @@ export const OperationsQuickActions = () => {
     },
   });
 
-  // Missing Phone Numbers count (future bookings, lead passenger without phone)
-  const { data: missingPhoneCount = 0 } = useQuery({
-    queryKey: ['missing-phone-count'],
-    queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('status, tours!inner(start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name, phone)')
-        .neq('status', 'cancelled')
-        .gte('tours.start_date', today);
-      if (error) throw error;
-      return (data || []).filter((b: any) => {
-        const c = b.customers;
-        const hasPhone = c?.phone && c.phone.trim() !== '';
-        if (hasPhone) return false;
-        return !isPlaceholderBooking(b.status, c?.first_name, c?.last_name);
-      }).length;
-    },
-  });
-
   const checkActions = [
-    {
-      icon: Grid3X3,
-      label: "Non-standard Activity Bookings",
-      description: "Review all activity allocations",
-      count: activityMatrixIssuesCount,
-      onClick: () => navigate("/operations/activity-bookings"),
-    },
     {
       icon: Hotel,
       label: "Hotel Allocation Check",
@@ -173,32 +98,11 @@ export const OperationsQuickActions = () => {
       onClick: () => navigate("/operations/payment-status"),
     },
     {
-      icon: PhoneOff,
-      label: "Missing Phone Numbers",
-      description: "Future bookings whose lead passenger has no phone number",
-      count: missingPhoneCount,
-      onClick: () => navigate("/operations/missing-phone-numbers"),
-    },
-    {
       icon: Mail,
       label: "Sent Emails Report",
       description: "All individual & bulk emails sent — opens, bounces, errors",
       count: 0,
       onClick: () => setSentEmailsOpen(true),
-    },
-    {
-      icon: Tag,
-      label: "Name Tag Generator",
-      description: "Generate first-name lists by tour for printing name tags",
-      count: 0,
-      onClick: () => setNameTagOpen(true),
-    },
-    {
-      icon: AlertTriangle,
-      label: "Bounced Emails",
-      description: "Email addresses that bounced and are suppressed from sending",
-      count: bouncedEmailsCount,
-      onClick: () => setBouncedEmailsOpen(true),
     },
   ];
 
@@ -247,16 +151,6 @@ export const OperationsQuickActions = () => {
       <SentEmailsReportModal
         open={sentEmailsOpen}
         onOpenChange={setSentEmailsOpen}
-      />
-
-      <NameTagGeneratorModal
-        open={nameTagOpen}
-        onOpenChange={setNameTagOpen}
-      />
-
-      <BouncedEmailsReportModal
-        open={bouncedEmailsOpen}
-        onOpenChange={setBouncedEmailsOpen}
       />
     </div>
   );
