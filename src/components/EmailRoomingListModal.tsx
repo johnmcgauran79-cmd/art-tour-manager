@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -23,6 +24,8 @@ interface EmailRoomingListModalProps {
     bcc: string;
     subject: string;
     message: string;
+    includeRoomTypeReport: boolean;
+    includeRoomingList: boolean;
   }) => void;
   isSending: boolean;
 }
@@ -56,6 +59,8 @@ export const EmailRoomingListModal = ({
   const [message, setMessage] = useState(
     `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`
   );
+  const [includeRoomTypeReport, setIncludeRoomTypeReport] = useState(true);
+  const [includeRoomingList, setIncludeRoomingList] = useState(true);
 
   // When the modal opens, pre-select the configured operational default
   // (e.g. admin@). Falls back to the current user's email if no default is set.
@@ -65,7 +70,7 @@ export const EmailRoomingListModal = ({
   }, [open, operationalDefault, userEmail]);
 
   const handleSend = () => {
-    onSend({ from, to, cc, bcc, subject, message });
+    onSend({ from, to, cc, bcc, subject, message, includeRoomTypeReport, includeRoomingList });
   };
 
   return (
@@ -150,6 +155,26 @@ export const EmailRoomingListModal = ({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label>Include in email</Label>
+            <div className="flex flex-col gap-2 rounded-md border p-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={includeRoomTypeReport}
+                  onCheckedChange={(v) => setIncludeRoomTypeReport(v === true)}
+                />
+                Room Type / Date Report
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={includeRoomingList}
+                  onCheckedChange={(v) => setIncludeRoomingList(v === true)}
+                />
+                Rooming List (bookings)
+              </label>
+            </div>
+          </div>
+
           <div className="text-sm text-muted-foreground">
             <p className="italic">Note: The rooming list will be included in the email body. Recipients can print to PDF using their browser's print function.</p>
           </div>
@@ -166,7 +191,7 @@ export const EmailRoomingListModal = ({
           </Button>
           <Button
             onClick={handleSend}
-            disabled={isSending || !to}
+            disabled={isSending || !to || (!includeRoomTypeReport && !includeRoomingList)}
           >
             <Mail className="h-4 w-4 mr-2" />
             {isSending ? 'Sending...' : 'Send Email'}
