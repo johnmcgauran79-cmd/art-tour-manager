@@ -86,7 +86,9 @@ const handler = async (req: Request): Promise<Response> => {
           group_name,
           status,
           created_at,
-          customers!lead_passenger_id (first_name, last_name)
+          customers!lead_passenger_id (first_name, last_name),
+          passenger_2:customers!passenger_2_id (first_name, last_name),
+          passenger_3:customers!passenger_3_id (first_name, last_name)
         )
       `)
       .eq('hotel_id', hotelId)
@@ -140,8 +142,12 @@ const handler = async (req: Request): Promise<Response> => {
       return {
         roomNumber: index + 1,
         leadPassenger: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
-        passenger2: booking.passenger_2_name,
-        passenger3: booking.passenger_3_name,
+        passenger2: booking.passenger_2
+          ? `${booking.passenger_2.first_name || ''} ${booking.passenger_2.last_name || ''}`.trim()
+          : booking.passenger_2_name,
+        passenger3: booking.passenger_3
+          ? `${booking.passenger_3.first_name || ''} ${booking.passenger_3.last_name || ''}`.trim()
+          : booking.passenger_3_name,
         groupName: booking.group_name,
         checkIn: formatDate(hotelBooking.check_in_date),
         checkOut: formatDate(hotelBooking.check_out_date),
