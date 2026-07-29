@@ -4973,7 +4973,8 @@ var EDITABLE_ACF_SCALAR_FIELDS = [
   "twin_room_per_person_price",
   "double_room_per_person_price",
   "payment_details",
-  "add_download_brochure"
+  "add_download_brochure",
+  "attach_brochure_here"
 ];
 var EDITABLE_ACF_REPEATER_FIELDS = [
   "inclusions",
@@ -4986,7 +4987,20 @@ function sanitiseAcfUpdate(input) {
   const out = {};
   const src = input;
   for (const key of EDITABLE_ACF_SCALAR_FIELDS) {
-    if (key in src) out[key] = src[key];
+    if (key in src) {
+      let v = src[key];
+      if (key === "attach_brochure_here") {
+        if (v === "" || v === null || v === void 0) {
+          v = null;
+        } else if (typeof v === "string" && /^\d+$/.test(v)) {
+          v = Number(v);
+        } else if (typeof v === "object" && v && "id" in v) {
+          const idVal = v.id;
+          v = typeof idVal === "number" ? idVal : Number(idVal);
+        }
+      }
+      out[key] = v;
+    }
   }
   for (const key of EDITABLE_ACF_REPEATER_FIELDS) {
     if (key in src) {
