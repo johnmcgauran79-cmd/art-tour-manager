@@ -220,7 +220,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     downloadBlob(blob, `${hotel?.name}-rooming-list.csv`);
   };
 
-  const handleSendEmail = (emailData: { from: string; to: string; cc: string; bcc: string; subject: string; message: string }) => {
+  const handleSendEmail = (emailData: { from: string; to: string; cc: string; bcc: string; subject: string; message: string; includeRoomTypeReport: boolean; includeRoomingList: boolean }) => {
     if (!hotel || !currentTour) return;
 
     sendRoomingList.mutate({
@@ -234,6 +234,8 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
       bccEmail: emailData.bcc,
       subject: emailData.subject,
       message: emailData.message,
+      includeRoomTypeReport: emailData.includeRoomTypeReport,
+      includeRoomingList: emailData.includeRoomingList,
     }, {
       onSuccess: () => {
         setEmailModalOpen(false);
