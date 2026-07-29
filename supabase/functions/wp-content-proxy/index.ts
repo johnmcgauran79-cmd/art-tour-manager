@@ -294,6 +294,91 @@ Deno.serve(async (req) => {
         });
         return json({ media: res.data });
       }
+      case "upload_media": {
+        if (!body.filename || typeof body.filename !== "string") return json({ error: "filename is required" }, 400);
+        if (!body.content_type || typeof body.content_type !== "string") return json({ error: "content_type is required" }, 400);
+        if (!body.data_base64 || typeof body.data_base64 !== "string") return json({ error: "data_base64 is required" }, 400);
+
+        const allowed = new Set([
+          "application/pdf",
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+        ]);
+        if (!allowed.has(body.content_type)) {
+          return json({ error: `Unsupported content type: ${body.content_type}` }, 400);
+        }
+
+        // Decode base64 → Uint8Array
+        let bytes: Uint8Array;
+        try {
+          const bin = atob(body.data_base64);
+          bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        } catch {
+          return json({ error: "data_base64 is not valid base64" }, 400);
+        }
+        // Cap upload size at 20MB
+        if (bytes.byteLength > 20 * 1024 * 1024) {
+          return json({ error: "File exceeds 20MB limit" }, 400);
+        }
+
+        const baseUrl = Deno.env.get("WORDPRESS_BASE_URL");
+        const username = Deno.env.get("WORDPRESS_USERNAME");
+        const appPassword = Deno.env.get("WORDPRESS_APPLICATION_PASSWORD");
+        if (!baseUrl || !username || !appPassword) return json({ error: "WordPress not configured" }, 500);
+
+        const safeName = body.filename.replace(/[^\w.\-]+/g, "_");
+        const url = `${baseUrl.replace(/\/+$/, "")}/wp-json/wp/v2/media`;
+        const wpRes = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${btoa(`${username}:${appPassword}`)}`,
+            "Content-Type": body.content_type,
+            "Content-Disposition": `attachment; filename="${safeName}"`,
+            Accept: "application/json",
+          },
+          body: bytes,
+        });
+        const text = await wpRes.text();
+        let data: Record<string, unknown> = {};
+        try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text.slice(0, 500) }; }
+        if (!wpRes.ok) {
+          await auditLog(userId, {
+            action: "upload_media",
+            wordpress_object_type: "media",
+            result_status: "error",
+            response_code: wpRes.status,
+            error_message: (data as { message?: string })?.message ?? `WordPress returned ${wpRes.status}`,
+            request_summary: { endpoint: "media", method: "POST", filename: safeName, size: bytes.byteLength, content_type: body.content_type },
+          });
+          return json({ error: (data as { message?: string })?.message ?? `WordPress returned ${wpRes.status}`, status: wpRes.status, details: data }, wpRes.status);
+        }
+
+        // Optionally set title
+        if (body.title && typeof body.title === "string" && (data as { id?: number }).id) {
+          try {
+            await wordpressRequest({ endpoint: `media/${(data as { id: number }).id}`, method: "POST", body: { title: body.title } });
+          } catch { /* non-fatal */ }
+        }
+
+        await auditLog(userId, {
+          action: "upload_media",
+          wordpress_object_type: "media",
+          wordpress_object_id: (data as { id?: number })?.id ?? null,
+          result_status: "success",
+          response_code: wpRes.status,
+          request_summary: { endpoint: "media", method: "POST", filename: safeName, size: bytes.byteLength, content_type: body.content_type },
+        });
+
+        return json({
+          id: (data as { id?: number }).id,
+          source_url: (data as { source_url?: string }).source_url ?? null,
+          mime_type: (data as { mime_type?: string }).mime_type ?? null,
+          title: ((data as { title?: { rendered?: string } }).title?.rendered) ?? null,
+        });
+      }
       case "update_tour": {
         if (!body.tour_id || typeof body.tour_id !== "number") {
           return json({ error: "tour_id is required" }, 400);
