@@ -244,6 +244,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
     .not('invoice_reference', 'is', null)
     .neq('invoice_reference', '')
     .not('invoice_reference', 'in', '("0","TBC","tbc","N/A","n/a")')
+    .neq('status', 'cancelled')
     .gte('tours.start_date', cutoffStr);
 
   if (!bookings || bookings.length === 0) {
@@ -258,6 +259,8 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   for (const booking of bookings) {
     try {
+      // Never propose status changes for cancelled bookings
+      if (booking.status === 'cancelled') continue;
       const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean)
         .filter((r: string) => !['0', 'TBC', 'tbc', 'N/A', 'n/a'].includes(r));
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
@@ -494,6 +497,16 @@ serve(async (req) => {
 
       for (const change of changes) {
         try {
+          // Safety: never change status of a cancelled booking
+          const { data: existing } = await supabase
+            .from('bookings')
+            .select('status')
+            .eq('id', change.booking_id)
+            .maybeSingle();
+          if (existing?.status === 'cancelled') {
+            console.log(`[apply-invoice-changes] skipping cancelled booking ${change.booking_id}`);
+            continue;
+          }
           // Update booking status
           await supabase
             .from('bookings')
