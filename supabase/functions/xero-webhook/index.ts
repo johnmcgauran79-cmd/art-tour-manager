@@ -497,6 +497,16 @@ serve(async (req) => {
 
       for (const change of changes) {
         try {
+          // Safety: never change status of a cancelled booking
+          const { data: existing } = await supabase
+            .from('bookings')
+            .select('status')
+            .eq('id', change.booking_id)
+            .maybeSingle();
+          if (existing?.status === 'cancelled') {
+            console.log(`[apply-invoice-changes] skipping cancelled booking ${change.booking_id}`);
+            continue;
+          }
           // Update booking status
           await supabase
             .from('bookings')
