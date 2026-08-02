@@ -176,6 +176,7 @@ serve(async (req) => {
         invoice_amount_due: formatMoney(Number(r.invoice_amount_due) || 0),
         balance_remaining: formatMoney(Number(r.invoice_amount_due) || 0),
         currency,
+        currency_symbol: currencySymbol(currency),
         brand_name: brand?.name || "Australian Racing Tours",
         brand_sender_name: brand?.sender_name || senderName,
         brand_header_image_url: brand?.email_header_image_url || "",
