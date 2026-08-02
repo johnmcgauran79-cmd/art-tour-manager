@@ -12,7 +12,7 @@ export default function ActivityBookings() {
       <AppBreadcrumbs
         items={[
           { label: "Home", href: "/" },
-          { label: "Operations", href: "/?tab=operations" },
+          { label: "Bookings", href: "/?tab=bookings" },
           { label: "Non-standard Activity Bookings" }
         ]}
       />
@@ -21,7 +21,7 @@ export default function ActivityBookings() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/?tab=operations")}
+          onClick={() => navigate("/?tab=bookings")}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>

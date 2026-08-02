@@ -103,13 +103,13 @@ export default function MissingPhoneNumbers() {
       <AppBreadcrumbs
         items={[
           { label: "Home", href: "/" },
-          { label: "Operations", href: "/?tab=operations" },
+          { label: "Bookings", href: "/?tab=bookings" },
           { label: "Missing Phone Numbers" },
         ]}
       />
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/?tab=operations")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/?tab=bookings")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
