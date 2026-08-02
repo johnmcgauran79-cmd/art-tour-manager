@@ -18,6 +18,17 @@ function mergeTemplate(tpl: string, vars: Record<string, string | number>): stri
 function formatMoney(n: number): string {
   return `${(n || 0).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+// Correct symbol per currency. Falls back to no symbol (the ISO code is always
+// shown alongside the amount in the template), so unknown currencies never
+// render a misleading "$".
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  AUD: "$", NZD: "$", USD: "$", CAD: "$", SGD: "$", HKD: "$",
+  GBP: "£", EUR: "€", JPY: "¥", CNY: "¥", CHF: "CHF ", ZAR: "R",
+  AED: "AED ", THB: "฿", INR: "₹",
+};
+function currencySymbol(code: string): string {
+  return CURRENCY_SYMBOLS[(code || "AUD").toUpperCase()] ?? "";
+}
 function formatDateAU(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -165,6 +176,7 @@ serve(async (req) => {
         invoice_amount_due: formatMoney(Number(r.invoice_amount_due) || 0),
         balance_remaining: formatMoney(Number(r.invoice_amount_due) || 0),
         currency,
+        currency_symbol: currencySymbol(currency),
         brand_name: brand?.name || "Australian Racing Tours",
         brand_sender_name: brand?.sender_name || senderName,
         brand_header_image_url: brand?.email_header_image_url || "",
