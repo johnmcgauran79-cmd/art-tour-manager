@@ -28,6 +28,7 @@ export const PAYMENT_WORKFLOW_STATUS_OPTIONS: WorkflowStatusOption[] = [
   { value: "unpaid", label: "Unpaid" },
   { value: "partially_paid", label: "Partially Paid" },
   { value: "fully_paid", label: "Fully Paid" },
+  { value: "not_required", label: "Not Required" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
@@ -79,6 +80,7 @@ export const getPaymentWorkflowStatusColor = (
     unpaid: "bg-status-pending text-status-pending-foreground",
     partially_paid: "bg-status-instalment-paid text-status-instalment-paid-foreground",
     fully_paid: "bg-status-fully-paid text-status-fully-paid-foreground",
+    not_required: "bg-status-completed text-status-completed-foreground",
     cancelled: "bg-status-cancelled text-status-cancelled-foreground",
   };
   return map[status || "unpaid"] || map.unpaid;
