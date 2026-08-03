@@ -322,6 +322,12 @@ function App() {
               <Route
                 path="/operations/activity-bookings"
                 element={
+                  <Navigate to="/bookings/activity-bookings" replace />
+                }
+              />
+              <Route
+                path="/bookings/activity-bookings"
+                element={
                   <ProtectedRoute>
                     <AppLayout>
                       <ActivityBookings />
@@ -361,6 +367,12 @@ function App() {
               />
               <Route
                 path="/operations/missing-phone-numbers"
+                element={
+                  <Navigate to="/bookings/missing-phone-numbers" replace />
+                }
+              />
+              <Route
+                path="/bookings/missing-phone-numbers"
                 element={
                   <ProtectedRoute>
                     <AppLayout>
