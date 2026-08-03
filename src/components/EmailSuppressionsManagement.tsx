@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Trash2, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, Check, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -28,6 +28,7 @@ interface EmailSuppression {
   last_bounced_at: string;
   bounce_count: number;
   is_active: boolean;
+  acknowledged_at: string | null;
 }
 
 export const EmailSuppressionsManagement = () => {
@@ -45,6 +46,60 @@ export const EmailSuppressionsManagement = () => {
       
       if (error) throw error;
       return data as EmailSuppression[];
+    },
+  });
+
+  const acknowledge = useMutation({
+    mutationFn: async (id: string) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('email_suppressions')
+        .update({
+          acknowledged_at: new Date().toISOString(),
+          acknowledged_by: userData.user?.id ?? null,
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-suppressions'] });
+      queryClient.invalidateQueries({ queryKey: ['bounced-emails-count'] });
+      toast({
+        title: "Acknowledged",
+        description: "Removed from the bounced emails list.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to acknowledge",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const refreshAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('email_suppressions')
+        .update({ acknowledged_at: null, acknowledged_by: null })
+        .not('acknowledged_at', 'is', null);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-suppressions'] });
+      queryClient.invalidateQueries({ queryKey: ['bounced-emails-count'] });
+      toast({
+        title: "Report Refreshed",
+        description: "All acknowledgments cleared — every active bounce is listed again.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to refresh report",
+        variant: "destructive",
+      });
     },
   });
 
@@ -74,7 +129,8 @@ export const EmailSuppressionsManagement = () => {
     },
   });
 
-  const activeSuppressions = suppressions?.filter(s => s.is_active) || [];
+  const activeSuppressions = suppressions?.filter(s => s.is_active && !s.acknowledged_at) || [];
+  const acknowledgedCount = suppressions?.filter(s => s.is_active && s.acknowledged_at).length || 0;
 
   if (isLoading) {
     return (
@@ -102,10 +158,22 @@ export const EmailSuppressionsManagement = () => {
             {activeSuppressions.length > 0 && (
               <Badge variant="destructive">{activeSuppressions.length}</Badge>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={() => refreshAll.mutate()}
+              disabled={refreshAll.isPending || acknowledgedCount === 0}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Refresh Report{acknowledgedCount > 0 ? ` (${acknowledgedCount})` : ''}
+            </Button>
           </CardTitle>
           <CardDescription>
             These email addresses have bounced and will not receive automated emails. 
-            Remove from the list to allow sending again (only if the email is corrected).
+            Acknowledge to remove an address from this list once you've dealt with it, or use the
+            reactivate action to allow sending again (only if the email is corrected).
+            "Refresh Report" clears all acknowledgments so nothing disappears permanently.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,7 +188,7 @@ export const EmailSuppressionsManagement = () => {
                   <TableHead>Reason</TableHead>
                   <TableHead>First Bounced</TableHead>
                   <TableHead>Last Bounced</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead className="w-[160px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -142,13 +210,26 @@ export const EmailSuppressionsManagement = () => {
                       {format(new Date(suppression.last_bounced_at), 'dd MMM yyyy HH:mm')}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEmailToRemove(suppression)}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => acknowledge.mutate(suppression.id)}
+                          disabled={acknowledge.isPending}
+                          title="Acknowledge and remove from this list"
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Acknowledge
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEmailToRemove(suppression)}
+                          title="Allow sending to this address again"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

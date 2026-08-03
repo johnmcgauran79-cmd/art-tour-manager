@@ -1,0 +1,1 @@
+ALTER TABLE public.email_suppressions ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz, ADD COLUMN IF NOT EXISTS acknowledged_by uuid;

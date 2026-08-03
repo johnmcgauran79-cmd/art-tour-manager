@@ -21,7 +21,8 @@ export const BookingsReviewsChecks = () => {
       const { count, error } = await supabase
         .from('email_suppressions')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .is('acknowledged_at', null);
       if (error) throw error;
       return count ?? 0;
     },
