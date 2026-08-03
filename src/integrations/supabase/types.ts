@@ -5374,6 +5374,7 @@ export type Database = {
         | "partially_paid"
         | "fully_paid"
         | "cancelled"
+        | "not_required"
       task_approval_decision: "pending" | "approved" | "changes_requested"
       task_category:
         | "operations"
@@ -5620,6 +5621,7 @@ export const Constants = {
         "partially_paid",
         "fully_paid",
         "cancelled",
+        "not_required",
       ],
       task_approval_decision: ["pending", "approved", "changes_requested"],
       task_category: [
