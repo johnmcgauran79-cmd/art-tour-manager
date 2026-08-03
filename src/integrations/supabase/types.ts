@@ -1780,6 +1780,8 @@ export type Database = {
       }
       email_suppressions: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           bounce_count: number
           created_at: string
           email_address: string
@@ -1791,6 +1793,8 @@ export type Database = {
           suppression_type: string
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           bounce_count?: number
           created_at?: string
           email_address: string
@@ -1802,6 +1806,8 @@ export type Database = {
           suppression_type?: string
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           bounce_count?: number
           created_at?: string
           email_address?: string
