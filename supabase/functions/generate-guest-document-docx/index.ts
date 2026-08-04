@@ -1,17 +1,12 @@
-// Generate an editable Word (.docx) Guest Document from a staff-reviewed
-// guest itinerary draft and store it in the tour's existing Guest Document slot.
+// Generate a PDF Guest Document from a staff-reviewed guest itinerary draft and
+// store it in the tour's existing Guest Document slot. A PDF is used so the file
+// opens directly in the attachment PDF viewer.
 // - Auth via getClaims (verify_jwt = false; validated in code)
 // - Admin/manager only
 // - Generation and upload are separate steps: the previous file is only removed
 //   after the new file is stored and the itinerary record updated.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import {
-  Document,
-  HeadingLevel,
-  Packer,
-  Paragraph,
-  TextRun,
-} from "https://esm.sh/docx@9.0.2";
+import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +46,14 @@ interface Day {
   meals?: string;
   transport?: string;
   narrative_paragraphs?: string[];
+  warnings?: string[];
+}
+
+interface UnresolvedItem {
+  date?: string | null;
+  field?: string;
+  issue?: string;
+  recommended_action?: string;
 }
 
 Deno.serve(async (req) => {
