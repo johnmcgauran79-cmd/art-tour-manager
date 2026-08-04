@@ -115,8 +115,43 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
         },
       );
 
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      // The function answers as an SSE stream with keepalive comments (generation
+      // routinely runs past the 150s idle timeout), then one terminal data event.
+      let status = res.status;
+      let payload: any = {};
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let received = false;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() ?? "";
+          for (const evt of events) {
+            const line = evt.split("\n").find((l) => l.startsWith("data:"));
+            if (!line) continue;
+            try {
+              const parsed = JSON.parse(line.slice(5).trim());
+              status = parsed.status ?? 200;
+              payload = parsed.payload ?? {};
+              received = true;
+            } catch {
+              // ignore malformed frame
+            }
+          }
+        }
+        if (!received) {
+          throw new Error("The generation stopped before finishing. Please try again.");
+        }
+      } else {
+        payload = await res.json().catch(() => ({}));
+      }
+
+      if (status < 200 || status >= 300) {
         throw new Error(
           payload?.message ||
             (payload?.error === "RATE_LIMIT_EXCEEDED"
