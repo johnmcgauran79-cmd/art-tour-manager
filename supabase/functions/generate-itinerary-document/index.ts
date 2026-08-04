@@ -62,6 +62,7 @@ interface RequestBody {
     includeTourInfo: boolean;
     includeAdditionalInfo?: boolean;
     includeWelcomeMessage?: boolean;
+    includeFillerImages?: boolean;
   };
 }
 
@@ -241,7 +242,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
