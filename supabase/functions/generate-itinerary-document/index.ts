@@ -138,6 +138,7 @@ serve(async (req) => {
         .select('*')
         .eq('tour_id', tourId)
         .eq('is_visible', true)
+        .eq('include_in_guest_document', true)
         .order('sort_order', { ascending: true });
 
       if (sectionsError) throw sectionsError;
