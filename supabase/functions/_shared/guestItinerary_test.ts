@@ -158,7 +158,7 @@ Deno.test("an empty draft is rejected", () => {
   assertThrows(() => validateGuestItinerary(baseDraft([]), expected));
 });
 
-Deno.test("unrecognised timing formats are flagged", () => {
+Deno.test("unusable timing values are flagged", () => {
   const { warnings } = validateGuestItinerary(
     baseDraft([
       day("2027-05-01", {
@@ -167,16 +167,43 @@ Deno.test("unrecognised timing formats are flagged", () => {
     ]),
     expected,
   );
-  assert(warnings.some((w) => w.includes("unrecognised time format")));
+  assert(warnings.some((w) => w.includes("not a clock time")));
 });
 
-Deno.test("a malformed date is repaired and warned about, not fatal", () => {
+Deno.test("time ranges and 24-hour times are normalised without warnings", () => {
+  const { draft, warnings } = validateGuestItinerary(
+    baseDraft([
+      day("2027-05-01", {
+        timings: [
+          { label: "Race", time: "9:30am to 11:40am", status: "confirmed", source_type: "activity", source_id: null },
+          { label: "Dinner", time: "17:30", status: "confirmed", source_type: "activity", source_id: null },
+        ],
+      }),
+    ]),
+    expected,
+  );
+  assertEquals(draft.days[0].timings[0].time, "9:30am to 11:40am");
+  assertEquals(draft.days[0].timings[1].time, "5:30pm");
+  assertEquals(warnings.filter((w) => w.includes("clock time")).length, 0);
+});
+
+Deno.test("a written date is normalised silently", () => {
+  const { draft, warnings } = validateGuestItinerary(
+    baseDraft([day("1 May 2027"), day("2 May 2027")]),
+    expected,
+  );
+  assertEquals(draft.days[0].date, "2027-05-01");
+  assertEquals(draft.days[1].date, "2027-05-02");
+  assertEquals(warnings.filter((w) => w.includes("date")).length, 0);
+});
+
+Deno.test("a loose ISO date is repaired without a warning", () => {
   const { draft, warnings } = validateGuestItinerary(
     baseDraft([day("2027-5-2"), day("2027-05-03")]),
     expected,
   );
   assertEquals(draft.days[0].date, "2027-05-02");
-  assert(warnings.some((w) => w.includes("corrected to 2027-05-02")));
+  assertEquals(warnings.filter((w) => w.includes("unreadable date")).length, 0);
 });
 
 Deno.test("an unreadable date falls back to the day number", () => {
@@ -185,5 +212,5 @@ Deno.test("an unreadable date falls back to the day number", () => {
     expected,
   );
   assertEquals(draft.days[0].date, "2027-05-03");
-  assert(warnings.some((w) => w.includes("invalid date")));
+  assert(warnings.some((w) => w.includes("unreadable date")));
 });
