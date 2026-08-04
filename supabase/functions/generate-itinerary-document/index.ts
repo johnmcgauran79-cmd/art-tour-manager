@@ -169,13 +169,23 @@ serve(async (req) => {
 
     // Resolve the welcome message (host welcome) for the cover page
     let welcomeMessage: any = null;
-    if ((options.includeWelcomeMessage ?? true) && tour.welcome_message_enabled) {
+    // The Guest Document option is the source of truth for document inclusion.
+    // Keep the tour-level enabled flag for the customer-facing preview, but do not
+    // silently discard a configured welcome when staff explicitly include it here.
+    const hasConfiguredWelcome = Boolean(
+      tour.welcome_message_body ||
+      tour.welcome_message_signoff ||
+      tour.welcome_message_image_path
+    );
+    if ((options.includeWelcomeMessage ?? true) && hasConfiguredWelcome) {
       let imageUrl: string | null = null;
       if (tour.welcome_message_image_path) {
         try {
           const { data: signed } = await supabase.storage
             .from('attachments')
-            .createSignedUrl(tour.welcome_message_image_path, 60 * 60 * 24 * 7);
+            .createSignedUrl(tour.welcome_message_image_path, 60 * 60 * 24 * 7, {
+              transform: { width: 1200, quality: 78, resize: 'contain' },
+            });
           imageUrl = signed?.signedUrl ?? null;
         } catch (_e) {
           imageUrl = null;
@@ -203,7 +213,9 @@ serve(async (req) => {
         try {
           const { data: signed } = await supabase.storage
             .from('attachments')
-            .createSignedUrl(row.file_path, 60 * 60 * 24 * 7);
+            .createSignedUrl(row.file_path, 60 * 60 * 24 * 7, {
+              transform: { width: 1200, quality: 72, resize: 'contain' },
+            });
           imageUrl = signed?.signedUrl ?? null;
         } catch (_e) {
           imageUrl = null;
@@ -296,7 +308,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null): string {
   // Pool of filler images, consumed as blank spaces are filled
   const fillerPool: any[] = [...(documentImages || [])];
   const GOLD_FILLER = '#c79a2e';
@@ -361,14 +373,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   const subtitle = tour.location ? tour.location : '';
   const runningTitle = `${(tour.name || '').toUpperCase()}${subtitle ? `&nbsp;&nbsp;|&nbsp;&nbsp;${subtitle}` : ''}`;
 
-  // Build inclusions / exclusions
-  const inclusions = tour.inclusions
-    ? tour.inclusions.split('\n').map((l: string) => l.trim()).filter(Boolean)
-    : [];
-  const exclusions = tour.exclusions
-    ? tour.exclusions.split('\n').map((l: string) => l.trim()).filter(Boolean)
-    : [];
-
   let html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -402,11 +406,18 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           background: ${NAVY};
           color: #fff;
           text-align: center;
-          padding: 70px 40px 56px;
+          padding: 24px 40px 22px;
+        }
+        .cover-logo {
+          display: block;
+          max-width: 180px;
+          max-height: 70px;
+          object-fit: contain;
+          margin: 0 auto 16px;
         }
         .cover-title {
           font-family: Georgia, 'Times New Roman', serif;
-          font-size: 40pt;
+          font-size: 27pt;
           font-weight: 700;
           letter-spacing: 1px;
           margin: 0;
@@ -416,51 +427,35 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         .cover-dates {
           color: ${GOLD};
           font-size: 15pt;
-          margin-top: 26px;
+          margin-top: 14px;
         }
         .cover-meta {
           color: #c9d2df;
           font-size: 12pt;
-          margin-top: 14px;
+          margin-top: 8px;
           letter-spacing: 0.5px;
         }
         .cover-rule {
           height: 10px;
           background: ${GOLD};
         }
-        .glance {
-          text-align: center;
-          padding: 48px 30px 10px;
-        }
-        .glance h2 {
-          color: ${NAVY};
-          font-size: 13pt;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          margin: 0 0 26px;
-        }
-        .glance-item {
-          color: ${INK};
-          font-size: 11.5pt;
-          margin: 9px 0;
-        }
-        .glance-item .tick { color: ${GOLD}; font-weight: 700; margin-right: 6px; }
         /* ---------- Welcome message ---------- */
         .welcome {
           text-align: center;
-          padding: 36px 48px 20px;
+          padding: 24px 48px 12px;
         }
         .welcome-photo-full {
           display: block;
-          width: 100%;
-          max-height: 360px;
-          object-fit: cover;
-          margin: 0;
+          width: auto;
+          max-width: calc(100% - 96px);
+          max-height: 250px;
+          object-fit: contain;
+          margin: 8px auto 0;
         }
         .welcome-heading {
           color: ${NAVY};
           font-family: Georgia, 'Times New Roman', serif;
-          font-size: 22pt;
+          font-size: 19pt;
           text-transform: uppercase;
           letter-spacing: 1px;
           margin: 0 0 10px;
@@ -472,7 +467,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           border: none;
           margin: 0 auto 20px;
         }
-        .welcome-body { color: ${INK}; font-size: 11.5pt; line-height: 1.7; }
+        .welcome-body { color: ${INK}; font-size: 10.5pt; line-height: 1.5; }
         .welcome-body p { margin: 0 0 12px; }
         .welcome-signoff {
           font-family: 'Dancing Script', 'Snell Roundhand', 'Apple Chancery', 'Segoe Script', cursive;
@@ -481,19 +476,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           color: ${NAVY};
           margin-top: 18px;
           line-height: 1.2;
-        }
-        .glance-divider {
-          width: 80%;
-          margin: 34px auto 22px;
-          border: none;
-          border-top: 1px solid ${GOLD};
-        }
-        .glance-excl {
-          color: ${MUTED};
-          font-style: italic;
-          font-size: 10.5pt;
-          text-align: center;
-          padding: 0 30px;
         }
         /* ---------- Running header ---------- */
         .run-head {
@@ -569,12 +551,11 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         }
         .filler-img img {
           width: 100%;
-          max-height: 300px;
+          max-height: 180px;
           object-fit: cover;
           border-radius: 4px;
           border: 1px solid ${GOLD};
         }
-        .filler-full img { max-height: 380px; }
         .filler-img figcaption {
           margin-top: 6px;
           color: ${MUTED};
@@ -601,19 +582,14 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       <!-- ===== Cover ===== -->
       <div class="cover">
         <div class="cover-banner">
+          ${brandLogoUrl ? `<img class="cover-logo" src="${brandLogoUrl}" alt="${brandName || 'Australian Racing Tours'} logo" />` : ''}
           <h1 class="cover-title">${tour.name}</h1>
           <div class="cover-dates">${formatDate(tour.start_date)} &ndash; ${formatDate(tour.end_date)}</div>
           <div class="cover-meta">${tour.days} Days &nbsp;&middot;&nbsp; ${tour.nights} Nights${subtitle ? ` &nbsp;&middot;&nbsp; ${subtitle}` : ''}</div>
         </div>
   `;
 
-  // Full-width host image sits directly beneath the header (no gap) when a welcome
-  // message with a photo is present; otherwise show the gold accent rule.
-  if (welcomeMessage && welcomeMessage.imageUrl) {
-    html += `<img class="welcome-photo-full" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
-  } else {
-    html += `<div class="cover-rule"></div>`;
-  }
+  html += `<div class="cover-rule"></div>`;
 
   if (welcomeMessage) {
     const rawBody = welcomeMessage.body || '';
@@ -635,45 +611,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       html += `<div class="welcome-signoff">${welcomeMessage.signoff}</div>`;
     }
     html += `</div>`;
-  }
-
-  // Build the inclusions ("at a glance") block once so it can be placed either on
-  // the cover page (no welcome message) or on its own page (welcome message present).
-  const hasInclusions = options.includeTourInfo && (inclusions.length > 0 || exclusions.length > 0);
-  let inclusionsHtml = '';
-  if (hasInclusions) {
-    inclusionsHtml += `<div class="glance">`;
-    if (inclusions.length > 0) {
-      inclusionsHtml += `<h2>Tour Inclusions at a Glance</h2>`;
-      inclusions.forEach((item: string) => {
-        inclusionsHtml += `<div class="glance-item"><span class="tick">&#10003;</span>${item}</div>`;
-      });
+    if (welcomeMessage.imageUrl) {
+      html += `<img class="welcome-photo-full" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
     }
-    if (exclusions.length > 0) {
-      inclusionsHtml += `<hr class="glance-divider"><div class="glance-excl">${exclusions.join(' &middot; ')} not included</div>`;
-    }
-    inclusionsHtml += `</div>`;
-  }
-
-  // When there is no welcome message, inclusions sit on the cover (first) page.
-  if (hasInclusions && !welcomeMessage) {
-    html += inclusionsHtml;
-    // Fill the blank space under the inclusions on the cover with a wide image.
-    html += renderFiller(takeFiller('landscape'), 'full');
   }
 
   html += `</div>`; // end cover
-
-  // When there IS a welcome message, inclusions move to their own page (page 2).
-  if (hasInclusions && welcomeMessage) {
-    html += `
-      <div class="page section">
-        <div class="run-head"><strong>${runningTitle}</strong></div>
-        ${inclusionsHtml}
-        ${renderFiller(takeFiller('landscape'), 'full')}
-      </div>
-    `;
-  }
 
   // ===== Accommodation + Itinerary (same page, no break between them) =====
   const hasHotels = options.includeHotels && hotels.length > 0;
@@ -733,8 +676,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     }
     html += `</div>`;
   });
-  // Fill the blank space at the bottom of the itinerary page with an image.
-  html += renderFiller(takeFiller('landscape'));
   html += `</div>`;
 
   // ===== Additional information =====
@@ -756,12 +697,9 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         </div>
       `;
     });
-    // Fill any remaining blank space at the end of the document with leftover images.
-    let leftover = takeFiller();
-    while (leftover) {
-      html += renderFiller(leftover);
-      leftover = takeFiller();
-    }
+    // Use at most one landscape image at the end of Additional Information.
+    // Never append every uploaded image: that creates image-only pages and huge PDFs.
+    html += renderFiller(takeFiller('landscape'));
     html += `</div>`;
   }
 
