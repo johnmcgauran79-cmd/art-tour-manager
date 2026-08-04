@@ -134,8 +134,9 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
             <>
               <Button
                 variant="outline"
-                onClick={() => setShowGuestTextModal(true)}
-                className="flex items-center gap-2"
+                disabled
+                title="Temporarily disabled while the guest document text feature is being refined."
+                className="flex items-center gap-2 opacity-60 cursor-not-allowed"
               >
                 <Sparkles className="h-4 w-4" />
                 Create Guest Document Text
