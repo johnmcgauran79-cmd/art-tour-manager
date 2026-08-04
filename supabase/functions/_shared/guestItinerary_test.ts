@@ -169,3 +169,21 @@ Deno.test("unrecognised timing formats are flagged", () => {
   );
   assert(warnings.some((w) => w.includes("unrecognised time format")));
 });
+
+Deno.test("a malformed date is repaired and warned about, not fatal", () => {
+  const { draft, warnings } = validateGuestItinerary(
+    baseDraft([day("2027-5-2"), day("2027-05-03")]),
+    expected,
+  );
+  assertEquals(draft.days[0].date, "2027-05-02");
+  assert(warnings.some((w) => w.includes("corrected to 2027-05-02")));
+});
+
+Deno.test("an unreadable date falls back to the day number", () => {
+  const { draft, warnings } = validateGuestItinerary(
+    baseDraft([day("not a date", { day_number: 3 })]),
+    expected,
+  );
+  assertEquals(draft.days[0].date, "2027-05-03");
+  assert(warnings.some((w) => w.includes("invalid date")));
+});
