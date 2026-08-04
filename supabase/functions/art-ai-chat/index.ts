@@ -346,6 +346,12 @@ Deno.serve(async (req) => {
         ? (rawCtx.staff_instructions as string).slice(0, 2000)
         : null;
 
+    // Generation regularly runs past two minutes (context build + draft + a
+    // focused repair pass), which trips the platform's 150s idle timeout when
+    // the response is a single buffered JSON body. The work below therefore
+    // runs inside an SSE stream with a keepalive so bytes keep flowing, and the
+    // final result is delivered as one terminal `data:` event.
+    const runSkill = async (): Promise<{ status: number; payload: unknown }> => {
     const startedAt = Date.now();
     const toolsUsed = [
       "get_tour",
@@ -364,13 +370,13 @@ Deno.serve(async (req) => {
     ]);
 
     if (!tourRes.ok) {
-      return new Response(
-        JSON.stringify({
+      return {
+        status: 403,
+        payload: {
           error: "tour_not_accessible",
           message: "You do not have access to this tour, or it does not exist.",
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+        },
+      };
     }
 
     let sourceContext;
@@ -385,10 +391,10 @@ Deno.serve(async (req) => {
         generatedAt: dateCtx.current_datetime,
       });
     } catch (e) {
-      return new Response(
-        JSON.stringify({ error: "context_incomplete", message: sanitizeError((e as Error).message) }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return {
+        status: 400,
+        payload: { error: "context_incomplete", message: sanitizeError((e as Error).message) },
+      };
     }
 
     const tourStart = sourceContext.tour.start_date as string;
@@ -481,16 +487,13 @@ Deno.serve(async (req) => {
     } catch (e) {
       const message = (e as Error).message;
       if (message === "AI_ERROR") {
-        return new Response(JSON.stringify({ error: "AI_ERROR" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return { status: 502, payload: { error: "AI_ERROR" } };
       }
       console.error("[art-ai-chat] guest itinerary invalid draft", sanitizeError(message));
-      return new Response(
-        JSON.stringify({ error: "invalid_draft", message: sanitizeError(message) }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return {
+        status: 502,
+        payload: { error: "invalid_draft", message: sanitizeError(message) },
+      };
     }
 
     // One focused repair pass for missing guest-relevant timings.
@@ -537,8 +540,9 @@ Deno.serve(async (req) => {
     });
 
     const timingErrors = result.missingTimings.map((m) => describeMissingTiming(m));
-    return new Response(
-      JSON.stringify({
+    return {
+      status: 200,
+      payload: {
         skill_id: skillId,
         draft: result.draft,
         review_warnings: [...sourceContext.preflight_warnings, ...result.warnings],
@@ -547,9 +551,57 @@ Deno.serve(async (req) => {
         model_calls: modelCalls,
         tools_used: toolsUsed,
         generated_at: dateCtx.current_datetime,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+      },
+    };
+    };
+
+    const encoder = new TextEncoder();
+    const skillStream = new ReadableStream({
+      async start(controller) {
+        const send = (chunk: string) => {
+          try {
+            controller.enqueue(encoder.encode(chunk));
+          } catch {
+            // client went away
+          }
+        };
+        send(": generating\n\n");
+        const keepalive = setInterval(() => send(": keepalive\n\n"), 10000);
+        try {
+          const { status, payload } = await runSkill();
+          send(`data: ${JSON.stringify({ status, payload })}\n\n`);
+        } catch (e) {
+          console.error("[art-ai-chat] guest itinerary stream failed", sanitizeError((e as Error).message));
+          send(
+            `data: ${
+              JSON.stringify({
+                status: 500,
+                payload: {
+                  error: "generation_failed",
+                  message: "Could not generate the guest document text. Please try again.",
+                },
+              })
+            }\n\n`,
+          );
+        } finally {
+          clearInterval(keepalive);
+          try {
+            controller.close();
+          } catch {
+            // already closed
+          }
+        }
+      },
+    });
+
+    return new Response(skillStream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   }
 
 
