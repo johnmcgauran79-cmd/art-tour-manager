@@ -412,6 +412,33 @@ export interface GuestItineraryDraft {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^(0?[1-9]|1[0-2]):[0-5][0-9](am|pm)$/;
 
+/**
+ * Best-effort coercion of a model-supplied date to yyyy-MM-dd. Returns null when
+ * the value cannot be understood at all.
+ */
+function coerceDate(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const raw = value.trim();
+  if (!raw) return null;
+  if (DATE_RE.test(raw)) return raw;
+  const loose = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (loose) {
+    return `${loose[1]}-${loose[2].padStart(2, "0")}-${loose[3].padStart(2, "0")}`;
+  }
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return null;
+}
+
+/** Date for a 1-based day number relative to the tour start date. */
+function dateForDayNumber(startDate: string, dayNumber: unknown): string | null {
+  const n = typeof dayNumber === "number" ? dayNumber : Number(dayNumber);
+  if (!Number.isFinite(n) || n < 1) return null;
+  const d = new Date(`${startDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + Math.floor(n) - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Inclusive list of yyyy-MM-dd dates between two dates. */
 export function dateRange(startDate: string, endDate: string): string[] {
   const out: string[] = [];
@@ -446,8 +473,23 @@ export function validateGuestItinerary(
   const expectedDates = dateRange(expected.startDate, expected.endDate);
   const seen = new Set<string>();
 
+  const usableDays: GuestItineraryDay[] = [];
   for (const day of draft.days) {
-    if (!DATE_RE.test(day.date ?? "")) throw new Error("The generated draft contained an invalid date.");
+    if (!DATE_RE.test(day.date ?? "")) {
+      const original = typeof day.date === "string" ? day.date : String(day.date ?? "");
+      const repaired = coerceDate(day.date) ?? dateForDayNumber(expected.startDate, day.day_number);
+      if (!repaired) {
+        warnings.push(
+          `A generated day had an unreadable date (${original || "blank"}) and was removed. Add this day manually before saving.`,
+        );
+        continue;
+      }
+      warnings.push(
+        `Day ${day.day_number} had an invalid date (${original || "blank"}) and was corrected to ${repaired}. Please confirm it is right.`,
+      );
+      day.date = repaired;
+    }
+    usableDays.push(day);
     if (seen.has(day.date)) warnings.push(`More than one day was generated for ${day.date}.`);
     seen.add(day.date);
     if (!expectedDates.includes(day.date)) {
@@ -475,6 +517,11 @@ export function validateGuestItinerary(
       }
     }
     day.warnings = Array.isArray(day.warnings) ? day.warnings : [];
+  }
+
+  draft.days = usableDays;
+  if (draft.days.length === 0) {
+    throw new Error("The generated draft contained no usable itinerary days.");
   }
 
   const missing = expectedDates.filter((d) => !seen.has(d));
