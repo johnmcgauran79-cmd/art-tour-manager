@@ -35,7 +35,7 @@ interface GuestDocumentTextModalProps {
   tourId: string;
   tourName: string;
   itineraryId: string;
-  /** Only admins and managers may save the Word document. */
+  /** Only admins and managers may save the Guest Document PDF. */
   canSave: boolean;
   existingGuestDocumentName: string | null;
 }
