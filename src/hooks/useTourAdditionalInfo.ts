@@ -11,6 +11,7 @@ export interface TourAdditionalInfoSection {
   content: string | null;
   sort_order: number;
   is_visible: boolean;
+  include_in_guest_document: boolean;
   include_in_email_rules: string[];
   created_by: string;
   created_at: string;
@@ -43,6 +44,7 @@ export const useTourAdditionalInfo = (tourId: string) => {
       template_id?: string;
       sort_order?: number;
       include_in_email_rules?: string[];
+      include_in_guest_document?: boolean;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');

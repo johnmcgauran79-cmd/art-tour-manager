@@ -3568,6 +3568,7 @@ export type Database = {
           icon_name: string
           id: string
           include_in_email_rules: string[]
+          include_in_guest_document: boolean
           is_visible: boolean
           name: string
           sort_order: number
@@ -3582,6 +3583,7 @@ export type Database = {
           icon_name?: string
           id?: string
           include_in_email_rules?: string[]
+          include_in_guest_document?: boolean
           is_visible?: boolean
           name: string
           sort_order?: number
@@ -3596,6 +3598,7 @@ export type Database = {
           icon_name?: string
           id?: string
           include_in_email_rules?: string[]
+          include_in_guest_document?: boolean
           is_visible?: boolean
           name?: string
           sort_order?: number
