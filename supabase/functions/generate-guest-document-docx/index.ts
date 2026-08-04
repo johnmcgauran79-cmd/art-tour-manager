@@ -1,17 +1,12 @@
-// Generate an editable Word (.docx) Guest Document from a staff-reviewed
-// guest itinerary draft and store it in the tour's existing Guest Document slot.
+// Generate a PDF Guest Document from a staff-reviewed guest itinerary draft and
+// store it in the tour's existing Guest Document slot. A PDF is used so the file
+// opens directly in the attachment PDF viewer.
 // - Auth via getClaims (verify_jwt = false; validated in code)
 // - Admin/manager only
 // - Generation and upload are separate steps: the previous file is only removed
 //   after the new file is stored and the itinerary record updated.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import {
-  Document,
-  HeadingLevel,
-  Packer,
-  Paragraph,
-  TextRun,
-} from "https://esm.sh/docx@9.0.2";
+import { buildPdf, buildReviewItems, formatLongDate, type Day, type UnresolvedItem } from "./pdf.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,18 +15,6 @@ const corsHeaders = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-/** Australian long form: 9 September 2026 */
-function formatLongDate(iso: string): string {
-  if (!DATE_RE.test(iso)) return iso;
-  const [y, m, d] = iso.split("-").map(Number);
-  return `${d} ${MONTHS[m - 1]} ${y}`;
-}
 
 function safeFilename(name: string): string {
   return name.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 150);
@@ -42,15 +25,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-interface Day {
-  day_number?: number;
-  date?: string;
-  title?: string;
-  meals?: string;
-  transport?: string;
-  narrative_paragraphs?: string[];
 }
 
 Deno.serve(async (req) => {
@@ -83,7 +57,12 @@ Deno.serve(async (req) => {
     tour_id?: string;
     itinerary_id?: string;
     confirm_replace?: boolean;
-    draft?: { tour?: Record<string, unknown>; days?: Day[] };
+    review_warnings?: string[];
+    draft?: {
+      tour?: Record<string, unknown>;
+      days?: Day[];
+      unresolved_items?: UnresolvedItem[];
+    };
   };
   try {
     body = await req.json();
@@ -125,72 +104,28 @@ Deno.serve(async (req) => {
     }, 409);
   }
 
-  // ---- Build the .docx (client-facing content only) ----
+  // ---- Build the PDF: staff cover page (if needed) + client-facing itinerary ----
   const year = String(tour.start_date ?? "").slice(0, 4);
   const displayName = safeFilename(`${year} - ${tour.name} - Guest Document Itinerary Text`);
-  const fileName = `${displayName}.docx`;
+  const fileName = `${displayName}.pdf`;
 
-  const children: Paragraph[] = [
-    new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(String(tour.name ?? ""))] }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `${formatLongDate(String(tour.start_date))} – ${formatLongDate(String(tour.end_date))}${
-            tour.location ? ` · ${tour.location}` : ""
-          }`,
-          italics: true,
-        }),
-      ],
-    }),
-    new Paragraph({ children: [new TextRun("")] }),
-  ];
-
-  for (const day of days) {
-    const label = `Day ${day.day_number ?? ""} — ${formatLongDate(String(day.date ?? ""))}${
-      day.title ? `: ${day.title}` : ""
-    }`;
-    children.push(
-      new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(label)] }),
-    );
-    for (const para of day.narrative_paragraphs ?? []) {
-      if (para?.trim()) children.push(new Paragraph({ children: [new TextRun(para.trim())] }));
-    }
-    if (day.meals?.trim()) {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: "Meals: ", bold: true }), new TextRun(day.meals.trim())],
-        }),
-      );
-    }
-    if (day.transport?.trim()) {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: "Transport: ", bold: true }), new TextRun(day.transport.trim())],
-        }),
-      );
-    }
-    children.push(new Paragraph({ children: [new TextRun("")] }));
-  }
+  const reviewItems = buildReviewItems(
+    Array.isArray(body.review_warnings) ? body.review_warnings : [],
+    days,
+    body.draft?.unresolved_items ?? [],
+  );
 
   let bytes: Uint8Array;
   try {
-    const doc = new Document({
-      creator: "Australian Racing Tours",
-      title: displayName,
-      sections: [
-        {
-          properties: {
-            page: {
-              size: { width: 11906, height: 16838 },
-              margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 },
-            },
-          },
-          children,
-        },
-      ],
+    bytes = await buildPdf({
+      title: String(tour.name ?? ""),
+      subtitle: `${formatLongDate(String(tour.start_date))} – ${formatLongDate(String(tour.end_date))}${
+        tour.location ? ` · ${tour.location}` : ""
+      }`,
+      documentTitle: displayName,
+      days,
+      reviewItems,
     });
-    const blob = await Packer.toBlob(doc);
-    bytes = new Uint8Array(await blob.arrayBuffer());
   } catch (e) {
     console.error("[generate-guest-document-docx] build failed", String((e as Error).message).slice(0, 300));
     return json({ error: "document_build_failed" }, 500);
@@ -201,7 +136,7 @@ Deno.serve(async (req) => {
   const { error: uploadError } = await userClient.storage
     .from("attachments")
     .upload(storagePath, bytes, {
-      contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      contentType: "application/pdf",
       upsert: false,
     });
   if (uploadError) {
