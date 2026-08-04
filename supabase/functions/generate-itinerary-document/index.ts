@@ -368,6 +368,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   const NAVY = brandNavy && /^#?[0-9a-fA-F]{6}$/.test(brandNavy.trim()) ? (brandNavy.trim().startsWith('#') ? brandNavy.trim() : `#${brandNavy.trim()}`) : '#0a1929'; // system primary / email header
   const NAVY_DARK = darken(NAVY, 0.3); // deeper navy for gradient/banner
   const GOLD = brandAccent && /^#?[0-9a-fA-F]{6}$/.test(brandAccent.trim()) ? (brandAccent.trim().startsWith('#') ? brandAccent.trim() : `#${brandAccent.trim()}`) : '#c79a2e'; // brand accent
+  // Brand border colour (used as the second stop of the header gradient so the
+  // document header background matches the tour's email/theme header).
+  const BORDER = brandBorder && /^#?[0-9a-fA-F]{6}$/.test(brandBorder.trim())
+    ? (brandBorder.trim().startsWith('#') ? brandBorder.trim() : `#${brandBorder.trim()}`)
+    : NAVY;
+  const HEADER_BG = `linear-gradient(135deg, ${NAVY} 0%, ${darken(BORDER, 0.25)} 100%)`;
   const INK = '#2b2b2b';
   const MUTED = '#6b6b6b';
 
