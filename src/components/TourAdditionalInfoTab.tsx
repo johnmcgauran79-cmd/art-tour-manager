@@ -36,7 +36,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<TourAdditionalInfoSection | null>(null);
-  const [formData, setFormData] = useState({ name: '', icon_name: 'info', content: '', include_in_email_rules: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', icon_name: 'info', content: '', include_in_email_rules: [] as string[], include_in_guest_document: true });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null);
@@ -48,6 +48,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
       icon_name: template.icon_name,
       content: template.default_content || '',
       include_in_email_rules: [],
+      include_in_guest_document: true,
     });
     setEditModalOpen(true);
     setAddMenuOpen(false);
@@ -55,7 +56,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
 
   const handleAddCustom = () => {
     setEditingSection(null);
-    setFormData({ name: '', icon_name: 'info', content: '', include_in_email_rules: [] });
+    setFormData({ name: '', icon_name: 'info', content: '', include_in_email_rules: [], include_in_guest_document: true });
     setEditModalOpen(true);
     setAddMenuOpen(false);
   };
@@ -67,6 +68,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
       icon_name: section.icon_name,
       content: section.content || '',
       include_in_email_rules: section.include_in_email_rules || [],
+      include_in_guest_document: section.include_in_guest_document ?? true,
     });
     setEditModalOpen(true);
   };
@@ -80,6 +82,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
         icon_name: formData.icon_name,
         content: formData.content || null,
         include_in_email_rules: formData.include_in_email_rules,
+        include_in_guest_document: formData.include_in_guest_document,
       });
     } else {
       addSection.mutate({
@@ -87,6 +90,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
         icon_name: formData.icon_name,
         content: formData.content || undefined,
         include_in_email_rules: formData.include_in_email_rules,
+        include_in_guest_document: formData.include_in_guest_document,
       });
     }
     setEditModalOpen(false);
@@ -94,6 +98,13 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
 
   const handleToggleVisibility = (section: TourAdditionalInfoSection) => {
     updateSection.mutate({ id: section.id, is_visible: !section.is_visible });
+  };
+
+  const handleToggleGuestDocument = (section: TourAdditionalInfoSection) => {
+    updateSection.mutate({
+      id: section.id,
+      include_in_guest_document: !(section.include_in_guest_document ?? true),
+    });
   };
 
   const handleMoveSection = (index: number, direction: 'up' | 'down') => {
@@ -203,6 +214,13 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                           {!section.is_visible && (
                             <Badge variant="outline" className="text-xs">Hidden</Badge>
                           )}
+                          <Badge
+                            variant={(section.include_in_guest_document ?? true) ? "secondary" : "outline"}
+                            className="text-xs gap-1"
+                          >
+                            <FileText className="h-3 w-3" />
+                            {(section.include_in_guest_document ?? true) ? 'In Guest Document' : 'Not in Guest Document'}
+                          </Badge>
                           {(section.include_in_email_rules || []).map(ruleId => (
                             <Badge key={ruleId} variant="secondary" className="text-xs gap-1">
                               <Mail className="h-3 w-3" />
@@ -246,6 +264,10 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                         <DropdownMenuItem onClick={() => handleToggleVisibility(section)} className="gap-2">
                           {section.is_visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           {section.is_visible ? 'Hide' : 'Show'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleGuestDocument(section)} className="gap-2">
+                          <FileText className="h-4 w-4" />
+                          {(section.include_in_guest_document ?? true) ? 'Exclude from Guest Document' : 'Include in Guest Document'}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -304,6 +326,25 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                 onChange={(value) => setFormData(p => ({ ...p, content: value }))}
                 placeholder="Enter section content..."
               />
+            </div>
+
+            {/* Guest Document inclusion */}
+            <div className="flex items-start gap-2 rounded-md border p-3">
+              <Checkbox
+                id="include-guest-document"
+                checked={formData.include_in_guest_document}
+                onCheckedChange={(checked) =>
+                  setFormData(p => ({ ...p, include_in_guest_document: checked as boolean }))
+                }
+              />
+              <div>
+                <label htmlFor="include-guest-document" className="text-sm font-medium cursor-pointer">
+                  Include in Guest Document
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Only sections with this ticked appear when you generate the Guest Document.
+                </p>
+              </div>
             </div>
 
             {/* Email inclusion checkboxes */}
