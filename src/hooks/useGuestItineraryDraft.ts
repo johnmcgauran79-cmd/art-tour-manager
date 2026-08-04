@@ -143,7 +143,7 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
   }, []);
 
   /**
-   * Build the .docx and store it in the tour's Guest Document slot.
+   * Build the PDF and store it in the tour's Guest Document slot.
    * Returns { needsConfirmation, existingFileName } when a document already exists.
    */
   const save = useCallback(
@@ -164,6 +164,7 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
               tour_id: tourId,
               itinerary_id: itineraryId,
               confirm_replace: confirmReplace,
+              review_warnings: reviewWarnings,
               draft,
             },
           },
@@ -195,7 +196,7 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
         setIsSaving(false);
       }
     },
-    [draft, itineraryId, queryClient, tourId],
+    [draft, itineraryId, queryClient, reviewWarnings, tourId],
   );
 
   return {
