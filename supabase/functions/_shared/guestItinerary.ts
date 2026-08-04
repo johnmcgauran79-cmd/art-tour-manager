@@ -15,7 +15,9 @@ Core rules:
 - Meals must be concise and grounded principally in Activity hospitality_inclusions.
 - Transport must state mode only. Never put times, meeting places, return details or a second explanatory sentence in the Transport field.
 - Use Hotels only for accommodation and transition context supported by their dates.
-- Use Australian English, dates in d MMMM yyyy form in prose, and times such as 9:15am or 5:30pm.
+- Use Australian English. In prose, write dates in d MMMM yyyy form (for example 2 September 2026).
+- The "date" FIELD of every day must be the machine format yyyy-MM-dd (for example 2026-09-02). Never put a prose date such as "2 September 2026" in that field.
+- Times must be clock times only, such as 9:15am, 5:30pm, or a range like 9:30am to 11:40am. Never put a date in a "time" field.
 - Do not expose internal notes, UUIDs, supplier contacts, driver details, payment information or system metadata in client-facing fields.
 - Do not silently resolve a material conflict between sources. Add it to unresolved_items and the applicable day warnings.
 - Flag tentative language such as maybe, proposed, subject to confirmation and TBC.
@@ -28,6 +30,7 @@ Day output:
 - transport: one concise mode-only sentence.
 - narrative_paragraphs: one or two polished paragraphs.
 - timings: traceable timing facts for the editor.
+  Each timing "time" is a clock time or clock-time range only, never a date.
 - source_refs: source record ids for staff audit only.
 - warnings: day-specific review issues for staff only.
 `.trim();
@@ -410,7 +413,65 @@ export interface GuestItineraryDraft {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME_RE = /^(0?[1-9]|1[0-2]):[0-5][0-9](am|pm)$/;
+
+const MONTHS: Record<string, number> = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9,
+  september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+};
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Single clock time, e.g. 9:15am, 9am, 09:15, 17:05. */
+const SINGLE_TIME_RE = /^(\d{1,2})(?::([0-5]\d))?\s*(am|pm)?$/i;
+/** Range separators the model realistically produces. */
+const RANGE_SPLIT_RE = /\s*(?:to|until|till|-|–|—)\s*/i;
+
+function normaliseSingleTime(value: string): string | null {
+  const m = value.trim().match(SINGLE_TIME_RE);
+  if (!m) return null;
+  let hour = parseInt(m[1], 10);
+  const minute = m[2] ?? "00";
+  const meridiem = m[3]?.toLowerCase();
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    return `${hour}:${minute}${meridiem}`;
+  }
+  // 24-hour input — convert to the house style.
+  if (hour < 0 || hour > 23) return null;
+  const suffix = hour < 12 ? "am" : "pm";
+  if (hour === 0) hour = 12;
+  else if (hour > 12) hour -= 12;
+  return `${hour}:${minute}${suffix}`;
+}
+
+/**
+ * Normalise a model-supplied time or time range to house style
+ * (9:15am / 9:30am to 11:40am). Returns null when it is not a time at all.
+ */
+export function normaliseTimeValue(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const raw = value.trim();
+  if (!raw) return null;
+  // A date masquerading as a time is never acceptable.
+  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(raw) || coerceDate(raw)) return null;
+  const parts = raw.split(RANGE_SPLIT_RE).filter(Boolean);
+  if (parts.length === 1) return normaliseSingleTime(parts[0]);
+  if (parts.length === 2) {
+    let [from, to] = parts;
+    const toNorm = normaliseSingleTime(to);
+    // "9:30 to 11:40am" — borrow the meridiem from the end of the range.
+    if (toNorm && !/am|pm/i.test(from)) {
+      const meridiem = toNorm.endsWith("pm") ? "pm" : "am";
+      if (/^\d{1,2}(:[0-5]\d)?$/.test(from.trim()) && parseInt(from, 10) <= 12) {
+        from = `${from.trim()}${meridiem}`;
+      }
+    }
+    const fromNorm = normaliseSingleTime(from);
+    if (fromNorm && toNorm) return `${fromNorm} to ${toNorm}`;
+  }
+  return null;
+}
 
 /**
  * Best-effort coercion of a model-supplied date to yyyy-MM-dd. Returns null when
@@ -425,8 +486,21 @@ function coerceDate(value: unknown): string | null {
   if (loose) {
     return `${loose[1]}-${loose[2].padStart(2, "0")}-${loose[3].padStart(2, "0")}`;
   }
-  const parsed = new Date(raw);
-  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  // "2 September 2026" / "2 Sep 2026" / "Wednesday, 2 September 2026"
+  const dmy = raw.replace(/^[A-Za-z]+,\s*/, "").match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
+  if (dmy) {
+    const month = MONTHS[dmy[2].toLowerCase()];
+    if (month) return `${dmy[3]}-${pad(month)}-${pad(parseInt(dmy[1], 10))}`;
+  }
+  // "September 2, 2026"
+  const mdy = raw.replace(/^[A-Za-z]+,\s*/, "").match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (mdy) {
+    const month = MONTHS[mdy[1].toLowerCase()];
+    if (month) return `${mdy[3]}-${pad(month)}-${pad(parseInt(mdy[2], 10))}`;
+  }
+  // Australian d/m/yyyy — never US m/d/yyyy.
+  const slash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slash) return `${slash[3]}-${pad(parseInt(slash[2], 10))}-${pad(parseInt(slash[1], 10))}`;
   return null;
 }
 
