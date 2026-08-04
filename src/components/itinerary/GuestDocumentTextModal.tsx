@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -73,12 +73,6 @@ export const GuestDocumentTextModal = ({
   const [confirmReplaceName, setConfirmReplaceName] = useState<string | null>(null);
   const [savedFileName, setSavedFileName] = useState<string | null>(null);
   const [staffInstructions, setStaffInstructions] = useState("");
-
-  // Generate once when the dialog first opens.
-  useEffect(() => {
-    if (open && !draft && !isGenerating && !error) void generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   const runSave = async (confirmReplace: boolean) => {
     try {
@@ -161,19 +155,32 @@ export const GuestDocumentTextModal = ({
 
           <ScrollArea className="flex-1 pr-4 -mr-4">
             <div className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="staff-instructions">Staff instructions (optional)</Label>
-                <Textarea
-                  id="staff-instructions"
-                  rows={2}
-                  placeholder="e.g. Emphasise the early start on race day. Affects this draft only — no tour data is changed."
-                  value={staffInstructions}
-                  onChange={(e) => setStaffInstructions(e.target.value)}
-                  disabled={isGenerating || isSaving}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Used when you press Regenerate. It shapes the draft only and never updates tour data.
-                </p>
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-1">
+                  <Label htmlFor="staff-instructions">Staff instructions (optional)</Label>
+                  <Textarea
+                    id="staff-instructions"
+                    rows={3}
+                    placeholder="e.g. Emphasise the early start on race day. Affects this draft only — no tour data is changed."
+                    value={staffInstructions}
+                    onChange={(e) => setStaffInstructions(e.target.value)}
+                    disabled={isGenerating || isSaving}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Add guidance before you generate. It shapes the AI draft and never updates tour data.
+                  </p>
+                </div>
+
+                {!draft && !isGenerating && (
+                  <Button
+                    onClick={() => void generate(staffInstructions)}
+                    disabled={isSaving}
+                    className="w-full sm:w-auto"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Guest Document Text
+                  </Button>
+                )}
               </div>
 
               {isGenerating && (
@@ -353,22 +360,26 @@ export const GuestDocumentTextModal = ({
               ) : null}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => void generate(staffInstructions)}
-                disabled={isGenerating || isSaving}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerate
-              </Button>
-              <Button variant="outline" onClick={discard} disabled={!draft || isGenerating || isSaving}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Discard
-              </Button>
-              {canSave && (
+              {draft && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => void generate(staffInstructions)}
+                    disabled={isGenerating || isSaving}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerate
+                  </Button>
+                  <Button variant="outline" onClick={discard} disabled={isGenerating || isSaving}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Discard
+                  </Button>
+                </>
+              )}
+              {canSave && draft && (
                 <Button
                   onClick={() => void runSave(false)}
-                  disabled={!draft || isGenerating || isSaving || savingBlocked}
+                  disabled={isGenerating || isSaving || savingBlocked}
                 >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
