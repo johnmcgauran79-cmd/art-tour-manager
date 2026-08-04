@@ -158,3 +158,6 @@ verify_jwt = false
 
 [functions.wp-content-proxy]
 verify_jwt = false
+
+[functions.generate-guest-document-docx]
+verify_jwt = false
