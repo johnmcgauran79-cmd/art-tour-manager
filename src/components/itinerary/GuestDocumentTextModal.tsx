@@ -155,19 +155,32 @@ export const GuestDocumentTextModal = ({
 
           <ScrollArea className="flex-1 pr-4 -mr-4">
             <div className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="staff-instructions">Staff instructions (optional)</Label>
-                <Textarea
-                  id="staff-instructions"
-                  rows={2}
-                  placeholder="e.g. Emphasise the early start on race day. Affects this draft only — no tour data is changed."
-                  value={staffInstructions}
-                  onChange={(e) => setStaffInstructions(e.target.value)}
-                  disabled={isGenerating || isSaving}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Used when you press Regenerate. It shapes the draft only and never updates tour data.
-                </p>
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-1">
+                  <Label htmlFor="staff-instructions">Staff instructions (optional)</Label>
+                  <Textarea
+                    id="staff-instructions"
+                    rows={3}
+                    placeholder="e.g. Emphasise the early start on race day. Affects this draft only — no tour data is changed."
+                    value={staffInstructions}
+                    onChange={(e) => setStaffInstructions(e.target.value)}
+                    disabled={isGenerating || isSaving}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Add guidance before you generate. It shapes the AI draft and never updates tour data.
+                  </p>
+                </div>
+
+                {!draft && !isGenerating && (
+                  <Button
+                    onClick={() => void generate(staffInstructions)}
+                    disabled={isSaving}
+                    className="w-full sm:w-auto"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Guest Document Text
+                  </Button>
+                )}
               </div>
 
               {isGenerating && (
