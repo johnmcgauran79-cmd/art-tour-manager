@@ -242,7 +242,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl, brand.colorBorder);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -309,7 +309,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null, brandBorder?: string): string {
   // Pool of filler images, consumed as blank spaces are filled
   const fillerPool: any[] = [...(documentImages || [])];
   const GOLD_FILLER = '#c79a2e';
@@ -368,6 +368,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   const NAVY = brandNavy && /^#?[0-9a-fA-F]{6}$/.test(brandNavy.trim()) ? (brandNavy.trim().startsWith('#') ? brandNavy.trim() : `#${brandNavy.trim()}`) : '#0a1929'; // system primary / email header
   const NAVY_DARK = darken(NAVY, 0.3); // deeper navy for gradient/banner
   const GOLD = brandAccent && /^#?[0-9a-fA-F]{6}$/.test(brandAccent.trim()) ? (brandAccent.trim().startsWith('#') ? brandAccent.trim() : `#${brandAccent.trim()}`) : '#c79a2e'; // brand accent
+  // Brand border colour (used as the second stop of the header gradient so the
+  // document header background matches the tour's email/theme header).
+  const BORDER = brandBorder && /^#?[0-9a-fA-F]{6}$/.test(brandBorder.trim())
+    ? (brandBorder.trim().startsWith('#') ? brandBorder.trim() : `#${brandBorder.trim()}`)
+    : NAVY;
+  const HEADER_BG = `linear-gradient(135deg, ${NAVY} 0%, ${darken(BORDER, 0.25)} 100%)`;
   const INK = '#2b2b2b';
   const MUTED = '#6b6b6b';
 
@@ -404,7 +410,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           break-after: page;
         }
         .cover-banner {
-          background: ${NAVY};
+          background-color: ${NAVY};
+          background-image: ${HEADER_BG};
           color: #fff;
           text-align: center;
           padding: 24px 40px 22px;
@@ -431,7 +438,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           margin-top: 14px;
         }
         .cover-meta {
-          color: #c9d2df;
+          color: rgba(255,255,255,0.78);
           font-size: 12pt;
           margin-top: 8px;
           letter-spacing: 0.5px;
