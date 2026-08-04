@@ -74,12 +74,6 @@ export const GuestDocumentTextModal = ({
   const [savedFileName, setSavedFileName] = useState<string | null>(null);
   const [staffInstructions, setStaffInstructions] = useState("");
 
-  // Generate once when the dialog first opens.
-  useEffect(() => {
-    if (open && !draft && !isGenerating && !error) void generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   const runSave = async (confirmReplace: boolean) => {
     try {
       const outcome = await save(confirmReplace);
