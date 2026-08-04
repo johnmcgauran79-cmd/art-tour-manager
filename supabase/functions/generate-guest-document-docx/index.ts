@@ -1,11 +1,18 @@
 // Generate a PDF Guest Document from a staff-reviewed guest itinerary draft and
-// store it in the tour's existing Guest Document slot. A PDF is used so the file
-// opens directly in the attachment PDF viewer.
+// store it in the tour's existing Guest Document slot. Output is always a PDF so
+// the file opens directly in the attachment PDF viewer.
 // - Auth via getClaims (verify_jwt = false; validated in code)
 // - Admin/manager only
+// - Timing coverage is revalidated here against the live Activity records, so a
+//   staff edit cannot remove a confirmed guest-relevant time before export.
 // - Generation and upload are separate steps: the previous file is only removed
 //   after the new file is stored and the itinerary record updated.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  expectedTimingFacts,
+  reconcileNarrativeTimings,
+} from "../_shared/guestItineraryTimings.ts";
+import { describeMissingTiming } from "../_shared/guestItinerary.ts";
 import { buildPdf, buildReviewItems, formatLongDate, type Day, type UnresolvedItem } from "./pdf.ts";
 
 const corsHeaders = {
@@ -102,6 +109,29 @@ Deno.serve(async (req) => {
       existing_file_name: existingName,
       message: "A Guest Document already exists for this tour.",
     }, 409);
+  }
+
+  // ---- Revalidate timing coverage against the live Activity records ----
+  const { data: activityRows } = await userClient
+    .from("activities")
+    .select(
+      "id, name, activity_date, start_time, end_time, depart_for_activity, pickup_location_transport, notes, transport_notes, booking_status",
+    )
+    .eq("tour_id", tourId);
+
+  const facts = expectedTimingFacts({
+    startDate: String(tour.start_date ?? ""),
+    endDate: String(tour.end_date ?? ""),
+    activities: (activityRows ?? []) as Record<string, unknown>[],
+  });
+  const { missing } = reconcileNarrativeTimings(days as Record<string, unknown>[], facts);
+  if (missing.length) {
+    return json({
+      error: "timing_coverage_incomplete",
+      message:
+        "Some confirmed Activity times are not written into the daily narrative, so this document cannot be saved.",
+      missing: missing.map((m) => describeMissingTiming(m)),
+    }, 422);
   }
 
   // ---- Build the PDF: staff cover page (if needed) + client-facing itinerary ----

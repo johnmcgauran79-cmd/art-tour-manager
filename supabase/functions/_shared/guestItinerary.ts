@@ -11,8 +11,17 @@ Core rules:
 - Use only the structured context. Never invent a date, time, venue, meal, transport mode, inclusion or booking status.
 - Create exactly one day for every date from tour.start_date through tour.end_date.
 - Preserve the polished tone and substance of the current ART Admin Itinerary entries. They are the narrative base.
-- Use Activities to add confirmed meeting, departure, event and return times naturally to the narrative.
-- Meals must be concise and grounded principally in Activity hospitality_inclusions.
+- TIMING IS MANDATORY. For every in-range Activity, take every confirmed guest-relevant time from start_time, end_time,
+  depart_for_activity, pickup information and confirmed notes/transport notes, and weave each one into that day's
+  narrative_paragraphs as natural prose. This includes meeting, departure, event, flight, train, check-in, regrouping
+  and return times. Example: "Meet in the hotel lobby at 5:30pm for welcome drinks." Never use bullet points or a
+  timetable, and never leave a confirmed time out of the prose because it also appears in timings.
+- The timings array is audit metadata for staff only. It is not exported to the guest PDF, so a time listed only there
+  is invisible to guests and counts as missing. Every confirmed guest-relevant time must be in the prose AND in timings.
+- Meals must be concise and explicit, and grounded principally in Activity hospitality_inclusions and the Itinerary.
+  Never present a meal or transfer that the current Itinerary contradicts or excludes; if the Itinerary says a meal is
+  not included, either say so plainly or omit it, and record the conflict in unresolved_items.
+- Follow staff_instructions when present. They refine this draft only and never change tour records.
 - Transport must state mode only. Never put times, meeting places, return details or a second explanatory sentence in the Transport field.
 - Use Hotels only for accommodation and transition context supported by their dates.
 - Use Australian English. In prose, write dates in d MMMM yyyy form (for example 2 September 2026).
@@ -26,10 +35,10 @@ Core rules:
 
 Day output:
 - title: client-friendly, normally based on the current Itinerary subject.
-- meals: one concise sentence.
-- transport: one concise mode-only sentence.
-- narrative_paragraphs: one or two polished paragraphs.
-- timings: traceable timing facts for the editor.
+- meals: one concise, explicit sentence.
+- transport: mode only, in a single short sentence. No times, no locations, no return details, no second sentence.
+- narrative_paragraphs: one or two polished paragraphs containing every confirmed guest-relevant time for that day.
+- timings: the same timing facts again, as traceable metadata for staff.
   Each timing "time" is a clock time or clock-time range only, never a date.
 - source_refs: source record ids for staff audit only.
 - warnings: day-specific review issues for staff only.
@@ -200,6 +209,7 @@ export function buildGuestItinerarySourceContext(args: {
     start_time: stringValue(activity.start_time),
     end_time: stringValue(activity.end_time),
     depart_for_activity: stringValue(activity.depart_for_activity),
+    booking_status: stringValue(activity.booking_status),
     location: boundedText(activity.location, 500),
     pickup_location_transport: boundedText(activity.pickup_location_transport, 500),
     transport_mode: boundedText(activity.transport_mode, 100),
@@ -412,128 +422,92 @@ export interface GuestItineraryDraft {
   };
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+import {
+  coerceDate,
+  DATE_RE,
+  dateForDayNumber,
+  dateRange,
+  normaliseTimeValue,
+} from "./guestItineraryTime.ts";
+import {
+  detectContentConflicts,
+  expectedTimingFacts,
+  reconcileNarrativeTimings,
+  type MissingTiming,
+  type TimingFact,
+} from "./guestItineraryTimings.ts";
 
-const MONTHS: Record<string, number> = {
-  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
-  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9,
-  september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
-};
+export { dateRange, normaliseTimeValue };
+export type { MissingTiming, TimingFact };
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-/** Single clock time, e.g. 9:15am, 9am, 09:15, 17:05. */
-const SINGLE_TIME_RE = /^(\d{1,2})(?::([0-5]\d))?\s*(am|pm)?$/i;
-/** Range separators the model realistically produces. */
-const RANGE_SPLIT_RE = /\s*(?:to|until|till|-|–|—)\s*/i;
-
-function normaliseSingleTime(value: string): string | null {
-  const m = value.trim().match(SINGLE_TIME_RE);
-  if (!m) return null;
-  let hour = parseInt(m[1], 10);
-  const minute = m[2] ?? "00";
-  const meridiem = m[3]?.toLowerCase();
-  if (meridiem) {
-    if (hour < 1 || hour > 12) return null;
-    return `${hour}:${minute}${meridiem}`;
-  }
-  // 24-hour input — convert to the house style.
-  if (hour < 0 || hour > 23) return null;
-  const suffix = hour < 12 ? "am" : "pm";
-  if (hour === 0) hour = 12;
-  else if (hour > 12) hour -= 12;
-  return `${hour}:${minute}${suffix}`;
-}
-
-/**
- * Normalise a model-supplied time or time range to house style
- * (9:15am / 9:30am to 11:40am). Returns null when it is not a time at all.
- */
-export function normaliseTimeValue(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const raw = value.trim();
-  if (!raw) return null;
-  // A date masquerading as a time is never acceptable.
-  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(raw) || coerceDate(raw)) return null;
-  const parts = raw.split(RANGE_SPLIT_RE).filter(Boolean);
-  if (parts.length === 1) return normaliseSingleTime(parts[0]);
-  if (parts.length === 2) {
-    let [from, to] = parts;
-    const toNorm = normaliseSingleTime(to);
-    // "9:30 to 11:40am" — borrow the meridiem from the end of the range.
-    if (toNorm && !/am|pm/i.test(from)) {
-      const meridiem = toNorm.endsWith("pm") ? "pm" : "am";
-      if (/^\d{1,2}(:[0-5]\d)?$/.test(from.trim()) && parseInt(from, 10) <= 12) {
-        from = `${from.trim()}${meridiem}`;
-      }
+/** Itinerary + Activity text for each date, used for meal/transfer conflict checks. */
+export function buildSourceTextByDate(context: {
+  itinerary?: AnyRecord;
+  activities?: AnyRecord[];
+}): Map<string, string> {
+  const map = new Map<string, string>();
+  const add = (date: string | null, text: unknown) => {
+    if (!date || typeof text !== "string" || !text.trim()) return;
+    map.set(date, `${map.get(date) ?? ""}\n${text}`);
+  };
+  for (const day of asArray((context.itinerary as AnyRecord | undefined)?.days)) {
+    const date = coerceDate(day.activity_date);
+    for (const entry of asArray(day.entries)) {
+      add(date, entry.subject as string);
+      add(date, entry.content as string);
     }
-    const fromNorm = normaliseSingleTime(from);
-    if (fromNorm && toNorm) return `${fromNorm} to ${toNorm}`;
   }
-  return null;
+  for (const activity of context.activities ?? []) {
+    const date = coerceDate(activity.activity_date);
+    add(date, activity.name as string);
+    add(date, activity.hospitality_inclusions as string);
+    add(date, activity.notes as string);
+    add(date, activity.transport_notes as string);
+  }
+  return map;
+}
+
+export interface GuestItineraryValidationResult {
+  draft: GuestItineraryDraft;
+  warnings: string[];
+  /** Blocking: confirmed guest-relevant Activity times absent from the narrative. */
+  missingTimings: MissingTiming[];
+  timingFacts: TimingFact[];
+}
+
+/** Staff-facing sentence for a blocking timing gap. */
+export function describeMissingTiming(item: MissingTiming): string {
+  const where = item.activity_name ? ` (${item.activity_name})` : "";
+  switch (item.reason) {
+    case "no_day_generated":
+      return `${item.date}: no day was generated, so the confirmed ${item.time} time${where} cannot reach guests.`;
+    case "badge_only":
+      return `${item.date}: ${item.time}${where} appears only as timing metadata. It must be written into the day's narrative — badges are not exported to the PDF.`;
+    case "timings_empty":
+      return `${item.date}: no timing metadata was recorded even though the Activities contain confirmed times (${item.time}).`;
+    default:
+      return `${item.date}: the confirmed ${item.time} time${where} is missing from the day's narrative.`;
+  }
 }
 
 /**
- * Best-effort coercion of a model-supplied date to yyyy-MM-dd. Returns null when
- * the value cannot be understood at all.
- */
-function coerceDate(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const raw = value.trim();
-  if (!raw) return null;
-  if (DATE_RE.test(raw)) return raw;
-  const loose = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (loose) {
-    return `${loose[1]}-${loose[2].padStart(2, "0")}-${loose[3].padStart(2, "0")}`;
-  }
-  // "2 September 2026" / "2 Sep 2026" / "Wednesday, 2 September 2026"
-  const dmy = raw.replace(/^[A-Za-z]+,\s*/, "").match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
-  if (dmy) {
-    const month = MONTHS[dmy[2].toLowerCase()];
-    if (month) return `${dmy[3]}-${pad(month)}-${pad(parseInt(dmy[1], 10))}`;
-  }
-  // "September 2, 2026"
-  const mdy = raw.replace(/^[A-Za-z]+,\s*/, "").match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
-  if (mdy) {
-    const month = MONTHS[mdy[1].toLowerCase()];
-    if (month) return `${mdy[3]}-${pad(month)}-${pad(parseInt(mdy[2], 10))}`;
-  }
-  // Australian d/m/yyyy — never US m/d/yyyy.
-  const slash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (slash) return `${slash[3]}-${pad(parseInt(slash[2], 10))}-${pad(parseInt(slash[1], 10))}`;
-  return null;
-}
-
-/** Date for a 1-based day number relative to the tour start date. */
-function dateForDayNumber(startDate: string, dayNumber: unknown): string | null {
-  const n = typeof dayNumber === "number" ? dayNumber : Number(dayNumber);
-  if (!Number.isFinite(n) || n < 1) return null;
-  const d = new Date(`${startDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + Math.floor(n) - 1);
-  return d.toISOString().slice(0, 10);
-}
-
-/** Inclusive list of yyyy-MM-dd dates between two dates. */
-export function dateRange(startDate: string, endDate: string): string[] {
-  const out: string[] = [];
-  const cursor = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
-  while (cursor.getTime() <= end.getTime()) {
-    out.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return out;
-}
-
-/**
- * Validate a model draft against the business constraints that the strict wire
- * schema cannot express. Throws on a structurally unusable draft; recoverable
- * issues are returned as staff-facing warnings.
+ * Validate a model draft (or a staff-edited draft) against the business
+ * constraints the strict wire schema cannot express, and reconcile the generated
+ * narrative against the confirmed Activity timing facts in the source context.
+ *
+ * Throws on a structurally unusable draft. Recoverable issues are returned as
+ * staff-facing warnings; timing gaps are returned as blocking `missingTimings`.
  */
 export function validateGuestItinerary(
   raw: unknown,
-  expected: { tourId: string; startDate: string; endDate: string },
-): { draft: GuestItineraryDraft; warnings: string[] } {
+  expected: {
+    tourId: string;
+    startDate: string;
+    endDate: string;
+    /** Structured source context. Required for timing reconciliation. */
+    sourceContext?: { activities?: AnyRecord[]; itinerary?: AnyRecord } | null;
+  },
+): GuestItineraryValidationResult {
   if (!raw || typeof raw !== "object") throw new Error("The generated draft was not valid JSON.");
   const draft = raw as GuestItineraryDraft;
   if (!Array.isArray(draft.days) || draft.days.length === 0) {
@@ -560,8 +534,6 @@ export function validateGuestItinerary(
         continue;
       }
       if (!understood) {
-        // Only a genuine guess needs staff eyes; a recognised written date is
-        // simply normalised to the machine format.
         warnings.push(
           `Day ${day.day_number} had an unreadable date (${original || "blank"}) so ${repaired} was derived from the day number. Please confirm it is right.`,
         );
@@ -577,7 +549,7 @@ export function validateGuestItinerary(
     if (!day.title?.trim()) warnings.push(`Day ${day.day_number} has no title.`);
     if (!day.meals?.trim()) warnings.push(`Day ${day.day_number} has no meals line.`);
     if (!day.transport?.trim()) warnings.push(`Day ${day.day_number} has no transport line.`);
-    // Transport must be mode only: one short sentence, no times.
+    // Transport must be mode only: one short sentence, no times or locations.
     const transport = day.transport ?? "";
     const sentences = transport.split(/[.!?]+/).map((s) => s.trim()).filter(Boolean);
     if (sentences.length > 1 || /\d{1,2}[:.]\d{2}\s*(am|pm)?/i.test(transport)) {
@@ -623,5 +595,23 @@ export function validateGuestItinerary(
   };
   draft.generation_summary.complete_date_coverage = missing.length === 0;
 
-  return { draft, warnings };
+  // ---- Timing reconciliation against the structured source context ----
+  let timingFacts: TimingFact[] = [];
+  let missingTimings: MissingTiming[] = [];
+  if (expected.sourceContext) {
+    timingFacts = expectedTimingFacts({
+      startDate: expected.startDate,
+      endDate: expected.endDate,
+      activities: expected.sourceContext.activities ?? [],
+    });
+    const reconciled = reconcileNarrativeTimings(draft.days, timingFacts);
+    missingTimings = reconciled.missing;
+    warnings.push(...reconciled.warnings);
+    warnings.push(...missingTimings.map(describeMissingTiming));
+    warnings.push(
+      ...detectContentConflicts(draft.days, buildSourceTextByDate(expected.sourceContext)),
+    );
+  }
+
+  return { draft, warnings, missingTimings, timingFacts };
 }

@@ -8,10 +8,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildDateContext } from "../_shared/artAiDates.ts";
 import {
   buildGuestItinerarySourceContext,
+  describeMissingTiming,
   GUEST_ITINERARY_JSON_SCHEMA,
   GUEST_ITINERARY_SKILL_ID,
   GUEST_ITINERARY_SKILL_PROMPT,
   validateGuestItinerary,
+  type GuestItineraryValidationResult,
 } from "../_shared/guestItinerary.ts";
 
 const corsHeaders = {
@@ -392,10 +394,25 @@ Deno.serve(async (req) => {
     const tourStart = sourceContext.tour.start_date as string;
     const tourEnd = sourceContext.tour.end_date as string;
 
-    let modelText = "";
+    // The model is called once, then once more as a focused repair pass if any
+    // confirmed guest-relevant Activity time did not reach the narrative.
     let usageIn = 0;
     let usageOut = 0;
-    try {
+    let modelCalls = 0;
+
+    const runModel = async (repairInput: string | null): Promise<string> => {
+      modelCalls += 1;
+      const input: { role: string; content: string }[] = [
+        {
+          role: "user",
+          content:
+            `STRUCTURED CONTEXT (authoritative, do not infer beyond this):\n${
+              JSON.stringify(sourceContext).slice(0, 120000)
+            }`,
+        },
+      ];
+      if (repairInput) input.push({ role: "user", content: repairInput.slice(0, 60000) });
+
       const oaRes = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
@@ -405,15 +422,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           model: MODEL,
           instructions: GUEST_ITINERARY_SKILL_PROMPT + dateGroundingBlock(dateCtx),
-          input: [
-            {
-              role: "user",
-              content:
-                `STRUCTURED CONTEXT (authoritative, do not infer beyond this):\n${
-                  JSON.stringify(sourceContext).slice(0, 120000)
-                }`,
-            },
-          ],
+          input,
           tool_choice: "none",
           store: false,
           max_output_tokens: 12000,
@@ -424,14 +433,12 @@ Deno.serve(async (req) => {
       if (!oaRes.ok || !oaRes.body) {
         const errText = await oaRes.text().catch(() => "");
         console.error("[art-ai-chat] guest itinerary openai error", oaRes.status, sanitizeError(errText));
-        return new Response(JSON.stringify({ error: "AI_ERROR", status: oaRes.status }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        throw new Error("AI_ERROR");
       }
       const reader = oaRes.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let text = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -450,34 +457,63 @@ Deno.serve(async (req) => {
             continue;
           }
           if (json.type === "response.output_text.delta" && typeof json.delta === "string") {
-            modelText += json.delta;
+            text += json.delta;
           } else if (json.type === "response.completed" && json.response?.usage) {
             usageIn += json.response.usage.input_tokens ?? 0;
             usageOut += json.response.usage.output_tokens ?? 0;
           }
         }
       }
-    } catch (e) {
-      console.error("[art-ai-chat] guest itinerary stream error", sanitizeError((e as Error).message));
-      return new Response(JSON.stringify({ error: "AI_ERROR" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+      return text;
+    };
 
-    let result: { draft: unknown; warnings: string[] };
+    const validateOptions = {
+      tourId: tourId as string,
+      startDate: tourStart,
+      endDate: tourEnd,
+      sourceContext,
+    };
+
+    let result: GuestItineraryValidationResult;
     try {
-      result = validateGuestItinerary(JSON.parse(redact(modelText)), {
-        tourId: tourId as string,
-        startDate: tourStart,
-        endDate: tourEnd,
-      });
+      const modelText = await runModel(null);
+      result = validateGuestItinerary(JSON.parse(redact(modelText)), validateOptions);
     } catch (e) {
-      console.error("[art-ai-chat] guest itinerary invalid draft", sanitizeError((e as Error).message));
+      const message = (e as Error).message;
+      if (message === "AI_ERROR") {
+        return new Response(JSON.stringify({ error: "AI_ERROR" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("[art-ai-chat] guest itinerary invalid draft", sanitizeError(message));
       return new Response(
-        JSON.stringify({ error: "invalid_draft", message: sanitizeError((e as Error).message) }),
+        JSON.stringify({ error: "invalid_draft", message: sanitizeError(message) }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // One focused repair pass for missing guest-relevant timings.
+    if (result.missingTimings.length) {
+      const repairInput = [
+        "REPAIR PASS. Your previous draft is below. It is rejected because confirmed guest-relevant Activity",
+        "times are missing from narrative_paragraphs. Timing badges are not exported to the guest PDF, so each",
+        "time must be written into the prose for its day, naturally and without bullet points.",
+        "Return the complete corrected JSON for every day, keeping all other content as it was.",
+        "",
+        "Missing timing facts to weave in:",
+        ...result.missingTimings.map((m) => describeMissingTiming(m)),
+        "",
+        "PREVIOUS DRAFT:",
+        JSON.stringify(result.draft),
+      ].join("\n");
+      try {
+        const repairedText = await runModel(repairInput);
+        const repaired = validateGuestItinerary(JSON.parse(redact(repairedText)), validateOptions);
+        if (repaired.missingTimings.length < result.missingTimings.length) result = repaired;
+      } catch (e) {
+        console.error("[art-ai-chat] guest itinerary repair pass failed", sanitizeError((e as Error).message));
+      }
     }
 
     const latencyMs = Date.now() - startedAt;
@@ -496,21 +532,26 @@ Deno.serve(async (req) => {
       skill_id: skillId,
       entry_point: entryPoint,
       source_page: sourcePage,
-      success: true,
+      success: result.missingTimings.length === 0,
       tools_used: toolsUsed,
     });
 
+    const timingErrors = result.missingTimings.map((m) => describeMissingTiming(m));
     return new Response(
       JSON.stringify({
         skill_id: skillId,
         draft: result.draft,
         review_warnings: [...sourceContext.preflight_warnings, ...result.warnings],
+        timing_errors: timingErrors,
+        can_save: timingErrors.length === 0,
+        model_calls: modelCalls,
         tools_used: toolsUsed,
         generated_at: dateCtx.current_datetime,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
+
 
   // ============================================================
   // Deterministic skill mode

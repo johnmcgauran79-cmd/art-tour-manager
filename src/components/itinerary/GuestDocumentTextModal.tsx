@@ -60,6 +60,7 @@ export const GuestDocumentTextModal = ({
   const {
     draft,
     reviewWarnings,
+    timingErrors,
     isGenerating,
     isSaving,
     error,
@@ -71,6 +72,7 @@ export const GuestDocumentTextModal = ({
   const { toast } = useToast();
   const [confirmReplaceName, setConfirmReplaceName] = useState<string | null>(null);
   const [savedFileName, setSavedFileName] = useState<string | null>(null);
+  const [staffInstructions, setStaffInstructions] = useState("");
 
   // Generate once when the dialog first opens.
   useEffect(() => {
@@ -140,6 +142,7 @@ export const GuestDocumentTextModal = ({
 
   const grouped = new Set(warningGroups.flatMap((g) => g.items));
   const otherWarnings = allWarnings.filter((w) => !grouped.has(w));
+  const savingBlocked = timingErrors.length > 0;
 
   return (
     <>
@@ -152,12 +155,27 @@ export const GuestDocumentTextModal = ({
             </DialogTitle>
             <DialogDescription>
               A draft for {tourName}. Editing here changes nothing in ART Admin — the tour is only
-              updated if you choose Save as Guest Document.
+              updated if you choose Save as Guest Document, which uploads a PDF.
             </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1 pr-4 -mr-4">
             <div className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="staff-instructions">Staff instructions (optional)</Label>
+                <Textarea
+                  id="staff-instructions"
+                  rows={2}
+                  placeholder="e.g. Emphasise the early start on race day. Affects this draft only — no tour data is changed."
+                  value={staffInstructions}
+                  onChange={(e) => setStaffInstructions(e.target.value)}
+                  disabled={isGenerating || isSaving}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used when you press Regenerate. It shapes the draft only and never updates tour data.
+                </p>
+              </div>
+
               {isGenerating && (
                 <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -173,6 +191,26 @@ export const GuestDocumentTextModal = ({
 
               {!isGenerating && draft && (
                 <>
+                  {savingBlocked && (
+                    <Card className="border-destructive bg-destructive/5">
+                      <CardContent className="pt-6 space-y-2">
+                        <div className="flex items-center gap-2 font-medium text-destructive">
+                          <AlertTriangle className="h-4 w-4" />
+                          Confirmed Activity times are missing from the narrative ({timingErrors.length})
+                        </div>
+                        <p className="text-xs text-destructive/90">
+                          Saving is disabled. Write each time into that day's narrative below, or fix the
+                          source Activity, then Regenerate. Timing badges are not exported to the PDF.
+                        </p>
+                        <ul className="list-disc pl-5 text-sm text-destructive space-y-1">
+                          {timingErrors.map((t, i) => (
+                            <li key={i}>{t}</li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {allWarnings.length > 0 && (
                     <Card className="border-amber-300 bg-amber-50">
                       <CardContent className="pt-6 space-y-3">
@@ -315,7 +353,11 @@ export const GuestDocumentTextModal = ({
               ) : null}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => void generate()} disabled={isGenerating || isSaving}>
+              <Button
+                variant="outline"
+                onClick={() => void generate(staffInstructions)}
+                disabled={isGenerating || isSaving}
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Regenerate
               </Button>
@@ -324,7 +366,10 @@ export const GuestDocumentTextModal = ({
                 Discard
               </Button>
               {canSave && (
-                <Button onClick={() => void runSave(false)} disabled={!draft || isGenerating || isSaving}>
+                <Button
+                  onClick={() => void runSave(false)}
+                  disabled={!draft || isGenerating || isSaving || savingBlocked}
+                >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (

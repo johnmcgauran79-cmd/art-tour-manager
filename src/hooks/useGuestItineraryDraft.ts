@@ -60,7 +60,7 @@ export interface SaveResult {
 }
 
 /**
- * Guest Document itinerary text drafting.
+ * Guest Document itinerary text drafting. Saving always produces a PDF.
  *
  * The draft lives in local state only — generating, regenerating, editing and
  * discarding never touch ART records, Supabase Storage or the website. Saving
@@ -69,15 +69,17 @@ export interface SaveResult {
 export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
   const [draft, setDraft] = useState<GuestItineraryDraft | null>(null);
   const [reviewWarnings, setReviewWarnings] = useState<string[]>([]);
+  const [timingErrors, setTimingErrors] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createConversation = useCreateAiConversation();
   const queryClient = useQueryClient();
 
-  const generate = useCallback(async () => {
+  const generate = useCallback(async (staffInstructions?: string) => {
     setIsGenerating(true);
     setError(null);
+    setTimingErrors([]);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
@@ -104,7 +106,11 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
             mode: "structured_skill",
             skill_id: "create_guest_document_itinerary",
             entry_point: "tour_itinerary_tab",
-            context: { tour_id: tourId, source_page: "tour_itinerary" },
+            context: {
+              tour_id: tourId,
+              source_page: "tour_itinerary",
+              staff_instructions: staffInstructions?.trim() || null,
+            },
           }),
         },
       );
@@ -121,6 +127,7 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
 
       setDraft(payload.draft as GuestItineraryDraft);
       setReviewWarnings(Array.isArray(payload.review_warnings) ? payload.review_warnings : []);
+      setTimingErrors(Array.isArray(payload.timing_errors) ? payload.timing_errors : []);
     } catch (e: any) {
       setError(e?.message ?? "Could not generate the guest document text.");
     } finally {
@@ -139,11 +146,13 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
   const discard = useCallback(() => {
     setDraft(null);
     setReviewWarnings([]);
+    setTimingErrors([]);
     setError(null);
   }, []);
 
   /**
-   * Build the PDF and store it in the tour's Guest Document slot.
+   * Build the PDF and store it in the tour's Guest Document slot. The endpoint
+   * revalidates timing coverage, so an edit that drops a confirmed time fails.
    * Returns { needsConfirmation, existingFileName } when a document already exists.
    */
   const save = useCallback(
@@ -181,6 +190,13 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
               existingFileName: body.existing_file_name ?? null,
             };
           }
+          if (body?.error === "timing_coverage_incomplete") {
+            setTimingErrors(Array.isArray(body.missing) ? body.missing : []);
+            throw new Error(
+              body?.message ??
+                "Some confirmed Activity times are missing from the narrative, so this document was not saved.",
+            );
+          }
           throw new Error(body?.message || "Could not save the Guest Document.");
         }
 
@@ -202,6 +218,7 @@ export function useGuestItineraryDraft(tourId: string, itineraryId: string) {
   return {
     draft,
     reviewWarnings,
+    timingErrors,
     isGenerating,
     isSaving,
     error,
