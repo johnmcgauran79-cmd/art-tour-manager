@@ -38,6 +38,8 @@ export interface Itinerary {
   notes: string | null;
   snapshot_file_path: string | null;
   snapshot_file_name: string | null;
+  guest_document_file_path: string | null;
+  guest_document_file_name: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

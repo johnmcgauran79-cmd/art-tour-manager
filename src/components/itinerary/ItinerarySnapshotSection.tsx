@@ -14,6 +14,13 @@ interface ItinerarySnapshotSectionProps {
   snapshotFilePath: string | null;
   snapshotFileName: string | null;
   readOnly?: boolean;
+  /** Label shown next to the icon */
+  title?: string;
+  /** Storage sub-folder used for uploads */
+  folder?: string;
+  /** DB columns updated on tour_itineraries */
+  pathColumn?: string;
+  nameColumn?: string;
 }
 
 export const ItinerarySnapshotSection = ({
@@ -22,6 +29,10 @@ export const ItinerarySnapshotSection = ({
   snapshotFilePath,
   snapshotFileName,
   readOnly = false,
+  title = "Itinerary Snapshot",
+  folder = "itinerary-snapshots",
+  pathColumn = "snapshot_file_path",
+  nameColumn = "snapshot_file_name",
 }: ItinerarySnapshotSectionProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -41,7 +52,7 @@ export const ItinerarySnapshotSection = ({
     setIsUploading(true);
     try {
       const fileName = `${Date.now()}-${file.name}`;
-      const filePath = `itinerary-snapshots/${tourId}/${fileName}`;
+      const filePath = `${folder}/${tourId}/${fileName}`;
 
       // If there's an existing file, delete it first
       if (snapshotFilePath) {
@@ -57,15 +68,15 @@ export const ItinerarySnapshotSection = ({
       const { error: dbError } = await supabase
         .from("tour_itineraries")
         .update({
-          snapshot_file_path: filePath,
-          snapshot_file_name: file.name,
+          [pathColumn]: filePath,
+          [nameColumn]: file.name,
         } as any)
         .eq("id", itineraryId);
 
       if (dbError) throw dbError;
 
       queryClient.invalidateQueries({ queryKey: ["itinerary", tourId] });
-      toast({ title: "Snapshot Uploaded", description: "Itinerary snapshot has been uploaded." });
+      toast({ title: `${title} Uploaded`, description: `${title} has been uploaded.` });
     } catch (err: any) {
       console.error("Snapshot upload error:", err, err?.message, err?.statusCode, JSON.stringify(err));
       toast({ title: "Upload Failed", description: err?.message || "Failed to upload snapshot.", variant: "destructive" });
@@ -83,13 +94,13 @@ export const ItinerarySnapshotSection = ({
 
       const { error: dbError } = await supabase
         .from("tour_itineraries")
-        .update({ snapshot_file_path: null, snapshot_file_name: null } as any)
+        .update({ [pathColumn]: null, [nameColumn]: null } as any)
         .eq("id", itineraryId);
 
       if (dbError) throw dbError;
 
       queryClient.invalidateQueries({ queryKey: ["itinerary", tourId] });
-      toast({ title: "Snapshot Removed", description: "Itinerary snapshot has been removed." });
+      toast({ title: `${title} Removed`, description: `${title} has been removed.` });
     } catch (err) {
       console.error("Snapshot delete error:", err);
       toast({ title: "Delete Failed", description: "Failed to remove snapshot.", variant: "destructive" });
@@ -118,11 +129,11 @@ export const ItinerarySnapshotSection = ({
           <div className="flex items-center gap-3">
             <FileImage className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Itinerary Snapshot</p>
+              <p className="text-sm font-medium">{title}</p>
               {snapshotFileName ? (
                 <p className="text-xs text-muted-foreground">{snapshotFileName}</p>
               ) : (
-                <p className="text-xs text-muted-foreground">No snapshot uploaded</p>
+                <p className="text-xs text-muted-foreground">No file uploaded</p>
               )}
             </div>
           </div>
