@@ -4116,6 +4116,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          guest_document_file_name: string | null
+          guest_document_file_path: string | null
           id: string
           is_current: boolean
           notes: string | null
@@ -4129,6 +4131,8 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          guest_document_file_name?: string | null
+          guest_document_file_path?: string | null
           id?: string
           is_current?: boolean
           notes?: string | null
@@ -4142,6 +4146,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          guest_document_file_name?: string | null
+          guest_document_file_path?: string | null
           id?: string
           is_current?: boolean
           notes?: string | null
