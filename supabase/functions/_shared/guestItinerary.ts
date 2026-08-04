@@ -551,16 +551,21 @@ export function validateGuestItinerary(
   for (const day of draft.days) {
     if (!DATE_RE.test(day.date ?? "")) {
       const original = typeof day.date === "string" ? day.date : String(day.date ?? "");
-      const repaired = coerceDate(day.date) ?? dateForDayNumber(expected.startDate, day.day_number);
+      const understood = coerceDate(day.date);
+      const repaired = understood ?? dateForDayNumber(expected.startDate, day.day_number);
       if (!repaired) {
         warnings.push(
           `A generated day had an unreadable date (${original || "blank"}) and was removed. Add this day manually before saving.`,
         );
         continue;
       }
-      warnings.push(
-        `Day ${day.day_number} had an invalid date (${original || "blank"}) and was corrected to ${repaired}. Please confirm it is right.`,
-      );
+      if (!understood) {
+        // Only a genuine guess needs staff eyes; a recognised written date is
+        // simply normalised to the machine format.
+        warnings.push(
+          `Day ${day.day_number} had an unreadable date (${original || "blank"}) so ${repaired} was derived from the day number. Please confirm it is right.`,
+        );
+      }
       day.date = repaired;
     }
     usableDays.push(day);
@@ -586,8 +591,13 @@ export function validateGuestItinerary(
     day.narrative_paragraphs = paragraphs;
     day.timings = (day.timings ?? []).filter((t) => !!t && typeof t.time === "string");
     for (const t of day.timings) {
-      if (!TIME_RE.test(t.time)) {
-        warnings.push(`Day ${day.day_number} has an unrecognised time format (${t.time}).`);
+      const normalised = normaliseTimeValue(t.time);
+      if (normalised) {
+        t.time = normalised;
+      } else {
+        warnings.push(
+          `Day ${day.day_number} has a timing that is not a clock time (${t.label ? `${t.label}: ` : ""}${t.time}). Check it in the source Activity or Itinerary entry.`,
+        );
       }
     }
     day.warnings = Array.isArray(day.warnings) ? day.warnings : [];
