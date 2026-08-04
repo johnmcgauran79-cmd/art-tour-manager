@@ -6,6 +6,13 @@
 // - Response-safety redaction before persistence; ordinary writes use user token
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildDateContext } from "../_shared/artAiDates.ts";
+import {
+  buildGuestItinerarySourceContext,
+  GUEST_ITINERARY_JSON_SCHEMA,
+  GUEST_ITINERARY_SKILL_ID,
+  GUEST_ITINERARY_SKILL_PROMPT,
+  validateGuestItinerary,
+} from "../_shared/guestItinerary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,6 +77,8 @@ const SKILL_IDS = new Set<string>([
   "explain_client",
   "payment_exceptions_for_next_departing_tour",
 ]);
+// Skills that return validated structured JSON (no prose, no chat persistence).
+const STRUCTURED_SKILL_IDS = new Set<string>([GUEST_ITINERARY_SKILL_ID]);
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUuid(v: unknown): v is string {
@@ -254,7 +263,11 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  const mode = body.mode === "deterministic_skill" ? "deterministic_skill" : "generic_chat";
+  const mode = body.mode === "deterministic_skill"
+    ? "deterministic_skill"
+    : body.mode === "structured_skill"
+    ? "structured_skill"
+    : "generic_chat";
   const entryPoint = typeof body.entry_point === "string" ? body.entry_point.slice(0, 60) : null;
 
   // Authoritative server-side date context for THIS request (org timezone).
@@ -302,6 +315,201 @@ Deno.serve(async (req) => {
     } catch (e) {
       return { ok: false, error: sanitizeError((e as Error).message) };
     }
+  }
+
+  // ============================================================
+  // Structured skill mode — returns validated JSON, never prose.
+  // Used by "Create Guest Document Text" in a tour's Itinerary section.
+  // ============================================================
+  if (mode === "structured_skill") {
+    const skillId = body.skill_id ?? "";
+    if (!STRUCTURED_SKILL_IDS.has(skillId)) {
+      return new Response(JSON.stringify({ error: "invalid_skill_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const rawCtx = (body.context ?? {}) as Record<string, unknown>;
+    const tourId = rawCtx.tour_id;
+    if (!isUuid(tourId)) {
+      return new Response(JSON.stringify({ error: "invalid_context_tour_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const sourcePage =
+      typeof rawCtx.source_page === "string" ? (rawCtx.source_page as string).slice(0, 120) : null;
+    const staffInstructions =
+      typeof rawCtx.staff_instructions === "string"
+        ? (rawCtx.staff_instructions as string).slice(0, 2000)
+        : null;
+
+    const startedAt = Date.now();
+    const toolsUsed = [
+      "get_tour",
+      "get_tour_itinerary",
+      "list_tour_activities",
+      "list_tour_hotels",
+      "list_tour_additional_info",
+    ];
+
+    const [tourRes, itinRes, actRes, hotelRes, addlRes] = await Promise.all([
+      invokeTool("get_tour", { tour_id: tourId }),
+      invokeTool("get_tour_itinerary", { tour_id: tourId }),
+      invokeTool("list_tour_activities", { tour_id: tourId }),
+      invokeTool("list_tour_hotels", { tour_id: tourId }),
+      invokeTool("list_tour_additional_info", { tour_id: tourId }),
+    ]);
+
+    if (!tourRes.ok) {
+      return new Response(
+        JSON.stringify({
+          error: "tour_not_accessible",
+          message: "You do not have access to this tour, or it does not exist.",
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    let sourceContext;
+    try {
+      sourceContext = buildGuestItinerarySourceContext({
+        tourResult: tourRes.data as Record<string, unknown>,
+        itineraryResult: (itinRes.ok ? itinRes.data : {}) as Record<string, unknown>,
+        activitiesResult: (actRes.ok ? actRes.data : {}) as Record<string, unknown>,
+        hotelsResult: (hotelRes.ok ? hotelRes.data : {}) as Record<string, unknown>,
+        additionalInformationResult: (addlRes.ok ? addlRes.data : {}) as Record<string, unknown>,
+        staffInstructions,
+        generatedAt: dateCtx.current_datetime,
+      });
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "context_incomplete", message: sanitizeError((e as Error).message) }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const tourStart = sourceContext.tour.start_date as string;
+    const tourEnd = sourceContext.tour.end_date as string;
+
+    let modelText = "";
+    let usageIn = 0;
+    let usageOut = 0;
+    try {
+      const oaRes = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          instructions: GUEST_ITINERARY_SKILL_PROMPT + dateGroundingBlock(dateCtx),
+          input: [
+            {
+              role: "user",
+              content:
+                `STRUCTURED CONTEXT (authoritative, do not infer beyond this):\n${
+                  JSON.stringify(sourceContext).slice(0, 120000)
+                }`,
+            },
+          ],
+          tool_choice: "none",
+          store: false,
+          max_output_tokens: 12000,
+          stream: true,
+          text: { format: { type: "json_schema", ...GUEST_ITINERARY_JSON_SCHEMA } },
+        }),
+      });
+      if (!oaRes.ok || !oaRes.body) {
+        const errText = await oaRes.text().catch(() => "");
+        console.error("[art-ai-chat] guest itinerary openai error", oaRes.status, sanitizeError(errText));
+        return new Response(JSON.stringify({ error: "AI_ERROR", status: oaRes.status }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const reader = oaRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const evt of events) {
+          const line = evt.split("\n").find((l) => l.startsWith("data:"));
+          if (!line) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          let json: any;
+          try {
+            json = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+          if (json.type === "response.output_text.delta" && typeof json.delta === "string") {
+            modelText += json.delta;
+          } else if (json.type === "response.completed" && json.response?.usage) {
+            usageIn += json.response.usage.input_tokens ?? 0;
+            usageOut += json.response.usage.output_tokens ?? 0;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[art-ai-chat] guest itinerary stream error", sanitizeError((e as Error).message));
+      return new Response(JSON.stringify({ error: "AI_ERROR" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let result: { draft: unknown; warnings: string[] };
+    try {
+      result = validateGuestItinerary(JSON.parse(redact(modelText)), {
+        tourId: tourId as string,
+        startDate: tourStart,
+        endDate: tourEnd,
+      });
+    } catch (e) {
+      console.error("[art-ai-chat] guest itinerary invalid draft", sanitizeError((e as Error).message));
+      return new Response(
+        JSON.stringify({ error: "invalid_draft", message: sanitizeError((e as Error).message) }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const latencyMs = Date.now() - startedAt;
+    const estCost =
+      (usageIn / 1_000_000) * PRICE_INPUT_PER_M + (usageOut / 1_000_000) * PRICE_OUTPUT_PER_M;
+    await userClient.from("ai_usage").insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      model: MODEL,
+      input_tokens: usageIn,
+      output_tokens: usageOut,
+      total_tokens: usageIn + usageOut,
+      tool_call_count: toolsUsed.length,
+      latency_ms: latencyMs,
+      estimated_cost_usd: Number(estCost.toFixed(6)),
+      skill_id: skillId,
+      entry_point: entryPoint,
+      source_page: sourcePage,
+      success: true,
+      tools_used: toolsUsed,
+    });
+
+    return new Response(
+      JSON.stringify({
+        skill_id: skillId,
+        draft: result.draft,
+        review_warnings: [...sourceContext.preflight_warnings, ...result.warnings],
+        tools_used: toolsUsed,
+        generated_at: dateCtx.current_datetime,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   // ============================================================

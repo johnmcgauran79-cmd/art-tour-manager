@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2 } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
 import { ItinerarySnapshotSection } from "./itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
+import { GuestDocumentTextModal } from "./itinerary/GuestDocumentTextModal";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionErrorDialog } from "./PermissionErrorDialog";
 
 interface TourItineraryTabProps {
@@ -27,11 +29,13 @@ interface TourItineraryTabProps {
 export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showGuestTextModal, setShowGuestTextModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
   const addDay = useAddItineraryDay();
   const deleteDay = useDeleteItineraryDay();
   const { userRole } = useAuth();
+  const { hasEditAccess } = usePermissions();
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -130,6 +134,14 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
             <>
               <Button
                 variant="outline"
+                onClick={() => setShowGuestTextModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Create Guest Document Text
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setShowGenerateModal(true)}
                 className="flex items-center gap-2"
               >
@@ -212,6 +224,19 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
           onOpenChange={setShowEmailModal}
           tour={tour}
           itineraryId={itinerary.id}
+        />
+      )}
+
+      {/* Guest Document Text (ART AI draft → editable Word document) */}
+      {itinerary && showGuestTextModal && (
+        <GuestDocumentTextModal
+          open={showGuestTextModal}
+          onOpenChange={setShowGuestTextModal}
+          tourId={tour.id}
+          tourName={tour.name}
+          itineraryId={itinerary.id}
+          canSave={hasEditAccess}
+          existingGuestDocumentName={itinerary.guest_document_file_name}
         />
       )}
 
