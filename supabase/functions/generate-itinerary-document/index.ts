@@ -410,7 +410,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           break-after: page;
         }
         .cover-banner {
-          background: ${NAVY};
+          background-color: ${NAVY};
+          background-image: ${HEADER_BG};
           color: #fff;
           text-align: center;
           padding: 24px 40px 22px;
@@ -437,7 +438,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           margin-top: 14px;
         }
         .cover-meta {
-          color: #c9d2df;
+          color: rgba(255,255,255,0.78);
           font-size: 12pt;
           margin-top: 8px;
           letter-spacing: 0.5px;
