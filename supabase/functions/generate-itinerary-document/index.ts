@@ -242,7 +242,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl, brand.colorBorder);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
