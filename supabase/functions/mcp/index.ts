@@ -3214,14 +3214,407 @@ var list_activity_attachments_default = defineTool46({
   }
 });
 
-// src/lib/mcp/tools/list-activity-external-links.ts
+// src/lib/mcp/tools/list-hotel-attachments.ts
 import { defineTool as defineTool47 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z47 } from "npm:zod@^3.25.76";
-var list_activity_external_links_default = defineTool47({
+var list_hotel_attachments_default = defineTool47({
+  name: "list_hotel_attachments",
+  title: "List hotel attachments",
+  description: "List file attachments (contracts, rooming confirmations) uploaded against a hotel.",
+  inputSchema: { hotel_id: z47.string().describe("The hotel id (uuid).") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ hotel_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("hotel_attachments").select("*").eq("hotel_id", hotel_id).order("uploaded_at", { ascending: false });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { attachments: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-attachment-download-url.ts
+import { defineTool as defineTool48 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z48 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_uploads.ts
+var ATTACHMENTS_BUCKET = "attachments";
+var MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+var ALLOWED_DOCUMENT_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "text/plain",
+  "text/csv",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+];
+var ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif"
+];
+function toolError2(text) {
+  return { content: [{ type: "text", text }], isError: true };
+}
+function decodeBase64(input) {
+  const clean = input.includes(",") && input.trim().startsWith("data:") ? input.slice(input.indexOf(",") + 1) : input;
+  if (typeof atob === "function") {
+    const bin = atob(clean.replace(/\s+/g, ""));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  return new Uint8Array(
+    globalThis.Buffer.from(clean, "base64")
+  );
+}
+function safeFileName(filename) {
+  const base = filename.split(/[\\/]/).pop() || "file";
+  return base.replace(/[^\w.\-]+/g, "_").slice(0, 180);
+}
+function decodeUpload(args) {
+  const { filename, content_type, data_base64, allowedTypes } = args;
+  if (!allowedTypes.includes(content_type)) {
+    return {
+      error: toolError2(
+        `Unsupported content_type '${content_type}'. Allowed: ${allowedTypes.join(", ")}`
+      )
+    };
+  }
+  let bytes;
+  try {
+    bytes = decodeBase64(data_base64);
+  } catch {
+    return { error: toolError2("data_base64 is not valid base64.") };
+  }
+  if (bytes.byteLength === 0) return { error: toolError2("Decoded file is empty.") };
+  if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+    return {
+      error: toolError2(`File exceeds the 20MB limit (${bytes.byteLength} bytes).`)
+    };
+  }
+  return {
+    file: {
+      bytes,
+      size: bytes.byteLength,
+      name: safeFileName(filename),
+      contentType: content_type
+    }
+  };
+}
+async function uploadToAttachments(ctx, folderPath, file, opts = {}) {
+  const path = `${folderPath.replace(/\/+$/, "")}/${Date.now()}-${file.name}`;
+  const { error } = await supabaseForUser(ctx).storage.from(ATTACHMENTS_BUCKET).upload(path, file.bytes, {
+    contentType: file.contentType,
+    upsert: opts.upsert ?? false
+  });
+  if (error) return { error: toolError2(`Storage upload failed: ${error.message}`) };
+  return { path };
+}
+async function removeFromAttachments(ctx, path) {
+  try {
+    await supabaseForUser(ctx).storage.from(ATTACHMENTS_BUCKET).remove([path]);
+  } catch {
+  }
+}
+async function signAttachmentUrl(ctx, path, expiresIn = 3600) {
+  const { data, error } = await supabaseForUser(ctx).storage.from(ATTACHMENTS_BUCKET).createSignedUrl(path, expiresIn);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
+// src/lib/mcp/tools/get-attachment-download-url.ts
+var get_attachment_download_url_default = defineTool48({
+  name: "get_attachment_download_url",
+  title: "Get a download link for a stored file",
+  description: "Create a temporary signed download link for a file already stored in the private attachments bucket. Pass the `file_path` returned by any list_*_attachments / upload_* tool. Admin/manager only.",
+  inputSchema: {
+    file_path: z48.string().min(1).describe("Storage object path, e.g. 'tours/<uuid>/1712345678-doc.pdf'."),
+    expires_in_seconds: z48.number().int().min(60).max(604800).optional().describe("Link lifetime in seconds (default 3600, max 604800 = 7 days).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: false, openWorldHint: false },
+  handler: async ({ file_path, expires_in_seconds }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const url = await signAttachmentUrl(ctx, file_path, expires_in_seconds ?? 3600);
+    if (!url) return toolError2(`Could not create a signed URL for '${file_path}'. Check the path exists.`);
+    const out = { file_path, signed_url: url, expires_in_seconds: expires_in_seconds ?? 3600 };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/upload-tour-attachment.ts
+import { defineTool as defineTool49 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z49 } from "npm:zod@^3.25.76";
+var upload_tour_attachment_default = defineTool49({
+  name: "upload_tour_attachment",
+  title: "Upload a file to a tour",
+  description: "Upload a document or image against a tour (guest docs, contracts, ops paperwork). Provide the file as base64 in `data_base64`, max 20MB. Appears in the tour's Attachments section. Admin/manager only.",
+  inputSchema: {
+    tour_id: z49.string().describe("The tour id (uuid)."),
+    filename: z49.string().min(1).max(255).describe("Filename including extension, e.g. 'darwin-cup-guest-doc.pdf'."),
+    content_type: z49.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
+    data_base64: z49.string().min(1).describe("Base64-encoded file contents (no data: prefix).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ tour_id, filename, content_type, data_base64 }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({ filename, content_type, data_base64, allowedTypes: ALLOWED_DOCUMENT_TYPES });
+    if ("error" in decoded) return decoded.error;
+    const supabase = supabaseForUser(ctx);
+    const { data: tour, error: tourError } = await supabase.from("tours").select("id, name").eq("id", tour_id).maybeSingle();
+    if (tourError) return toolError2(tourError.message);
+    if (!tour) return toolError2(`No tour found with id ${tour_id}.`);
+    const uploaded = await uploadToAttachments(ctx, `tours/${tour_id}`, decoded.file);
+    if ("error" in uploaded) return uploaded.error;
+    const { data, error } = await supabase.from("tour_attachments").insert({
+      tour_id,
+      file_name: decoded.file.name,
+      file_path: uploaded.path,
+      file_size: decoded.file.size,
+      file_type: decoded.file.contentType,
+      uploaded_by: ctx.getUserId()
+    }).select().single();
+    if (error) {
+      await removeFromAttachments(ctx, uploaded.path);
+      return toolError2(error.message);
+    }
+    const out = {
+      attachment: data,
+      tour_name: tour.name ?? null,
+      signed_url: await signAttachmentUrl(ctx, uploaded.path)
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/upload-activity-attachment.ts
+import { defineTool as defineTool50 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z50 } from "npm:zod@^3.25.76";
+var upload_activity_attachment_default = defineTool50({
+  name: "upload_activity_attachment",
+  title: "Upload a file to an activity",
+  description: "Upload a document or image against an activity (contracts, briefs, tickets, dress code sheets). Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
+  inputSchema: {
+    activity_id: z50.string().describe("The activity id (uuid)."),
+    filename: z50.string().min(1).max(255).describe("Filename including extension."),
+    content_type: z50.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
+    data_base64: z50.string().min(1).describe("Base64-encoded file contents (no data: prefix).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ activity_id, filename, content_type, data_base64 }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({ filename, content_type, data_base64, allowedTypes: ALLOWED_DOCUMENT_TYPES });
+    if ("error" in decoded) return decoded.error;
+    const supabase = supabaseForUser(ctx);
+    const { data: activity, error: activityError } = await supabase.from("activities").select("id, name").eq("id", activity_id).maybeSingle();
+    if (activityError) return toolError2(activityError.message);
+    if (!activity) return toolError2(`No activity found with id ${activity_id}.`);
+    const uploaded = await uploadToAttachments(ctx, `activities/${activity_id}`, decoded.file);
+    if ("error" in uploaded) return uploaded.error;
+    const { data, error } = await supabase.from("activity_attachments").insert({
+      activity_id,
+      file_name: decoded.file.name,
+      file_path: uploaded.path,
+      file_size: decoded.file.size,
+      file_type: decoded.file.contentType,
+      uploaded_by: ctx.getUserId()
+    }).select().single();
+    if (error) {
+      await removeFromAttachments(ctx, uploaded.path);
+      return toolError2(error.message);
+    }
+    const out = {
+      attachment: data,
+      activity_name: activity.name ?? null,
+      signed_url: await signAttachmentUrl(ctx, uploaded.path)
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/upload-hotel-attachment.ts
+import { defineTool as defineTool51 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z51 } from "npm:zod@^3.25.76";
+var upload_hotel_attachment_default = defineTool51({
+  name: "upload_hotel_attachment",
+  title: "Upload a file to a hotel",
+  description: "Upload a document or image against a hotel (contracts, rooming confirmations, invoices). Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
+  inputSchema: {
+    hotel_id: z51.string().describe("The hotel id (uuid)."),
+    filename: z51.string().min(1).max(255).describe("Filename including extension."),
+    content_type: z51.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
+    data_base64: z51.string().min(1).describe("Base64-encoded file contents (no data: prefix).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ hotel_id, filename, content_type, data_base64 }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({ filename, content_type, data_base64, allowedTypes: ALLOWED_DOCUMENT_TYPES });
+    if ("error" in decoded) return decoded.error;
+    const supabase = supabaseForUser(ctx);
+    const { data: hotel, error: hotelError } = await supabase.from("hotels").select("id, name").eq("id", hotel_id).maybeSingle();
+    if (hotelError) return toolError2(hotelError.message);
+    if (!hotel) return toolError2(`No hotel found with id ${hotel_id}.`);
+    const uploaded = await uploadToAttachments(ctx, `hotels/${hotel_id}`, decoded.file);
+    if ("error" in uploaded) return uploaded.error;
+    const { data, error } = await supabase.from("hotel_attachments").insert({
+      hotel_id,
+      file_name: decoded.file.name,
+      file_path: uploaded.path,
+      file_size: decoded.file.size,
+      file_type: decoded.file.contentType,
+      uploaded_by: ctx.getUserId()
+    }).select().single();
+    if (error) {
+      await removeFromAttachments(ctx, uploaded.path);
+      return toolError2(error.message);
+    }
+    const out = {
+      attachment: data,
+      hotel_name: hotel.name ?? null,
+      signed_url: await signAttachmentUrl(ctx, uploaded.path)
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/upload-itinerary-document.ts
+import { defineTool as defineTool52 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z52 } from "npm:zod@^3.25.76";
+var TARGETS = {
+  itinerary_snapshot: {
+    folder: "itinerary-snapshots",
+    pathColumn: "snapshot_file_path",
+    nameColumn: "snapshot_file_name"
+  },
+  guest_document: {
+    folder: "guest-documents",
+    pathColumn: "guest_document_file_path",
+    nameColumn: "guest_document_file_name"
+  }
+};
+var upload_itinerary_document_default = defineTool52({
+  name: "upload_itinerary_document",
+  title: "Upload the itinerary snapshot or guest document",
+  description: "Upload (or replace) a tour's Itinerary Snapshot or Guest Document file on its itinerary. Choose `document` = 'itinerary_snapshot' or 'guest_document'. Any existing file for that slot is replaced and removed from storage. Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
+  inputSchema: {
+    tour_id: z52.string().describe("The tour id (uuid)."),
+    document: z52.enum(["itinerary_snapshot", "guest_document"]).describe("Which slot to fill: 'itinerary_snapshot' or 'guest_document'."),
+    filename: z52.string().min(1).max(255).describe("Filename including extension, usually a PDF."),
+    content_type: z52.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
+    data_base64: z52.string().min(1).describe("Base64-encoded file contents (no data: prefix).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ tour_id, document, filename, content_type, data_base64 }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({ filename, content_type, data_base64, allowedTypes: ALLOWED_DOCUMENT_TYPES });
+    if ("error" in decoded) return decoded.error;
+    const target = TARGETS[document];
+    const supabase = supabaseForUser(ctx);
+    const { data: itinerary, error: itineraryError } = await supabase.from("tour_itineraries").select("*").eq("tour_id", tour_id).maybeSingle();
+    if (itineraryError) return toolError2(itineraryError.message);
+    if (!itinerary) {
+      return toolError2(
+        `No itinerary exists for tour ${tour_id}. Create one first with create_itinerary.`
+      );
+    }
+    const uploaded = await uploadToAttachments(ctx, `${target.folder}/${tour_id}`, decoded.file);
+    if ("error" in uploaded) return uploaded.error;
+    const { error } = await supabase.from("tour_itineraries").update({
+      [target.pathColumn]: uploaded.path,
+      [target.nameColumn]: decoded.file.name
+    }).eq("id", itinerary.id);
+    if (error) {
+      await removeFromAttachments(ctx, uploaded.path);
+      return toolError2(error.message);
+    }
+    const previousPath = itinerary[target.pathColumn];
+    if (typeof previousPath === "string" && previousPath && previousPath !== uploaded.path) {
+      await removeFromAttachments(ctx, previousPath);
+    }
+    const out = {
+      tour_id,
+      document,
+      file_path: uploaded.path,
+      file_name: decoded.file.name,
+      file_size: decoded.file.size,
+      replaced_previous: typeof previousPath === "string" && !!previousPath,
+      signed_url: await signAttachmentUrl(ctx, uploaded.path)
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/upload-tour-document-image.ts
+import { defineTool as defineTool53 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z53 } from "npm:zod@^3.25.76";
+var MAX_DOCUMENT_IMAGES = 10;
+var upload_tour_document_image_default = defineTool53({
+  name: "upload_tour_document_image",
+  title: "Upload a tour guest document image",
+  description: "Upload an image used in a tour's guest documents (max 10 per tour), with an optional caption. Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
+  inputSchema: {
+    tour_id: z53.string().describe("The tour id (uuid)."),
+    filename: z53.string().min(1).max(255).describe("Filename including extension, e.g. 'flemington.jpg'."),
+    content_type: z53.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}`),
+    data_base64: z53.string().min(1).describe("Base64-encoded image contents (no data: prefix)."),
+    caption: z53.string().max(500).optional().describe("Optional caption shown under the image.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ tour_id, filename, content_type, data_base64, caption }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({ filename, content_type, data_base64, allowedTypes: ALLOWED_IMAGE_TYPES });
+    if ("error" in decoded) return decoded.error;
+    const supabase = supabaseForUser(ctx);
+    const { data: existing, error: existingError } = await supabase.from("tour_document_images").select("id").eq("tour_id", tour_id);
+    if (existingError) return toolError2(existingError.message);
+    const count = existing?.length ?? 0;
+    if (count >= MAX_DOCUMENT_IMAGES) {
+      return toolError2(
+        `This tour already has the maximum of ${MAX_DOCUMENT_IMAGES} document images. Delete one before uploading another.`
+      );
+    }
+    const uploaded = await uploadToAttachments(ctx, `document-images/${tour_id}`, decoded.file, { upsert: true });
+    if ("error" in uploaded) return uploaded.error;
+    const { data, error } = await supabase.from("tour_document_images").insert({
+      tour_id,
+      file_path: uploaded.path,
+      caption: caption || null,
+      sort_order: count,
+      uploaded_by: ctx.getUserId()
+    }).select().single();
+    if (error) {
+      await removeFromAttachments(ctx, uploaded.path);
+      return toolError2(error.message);
+    }
+    const out = { image: data, signed_url: await signAttachmentUrl(ctx, uploaded.path) };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/list-activity-external-links.ts
+import { defineTool as defineTool54 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z54 } from "npm:zod@^3.25.76";
+var list_activity_external_links_default = defineTool54({
   name: "list_activity_external_links",
   title: "List activity external links",
   description: "List external reference links attached to an activity.",
-  inputSchema: { activity_id: z47.string() },
+  inputSchema: { activity_id: z54.string() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ activity_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3236,13 +3629,13 @@ var list_activity_external_links_default = defineTool47({
 });
 
 // src/lib/mcp/tools/list-booking-travel-docs.ts
-import { defineTool as defineTool48 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z48 } from "npm:zod@^3.25.76";
-var list_booking_travel_docs_default = defineTool48({
+import { defineTool as defineTool55 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z55 } from "npm:zod@^3.25.76";
+var list_booking_travel_docs_default = defineTool55({
   name: "list_booking_travel_docs",
   title: "List booking travel documents",
   description: "List travel documents (passports, visas, etc.) recorded against a booking, including full passport numbers, DOB and nationality (admin/manager only).",
-  inputSchema: { booking_id: z48.string() },
+  inputSchema: { booking_id: z55.string() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3257,15 +3650,15 @@ var list_booking_travel_docs_default = defineTool48({
 });
 
 // src/lib/mcp/tools/list-booking-waivers.ts
-import { defineTool as defineTool49 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z49 } from "npm:zod@^3.25.76";
-var list_booking_waivers_default = defineTool49({
+import { defineTool as defineTool56 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z56 } from "npm:zod@^3.25.76";
+var list_booking_waivers_default = defineTool56({
   name: "list_booking_waivers",
   title: "List booking waivers",
   description: "List signed / requested waivers for a booking or for all bookings on a tour.",
   inputSchema: {
-    booking_id: z49.string().optional(),
-    tour_id: z49.string().optional()
+    booking_id: z56.string().optional(),
+    tour_id: z56.string().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id, tour_id }, ctx) => {
@@ -3286,13 +3679,13 @@ var list_booking_waivers_default = defineTool49({
 });
 
 // src/lib/mcp/tools/list-booking-comments.ts
-import { defineTool as defineTool50 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z50 } from "npm:zod@^3.25.76";
-var list_booking_comments_default = defineTool50({
+import { defineTool as defineTool57 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z57 } from "npm:zod@^3.25.76";
+var list_booking_comments_default = defineTool57({
   name: "list_booking_comments",
   title: "List booking comments",
   description: "List internal staff comments on a booking.",
-  inputSchema: { booking_id: z50.string() },
+  inputSchema: { booking_id: z57.string() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ booking_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3307,16 +3700,16 @@ var list_booking_comments_default = defineTool50({
 });
 
 // src/lib/mcp/tools/list-tour-email-logs.ts
-import { defineTool as defineTool51 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z51 } from "npm:zod@^3.25.76";
-var list_tour_email_logs_default = defineTool51({
+import { defineTool as defineTool58 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z58 } from "npm:zod@^3.25.76";
+var list_tour_email_logs_default = defineTool58({
   name: "list_tour_email_logs",
   title: "List tour email logs",
   description: "List sent-email logs for a tour (subject, recipient, status, error, sent_at). Filter with booking_id or a limit.",
   inputSchema: {
-    tour_id: z51.string().optional(),
-    booking_id: z51.string().optional(),
-    limit: z51.number().int().optional()
+    tour_id: z58.string().optional(),
+    booking_id: z58.string().optional(),
+    limit: z58.number().int().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, booking_id, limit }, ctx) => {
@@ -3335,15 +3728,15 @@ var list_tour_email_logs_default = defineTool51({
 });
 
 // src/lib/mcp/tools/list-scheduled-emails.ts
-import { defineTool as defineTool52 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z52 } from "npm:zod@^3.25.76";
-var list_scheduled_emails_default = defineTool52({
+import { defineTool as defineTool59 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z59 } from "npm:zod@^3.25.76";
+var list_scheduled_emails_default = defineTool59({
   name: "list_scheduled_emails",
   title: "List scheduled emails",
   description: "List emails scheduled for future delivery. Filter by tour_id or booking_id.",
   inputSchema: {
-    tour_id: z52.string().optional(),
-    booking_id: z52.string().optional()
+    tour_id: z59.string().optional(),
+    booking_id: z59.string().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, booking_id }, ctx) => {
@@ -3362,13 +3755,13 @@ var list_scheduled_emails_default = defineTool52({
 });
 
 // src/lib/mcp/tools/list-pending-email-approvals.ts
-import { defineTool as defineTool53 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z53 } from "npm:zod@^3.25.76";
-var list_pending_email_approvals_default = defineTool53({
+import { defineTool as defineTool60 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z60 } from "npm:zod@^3.25.76";
+var list_pending_email_approvals_default = defineTool60({
   name: "list_pending_email_approvals",
   title: "List pending status-change email approvals",
   description: "List status-change email approvals currently awaiting review. Filter by tour_id.",
-  inputSchema: { tour_id: z53.string().optional() },
+  inputSchema: { tour_id: z60.string().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3385,8 +3778,8 @@ var list_pending_email_approvals_default = defineTool53({
 });
 
 // src/lib/mcp/tools/list-email-templates.ts
-import { defineTool as defineTool54 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var list_email_templates_default = defineTool54({
+import { defineTool as defineTool61 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_email_templates_default = defineTool61({
   name: "list_email_templates",
   title: "List email templates",
   description: "List all email templates (name, subject, body, category).",
@@ -3405,13 +3798,13 @@ var list_email_templates_default = defineTool54({
 });
 
 // src/lib/mcp/tools/list-tour-email-rule-overrides.ts
-import { defineTool as defineTool55 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z54 } from "npm:zod@^3.25.76";
-var list_tour_email_rule_overrides_default = defineTool55({
+import { defineTool as defineTool62 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z61 } from "npm:zod@^3.25.76";
+var list_tour_email_rule_overrides_default = defineTool62({
   name: "list_tour_email_rule_overrides",
   title: "List tour-specific email rule overrides",
   description: "List automated-email rule overrides configured for a specific tour (custom templates, disabled rules, etc.).",
-  inputSchema: { tour_id: z54.string() },
+  inputSchema: { tour_id: z61.string() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3426,26 +3819,26 @@ var list_tour_email_rule_overrides_default = defineTool55({
 });
 
 // src/lib/mcp/tools/create-hotel.ts
-import { defineTool as defineTool56 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z55 } from "npm:zod@^3.25.76";
-var create_hotel_default = defineTool56({
+import { defineTool as defineTool63 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z62 } from "npm:zod@^3.25.76";
+var create_hotel_default = defineTool63({
   name: "create_hotel",
   title: "Create hotel",
   description: "Add a new hotel to a tour.",
   inputSchema: {
-    tour_id: z55.string(),
-    name: z55.string(),
-    address: z55.string().optional(),
-    contact_name: z55.string().optional(),
-    contact_phone: z55.string().optional(),
-    contact_email: z55.string().optional(),
-    default_check_in: z55.string().optional().describe("YYYY-MM-DD."),
-    default_check_out: z55.string().optional().describe("YYYY-MM-DD."),
-    default_room_type: z55.string().optional(),
-    rooms_reserved: z55.number().int().optional(),
-    operations_notes: z55.string().optional(),
-    booking_status: z55.string().optional(),
-    payment_status: z55.string().optional()
+    tour_id: z62.string(),
+    name: z62.string(),
+    address: z62.string().optional(),
+    contact_name: z62.string().optional(),
+    contact_phone: z62.string().optional(),
+    contact_email: z62.string().optional(),
+    default_check_in: z62.string().optional().describe("YYYY-MM-DD."),
+    default_check_out: z62.string().optional().describe("YYYY-MM-DD."),
+    default_room_type: z62.string().optional(),
+    rooms_reserved: z62.number().int().optional(),
+    operations_notes: z62.string().optional(),
+    booking_status: z62.string().optional(),
+    payment_status: z62.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -3461,26 +3854,26 @@ var create_hotel_default = defineTool56({
 });
 
 // src/lib/mcp/tools/update-hotel.ts
-import { defineTool as defineTool57 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z56 } from "npm:zod@^3.25.76";
-var update_hotel_default = defineTool57({
+import { defineTool as defineTool64 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z63 } from "npm:zod@^3.25.76";
+var update_hotel_default = defineTool64({
   name: "update_hotel",
   title: "Update hotel",
   description: "Update fields on an existing hotel by id. Only supplied fields are changed.",
   inputSchema: {
-    hotel_id: z56.string(),
-    name: z56.string().optional(),
-    address: z56.string().optional(),
-    contact_name: z56.string().optional(),
-    contact_phone: z56.string().optional(),
-    contact_email: z56.string().optional(),
-    default_check_in: z56.string().optional(),
-    default_check_out: z56.string().optional(),
-    default_room_type: z56.string().optional(),
-    rooms_reserved: z56.number().int().optional(),
-    operations_notes: z56.string().optional(),
-    booking_status: z56.string().optional(),
-    payment_status: z56.string().optional()
+    hotel_id: z63.string(),
+    name: z63.string().optional(),
+    address: z63.string().optional(),
+    contact_name: z63.string().optional(),
+    contact_phone: z63.string().optional(),
+    contact_email: z63.string().optional(),
+    default_check_in: z63.string().optional(),
+    default_check_out: z63.string().optional(),
+    default_room_type: z63.string().optional(),
+    rooms_reserved: z63.number().int().optional(),
+    operations_notes: z63.string().optional(),
+    booking_status: z63.string().optional(),
+    payment_status: z63.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ hotel_id, ...updates }, ctx) => {
@@ -3502,13 +3895,13 @@ var update_hotel_default = defineTool57({
 });
 
 // src/lib/mcp/tools/delete-hotel.ts
-import { defineTool as defineTool58 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z57 } from "npm:zod@^3.25.76";
-var delete_hotel_default = defineTool58({
+import { defineTool as defineTool65 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z64 } from "npm:zod@^3.25.76";
+var delete_hotel_default = defineTool65({
   name: "delete_hotel",
   title: "Delete hotel",
   description: "Delete a hotel by id. This cascades to hotel bookings \u2014 confirm with the user first.",
-  inputSchema: { hotel_id: z57.string() },
+  inputSchema: { hotel_id: z64.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ hotel_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3520,26 +3913,26 @@ var delete_hotel_default = defineTool58({
 });
 
 // src/lib/mcp/tools/upsert-hotel-booking.ts
-import { defineTool as defineTool59 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z58 } from "npm:zod@^3.25.76";
-var upsert_hotel_booking_default = defineTool59({
+import { defineTool as defineTool66 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z65 } from "npm:zod@^3.25.76";
+var upsert_hotel_booking_default = defineTool66({
   name: "upsert_hotel_booking",
   title: "Create or update a hotel booking",
   description: "Create a hotel booking (link a booking to a hotel with dates/bedding/room) or update it if hotel_booking_id is supplied.",
   inputSchema: {
-    hotel_booking_id: z58.string().optional().describe("Provide to update; omit to create."),
-    hotel_id: z58.string().optional(),
-    booking_id: z58.string().optional(),
-    check_in_date: z58.string().optional(),
-    check_out_date: z58.string().optional(),
-    nights: z58.number().int().optional(),
-    bedding: z58.string().optional(),
-    allocated: z58.boolean().optional(),
-    room_type: z58.string().optional(),
-    room_upgrade: z58.string().optional(),
-    confirmation_number: z58.string().optional(),
-    room_requests: z58.string().optional(),
-    required: z58.boolean().optional()
+    hotel_booking_id: z65.string().optional().describe("Provide to update; omit to create."),
+    hotel_id: z65.string().optional(),
+    booking_id: z65.string().optional(),
+    check_in_date: z65.string().optional(),
+    check_out_date: z65.string().optional(),
+    nights: z65.number().int().optional(),
+    bedding: z65.string().optional(),
+    allocated: z65.boolean().optional(),
+    room_type: z65.string().optional(),
+    room_upgrade: z65.string().optional(),
+    confirmation_number: z65.string().optional(),
+    room_requests: z65.string().optional(),
+    required: z65.boolean().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ hotel_booking_id, ...fields }, ctx) => {
@@ -3563,13 +3956,13 @@ var upsert_hotel_booking_default = defineTool59({
 });
 
 // src/lib/mcp/tools/delete-hotel-booking.ts
-import { defineTool as defineTool60 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z59 } from "npm:zod@^3.25.76";
-var delete_hotel_booking_default = defineTool60({
+import { defineTool as defineTool67 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z66 } from "npm:zod@^3.25.76";
+var delete_hotel_booking_default = defineTool67({
   name: "delete_hotel_booking",
   title: "Delete a hotel booking",
   description: "Remove a hotel booking (unlink a booking from a hotel).",
-  inputSchema: { hotel_booking_id: z59.string() },
+  inputSchema: { hotel_booking_id: z66.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ hotel_booking_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3581,29 +3974,29 @@ var delete_hotel_booking_default = defineTool60({
 });
 
 // src/lib/mcp/tools/create-activity.ts
-import { defineTool as defineTool61 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z60 } from "npm:zod@^3.25.76";
-var create_activity_default = defineTool61({
+import { defineTool as defineTool68 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z67 } from "npm:zod@^3.25.76";
+var create_activity_default = defineTool68({
   name: "create_activity",
   title: "Create activity",
   description: "Add a new activity to a tour.",
   inputSchema: {
-    tour_id: z60.string(),
-    name: z60.string(),
-    activity_date: z60.string().optional().describe("YYYY-MM-DD."),
-    start_time: z60.string().optional().describe("HH:MM."),
-    end_time: z60.string().optional().describe("HH:MM."),
-    location: z60.string().optional(),
-    dress_code: z60.string().optional(),
-    hospitality_inclusions: z60.string().optional(),
-    notes: z60.string().optional(),
-    operations_notes: z60.string().optional(),
-    transport_mode: z60.string().optional(),
-    transport_company: z60.string().optional(),
-    transport_status: z60.string().optional(),
-    booking_status: z60.string().optional(),
-    payment_status: z60.string().optional(),
-    spots_available: z60.number().int().optional()
+    tour_id: z67.string(),
+    name: z67.string(),
+    activity_date: z67.string().optional().describe("YYYY-MM-DD."),
+    start_time: z67.string().optional().describe("HH:MM."),
+    end_time: z67.string().optional().describe("HH:MM."),
+    location: z67.string().optional(),
+    dress_code: z67.string().optional(),
+    hospitality_inclusions: z67.string().optional(),
+    notes: z67.string().optional(),
+    operations_notes: z67.string().optional(),
+    transport_mode: z67.string().optional(),
+    transport_company: z67.string().optional(),
+    transport_status: z67.string().optional(),
+    booking_status: z67.string().optional(),
+    payment_status: z67.string().optional(),
+    spots_available: z67.number().int().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -3619,43 +4012,43 @@ var create_activity_default = defineTool61({
 });
 
 // src/lib/mcp/tools/update-activity.ts
-import { defineTool as defineTool62 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z61 } from "npm:zod@^3.25.76";
-var update_activity_default = defineTool62({
+import { defineTool as defineTool69 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z68 } from "npm:zod@^3.25.76";
+var update_activity_default = defineTool69({
   name: "update_activity",
   title: "Update activity",
   description: "Update fields on an existing activity. Only supplied fields are changed.",
   inputSchema: {
-    activity_id: z61.string(),
-    name: z61.string().optional(),
-    activity_date: z61.string().optional(),
-    start_time: z61.string().optional(),
-    end_time: z61.string().optional(),
-    depart_for_activity: z61.string().optional(),
-    location: z61.string().optional(),
-    contact_name: z61.string().optional(),
-    contact_phone: z61.string().optional(),
-    contact_email: z61.string().optional(),
-    dress_code: z61.string().optional(),
-    hospitality_inclusions: z61.string().optional(),
-    notes: z61.string().optional(),
-    operations_notes: z61.string().optional(),
-    transport_mode: z61.string().optional(),
-    transport_company: z61.string().optional(),
-    transport_contact_name: z61.string().optional(),
-    transport_phone: z61.string().optional(),
-    transport_email: z61.string().optional(),
-    transport_notes: z61.string().optional(),
-    transport_status: z61.string().optional(),
-    booking_status: z61.string().optional(),
-    payment_status: z61.string().optional(),
-    cancellation_status: z61.string().optional(),
-    cancellation_details: z61.string().optional(),
-    cancellation_terms: z61.string().optional(),
-    driver_name: z61.string().optional(),
-    driver_phone: z61.string().optional(),
-    pickup_location_transport: z61.string().optional(),
-    spots_available: z61.number().int().optional()
+    activity_id: z68.string(),
+    name: z68.string().optional(),
+    activity_date: z68.string().optional(),
+    start_time: z68.string().optional(),
+    end_time: z68.string().optional(),
+    depart_for_activity: z68.string().optional(),
+    location: z68.string().optional(),
+    contact_name: z68.string().optional(),
+    contact_phone: z68.string().optional(),
+    contact_email: z68.string().optional(),
+    dress_code: z68.string().optional(),
+    hospitality_inclusions: z68.string().optional(),
+    notes: z68.string().optional(),
+    operations_notes: z68.string().optional(),
+    transport_mode: z68.string().optional(),
+    transport_company: z68.string().optional(),
+    transport_contact_name: z68.string().optional(),
+    transport_phone: z68.string().optional(),
+    transport_email: z68.string().optional(),
+    transport_notes: z68.string().optional(),
+    transport_status: z68.string().optional(),
+    booking_status: z68.string().optional(),
+    payment_status: z68.string().optional(),
+    cancellation_status: z68.string().optional(),
+    cancellation_details: z68.string().optional(),
+    cancellation_terms: z68.string().optional(),
+    driver_name: z68.string().optional(),
+    driver_phone: z68.string().optional(),
+    pickup_location_transport: z68.string().optional(),
+    spots_available: z68.number().int().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ activity_id, ...updates }, ctx) => {
@@ -3677,13 +4070,13 @@ var update_activity_default = defineTool62({
 });
 
 // src/lib/mcp/tools/delete-activity.ts
-import { defineTool as defineTool63 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z62 } from "npm:zod@^3.25.76";
-var delete_activity_default = defineTool63({
+import { defineTool as defineTool70 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z69 } from "npm:zod@^3.25.76";
+var delete_activity_default = defineTool70({
   name: "delete_activity",
   title: "Delete activity",
   description: "Delete an activity by id. Cascades to activity bookings \u2014 confirm first.",
-  inputSchema: { activity_id: z62.string() },
+  inputSchema: { activity_id: z69.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ activity_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3695,17 +4088,17 @@ var delete_activity_default = defineTool63({
 });
 
 // src/lib/mcp/tools/upsert-activity-booking.ts
-import { defineTool as defineTool64 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z63 } from "npm:zod@^3.25.76";
-var upsert_activity_booking_default = defineTool64({
+import { defineTool as defineTool71 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z70 } from "npm:zod@^3.25.76";
+var upsert_activity_booking_default = defineTool71({
   name: "upsert_activity_booking",
   title: "Create or update an activity booking",
   description: "Assign a booking to an activity with a passenger count, or update the count. Provide activity_booking_id to update, or activity_id + booking_id to create.",
   inputSchema: {
-    activity_booking_id: z63.string().optional(),
-    activity_id: z63.string().optional(),
-    booking_id: z63.string().optional(),
-    passengers_attending: z63.number().int().describe("Number of passengers attending (0 to opt out).")
+    activity_booking_id: z70.string().optional(),
+    activity_id: z70.string().optional(),
+    booking_id: z70.string().optional(),
+    passengers_attending: z70.number().int().describe("Number of passengers attending (0 to opt out).")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ activity_booking_id, activity_id, booking_id, passengers_attending }, ctx) => {
@@ -3726,13 +4119,13 @@ var upsert_activity_booking_default = defineTool64({
 });
 
 // src/lib/mcp/tools/delete-activity-booking.ts
-import { defineTool as defineTool65 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z64 } from "npm:zod@^3.25.76";
-var delete_activity_booking_default = defineTool65({
+import { defineTool as defineTool72 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z71 } from "npm:zod@^3.25.76";
+var delete_activity_booking_default = defineTool72({
   name: "delete_activity_booking",
   title: "Delete an activity booking",
   description: "Remove a booking's assignment to an activity.",
-  inputSchema: { activity_booking_id: z64.string() },
+  inputSchema: { activity_booking_id: z71.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ activity_booking_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3744,20 +4137,20 @@ var delete_activity_booking_default = defineTool65({
 });
 
 // src/lib/mcp/tools/list-tasks.ts
-import { defineTool as defineTool66 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z65 } from "npm:zod@^3.25.76";
-var list_tasks_default = defineTool66({
+import { defineTool as defineTool73 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z72 } from "npm:zod@^3.25.76";
+var list_tasks_default = defineTool73({
   name: "list_tasks",
   title: "List tasks",
   description: "List tasks with optional filters. Filter by status, priority, category, tour_id, assignee_user_id, or search text in title/description. Returns up to `limit` (default 50, max 200) most recent tasks.",
   inputSchema: {
-    status: z65.string().optional().describe("Task status enum value."),
-    priority: z65.string().optional(),
-    category: z65.string().optional(),
-    tour_id: z65.string().optional(),
-    assignee_user_id: z65.string().optional().describe("Filter tasks assigned to this user id."),
-    search: z65.string().optional().describe("Case-insensitive substring in title or description."),
-    limit: z65.number().int().min(1).max(200).optional()
+    status: z72.string().optional().describe("Task status enum value."),
+    priority: z72.string().optional(),
+    category: z72.string().optional(),
+    tour_id: z72.string().optional(),
+    assignee_user_id: z72.string().optional().describe("Filter tasks assigned to this user id."),
+    search: z72.string().optional().describe("Case-insensitive substring in title or description."),
+    limit: z72.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -3790,13 +4183,13 @@ var list_tasks_default = defineTool66({
 });
 
 // src/lib/mcp/tools/get-task.ts
-import { defineTool as defineTool67 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z66 } from "npm:zod@^3.25.76";
-var get_task_default = defineTool67({
+import { defineTool as defineTool74 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z73 } from "npm:zod@^3.25.76";
+var get_task_default = defineTool74({
   name: "get_task",
   title: "Get task",
   description: "Return full task detail: task row, assignments, watchers, approvers, subtasks, comments, entity links, and attachments metadata.",
-  inputSchema: { task_id: z66.string() },
+  inputSchema: { task_id: z73.string() },
   annotations: { readOnlyHint: true, openWorldHint: false },
   handler: async ({ task_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3831,24 +4224,24 @@ var get_task_default = defineTool67({
 });
 
 // src/lib/mcp/tools/create-task.ts
-import { defineTool as defineTool68 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z67 } from "npm:zod@^3.25.76";
-var create_task_default = defineTool68({
+import { defineTool as defineTool75 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z74 } from "npm:zod@^3.25.76";
+var create_task_default = defineTool75({
   name: "create_task",
   title: "Create task",
   description: "Create a task. Optionally assign users via `assignee_user_ids` (creates task_assignments rows). Status enum: not_started|in_progress|waiting|completed|cancelled|archived|not_required|with_third_party|awaiting_further_information|approval_required|approved|changes_needed. Priority: low|medium|high|critical. Category: operations|finance|marketing|booking|maintenance|general. Due date accepts YYYY-MM-DD (stored as literal date) or full ISO timestamp.",
   inputSchema: {
-    title: z67.string().min(1),
-    description: z67.string().optional(),
-    status: z67.string().optional(),
-    priority: z67.string().optional(),
-    category: z67.string().optional(),
-    due_date: z67.string().optional(),
-    tour_id: z67.string().optional(),
-    parent_task_id: z67.string().optional(),
-    depends_on_task_id: z67.string().optional(),
-    url_reference: z67.string().optional(),
-    assignee_user_ids: z67.array(z67.string()).optional()
+    title: z74.string().min(1),
+    description: z74.string().optional(),
+    status: z74.string().optional(),
+    priority: z74.string().optional(),
+    category: z74.string().optional(),
+    due_date: z74.string().optional(),
+    tour_id: z74.string().optional(),
+    parent_task_id: z74.string().optional(),
+    depends_on_task_id: z74.string().optional(),
+    url_reference: z74.string().optional(),
+    assignee_user_ids: z74.array(z74.string()).optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -3877,25 +4270,25 @@ var create_task_default = defineTool68({
 });
 
 // src/lib/mcp/tools/update-task.ts
-import { defineTool as defineTool69 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z68 } from "npm:zod@^3.25.76";
-var update_task_default = defineTool69({
+import { defineTool as defineTool76 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z75 } from "npm:zod@^3.25.76";
+var update_task_default = defineTool76({
   name: "update_task",
   title: "Update task",
   description: "Update fields on an existing task. Only supplied fields are changed. Set status to 'completed' to complete a task.",
   inputSchema: {
-    task_id: z68.string(),
-    title: z68.string().optional(),
-    description: z68.string().optional(),
-    status: z68.string().optional(),
-    priority: z68.string().optional(),
-    category: z68.string().optional(),
-    due_date: z68.string().nullable().optional(),
-    tour_id: z68.string().nullable().optional(),
-    parent_task_id: z68.string().nullable().optional(),
-    depends_on_task_id: z68.string().nullable().optional(),
-    url_reference: z68.string().nullable().optional(),
-    quick_update: z68.string().optional().describe("Short status note; timestamps set automatically.")
+    task_id: z75.string(),
+    title: z75.string().optional(),
+    description: z75.string().optional(),
+    status: z75.string().optional(),
+    priority: z75.string().optional(),
+    category: z75.string().optional(),
+    due_date: z75.string().nullable().optional(),
+    tour_id: z75.string().nullable().optional(),
+    parent_task_id: z75.string().nullable().optional(),
+    depends_on_task_id: z75.string().nullable().optional(),
+    url_reference: z75.string().nullable().optional(),
+    quick_update: z75.string().optional().describe("Short status note; timestamps set automatically.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ task_id, quick_update, ...rest }, ctx) => {
@@ -3924,13 +4317,13 @@ var update_task_default = defineTool69({
 });
 
 // src/lib/mcp/tools/delete-task.ts
-import { defineTool as defineTool70 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z69 } from "npm:zod@^3.25.76";
-var delete_task_default = defineTool70({
+import { defineTool as defineTool77 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z76 } from "npm:zod@^3.25.76";
+var delete_task_default = defineTool77({
   name: "delete_task",
   title: "Delete task",
   description: "Permanently delete a task and its assignments/comments/subtasks (cascades). Confirm with the user first.",
-  inputSchema: { task_id: z69.string() },
+  inputSchema: { task_id: z76.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ task_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3942,16 +4335,16 @@ var delete_task_default = defineTool70({
 });
 
 // src/lib/mcp/tools/add-task-comment.ts
-import { defineTool as defineTool71 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z70 } from "npm:zod@^3.25.76";
-var add_task_comment_default = defineTool71({
+import { defineTool as defineTool78 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z77 } from "npm:zod@^3.25.76";
+var add_task_comment_default = defineTool78({
   name: "add_task_comment",
   title: "Add task comment",
   description: "Add a comment to a task. Optionally reply to another comment via parent_comment_id.",
   inputSchema: {
-    task_id: z70.string(),
-    comment: z70.string().min(1),
-    parent_comment_id: z70.string().optional()
+    task_id: z77.string(),
+    comment: z77.string().min(1),
+    parent_comment_id: z77.string().optional()
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -3967,15 +4360,15 @@ var add_task_comment_default = defineTool71({
 });
 
 // src/lib/mcp/tools/assign-task.ts
-import { defineTool as defineTool72 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z71 } from "npm:zod@^3.25.76";
-var assign_task_default = defineTool72({
+import { defineTool as defineTool79 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z78 } from "npm:zod@^3.25.76";
+var assign_task_default = defineTool79({
   name: "assign_task",
   title: "Assign task",
   description: "Assign one or more users to a task (adds task_assignments rows; existing assignments unchanged).",
   inputSchema: {
-    task_id: z71.string(),
-    user_ids: z71.array(z71.string()).min(1)
+    task_id: z78.string(),
+    user_ids: z78.array(z78.string()).min(1)
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async ({ task_id, user_ids }, ctx) => {
@@ -3992,13 +4385,13 @@ var assign_task_default = defineTool72({
 });
 
 // src/lib/mcp/tools/unassign-task.ts
-import { defineTool as defineTool73 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z72 } from "npm:zod@^3.25.76";
-var unassign_task_default = defineTool73({
+import { defineTool as defineTool80 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z79 } from "npm:zod@^3.25.76";
+var unassign_task_default = defineTool80({
   name: "unassign_task",
   title: "Unassign task",
   description: "Remove a user's assignment from a task.",
-  inputSchema: { task_id: z72.string(), user_id: z72.string() },
+  inputSchema: { task_id: z79.string(), user_id: z79.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ task_id, user_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4010,18 +4403,18 @@ var unassign_task_default = defineTool73({
 });
 
 // src/lib/mcp/tools/add-task-subtask.ts
-import { defineTool as defineTool74 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z73 } from "npm:zod@^3.25.76";
-var add_task_subtask_default = defineTool74({
+import { defineTool as defineTool81 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z80 } from "npm:zod@^3.25.76";
+var add_task_subtask_default = defineTool81({
   name: "add_task_subtask",
   title: "Add task subtask",
   description: "Add a subtask (checklist item) to a task.",
   inputSchema: {
-    task_id: z73.string(),
-    title: z73.string().min(1),
-    sort_order: z73.number().int().optional(),
-    due_date: z73.string().optional().describe("YYYY-MM-DD"),
-    assignee_id: z73.string().optional()
+    task_id: z80.string(),
+    title: z80.string().min(1),
+    sort_order: z80.number().int().optional(),
+    due_date: z80.string().optional().describe("YYYY-MM-DD"),
+    assignee_id: z80.string().optional()
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -4037,19 +4430,19 @@ var add_task_subtask_default = defineTool74({
 });
 
 // src/lib/mcp/tools/update-task-subtask.ts
-import { defineTool as defineTool75 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z74 } from "npm:zod@^3.25.76";
-var update_task_subtask_default = defineTool75({
+import { defineTool as defineTool82 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z81 } from "npm:zod@^3.25.76";
+var update_task_subtask_default = defineTool82({
   name: "update_task_subtask",
   title: "Update task subtask",
   description: "Update a subtask. Set completed=true to mark it done (fills completed_at/by).",
   inputSchema: {
-    subtask_id: z74.string(),
-    title: z74.string().optional(),
-    completed: z74.boolean().optional(),
-    sort_order: z74.number().int().optional(),
-    due_date: z74.string().nullable().optional(),
-    assignee_id: z74.string().nullable().optional()
+    subtask_id: z81.string(),
+    title: z81.string().optional(),
+    completed: z81.boolean().optional(),
+    sort_order: z81.number().int().optional(),
+    due_date: z81.string().nullable().optional(),
+    assignee_id: z81.string().nullable().optional()
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async ({ subtask_id, completed, ...rest }, ctx) => {
@@ -4076,13 +4469,13 @@ var update_task_subtask_default = defineTool75({
 });
 
 // src/lib/mcp/tools/delete-task-subtask.ts
-import { defineTool as defineTool76 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z75 } from "npm:zod@^3.25.76";
-var delete_task_subtask_default = defineTool76({
+import { defineTool as defineTool83 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z82 } from "npm:zod@^3.25.76";
+var delete_task_subtask_default = defineTool83({
   name: "delete_task_subtask",
   title: "Delete task subtask",
   description: "Delete a subtask from a task.",
-  inputSchema: { subtask_id: z75.string() },
+  inputSchema: { subtask_id: z82.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ subtask_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4094,8 +4487,8 @@ var delete_task_subtask_default = defineTool76({
 });
 
 // src/lib/mcp/tools/list-task-statuses.ts
-import { defineTool as defineTool77 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var list_task_statuses_default = defineTool77({
+import { defineTool as defineTool84 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_task_statuses_default = defineTool84({
   name: "list_task_statuses",
   title: "List task statuses",
   description: "List configured task status values (label, value, sort order, is_finished flag).",
@@ -4114,7 +4507,7 @@ var list_task_statuses_default = defineTool77({
 });
 
 // src/lib/mcp/tools/wordpress-health-check.ts
-import { defineTool as defineTool78 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { defineTool as defineTool85 } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/wordpress/_client.ts
 var WORDPRESS_ALLOWED_ENDPOINTS = [
@@ -4317,7 +4710,7 @@ function categoriseError(err) {
 }
 
 // src/lib/mcp/tools/wordpress-health-check.ts
-var wordpress_health_check_default = defineTool78({
+var wordpress_health_check_default = defineTool85({
   name: "wordpress_health_check",
   title: "WordPress health check",
   description: "Confirm the WordPress REST API is reachable, authentication works, and the tour/pages/media endpoints are exposed. Never returns credentials. Admin/manager only.",
@@ -4414,21 +4807,21 @@ var wordpress_health_check_default = defineTool78({
 });
 
 // src/lib/mcp/tools/wordpress-list-tours.ts
-import { defineTool as defineTool79 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z76 } from "npm:zod@^3.25.76";
-var wordpress_list_tours_default = defineTool79({
+import { defineTool as defineTool86 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z83 } from "npm:zod@^3.25.76";
+var wordpress_list_tours_default = defineTool86({
   name: "wordpress_list_tours",
   title: "List WordPress tours",
   description: "List tours from the public WordPress site (custom post type 'tour'). Returns concise summaries only \u2014 no full HTML content. Admin/manager only.",
   inputSchema: {
-    search: z76.string().optional(),
-    status: z76.string().optional().describe("Default 'publish'."),
-    category_id: z76.number().int().optional(),
-    tour_taxonomy_id: z76.number().int().optional(),
-    page: z76.number().int().min(1).optional(),
-    per_page: z76.number().int().min(1).max(50).optional(),
-    order: z76.enum(["asc", "desc"]).optional(),
-    orderby: z76.enum(["date", "modified", "title", "menu_order"]).optional()
+    search: z83.string().optional(),
+    status: z83.string().optional().describe("Default 'publish'."),
+    category_id: z83.number().int().optional(),
+    tour_taxonomy_id: z83.number().int().optional(),
+    page: z83.number().int().min(1).optional(),
+    per_page: z83.number().int().min(1).max(50).optional(),
+    order: z83.enum(["asc", "desc"]).optional(),
+    orderby: z83.enum(["date", "modified", "title", "menu_order"]).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -4493,8 +4886,8 @@ var wordpress_list_tours_default = defineTool79({
 });
 
 // src/lib/mcp/tools/wordpress-get-tour.ts
-import { defineTool as defineTool80 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z77 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool87 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z84 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/_analyzer.ts
 function analyseContent(raw) {
@@ -4532,11 +4925,11 @@ function analyseContent(raw) {
 }
 
 // src/lib/mcp/tools/wordpress-get-tour.ts
-var wordpress_get_tour_default = defineTool80({
+var wordpress_get_tour_default = defineTool87({
   name: "wordpress_get_tour",
   title: "Get WordPress tour",
   description: "Fetch a single WordPress tour by ID including raw editable content (context=edit), taxonomies, ACF/meta fields where exposed, and a content analysis flagging YOOtheme/scripts/iframes. Admin/manager only.",
-  inputSchema: { tour_id: z77.number().int().min(1) },
+  inputSchema: { tour_id: z84.number().int().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4600,13 +4993,13 @@ var wordpress_get_tour_default = defineTool80({
 });
 
 // src/lib/mcp/tools/wordpress-find-tour.ts
-import { defineTool as defineTool81 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z78 } from "npm:zod@^3.25.76";
-var wordpress_find_tour_default = defineTool81({
+import { defineTool as defineTool88 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z85 } from "npm:zod@^3.25.76";
+var wordpress_find_tour_default = defineTool88({
   name: "wordpress_find_tour",
   title: "Find WordPress tour",
   description: "Search the WordPress tour custom post type by free text (title/slug/content). Returns likely matches with IDs and public URLs. Admin/manager only.",
-  inputSchema: { query: z78.string().min(1) },
+  inputSchema: { query: z85.string().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ query }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4656,17 +5049,17 @@ var wordpress_find_tour_default = defineTool81({
 });
 
 // src/lib/mcp/tools/wordpress-list-pages.ts
-import { defineTool as defineTool82 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z79 } from "npm:zod@^3.25.76";
-var wordpress_list_pages_default = defineTool82({
+import { defineTool as defineTool89 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z86 } from "npm:zod@^3.25.76";
+var wordpress_list_pages_default = defineTool89({
   name: "wordpress_list_pages",
   title: "List WordPress pages",
   description: "List standard WordPress pages. Concise summaries only. Admin/manager only.",
   inputSchema: {
-    search: z79.string().optional(),
-    status: z79.string().optional(),
-    page: z79.number().int().min(1).optional(),
-    per_page: z79.number().int().min(1).max(50).optional()
+    search: z86.string().optional(),
+    status: z86.string().optional(),
+    page: z86.number().int().min(1).optional(),
+    per_page: z86.number().int().min(1).max(50).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -4726,13 +5119,13 @@ var wordpress_list_pages_default = defineTool82({
 });
 
 // src/lib/mcp/tools/wordpress-get-page.ts
-import { defineTool as defineTool83 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z80 } from "npm:zod@^3.25.76";
-var wordpress_get_page_default = defineTool83({
+import { defineTool as defineTool90 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z87 } from "npm:zod@^3.25.76";
+var wordpress_get_page_default = defineTool90({
   name: "wordpress_get_page",
   title: "Get WordPress page",
   description: "Fetch a WordPress page by ID with raw and rendered content plus a content analysis flagging YOOtheme layouts and other builder markers. Admin/manager only.",
-  inputSchema: { page_id: z80.number().int().min(1) },
+  inputSchema: { page_id: z87.number().int().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ page_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4788,13 +5181,13 @@ var wordpress_get_page_default = defineTool83({
 });
 
 // src/lib/mcp/tools/wordpress-get-media.ts
-import { defineTool as defineTool84 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z81 } from "npm:zod@^3.25.76";
-var wordpress_get_media_default = defineTool84({
+import { defineTool as defineTool91 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z88 } from "npm:zod@^3.25.76";
+var wordpress_get_media_default = defineTool91({
   name: "wordpress_get_media",
   title: "Get WordPress media item",
   description: "Fetch a WordPress media item by ID. Admin/manager only.",
-  inputSchema: { media_id: z81.number().int().min(1) },
+  inputSchema: { media_id: z88.number().int().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ media_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4844,17 +5237,17 @@ var wordpress_get_media_default = defineTool84({
 });
 
 // src/lib/mcp/tools/wordpress-search-media.ts
-import { defineTool as defineTool85 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z82 } from "npm:zod@^3.25.76";
-var wordpress_search_media_default = defineTool85({
+import { defineTool as defineTool92 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z89 } from "npm:zod@^3.25.76";
+var wordpress_search_media_default = defineTool92({
   name: "wordpress_search_media",
   title: "Search WordPress media",
   description: "Search the WordPress media library. Admin/manager only.",
   inputSchema: {
-    search: z82.string().min(1),
-    media_type: z82.enum(["image", "video", "audio", "application"]).optional(),
-    page: z82.number().int().min(1).optional(),
-    per_page: z82.number().int().min(1).max(50).optional()
+    search: z89.string().min(1),
+    media_type: z89.enum(["image", "video", "audio", "application"]).optional(),
+    page: z89.number().int().min(1).optional(),
+    per_page: z89.number().int().min(1).max(50).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -4913,8 +5306,8 @@ var wordpress_search_media_default = defineTool85({
 });
 
 // src/lib/mcp/tools/wordpress-get-taxonomies.ts
-import { defineTool as defineTool86 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var wordpress_get_taxonomies_default = defineTool86({
+import { defineTool as defineTool93 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var wordpress_get_taxonomies_default = defineTool93({
   name: "wordpress_get_taxonomies",
   title: "Get WordPress taxonomies",
   description: "Return WordPress standard categories, tags, and the custom 'tours' taxonomy terms with their IDs. Admin/manager only.",
@@ -4956,8 +5349,8 @@ var wordpress_get_taxonomies_default = defineTool86({
 });
 
 // src/lib/mcp/tools/wordpress-update-tour-fields.ts
-import { defineTool as defineTool87 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z83 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool94 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z90 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/editableFields.ts
 var EDITABLE_ACF_SCALAR_FIELDS = [
@@ -5012,32 +5405,32 @@ function sanitiseAcfUpdate(input) {
 }
 
 // src/lib/mcp/tools/wordpress-update-tour-fields.ts
-var repeaterItemSchema = z83.record(z83.string(), z83.unknown());
-var wordpress_update_tour_fields_default = defineTool87({
+var repeaterItemSchema = z90.record(z90.string(), z90.unknown());
+var wordpress_update_tour_fields_default = defineTool94({
   name: "wordpress_update_tour_fields",
   title: "Update WordPress tour ACF fields",
   description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, attach_brochure_here (WordPress media attachment ID for the brochure PDF, or null to clear), location, capacity, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 and the itinerary repeater are NOT writable here yet \u2014 use wordpress_get_tour to inspect them.",
   inputSchema: {
-    tour_id: z83.number().int().min(1),
-    acf: z83.object({
-      price: z83.string().optional(),
-      status: z83.string().optional(),
-      radio_book_now: z83.string().optional(),
-      start_date: z83.string().optional(),
-      end_date: z83.string().optional(),
-      time_frame: z83.string().optional(),
-      location: z83.string().optional(),
-      capacity: z83.string().optional(),
-      single_room_price: z83.string().optional(),
-      twin_room_per_person_price: z83.string().optional(),
-      double_room_per_person_price: z83.string().optional(),
-      payment_details: z83.string().optional(),
-      add_download_brochure: z83.string().optional(),
-      attach_brochure_here: z83.union([z83.number().int().min(1), z83.null()]).optional(),
-      inclusions: z83.array(repeaterItemSchema).optional(),
-      exclusions_details: z83.array(repeaterItemSchema).optional(),
-      faqs_list: z83.array(repeaterItemSchema).optional(),
-      add_review: z83.array(repeaterItemSchema).optional()
+    tour_id: z90.number().int().min(1),
+    acf: z90.object({
+      price: z90.string().optional(),
+      status: z90.string().optional(),
+      radio_book_now: z90.string().optional(),
+      start_date: z90.string().optional(),
+      end_date: z90.string().optional(),
+      time_frame: z90.string().optional(),
+      location: z90.string().optional(),
+      capacity: z90.string().optional(),
+      single_room_price: z90.string().optional(),
+      twin_room_per_person_price: z90.string().optional(),
+      double_room_per_person_price: z90.string().optional(),
+      payment_details: z90.string().optional(),
+      add_download_brochure: z90.string().optional(),
+      attach_brochure_here: z90.union([z90.number().int().min(1), z90.null()]).optional(),
+      inclusions: z90.array(repeaterItemSchema).optional(),
+      exclusions_details: z90.array(repeaterItemSchema).optional(),
+      faqs_list: z90.array(repeaterItemSchema).optional(),
+      add_review: z90.array(repeaterItemSchema).optional()
     }).describe("Partial ACF payload. Only listed keys are accepted; unknown keys are stripped.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -5101,8 +5494,8 @@ var wordpress_update_tour_fields_default = defineTool87({
 });
 
 // src/lib/mcp/tools/wordpress-upload-media.ts
-import { defineTool as defineTool88 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z84 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool95 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z91 } from "npm:zod@^3.25.76";
 var ALLOWED_CONTENT_TYPES = /* @__PURE__ */ new Set([
   "application/pdf",
   "image/jpeg",
@@ -5126,15 +5519,15 @@ function b64Auth(user, pass) {
   if (typeof btoa === "function") return btoa(`${user}:${pass}`);
   return globalThis.Buffer.from(`${user}:${pass}`, "utf8").toString("base64");
 }
-var wordpress_upload_media_default = defineTool88({
+var wordpress_upload_media_default = defineTool95({
   name: "wordpress_upload_media",
   title: "Upload a file to the WordPress media library",
   description: "Upload a PDF or image (JPEG/PNG/WEBP/GIF) into the connected WordPress site's media library and return the new attachment id + source_url. Max 20MB. Provide the file as base64 in `data_base64`. Typical use: uploading a brochure PDF, then passing the returned id into `wordpress_update_tour_fields` under `acf.attach_brochure_here` (and setting `acf.add_download_brochure` to enable the download button). Admin/manager only; every upload is written to wordpress_integration_audit_logs.",
   inputSchema: {
-    filename: z84.string().min(1).max(255).describe("Filename including extension, e.g. '2027-darwin-cup-brochure.pdf'."),
-    content_type: z84.string().min(1).describe("MIME type. Allowed: application/pdf, image/jpeg, image/png, image/webp, image/gif."),
-    data_base64: z84.string().min(1).describe("Base64-encoded file contents (no data: prefix). Max 20MB after decoding."),
-    title: z84.string().max(255).optional().describe("Optional attachment title shown in WordPress. Defaults to the filename.")
+    filename: z91.string().min(1).max(255).describe("Filename including extension, e.g. '2027-darwin-cup-brochure.pdf'."),
+    content_type: z91.string().min(1).describe("MIME type. Allowed: application/pdf, image/jpeg, image/png, image/webp, image/gif."),
+    data_base64: z91.string().min(1).describe("Base64-encoded file contents (no data: prefix). Max 20MB after decoding."),
+    title: z91.string().max(255).optional().describe("Optional attachment title shown in WordPress. Defaults to the filename.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: async ({ filename, content_type, data_base64, title }, ctx) => {
@@ -5265,7 +5658,7 @@ var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.0.3",
+  version: "2.1.0",
   instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`. These WordPress tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
@@ -5335,6 +5728,13 @@ var mcp_default = defineMcp({
     list_tour_operations_documents_default,
     get_hotel_default,
     list_activity_attachments_default,
+    list_hotel_attachments_default,
+    get_attachment_download_url_default,
+    upload_tour_attachment_default,
+    upload_activity_attachment_default,
+    upload_hotel_attachment_default,
+    upload_itinerary_document_default,
+    upload_tour_document_image_default,
     list_activity_external_links_default,
     list_booking_travel_docs_default,
     list_booking_waivers_default,
