@@ -105,6 +105,42 @@ export const GuestDocumentTextModal = ({
     ...(draft?.days ?? []).flatMap((d) => d.warnings.map((w) => `${formatDay(d.date)}: ${w}`)),
   ];
 
+  // Group the review list so a long list stays readable and each group explains
+  // what staff need to fix in ART Admin for next time.
+  const warningGroups: { title: string; explanation: string; items: string[] }[] = [
+    {
+      title: "Dates needing confirmation",
+      explanation:
+        "A day's date could not be read from the source and was derived from the day number. Check the Itinerary day dates.",
+      items: allWarnings.filter((w) => /date/i.test(w) && !/outside the tour/i.test(w)),
+    },
+    {
+      title: "Times needing attention",
+      explanation:
+        "These values are not clock times. Fix the start/end times on the source Activity so they stop reappearing.",
+      items: allWarnings.filter((w) => /clock time/i.test(w)),
+    },
+    {
+      title: "Records outside the tour dates",
+      explanation:
+        "Activities dated outside the tour range are excluded from the Guest Document. Correct their dates in the Activities tab.",
+      items: allWarnings.filter((w) => /outside the tour/i.test(w)),
+    },
+    {
+      title: "Tentative or missing content",
+      explanation:
+        "Wording such as TBC, or a missing title, meals, transport or narrative. Complete these in the Itinerary and Activities tabs.",
+      items: allWarnings.filter(
+        (w) => /tentative|has no |more than two|transport line|More than one day/i.test(w),
+      ),
+    },
+  ]
+    .map((g) => ({ ...g, items: g.items }))
+    .filter((g) => g.items.length > 0);
+
+  const grouped = new Set(warningGroups.flatMap((g) => g.items));
+  const otherWarnings = allWarnings.filter((w) => !grouped.has(w));
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,16 +175,38 @@ export const GuestDocumentTextModal = ({
                 <>
                   {allWarnings.length > 0 && (
                     <Card className="border-amber-300 bg-amber-50">
-                      <CardContent className="pt-6 space-y-2">
+                      <CardContent className="pt-6 space-y-3">
                         <div className="flex items-center gap-2 font-medium text-amber-900">
                           <AlertTriangle className="h-4 w-4" />
                           Review required ({allWarnings.length})
                         </div>
-                        <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
-                          {allWarnings.map((w, i) => (
-                            <li key={i}>{w}</li>
+                        <div className="max-h-64 overflow-y-auto pr-2 space-y-3">
+                          {warningGroups.map((group) => (
+                            <div key={group.title} className="space-y-1">
+                              <div className="text-sm font-medium text-amber-900">
+                                {group.title} ({group.items.length})
+                              </div>
+                              <p className="text-xs text-amber-800">{group.explanation}</p>
+                              <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
+                                {group.items.map((w, i) => (
+                                  <li key={i}>{w}</li>
+                                ))}
+                              </ul>
+                            </div>
                           ))}
-                        </ul>
+                          {otherWarnings.length > 0 && (
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium text-amber-900">
+                                Other ({otherWarnings.length})
+                              </div>
+                              <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
+                                {otherWarnings.map((w, i) => (
+                                  <li key={i}>{w}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
