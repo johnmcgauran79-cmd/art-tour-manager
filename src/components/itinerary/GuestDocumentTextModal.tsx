@@ -360,22 +360,26 @@ export const GuestDocumentTextModal = ({
               ) : null}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => void generate(staffInstructions)}
-                disabled={isGenerating || isSaving}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerate
-              </Button>
-              <Button variant="outline" onClick={discard} disabled={!draft || isGenerating || isSaving}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Discard
-              </Button>
-              {canSave && (
+              {draft && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => void generate(staffInstructions)}
+                    disabled={isGenerating || isSaving}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerate
+                  </Button>
+                  <Button variant="outline" onClick={discard} disabled={isGenerating || isSaving}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Discard
+                  </Button>
+                </>
+              )}
+              {canSave && draft && (
                 <Button
                   onClick={() => void runSave(false)}
-                  disabled={!draft || isGenerating || isSaving || savingBlocked}
+                  disabled={isGenerating || isSaving || savingBlocked}
                 >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
