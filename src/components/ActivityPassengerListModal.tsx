@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer } from "lucide-react";
+import { Printer, Download, Loader2 } from "lucide-react";
 import { useActivityPassengers } from "@/hooks/useActivityPassengers";
+import { downloadBlob } from "@/lib/fileDownload";
+import { useToast } from "@/hooks/use-toast";
 
 interface ActivityPassengerListModalProps {
   open: boolean;
@@ -20,6 +23,99 @@ export const ActivityPassengerListModal = ({
   activityDate
 }: ActivityPassengerListModalProps) => {
   const { data: passengers, isLoading } = useActivityPassengers(activityId);
+  const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const buildReportHtml = () => {
+    const total = passengers?.reduce((sum, p) => sum + p.passengers_attending, 0) || 0;
+    return `
+      <style>
+        .att-doc { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; }
+        .att-doc h1 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 8px; font-size: 20px; margin: 0 0 8px; }
+        .att-doc h2 { color: #2d3748; font-size: 14px; font-weight: normal; margin: 0 0 12px; }
+        .att-doc .summary { background-color: #eef4fb; padding: 10px 12px; border-radius: 4px; margin: 12px 0; font-size: 12px; }
+        .att-doc table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11px; }
+        .att-doc th, .att-doc td { border: 1px solid #d5d5d5; padding: 6px 8px; text-align: left; vertical-align: top; }
+        .att-doc th { background-color: #1a365d; color: #ffffff; }
+        .att-doc tr { page-break-inside: avoid; }
+      </style>
+      <div class="att-doc">
+        <h1>${activityName} — Attendee List</h1>
+        ${activityDate ? `<h2>Date: ${activityDate}</h2>` : ''}
+        <div class="summary">
+          <strong>Total Attendees: ${total}</strong> &nbsp;|&nbsp; Total Bookings: ${passengers?.length || 0}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:25%">Lead Passenger</th>
+              <th style="width:30%">Additional Passengers</th>
+              <th style="width:10%">Tickets</th>
+              <th style="width:35%">Dietary Requirements</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(passengers || []).map(p => `
+              <tr>
+                <td><strong>${p.lead_passenger_name}</strong></td>
+                <td>${[p.passenger_2_name, p.passenger_3_name].filter(Boolean).join(', ') || '-'}</td>
+                <td><strong>${p.passengers_attending}</strong></td>
+                <td>${p.dietary_restrictions || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!passengers || passengers.length === 0) {
+      toast({
+        title: "Nothing to download",
+        description: "There are no attendees with tickets for this activity.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsDownloading(true);
+    const container = document.createElement("div");
+    try {
+      const html2pdf = (await import("html2pdf.js")).default as any;
+      container.innerHTML = buildReportHtml();
+      container.style.position = "absolute";
+      container.style.left = "-10000px";
+      container.style.top = "0";
+      container.style.width = "794px"; // ~A4 at 96dpi
+      container.style.background = "#fff";
+      document.body.appendChild(container);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      const blob: Blob = await html2pdf()
+        .set({
+          margin: [15, 15, 15, 15],
+          image: { type: "png", quality: 1 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, windowWidth: 794 },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        })
+        .from(container)
+        .output("blob");
+
+      const safeName = activityName.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_");
+      downloadBlob(blob, `${safeName || "Activity"}_Attendee_List.pdf`);
+    } catch (err: any) {
+      console.error("Attendee list PDF failed", err);
+      toast({
+        title: "Could not create PDF",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      if (container.parentNode) document.body.removeChild(container);
+      setIsDownloading(false);
+    }
+  };
 
   const handlePrint = () => {
     const printContent = document.getElementById('passenger-list-content');
@@ -100,6 +196,14 @@ export const ActivityPassengerListModal = ({
               )}
             </div>
             <div className="flex gap-2">
+              <Button onClick={handleDownloadPdf} size="sm" disabled={isDownloading}>
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Attendee List PDF
+              </Button>
               <Button onClick={handlePrint} size="sm" variant="outline">
                 <Printer className="h-4 w-4 mr-2" />
                 Print PDF
