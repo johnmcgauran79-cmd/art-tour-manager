@@ -236,15 +236,46 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          {isOwner && !todo.converted_task_id ? (
-            <Button variant="outline" onClick={handleConvert} disabled={convertTodo.isPending}>
-              {convertTodo.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <ArrowUpRight className="h-4 w-4 mr-2" />
+          {isOwner ? (
+            <div className="flex gap-2">
+              {!todo.converted_task_id && (
+                <Button variant="outline" onClick={handleConvert} disabled={convertTodo.isPending}>
+                  {convertTodo.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <ArrowUpRight className="h-4 w-4 mr-2" />
+                  )}
+                  Convert to Task
+                </Button>
               )}
-              Convert to Task
-            </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this to-do?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      "{todo.title}" will be permanently removed. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        deleteTodo.mutate(todo.id);
+                        onOpenChange(false);
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ) : (
             <span />
           )}
