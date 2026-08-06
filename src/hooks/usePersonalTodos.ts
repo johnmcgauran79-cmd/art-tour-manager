@@ -195,7 +195,7 @@ export const useConvertTodoToTask = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (todo: PersonalTodo) => {
+    mutationFn: async ({ todo, keepTodo = true }: { todo: PersonalTodo; keepTodo?: boolean }) => {
       if (!user?.id) throw new Error("Not authenticated");
 
       const { data: shares, error: sharesError } = await supabase
@@ -241,11 +241,19 @@ export const useConvertTodoToTask = () => {
         })
         .catch((err) => console.error("Failed to send assignment notification:", err));
 
-      const { error: linkError } = await supabase
-        .from("personal_todos")
-        .update({ converted_task_id: task.id, completed: true })
-        .eq("id", todo.id);
-      if (linkError) throw linkError;
+      if (keepTodo) {
+        const { error: linkError } = await supabase
+          .from("personal_todos")
+          .update({ converted_task_id: task.id, completed: true })
+          .eq("id", todo.id);
+        if (linkError) throw linkError;
+      } else {
+        const { error: deleteError } = await supabase
+          .from("personal_todos")
+          .delete()
+          .eq("id", todo.id);
+        if (deleteError) throw deleteError;
+      }
 
       return task;
     },

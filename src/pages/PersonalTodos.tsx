@@ -22,6 +22,11 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { TodoDetailDialog } from "@/components/todos/TodoDetailDialog";
 import {
+  OwnershipFilter,
+  OwnershipFilterValue,
+  matchesOwnershipFilter,
+} from "@/components/workspace/OwnershipFilter";
+import {
   usePersonalTodos,
   useCreateTodo,
   useUpdateTodo,
@@ -42,6 +47,7 @@ const PersonalTodos = () => {
   const [newDue, setNewDue] = useState<Date | undefined>();
   const [showCompleted, setShowCompleted] = useState(true);
   const [selected, setSelected] = useState<PersonalTodo | null>(null);
+  const [ownership, setOwnership] = useState<OwnershipFilterValue>("all");
 
   const selectedLive = selected ? todos.find((t) => t.id === selected.id) ?? selected : null;
   const shareCount = (todoId: string) => shares.filter((s) => s.todo_id === todoId).length;
@@ -54,8 +60,22 @@ const PersonalTodos = () => {
     setNewDue(undefined);
   };
 
-  const visible = todos.filter((t) => (showCompleted ? true : !t.completed));
+  const byOwnership = todos.filter((t) =>
+    matchesOwnershipFilter(ownership, t.user_id, user?.id, shareCount(t.id))
+  );
+  const visible = byOwnership.filter((t) => (showCompleted ? true : !t.completed));
   const openCount = todos.filter((t) => !t.completed).length;
+
+  const counts = {
+    all: todos.length,
+    mine: todos.filter((t) => matchesOwnershipFilter("mine", t.user_id, user?.id, shareCount(t.id))).length,
+    shared_by_me: todos.filter((t) =>
+      matchesOwnershipFilter("shared_by_me", t.user_id, user?.id, shareCount(t.id))
+    ).length,
+    shared_with_me: todos.filter((t) =>
+      matchesOwnershipFilter("shared_with_me", t.user_id, user?.id, shareCount(t.id))
+    ).length,
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -68,6 +88,8 @@ const PersonalTodos = () => {
           {showCompleted ? "Hide completed" : "Show completed"}
         </Button>
       </div>
+
+      <OwnershipFilter value={ownership} onChange={setOwnership} counts={counts} />
 
       <Card className="p-3 flex flex-col sm:flex-row gap-2">
         <Input
