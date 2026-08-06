@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, Check, ExternalLink, Loader2, UserPlus, X, ArrowUpRight } from "lucide-react";
+import { CalendarIcon, Check, ExternalLink, Loader2, UserPlus, X, ArrowUpRight, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,12 +17,24 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import {
   PersonalTodo,
   useConvertTodoToTask,
+  useDeleteTodo,
   useShareTodo,
   useTodoShares,
   useUnshareTodo,
