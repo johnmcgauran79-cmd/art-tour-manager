@@ -144,6 +144,7 @@ const PersonalNotes = () => {
               <div className="flex items-center gap-1">
                 {note.pinned && <Pin className="h-3 w-3 text-brand-yellow shrink-0" />}
                 <span className="text-sm font-medium truncate">{note.title || "Untitled note"}</span>
+                {note.user_id !== user?.id && <Users className="h-3 w-3 text-muted-foreground shrink-0" />}
               </div>
               <span className="text-xs text-muted-foreground">
                 {format(parseISO(note.updated_at), "dd/MM/yyyy HH:mm")}
