@@ -10,10 +10,20 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision" | "todo_share";
+  type:
+    | "mention"
+    | "assignment"
+    | "subtask_assignment"
+    | "approval_request"
+    | "approval_decision"
+    | "todo_share"
+    | "note_share"
+    | "note_mention";
   taskId?: string;
   /** Set instead of taskId when sharing a personal to-do. */
   todoId?: string;
+  /** Set instead of taskId for shared/tagged personal notes. */
+  noteId?: string;
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
@@ -29,7 +39,8 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json()) as NotificationRequest;
     const isTodo = body.type === "todo_share";
-    const entityId = isTodo ? body.todoId : body.taskId;
+    const isNote = body.type === "note_share" || body.type === "note_mention";
+    const entityId = isTodo ? body.todoId : isNote ? body.noteId : body.taskId;
     if (!body.type || !entityId || !body.recipientUserIds?.length || !body.actorUserId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -41,18 +52,22 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Resolve the entity being notified about (task, or shared personal to-do)
-    const { data: entity } = isTodo
+    // Resolve the entity being notified about (task, personal to-do, or personal note)
+    const { data: entity } = isNote
+      ? await supabase
+          .from("personal_notes").select("id, title").eq("id", entityId).single()
+      : isTodo
       ? await supabase
           .from("personal_todos").select("id, title, due_date").eq("id", entityId).single()
       : await supabase
           .from("tasks").select("id, title, priority, due_date").eq("id", entityId).single();
     if (!entity) {
-      return new Response(JSON.stringify({ error: isTodo ? "To-do not found" : "Task not found" }), {
+      return new Response(JSON.stringify({ error: isNote ? "Note not found" : isTodo ? "To-do not found" : "Task not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const task = entity as { id: string; title: string; due_date: string | null; priority?: string };
+    const task = entity as { id: string; title: string; due_date?: string | null; priority?: string };
+    if (isNote && !task.title) task.title = "Untitled note";
 
     // Resolve actor
     const { data: actor } = await supabase
@@ -132,7 +147,11 @@ Deno.serve(async (req) => {
         : "responded to your approval request on";
 
     const subjectLine =
-      body.type === "todo_share"
+      body.type === "note_share"
+        ? `${actorName} shared a note with you`
+        : body.type === "note_mention"
+        ? `${actorName} tagged you in a note`
+        : body.type === "todo_share"
         ? `${actorName} shared a to-do with you`
         : body.type === "mention"
         ? `${actorName} mentioned you on a task`
@@ -145,7 +164,11 @@ Deno.serve(async (req) => {
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
-      body.type === "todo_share"
+      body.type === "note_share"
+        ? "A note has been shared with you"
+        : body.type === "note_mention"
+        ? "You were tagged in a note"
+        : body.type === "todo_share"
         ? "A to-do has been shared with you"
         : body.type === "mention"
         ? "You were mentioned in a comment"
@@ -163,7 +186,11 @@ Deno.serve(async (req) => {
     // Always write an in-app notification row for every recipient (regardless of
     // their Teams/email channel preference) so the bell/panel stays in sync.
     const inAppType =
-      body.type === "todo_share"
+      body.type === "note_share"
+        ? "note_share"
+        : body.type === "note_mention"
+        ? "note_mention"
+        : body.type === "todo_share"
         ? "todo_share"
         : body.type === "mention"
         ? "task_mention"
@@ -171,7 +198,11 @@ Deno.serve(async (req) => {
         ? "task_assignment"
         : body.type; // subtask_assignment | approval_request | approval_decision
     const inAppMessage =
-      body.type === "todo_share"
+      body.type === "note_share"
+        ? `${actorName} shared a note with you`
+        : body.type === "note_mention"
+        ? `${actorName} tagged you in a note`
+        : body.type === "todo_share"
         ? `${actorName} added you to a to-do`
         : body.type === "approval_decision"
         ? `${actorName} ${decisionVerb}${body.message ? `: ${body.message}` : ""}`
@@ -197,7 +228,7 @@ Deno.serve(async (req) => {
       console.error("Failed to write in-app notifications:", notifErr);
     }
 
-    const taskUrl = isTodo ? `${APP_URL}/todos` : `${APP_URL}/tasks/${task.id}`;
+    const taskUrl = isNote ? `${APP_URL}/notes` : isTodo ? `${APP_URL}/todos` : `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
       ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
       : "";
@@ -237,7 +268,7 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:32px 36px;">
 <h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
-<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "todo_share" ? "added you to the to-do below." : `${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? decisionVerb : "assigned you to"}${body.type === "approval_decision" ? "." : " the task below."}`}</p>
+<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "note_share" ? "shared the note below with you." : body.type === "note_mention" ? "tagged you in the note below." : body.type === "todo_share" ? "added you to the to-do below." : `${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? decisionVerb : "assigned you to"}${body.type === "approval_decision" ? "." : " the task below."}`}</p>
 <h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
 <p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
 ${dueLine}
@@ -245,7 +276,7 @@ ${body.type === "approval_decision" && decisionLabel ? `<p style="margin:8px 0 0
 ${subtaskBlock}
 ${messageBlock}
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 0;">
-<a href="${taskUrl}" style="display:inline-block;background-color:#1a2332;color:#f5c518;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">${isTodo ? "OPEN TO-DO LIST" : "OPEN TASK"}</a>
+<a href="${taskUrl}" style="display:inline-block;background-color:#1a2332;color:#f5c518;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">${isNote ? "OPEN NOTES" : isTodo ? "OPEN TO-DO LIST" : "OPEN TASK"}</a>
 </td></tr></table>
 </td></tr>
 <tr><td style="background-color:#f9fafb;padding:16px;border-top:1px solid #e5e7eb;">
@@ -268,7 +299,11 @@ ${messageBlock}
             recipient_name: r.first_name || null,
             subject: subjectLine,
             template_name:
-              body.type === "todo_share"
+              body.type === "note_share"
+                ? "Note Shared"
+                : body.type === "note_mention"
+                ? "Note Mention"
+                : body.type === "todo_share"
                 ? "To-Do Shared"
                 : body.type === "mention"
                 ? "Task Mention"
