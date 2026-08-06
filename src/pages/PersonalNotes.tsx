@@ -1,10 +1,16 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { format, parseISO } from "date-fns";
-import { Plus, Search, Trash2, Pin, PinOff, Save } from "lucide-react";
+import { Plus, Search, Trash2, Pin, PinOff, Save, UserPlus, X, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { NoteEditor } from "@/components/notes/NoteEditor";
+import { useAuth } from "@/hooks/useAuth";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
+import { displayNameFor, extractMentionedUserIds } from "@/lib/noteMentions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,14 +28,23 @@ import {
   useCreateNote,
   useUpdateNote,
   useDeleteNote,
+  useNoteShares,
+  useShareNote,
+  useUnshareNote,
+  useNotifyNoteMentions,
   PersonalNote,
 } from "@/hooks/usePersonalNotes";
 
 const PersonalNotes = () => {
+  const { user } = useAuth();
   const { data: notes = [], isLoading } = usePersonalNotes();
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
+  const shareNote = useShareNote();
+  const unshareNote = useUnshareNote();
+  const notifyMentions = useNotifyNoteMentions();
+  const { data: users = [] } = useAssignableUsers();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -37,6 +52,10 @@ const PersonalNotes = () => {
   const [content, setContent] = useState("");
 
   const selected = useMemo(() => notes.find((n) => n.id === selectedId) ?? null, [notes, selectedId]);
+  const { data: shares = [] } = useNoteShares(selected?.id);
+  const isOwner = !!selected && selected.user_id === user?.id;
+  /** Mentions that already existed when this note was opened — don't re-notify them. */
+  const notifiedMentions = useRef<Set<string>>(new Set());
 
   // Auto-select first note when none chosen
   useEffect(() => {
@@ -48,8 +67,9 @@ const PersonalNotes = () => {
     if (selected) {
       setTitle(selected.title);
       setContent(selected.content);
+      notifiedMentions.current = new Set(extractMentionedUserIds(selected.content, users));
     }
-  }, [selected?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selected?.id, users.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = notes.filter((n) => {
     const q = search.toLowerCase();
@@ -64,6 +84,27 @@ const PersonalNotes = () => {
   const persist = (updates: Partial<PersonalNote>) => {
     if (!selected) return;
     updateNote.mutate({ id: selected.id, ...updates });
+  };
+
+  const sharedUserIds = shares.map((s) => s.user_id);
+  const available = users.filter(
+    (u) => u.id !== selected?.user_id && !sharedUserIds.includes(u.id)
+  );
+  const nameFor = (id: string) => {
+    const u = users.find((x) => x.id === id);
+    return u ? displayNameFor(u) : "Unknown user";
+  };
+
+  /** Save title/content and notify anyone newly tagged with @Name. */
+  const saveNote = () => {
+    if (!selected) return;
+    persist({ title, content });
+    const mentioned = extractMentionedUserIds(content, users);
+    const fresh = mentioned.filter((id) => !notifiedMentions.current.has(id));
+    if (fresh.length > 0) {
+      notifyMentions.mutate({ noteId: selected.id, userIds: fresh });
+      fresh.forEach((id) => notifiedMentions.current.add(id));
+    }
   };
 
   return (
@@ -140,7 +181,7 @@ const PersonalNotes = () => {
                   size="icon"
                   title="Save note"
                   disabled={title === selected.title && content === selected.content}
-                  onClick={() => persist({ title, content })}
+                  onClick={saveNote}
                 >
                   <Save className="h-4 w-4" />
                 </Button>
@@ -169,16 +210,76 @@ const PersonalNotes = () => {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-              <RichTextEditor
+              {!isOwner && (
+                <p className="text-xs text-muted-foreground">
+                  Shared with you by {nameFor(selected.user_id)}.
+                </p>
+              )}
+              <NoteEditor
                 value={content}
                 onChange={setContent}
-                placeholder="Start writing…"
+                users={users}
+                placeholder="Start writing… type @ to tag a colleague"
               />
+
+              <div className="space-y-2 border-t pt-3">
+                <Label className="flex items-center gap-1.5">
+                  <Users className="h-4 w-4" /> Shared with
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {sharedUserIds.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Just you for now.</p>
+                  )}
+                  {sharedUserIds.map((id) => (
+                    <Badge key={id} variant="secondary" className="gap-1">
+                      {nameFor(id)}
+                      {isOwner && (
+                        <button
+                          onClick={() => unshareNote.mutate({ noteId: selected.id, userId: id })}
+                          className="ml-1 hover:text-destructive"
+                          aria-label={`Remove ${nameFor(id)}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+                {isOwner && available.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add someone
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-1" align="start">
+                      <div className="max-h-56 overflow-auto">
+                        {available.map((u) => (
+                          <button
+                            key={u.id}
+                            className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted"
+                            onClick={() => shareNote.mutate({ noteId: selected.id, userIds: [u.id] })}
+                          >
+                            {displayNameFor(u)}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+                {isOwner && (
+                  <p className="text-xs text-muted-foreground">
+                    People you add get a Teams notification and see this note in their own list.
+                    Typing @Name inside the note also notifies that person when you save.
+                  </p>
+                )}
+              </div>
               <div className="flex justify-end">
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => persist({ title, content })}
+                  onClick={saveNote}
                   disabled={title === selected.title && content === selected.content}
                 >
                   Save
