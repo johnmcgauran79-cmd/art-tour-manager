@@ -10,10 +10,20 @@ const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 const TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
 interface TeamsNotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision" | "todo_share";
+  type:
+    | "mention"
+    | "assignment"
+    | "subtask_assignment"
+    | "approval_request"
+    | "approval_decision"
+    | "todo_share"
+    | "note_share"
+    | "note_mention";
   taskId?: string;
   /** Set instead of taskId when sharing a personal to-do. */
   todoId?: string;
+  /** Set instead of taskId for shared/tagged personal notes. */
+  noteId?: string;
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
@@ -213,7 +223,8 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json()) as TeamsNotificationRequest;
     const isTodo = body.type === "todo_share";
-    const entityId = isTodo ? body.todoId : body.taskId;
+    const isNote = body.type === "note_share" || body.type === "note_mention";
+    const entityId = isTodo ? body.todoId : isNote ? body.noteId : body.taskId;
     if (!body.type || !entityId || !body.recipientUserIds?.length || !body.actorUserId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
@@ -226,7 +237,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: entity } = isTodo
+    const { data: entity } = isNote
+      ? await supabase
+          .from("personal_notes")
+          .select("id, title")
+          .eq("id", entityId)
+          .single()
+      : isTodo
       ? await supabase
           .from("personal_todos")
           .select("id, title, due_date")
@@ -239,12 +256,13 @@ Deno.serve(async (req) => {
           .single();
 
     if (!entity) {
-      return new Response(JSON.stringify({ error: isTodo ? "To-do not found" : "Task not found" }), {
+      return new Response(JSON.stringify({ error: isNote ? "Note not found" : isTodo ? "To-do not found" : "Task not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const task = entity as { id: string; title: string; due_date: string | null };
+    const task = entity as { id: string; title: string; due_date?: string | null };
+    if (isNote && !task.title) task.title = "Untitled note";
 
     const { data: actor } = await supabase
       .from("profiles")
@@ -293,7 +311,7 @@ Deno.serve(async (req) => {
       : "";
     const escapedMessage = cleanedMessage ? escapeHtml(cleanedMessage).substring(0, 1000) : "";
 
-    const taskUrl = isTodo ? `${APP_URL}/todos` : `${APP_URL}/tasks/${task.id}`;
+    const taskUrl = isNote ? `${APP_URL}/notes` : isTodo ? `${APP_URL}/todos` : `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
       ? `<p>Due: <strong>${new Date(task.due_date).toLocaleDateString("en-AU", {
           day: "2-digit",
@@ -310,7 +328,11 @@ Deno.serve(async (req) => {
         : null;
 
     const verbHtml =
-      body.type === "todo_share"
+      body.type === "note_share"
+        ? "shared a note with you"
+        : body.type === "note_mention"
+        ? "tagged you in a note"
+        : body.type === "todo_share"
         ? "shared a to-do with you"
         : body.type === "mention"
         ? "mentioned you in a comment on"
@@ -337,7 +359,7 @@ Deno.serve(async (req) => {
 
     for (const recipient of (recipients || []) as ProfileRecipient[]) {
       const introLine =
-        body.type === "todo_share"
+        body.type === "todo_share" || isNote
           ? `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml}: <strong>${escapeHtml(task.title)}</strong>.</p>`
           : body.type === "approval_decision"
           ? `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} <strong>${escapeHtml(task.title)}</strong>.</p>`
@@ -348,7 +370,7 @@ ${introLine}
 ${dueLine}
 ${decisionBlock}
 ${messageBlock}
-<p><a href="${taskUrl}">${isTodo ? "Open your to-do list" : "Open task"}</a></p>
+<p><a href="${taskUrl}">${isNote ? "Open your notes" : isTodo ? "Open your to-do list" : "Open task"}</a></p>
 `.trim();
 
       // Need the recipient's email/UPN to look them up in Microsoft Entra
