@@ -79,3 +79,107 @@ export const useDeleteNote = () => {
     onError: (e: any) => toast({ title: "Could not delete note", description: e.message, variant: "destructive" }),
   });
 };
+export interface PersonalNoteShare {
+  id: string;
+  note_id: string;
+  user_id: string;
+  added_by: string | null;
+  created_at: string;
+}
+
+/** Everyone a note has been shared with. */
+export const useNoteShares = (noteId?: string) => {
+  return useQuery({
+    queryKey: ["personal_note_shares", noteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("personal_note_shares")
+        .select("*")
+        .eq("note_id", noteId!);
+      if (error) throw error;
+      return data as PersonalNoteShare[];
+    },
+    enabled: !!noteId,
+  });
+};
+
+export const useShareNote = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ noteId, userIds }: { noteId: string; userIds: string[] }) => {
+      if (!user?.id) throw new Error("Not authenticated");
+      if (userIds.length === 0) return;
+
+      const { error } = await supabase
+        .from("personal_note_shares")
+        .insert(userIds.map((uid) => ({ note_id: noteId, user_id: uid, added_by: user.id })));
+      if (error) throw error;
+
+      // Teams / email / in-app notification — never block the UI on it.
+      supabase.functions
+        .invoke("send-task-notification", {
+          body: {
+            type: "note_share",
+            noteId,
+            recipientUserIds: userIds,
+            actorUserId: user.id,
+          },
+        })
+        .catch((err) => console.error("Failed to send note share notification:", err));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["personal_note_shares"] });
+      queryClient.invalidateQueries({ queryKey: ["personal_notes"] });
+      toast({ title: "Note shared" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Could not share note", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useUnshareNote = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ noteId, userId }: { noteId: string; userId: string }) => {
+      const { error } = await supabase
+        .from("personal_note_shares")
+        .delete()
+        .eq("note_id", noteId)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["personal_note_shares"] });
+      queryClient.invalidateQueries({ queryKey: ["personal_notes"] });
+    },
+    onError: (e: any) =>
+      toast({ title: "Could not remove person", description: e.message, variant: "destructive" }),
+  });
+};
+
+/** Notify staff newly tagged with `@Name` inside a note's content. */
+export const useNotifyNoteMentions = () => {
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ noteId, userIds }: { noteId: string; userIds: string[] }) => {
+      if (!user?.id || userIds.length === 0) return;
+      const recipients = userIds.filter((id) => id !== user.id);
+      if (recipients.length === 0) return;
+      await supabase.functions.invoke("send-task-notification", {
+        body: {
+          type: "note_mention",
+          noteId,
+          recipientUserIds: recipients,
+          actorUserId: user.id,
+        },
+      });
+    },
+    onError: (e: any) => console.error("Failed to send note mention notification:", e),
+  });
+};
