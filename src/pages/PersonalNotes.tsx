@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { NoteEditor } from "@/components/notes/NoteEditor";
+import {
+  OwnershipFilter,
+  OwnershipFilterValue,
+  matchesOwnershipFilter,
+} from "@/components/workspace/OwnershipFilter";
 import { useAuth } from "@/hooks/useAuth";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import { displayNameFor, extractMentionedUserIds } from "@/lib/noteMentions";
@@ -29,6 +34,7 @@ import {
   useUpdateNote,
   useDeleteNote,
   useNoteShares,
+  useAllNoteShares,
   useShareNote,
   useUnshareNote,
   useNotifyNoteMentions,
@@ -45,9 +51,11 @@ const PersonalNotes = () => {
   const unshareNote = useUnshareNote();
   const notifyMentions = useNotifyNoteMentions();
   const { data: users = [] } = useAssignableUsers();
+  const { data: allShares = [] } = useAllNoteShares();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [ownership, setOwnership] = useState<OwnershipFilterValue>("all");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -71,10 +79,28 @@ const PersonalNotes = () => {
     }
   }, [selected?.id, users.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const shareCountFor = (noteId: string) => allShares.filter((s) => s.note_id === noteId).length;
+
   const filtered = notes.filter((n) => {
     const q = search.toLowerCase();
-    return n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
+    const matchesSearch =
+      n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
+    return (
+      matchesSearch &&
+      matchesOwnershipFilter(ownership, n.user_id, user?.id, shareCountFor(n.id))
+    );
   });
+
+  const counts = {
+    all: notes.length,
+    mine: notes.filter((n) => matchesOwnershipFilter("mine", n.user_id, user?.id, shareCountFor(n.id))).length,
+    shared_by_me: notes.filter((n) =>
+      matchesOwnershipFilter("shared_by_me", n.user_id, user?.id, shareCountFor(n.id))
+    ).length,
+    shared_with_me: notes.filter((n) =>
+      matchesOwnershipFilter("shared_with_me", n.user_id, user?.id, shareCountFor(n.id))
+    ).length,
+  };
 
   const handleCreate = async () => {
     const note = await createNote.mutateAsync(undefined);
@@ -128,6 +154,7 @@ const PersonalNotes = () => {
               className="pl-8"
             />
           </div>
+          <OwnershipFilter value={ownership} onChange={setOwnership} counts={counts} />
           {isLoading && <p className="text-sm text-muted-foreground px-1">Loading…</p>}
           {!isLoading && filtered.length === 0 && (
             <p className="text-sm text-muted-foreground px-1 py-4 text-center">No notes found.</p>
