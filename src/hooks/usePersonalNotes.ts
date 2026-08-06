@@ -103,6 +103,20 @@ export const useNoteShares = (noteId?: string) => {
   });
 };
 
+/** Shares across every note visible to the current user (for list filters/badges). */
+export const useAllNoteShares = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["personal_note_shares", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("personal_note_shares").select("*");
+      if (error) throw error;
+      return data as PersonalNoteShare[];
+    },
+    enabled: !!user?.id,
+  });
+};
+
 export const useShareNote = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
