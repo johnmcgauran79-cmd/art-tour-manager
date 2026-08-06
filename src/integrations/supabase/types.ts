@@ -2430,12 +2430,46 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_todo_shares: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          todo_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          todo_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          todo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_todo_shares_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "personal_todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personal_todos: {
         Row: {
           completed: boolean
+          converted_task_id: string | null
           created_at: string
           due_date: string | null
           id: string
+          notes: string | null
           position: number
           title: string
           updated_at: string
@@ -2443,9 +2477,11 @@ export type Database = {
         }
         Insert: {
           completed?: boolean
+          converted_task_id?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
+          notes?: string | null
           position?: number
           title: string
           updated_at?: string
@@ -2453,15 +2489,25 @@ export type Database = {
         }
         Update: {
           completed?: boolean
+          converted_task_id?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
+          notes?: string | null
           position?: number
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "personal_todos_converted_task_id_fkey"
+            columns: ["converted_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_booking_email_log: {
         Row: {
@@ -5258,6 +5304,14 @@ export type Database = {
       }
       is_task_watcher: {
         Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_todo_owner: {
+        Args: { _todo_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_todo_shared_with: {
+        Args: { _todo_id: string; _user_id: string }
         Returns: boolean
       }
       log_sensitive_operation: {
