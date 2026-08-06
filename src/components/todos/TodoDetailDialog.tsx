@@ -62,6 +62,7 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
   const [notes, setNotes] = useState("");
   const [due, setDue] = useState<Date | undefined>();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [convertOpen, setConvertOpen] = useState(false);
 
   const isOwner = !!todo && todo.user_id === user?.id;
 
@@ -93,8 +94,9 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
     onOpenChange(false);
   };
 
-  const handleConvert = async () => {
-    const task = await convertTodo.mutateAsync(todo);
+  const handleConvert = async (keepTodo: boolean) => {
+    const task = await convertTodo.mutateAsync({ todo, keepTodo });
+    setConvertOpen(false);
     onOpenChange(false);
     if (task?.id) navigate(`/tasks/${task.id}`);
   };
@@ -239,14 +241,37 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
           {isOwner ? (
             <div className="flex gap-2">
               {!todo.converted_task_id && (
-                <Button variant="outline" onClick={handleConvert} disabled={convertTodo.isPending}>
-                  {convertTodo.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <ArrowUpRight className="h-4 w-4 mr-2" />
-                  )}
-                  Convert to Task
-                </Button>
+                <AlertDialog open={convertOpen} onOpenChange={setConvertOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={convertTodo.isPending}>
+                      {convertTodo.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4 mr-2" />
+                      )}
+                      Convert to Task
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Convert to a full Task?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        "{todo.title}" will become a Task with everyone it's shared with assigned.
+                        Do you want to keep the original to-do as a completed, linked record so you
+                        can still see it in your list, or delete it once the Task is created?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2">
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <Button variant="outline" onClick={() => handleConvert(true)} disabled={convertTodo.isPending}>
+                        Keep the to-do
+                      </Button>
+                      <Button onClick={() => handleConvert(false)} disabled={convertTodo.isPending}>
+                        Delete the to-do
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
