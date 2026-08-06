@@ -110,6 +110,7 @@ Deno.serve(async (req) => {
             type: body.type,
             taskId: body.taskId,
             todoId: body.todoId,
+            noteId: body.noteId,
             recipientUserIds: teamsRecipientIds,
             actorUserId: body.actorUserId,
             message: body.message,
