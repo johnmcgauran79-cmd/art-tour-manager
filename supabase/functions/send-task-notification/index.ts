@@ -10,8 +10,10 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision";
-  taskId: string;
+  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision" | "todo_share";
+  taskId?: string;
+  /** Set instead of taskId when sharing a personal to-do. */
+  todoId?: string;
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
@@ -26,7 +28,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as NotificationRequest;
-    if (!body.type || !body.taskId || !body.recipientUserIds?.length || !body.actorUserId) {
+    const isTodo = body.type === "todo_share";
+    const entityId = isTodo ? body.todoId : body.taskId;
+    if (!body.type || !entityId || !body.recipientUserIds?.length || !body.actorUserId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -37,14 +41,18 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Resolve task
-    const { data: task } = await supabase
-      .from("tasks").select("id, title, priority, due_date").eq("id", body.taskId).single();
-    if (!task) {
-      return new Response(JSON.stringify({ error: "Task not found" }), {
+    // Resolve the entity being notified about (task, or shared personal to-do)
+    const { data: entity } = isTodo
+      ? await supabase
+          .from("personal_todos").select("id, title, due_date").eq("id", entityId).single()
+      : await supabase
+          .from("tasks").select("id, title, priority, due_date").eq("id", entityId).single();
+    if (!entity) {
+      return new Response(JSON.stringify({ error: isTodo ? "To-do not found" : "Task not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const task = entity as { id: string; title: string; due_date: string | null; priority?: string };
 
     // Resolve actor
     const { data: actor } = await supabase
@@ -86,6 +94,7 @@ Deno.serve(async (req) => {
           body: {
             type: body.type,
             taskId: body.taskId,
+            todoId: body.todoId,
             recipientUserIds: teamsRecipientIds,
             actorUserId: body.actorUserId,
             message: body.message,
@@ -123,7 +132,9 @@ Deno.serve(async (req) => {
         : "responded to your approval request on";
 
     const subjectLine =
-      body.type === "mention"
+      body.type === "todo_share"
+        ? `${actorName} shared a to-do with you`
+        : body.type === "mention"
         ? `${actorName} mentioned you on a task`
         : body.type === "subtask_assignment"
         ? `${actorName} assigned you a subtask`
@@ -134,7 +145,9 @@ Deno.serve(async (req) => {
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
-      body.type === "mention"
+      body.type === "todo_share"
+        ? "A to-do has been shared with you"
+        : body.type === "mention"
         ? "You were mentioned in a comment"
         : body.type === "subtask_assignment"
         ? "You have been assigned a subtask"
@@ -150,13 +163,17 @@ Deno.serve(async (req) => {
     // Always write an in-app notification row for every recipient (regardless of
     // their Teams/email channel preference) so the bell/panel stays in sync.
     const inAppType =
-      body.type === "mention"
+      body.type === "todo_share"
+        ? "todo_share"
+        : body.type === "mention"
         ? "task_mention"
         : body.type === "assignment"
         ? "task_assignment"
         : body.type; // subtask_assignment | approval_request | approval_decision
     const inAppMessage =
-      body.type === "approval_decision"
+      body.type === "todo_share"
+        ? `${actorName} added you to a to-do`
+        : body.type === "approval_decision"
         ? `${actorName} ${decisionVerb}${body.message ? `: ${body.message}` : ""}`
         : body.type === "subtask_assignment"
         ? `${actorName} assigned you the subtask "${(body.message || "").trim()}"`
@@ -180,7 +197,7 @@ Deno.serve(async (req) => {
       console.error("Failed to write in-app notifications:", notifErr);
     }
 
-    const taskUrl = `${APP_URL}/tasks/${task.id}`;
+    const taskUrl = isTodo ? `${APP_URL}/todos` : `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
       ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
       : "";
