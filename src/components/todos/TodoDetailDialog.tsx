@@ -53,6 +53,7 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
   const updateTodo = useUpdateTodo();
   const shareTodo = useShareTodo();
   const unshareTodo = useUnshareTodo();
+  const deleteTodo = useDeleteTodo();
   const convertTodo = useConvertTodoToTask();
   const { data: shares = [] } = useTodoShares(todo?.id);
   const { data: users = [] } = useAssignableUsers();
