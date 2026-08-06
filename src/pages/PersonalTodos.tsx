@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Plus, Trash2, CalendarIcon, X } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, Users, ArrowUpRight, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,15 +8,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { TodoDetailDialog } from "@/components/todos/TodoDetailDialog";
 import {
   usePersonalTodos,
   useCreateTodo,
   useUpdateTodo,
   useDeleteTodo,
+  useAllTodoShares,
+  PersonalTodo,
 } from "@/hooks/usePersonalTodos";
 
 const PersonalTodos = () => {
+  const { user } = useAuth();
   const { data: todos = [], isLoading } = usePersonalTodos();
+  const { data: shares = [] } = useAllTodoShares();
   const createTodo = useCreateTodo();
   const updateTodo = useUpdateTodo();
   const deleteTodo = useDeleteTodo();
@@ -24,6 +30,10 @@ const PersonalTodos = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newDue, setNewDue] = useState<Date | undefined>();
   const [showCompleted, setShowCompleted] = useState(true);
+  const [selected, setSelected] = useState<PersonalTodo | null>(null);
+
+  const selectedLive = selected ? todos.find((t) => t.id === selected.id) ?? selected : null;
+  const shareCount = (todoId: string) => shares.filter((s) => s.todo_id === todoId).length;
 
   const handleAdd = () => {
     const title = newTitle.trim();
@@ -85,25 +95,56 @@ const PersonalTodos = () => {
               checked={todo.completed}
               onCheckedChange={(checked) => updateTodo.mutate({ id: todo.id, completed: !!checked })}
             />
-            <span className={cn("flex-1 text-sm", todo.completed && "line-through text-muted-foreground")}>
-              {todo.title}
-            </span>
+            <button
+              onClick={() => setSelected(todo)}
+              className="flex-1 text-left min-w-0"
+            >
+              <span className={cn("text-sm", todo.completed && "line-through text-muted-foreground")}>
+                {todo.title}
+              </span>
+              <span className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                {todo.user_id !== user?.id && <span>Shared with you</span>}
+                {todo.notes && (
+                  <span className="flex items-center gap-1">
+                    <FileText className="h-3 w-3" /> Notes
+                  </span>
+                )}
+                {shareCount(todo.id) > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" /> {shareCount(todo.id)}
+                  </span>
+                )}
+                {todo.converted_task_id && (
+                  <span className="flex items-center gap-1">
+                    <ArrowUpRight className="h-3 w-3" /> Task
+                  </span>
+                )}
+              </span>
+            </button>
             {todo.due_date && (
               <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {format(parseISO(todo.due_date), "dd/MM/yyyy")}
               </span>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100"
-              onClick={() => deleteTodo.mutate(todo.id)}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            {todo.user_id === user?.id && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                onClick={() => deleteTodo.mutate(todo.id)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
           </Card>
         ))}
       </div>
+
+      <TodoDetailDialog
+        todo={selectedLive}
+        open={!!selected}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
     </div>
   );
 };

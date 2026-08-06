@@ -1,0 +1,257 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { format, parseISO } from "date-fns";
+import { CalendarIcon, Check, ExternalLink, Loader2, UserPlus, X, ArrowUpRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
+import {
+  PersonalTodo,
+  useConvertTodoToTask,
+  useShareTodo,
+  useTodoShares,
+  useUnshareTodo,
+  useUpdateTodo,
+} from "@/hooks/usePersonalTodos";
+
+interface TodoDetailDialogProps {
+  todo: PersonalTodo | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const updateTodo = useUpdateTodo();
+  const shareTodo = useShareTodo();
+  const unshareTodo = useUnshareTodo();
+  const convertTodo = useConvertTodoToTask();
+  const { data: shares = [] } = useTodoShares(todo?.id);
+  const { data: users = [] } = useAssignableUsers();
+
+  const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
+  const [due, setDue] = useState<Date | undefined>();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const isOwner = !!todo && todo.user_id === user?.id;
+
+  useEffect(() => {
+    if (!todo) return;
+    setTitle(todo.title);
+    setNotes(todo.notes || "");
+    setDue(todo.due_date ? parseISO(todo.due_date) : undefined);
+  }, [todo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!todo) return null;
+
+  const sharedUserIds = shares.map((s) => s.user_id);
+  const available = users.filter((u) => u.id !== todo.user_id && !sharedUserIds.includes(u.id));
+  const nameFor = (id: string) => {
+    const u = users.find((x) => x.id === id);
+    if (!u) return "Unknown user";
+    return `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email || "Unknown user";
+  };
+
+  const handleSave = async () => {
+    if (!title.trim()) return;
+    await updateTodo.mutateAsync({
+      id: todo.id,
+      title: title.trim(),
+      notes: notes.trim() || null,
+      due_date: due ? format(due, "yyyy-MM-dd") : null,
+    });
+    onOpenChange(false);
+  };
+
+  const handleConvert = async () => {
+    const task = await convertTodo.mutateAsync(todo);
+    onOpenChange(false);
+    if (task?.id) navigate(`/tasks/${task.id}`);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isOwner ? "Edit to-do" : "Shared to-do"}</DialogTitle>
+          <DialogDescription>
+            {isOwner
+              ? "Short, simple jobs. Convert to a Task when it needs approvals, links or in-depth notes."
+              : `Shared with you by ${nameFor(todo.user_id)} — you can tick it off but not edit it.`}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="todo-title">Title</Label>
+            <Input
+              id="todo-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={!isOwner}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="todo-notes">Notes</Label>
+            <Textarea
+              id="todo-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              placeholder="Any quick detail you need to remember…"
+              disabled={!isOwner}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Due date</Label>
+            <div className="flex gap-2">
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={!isOwner}
+                    className={cn("justify-start", !due && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {due ? format(due, "dd/MM/yyyy") : "No due date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={due}
+                    onSelect={(d) => {
+                      setDue(d);
+                      setPickerOpen(false);
+                    }}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {due && isOwner && (
+                <Button variant="ghost" size="icon" onClick={() => setDue(undefined)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Shared with</Label>
+            <div className="flex flex-wrap gap-2">
+              {sharedUserIds.length === 0 && (
+                <p className="text-sm text-muted-foreground">Just you for now.</p>
+              )}
+              {sharedUserIds.map((id) => (
+                <Badge key={id} variant="secondary" className="gap-1">
+                  {nameFor(id)}
+                  {isOwner && (
+                    <button
+                      onClick={() => unshareTodo.mutate({ todoId: todo.id, userId: id })}
+                      className="ml-1 hover:text-destructive"
+                      aria-label={`Remove ${nameFor(id)}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </Badge>
+              ))}
+            </div>
+            {isOwner && available.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add someone
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-1" align="start">
+                  <div className="max-h-56 overflow-auto">
+                    {available.map((u) => (
+                      <button
+                        key={u.id}
+                        className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted"
+                        onClick={() => shareTodo.mutate({ todoId: todo.id, userIds: [u.id] })}
+                      >
+                        {nameFor(u.id)}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            {isOwner && (
+              <p className="text-xs text-muted-foreground">
+                People you add get a Teams notification and see it in their own to-do list.
+              </p>
+            )}
+          </div>
+
+          {todo.converted_task_id && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false);
+                navigate(`/tasks/${todo.converted_task_id}`);
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open linked Task
+            </Button>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:justify-between">
+          {isOwner && !todo.converted_task_id ? (
+            <Button variant="outline" onClick={handleConvert} disabled={convertTodo.isPending}>
+              {convertTodo.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <ArrowUpRight className="h-4 w-4 mr-2" />
+              )}
+              Convert to Task
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            {isOwner && (
+              <Button onClick={handleSave} disabled={!title.trim() || updateTodo.isPending}>
+                {updateTodo.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Save
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

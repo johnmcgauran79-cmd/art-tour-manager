@@ -10,8 +10,10 @@ const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 const TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
 interface TeamsNotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision";
-  taskId: string;
+  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision" | "todo_share";
+  taskId?: string;
+  /** Set instead of taskId when sharing a personal to-do. */
+  todoId?: string;
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
@@ -210,7 +212,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as TeamsNotificationRequest;
-    if (!body.type || !body.taskId || !body.recipientUserIds?.length || !body.actorUserId) {
+    const isTodo = body.type === "todo_share";
+    const entityId = isTodo ? body.todoId : body.taskId;
+    if (!body.type || !entityId || !body.recipientUserIds?.length || !body.actorUserId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -222,18 +226,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: task } = await supabase
-      .from("tasks")
-      .select("id, title, priority, due_date")
-      .eq("id", body.taskId)
-      .single();
+    const { data: entity } = isTodo
+      ? await supabase
+          .from("personal_todos")
+          .select("id, title, due_date")
+          .eq("id", entityId)
+          .single()
+      : await supabase
+          .from("tasks")
+          .select("id, title, priority, due_date")
+          .eq("id", entityId)
+          .single();
 
-    if (!task) {
-      return new Response(JSON.stringify({ error: "Task not found" }), {
+    if (!entity) {
+      return new Response(JSON.stringify({ error: isTodo ? "To-do not found" : "Task not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const task = entity as { id: string; title: string; due_date: string | null };
 
     const { data: actor } = await supabase
       .from("profiles")
@@ -282,7 +293,7 @@ Deno.serve(async (req) => {
       : "";
     const escapedMessage = cleanedMessage ? escapeHtml(cleanedMessage).substring(0, 1000) : "";
 
-    const taskUrl = `${APP_URL}/tasks/${task.id}`;
+    const taskUrl = isTodo ? `${APP_URL}/todos` : `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
       ? `<p>Due: <strong>${new Date(task.due_date).toLocaleDateString("en-AU", {
           day: "2-digit",
@@ -299,7 +310,9 @@ Deno.serve(async (req) => {
         : null;
 
     const verbHtml =
-      body.type === "mention"
+      body.type === "todo_share"
+        ? "shared a to-do with you"
+        : body.type === "mention"
         ? "mentioned you in a comment on"
         : body.type === "approval_request"
         ? "has requested your approval on"
@@ -324,7 +337,9 @@ Deno.serve(async (req) => {
 
     for (const recipient of (recipients || []) as ProfileRecipient[]) {
       const introLine =
-        body.type === "approval_decision"
+        body.type === "todo_share"
+          ? `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml}: <strong>${escapeHtml(task.title)}</strong>.</p>`
+          : body.type === "approval_decision"
           ? `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} <strong>${escapeHtml(task.title)}</strong>.</p>`
           : `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} the task <strong>${escapeHtml(task.title)}</strong>.</p>`;
       const html = `
@@ -333,7 +348,7 @@ ${introLine}
 ${dueLine}
 ${decisionBlock}
 ${messageBlock}
-<p><a href="${taskUrl}">Open task</a></p>
+<p><a href="${taskUrl}">${isTodo ? "Open your to-do list" : "Open task"}</a></p>
 `.trim();
 
       // Need the recipient's email/UPN to look them up in Microsoft Entra
