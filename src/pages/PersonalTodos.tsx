@@ -89,6 +89,8 @@ const PersonalTodos = () => {
         </Button>
       </div>
 
+      <OwnershipFilter value={ownership} onChange={setOwnership} counts={counts} />
+
       <Card className="p-3 flex flex-col sm:flex-row gap-2">
         <Input
           value={newTitle}
