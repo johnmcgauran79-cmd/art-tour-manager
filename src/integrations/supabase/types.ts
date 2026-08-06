@@ -2400,6 +2400,38 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_note_shares: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          note_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_note_shares_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "personal_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personal_notes: {
         Row: {
           content: string
@@ -5300,6 +5332,14 @@ export type Database = {
       }
       is_host_for_tour: {
         Args: { _tour_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_note_owner: {
+        Args: { _note_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_note_shared_with: {
+        Args: { _note_id: string; _user_id: string }
         Returns: boolean
       }
       is_task_watcher: {
