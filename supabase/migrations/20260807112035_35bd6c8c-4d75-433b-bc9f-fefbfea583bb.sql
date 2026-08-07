@@ -1,0 +1,1 @@
+ALTER TABLE public.personal_todos ADD COLUMN IF NOT EXISTS link_url text;
