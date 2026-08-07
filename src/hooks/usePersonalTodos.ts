@@ -14,6 +14,7 @@ export interface PersonalTodo {
   updated_at: string;
   notes: string | null;
   converted_task_id: string | null;
+  link_url: string | null;
 }
 
 export interface PersonalTodoShare {
