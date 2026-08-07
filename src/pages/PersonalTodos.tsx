@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Plus, Trash2, CalendarIcon, Users, ArrowUpRight, FileText } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, Users, ArrowUpRight, FileText, Link2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -140,6 +140,11 @@ const PersonalTodos = () => {
                 {todo.notes && (
                   <span className="flex items-center gap-1">
                     <FileText className="h-3 w-3" /> Notes
+                  </span>
+                )}
+                {todo.link_url && (
+                  <span className="flex items-center gap-1">
+                    <Link2 className="h-3 w-3" /> Link
                   </span>
                 )}
                 {shareCount(todo.id) > 0 && (
