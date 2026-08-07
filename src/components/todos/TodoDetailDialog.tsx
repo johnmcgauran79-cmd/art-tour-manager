@@ -60,6 +60,7 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
   const [due, setDue] = useState<Date | undefined>();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -70,6 +71,7 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
     if (!todo) return;
     setTitle(todo.title);
     setNotes(todo.notes || "");
+    setLinkUrl(todo.link_url || "");
     setDue(todo.due_date ? parseISO(todo.due_date) : undefined);
   }, [todo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -85,10 +87,17 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
 
   const handleSave = async () => {
     if (!title.trim()) return;
+    const trimmedLink = linkUrl.trim();
+    const normalisedLink = trimmedLink
+      ? /^https?:\/\//i.test(trimmedLink)
+        ? trimmedLink
+        : `https://${trimmedLink}`
+      : null;
     await updateTodo.mutateAsync({
       id: todo.id,
       title: title.trim(),
       notes: notes.trim() || null,
+      link_url: normalisedLink,
       due_date: due ? format(due, "yyyy-MM-dd") : null,
     });
     onOpenChange(false);
@@ -134,6 +143,35 @@ export const TodoDetailDialog = ({ todo, open, onOpenChange }: TodoDetailDialogP
               placeholder="Any quick detail you need to remember…"
               disabled={!isOwner}
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="todo-link">Reference link</Label>
+            <div className="flex gap-2">
+              <Input
+                id="todo-link"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://…"
+                disabled={!isOwner}
+              />
+              {linkUrl.trim() && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  asChild
+                  aria-label="Open reference link"
+                >
+                  <a
+                    href={/^https?:\/\//i.test(linkUrl.trim()) ? linkUrl.trim() : `https://${linkUrl.trim()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-1.5">
