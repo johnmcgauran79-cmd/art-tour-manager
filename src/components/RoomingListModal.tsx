@@ -42,6 +42,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
   const tourBookings = allBookings.filter(booking => 
     booking.tour_id === tourId && 
     booking.status !== 'cancelled' &&
+    booking.status !== 'waitlisted' &&
     booking.accommodation_required
   );
 
