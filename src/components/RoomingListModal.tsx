@@ -42,6 +42,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
   const tourBookings = allBookings.filter(booking => 
     booking.tour_id === tourId && 
     booking.status !== 'cancelled' &&
+    booking.status !== 'waitlisted' &&
     booking.accommodation_required
   );
 
@@ -70,7 +71,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         .eq('hotel_id', hotel.id)
         .eq('allocated', true)
         .eq('bookings.tour_id', tourId)
-        .neq('bookings.status', 'cancelled')
+        .not('bookings.status', 'in', '("cancelled","waitlisted")')
         .order('created_at', { ascending: true });
       
       if (error) {

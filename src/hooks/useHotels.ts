@@ -62,7 +62,7 @@ export const useHotels = (tourId: string) => {
           bookings!inner(status)
         `)
         .in('hotel_id', hotelIds)
-        .neq('bookings.status', 'cancelled')
+        .not('bookings.status', 'in', '("cancelled","waitlisted")')
         .not('nights', 'is', null);
 
       if (bookingsError) {

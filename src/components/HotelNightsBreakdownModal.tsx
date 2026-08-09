@@ -48,7 +48,7 @@ export const HotelNightsBreakdownModal = ({
           )
         `)
         .eq('hotel_id', hotelId)
-        .neq('bookings.status', 'cancelled')
+        .not('bookings.status', 'in', '("cancelled","waitlisted")')
         .not('nights', 'is', null);
 
       if (error) {
