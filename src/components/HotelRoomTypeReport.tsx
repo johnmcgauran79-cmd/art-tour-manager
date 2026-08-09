@@ -46,7 +46,7 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
         .eq('hotel_id', hotel.id)
         .eq('allocated', true)
         .eq('bookings.tour_id', tourId)
-        .neq('bookings.status', 'cancelled')
+        .not('bookings.status', 'in', '("cancelled","waitlisted")')
         .not('check_in_date', 'is', null)
         .not('check_out_date', 'is', null);
       

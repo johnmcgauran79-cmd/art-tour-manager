@@ -55,7 +55,7 @@ export const BulkConfirmationNumberModal = ({ hotel, tourId, open, onOpenChange 
         .eq('allocated', true)
         .is('cancelled_at', null)
         .eq('bookings.tour_id', tourId)
-        .neq('bookings.status', 'cancelled')
+        .not('bookings.status', 'in', '("cancelled","waitlisted")')
         .order('id', { ascending: true });
 
       if (error) {

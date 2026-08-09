@@ -70,7 +70,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         .eq('hotel_id', hotel.id)
         .eq('allocated', true)
         .eq('bookings.tour_id', tourId)
-        .neq('bookings.status', 'cancelled')
+        .not('bookings.status', 'in', '("cancelled","waitlisted")')
         .order('created_at', { ascending: true });
       
       if (error) {
