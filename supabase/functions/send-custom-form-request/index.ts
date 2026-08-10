@@ -135,7 +135,13 @@ const handler = async (req: Request): Promise<Response> => {
       bccEmails,
       emailTemplateId,
       attachments: requestedAttachments,
+      testEmailTo,
     } = await req.json();
+
+    // Test sends: mint a short-lived throwaway token so {{custom_form_button}}
+    // renders exactly as clients will see it, but deliver only to the tester.
+    const isTestSend = !!(typeof testEmailTo === 'string' && testEmailTo.trim());
+    const testRecipient = isTestSend ? String(testEmailTo).trim() : null;
 
     if (!bookingId) {
       return new Response(JSON.stringify({ error: "Booking ID is required" }),
@@ -248,7 +254,7 @@ const handler = async (req: Request): Promise<Response> => {
     const exemptSlots = new Set<number>(
       (exemptions || []).map((e: any) => Number(e.passenger_slot))
     );
-    if (exemptSlots.size > 0) {
+    if (exemptSlots.size > 0 && !isTestSend) {
       const before = passengers.length;
       for (let i = passengers.length - 1; i >= 0; i--) {
         if (exemptSlots.has(passengers[i].slot)) {
@@ -257,6 +263,11 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
       console.log(`[custom-form] Removed ${before - passengers.length} exempt passenger(s) for booking ${bookingId}`);
+    }
+
+    // A test send only ever produces a single email based on the first passenger.
+    if (isTestSend && passengers.length > 1) {
+      passengers.splice(1);
     }
 
     if (passengers.length === 0) {
