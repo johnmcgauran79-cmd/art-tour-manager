@@ -326,7 +326,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const passenger of passengers) {
       try {
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
+        expiresAt.setHours(expiresAt.getHours() + (isTestSend ? 1 : tokenExpiryHours));
 
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
@@ -413,10 +413,10 @@ const handler = async (req: Request): Promise<Response> => {
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
           from: fromEmail,
-          to: [passenger.email],
-          cc: ccEmails && ccEmails.length > 0 ? ccEmails : undefined,
-          bcc: bccEmails && bccEmails.length > 0 ? bccEmails : undefined,
-          subject: finalSubject,
+          to: [isTestSend ? testRecipient! : passenger.email],
+          cc: isTestSend ? undefined : (ccEmails && ccEmails.length > 0 ? ccEmails : undefined),
+          bcc: isTestSend ? undefined : (bccEmails && bccEmails.length > 0 ? bccEmails : undefined),
+          subject: isTestSend ? `[TEST] ${finalSubject}` : finalSubject,
           html: finalHtml,
           attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
         });
@@ -427,7 +427,7 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        if (emailResult?.id) {
+        if (emailResult?.id && !isTestSend) {
           await supabase.from("email_logs").insert({
             booking_id: bookingId,
             tour_id: tour.id,
@@ -440,7 +440,7 @@ const handler = async (req: Request): Promise<Response> => {
           });
         }
 
-        sentEmails.push(passenger.email);
+        sentEmails.push(isTestSend ? testRecipient! : passenger.email);
       } catch (err: any) {
         console.error(`Error processing ${passenger.email}:`, err);
         failedEmails.push(passenger.email);
