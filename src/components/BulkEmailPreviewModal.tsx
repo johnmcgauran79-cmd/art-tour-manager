@@ -362,6 +362,34 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
       toast({ title: "Email content is empty", description: "Choose a template or write some content first.", variant: "destructive" });
       return;
     }
+    // Custom Form Requests route through the dedicated function so the test email
+    // mints a throwaway 1-hour token and renders the real {{custom_form_button}}.
+    if (isCustomFormTemplate) {
+      if (!selectedFormId) {
+        toast({ title: "No form selected", description: "Select a published form to test the form button.", variant: "destructive" });
+        return;
+      }
+      try {
+        const { data, error } = await supabase.functions.invoke("send-custom-form-request", {
+          body: {
+            bookingId: previewBooking.id,
+            formId: selectedFormId,
+            customSubject: editedSubject,
+            customContent: editedContent,
+            fromEmail,
+            emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
+            attachments: attachments.length > 0 ? attachments : undefined,
+            testEmailTo: testEmailTo.trim(),
+          },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        toast({ title: "Test Email Sent", description: `Test form request sent to ${testEmailTo.trim()}` });
+      } catch (e: any) {
+        toast({ title: "Test send failed", description: e?.message || "Could not send the test email.", variant: "destructive" });
+      }
+      return;
+    }
     await sendTestMutation.mutateAsync({
       bookingId: previewBooking.id,
       customSubject: editedSubject,

@@ -135,7 +135,13 @@ const handler = async (req: Request): Promise<Response> => {
       bccEmails,
       emailTemplateId,
       attachments: requestedAttachments,
+      testEmailTo,
     } = await req.json();
+
+    // Test sends: mint a short-lived throwaway token so {{custom_form_button}}
+    // renders exactly as clients will see it, but deliver only to the tester.
+    const isTestSend = !!(typeof testEmailTo === 'string' && testEmailTo.trim());
+    const testRecipient = isTestSend ? String(testEmailTo).trim() : null;
 
     if (!bookingId) {
       return new Response(JSON.stringify({ error: "Booking ID is required" }),
@@ -248,7 +254,7 @@ const handler = async (req: Request): Promise<Response> => {
     const exemptSlots = new Set<number>(
       (exemptions || []).map((e: any) => Number(e.passenger_slot))
     );
-    if (exemptSlots.size > 0) {
+    if (exemptSlots.size > 0 && !isTestSend) {
       const before = passengers.length;
       for (let i = passengers.length - 1; i >= 0; i--) {
         if (exemptSlots.has(passengers[i].slot)) {
@@ -257,6 +263,11 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
       console.log(`[custom-form] Removed ${before - passengers.length} exempt passenger(s) for booking ${bookingId}`);
+    }
+
+    // A test send only ever produces a single email based on the first passenger.
+    if (isTestSend && passengers.length > 1) {
+      passengers.splice(1);
     }
 
     if (passengers.length === 0) {
@@ -315,7 +326,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const passenger of passengers) {
       try {
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
+        expiresAt.setHours(expiresAt.getHours() + (isTestSend ? 1 : tokenExpiryHours));
 
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
@@ -402,10 +413,10 @@ const handler = async (req: Request): Promise<Response> => {
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
           from: fromEmail,
-          to: [passenger.email],
-          cc: ccEmails && ccEmails.length > 0 ? ccEmails : undefined,
-          bcc: bccEmails && bccEmails.length > 0 ? bccEmails : undefined,
-          subject: finalSubject,
+          to: [isTestSend ? testRecipient! : passenger.email],
+          cc: isTestSend ? undefined : (ccEmails && ccEmails.length > 0 ? ccEmails : undefined),
+          bcc: isTestSend ? undefined : (bccEmails && bccEmails.length > 0 ? bccEmails : undefined),
+          subject: isTestSend ? `[TEST] ${finalSubject}` : finalSubject,
           html: finalHtml,
           attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
         });
@@ -416,7 +427,7 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        if (emailResult?.id) {
+        if (emailResult?.id && !isTestSend) {
           await supabase.from("email_logs").insert({
             booking_id: bookingId,
             tour_id: tour.id,
@@ -429,7 +440,7 @@ const handler = async (req: Request): Promise<Response> => {
           });
         }
 
-        sentEmails.push(passenger.email);
+        sentEmails.push(isTestSend ? testRecipient! : passenger.email);
       } catch (err: any) {
         console.error(`Error processing ${passenger.email}:`, err);
         failedEmails.push(passenger.email);
@@ -438,7 +449,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({
       success: true, sentTo: sentEmails, failed: failedEmails,
-      message: `${form.form_title} request sent to ${sentEmails.length} passenger(s)`,
+      isTest: isTestSend,
+      message: isTestSend
+        ? `Test ${form.form_title} request sent to ${sentEmails.join(', ')}`
+        : `${form.form_title} request sent to ${sentEmails.length} passenger(s)`,
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error: any) {
