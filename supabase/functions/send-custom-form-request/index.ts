@@ -449,7 +449,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({
       success: true, sentTo: sentEmails, failed: failedEmails,
-      message: `${form.form_title} request sent to ${sentEmails.length} passenger(s)`,
+      isTest: isTestSend,
+      message: isTestSend
+        ? `Test ${form.form_title} request sent to ${sentEmails.join(', ')}`
+        : `${form.form_title} request sent to ${sentEmails.length} passenger(s)`,
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error: any) {
