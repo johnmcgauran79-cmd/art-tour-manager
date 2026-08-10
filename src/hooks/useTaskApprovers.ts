@@ -99,17 +99,9 @@ export const useRequestApproval = () => {
         new_value: { policy: policy || null, count: userIds.length },
       });
 
-      // Notify approvers
-      supabase.functions
-        .invoke("send-task-notification", {
-          body: {
-            type: "approval_request",
-            taskId,
-            recipientUserIds: userIds,
-            actorUserId: actorId,
-          },
-        })
-        .catch((e) => console.error("Notification failed:", e));
+      // Notification is dispatched server-side by the task_approvers trigger
+      // (trg_notify_task_approval_request) so it can never be lost if the
+      // browser request fails or the session token has expired.
 
       return { added: userIds.length };
     },
@@ -164,17 +156,7 @@ export const useReRequestApproval = () => {
         message: `Re-requested approval from ${userIds.length} ${userIds.length === 1 ? "person" : "people"}`,
       });
 
-      // Notify
-      supabase.functions
-        .invoke("send-task-notification", {
-          body: {
-            type: "approval_request",
-            taskId,
-            recipientUserIds: userIds,
-            actorUserId: actorId,
-          },
-        })
-        .catch((e) => console.error("Notification failed:", e));
+      // Notification dispatched server-side by the task_approvers trigger.
 
       return { count: userIds.length };
     },
