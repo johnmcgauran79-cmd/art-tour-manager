@@ -87,12 +87,10 @@ export const PendingEmailPreviewModal = ({
     ? EmailTemplateEngine.processTemplate(templateSubject, mergeData)
     : templateSubject;
 
-  // Process template then replace leftover action placeholders with styled mock buttons
-  let processedContent = mergeData
-    ? EmailTemplateEngine.processTemplate(templateContent, mergeData)
-    : templateContent;
+  // Replace action placeholders with styled mock buttons FIRST, so the mustache
+  // processor doesn't strip them as unknown merge fields.
+  let processedContent = templateContent;
 
-  // Replace raw action placeholders with visual mock buttons for preview
   const placeholderButtonStyle = 'display:inline-block;padding:10px 24px;background:#6366f1;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;opacity:0.7;cursor:default;';
   const placeholderReplacements: Record<string, string> = {
     '{{profile_update_button}}': `<span style="${placeholderButtonStyle}">📝 Update My Profile (Preview)</span>`,
@@ -103,6 +101,10 @@ export const PendingEmailPreviewModal = ({
     '{{travel_docs_link}}': '#preview-travel-docs',
     '{{waiver_button}}': `<span style="${placeholderButtonStyle}">📋 Sign Waiver (Preview)</span>`,
     '{{waiver_link}}': '#preview-waiver',
+    '{{custom_form_button}}': `<span style="${placeholderButtonStyle}">📝 Complete Form (Preview)</span>`,
+    '{{custom_form_link}}': '#preview-custom-form',
+    '{{itinerary_button}}': `<span style="${placeholderButtonStyle}">🗺️ View Itinerary (Preview)</span>`,
+    '{{itinerary_link}}': '#preview-itinerary',
   };
   for (const [placeholder, replacement] of Object.entries(placeholderReplacements)) {
     processedContent = processedContent.split(placeholder).join(replacement);
@@ -112,6 +114,15 @@ export const PendingEmailPreviewModal = ({
     /\{\{custom_form_button:([^}]+)\}\}/g,
     (_, formTitle) => `<span style="${placeholderButtonStyle}">📝 ${formTitle.trim()} (Preview)</span>`
   );
+
+  // Per-passenger blocks are resolved at send time; show their content in preview.
+  processedContent = processedContent
+    .replace(/\{\{#is_per_passenger\}\}/g, '')
+    .replace(/\{\{\/is_per_passenger\}\}/g, '');
+
+  processedContent = mergeData
+    ? EmailTemplateEngine.processTemplate(processedContent, mergeData)
+    : processedContent;
 
   // Recolour custom cards to the tour's brand theme so the preview matches
   // what the client will actually receive.
