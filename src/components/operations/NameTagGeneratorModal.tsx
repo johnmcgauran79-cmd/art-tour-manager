@@ -164,13 +164,22 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{selectedTourIds.length} selected</span>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds(sortedTours.map(t => t.id))}>
-                  Select all
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds([])}>
-                  Clear
-                </Button>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <Checkbox
+                    checked={includeHost}
+                    onCheckedChange={(v) => setIncludeHost(v === true)}
+                  />
+                  Include host name
+                </label>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds(sortedTours.map(t => t.id))}>
+                    Select all
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds([])}>
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
             <ScrollArea className="flex-1 min-h-0 border rounded-md p-2">
