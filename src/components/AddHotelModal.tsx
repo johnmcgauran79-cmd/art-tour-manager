@@ -396,7 +396,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cancellation_policy">Cancellation Policy</Label>
+            <Label htmlFor="cancellation_policy">Cancellation & Attrition Terms</Label>
             <Textarea
               id="cancellation_policy"
               value={formData.cancellation_policy}
