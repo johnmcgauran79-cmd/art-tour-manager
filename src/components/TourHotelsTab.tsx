@@ -282,7 +282,7 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                 </div>
 
                 {/* Third row with cutoff dates */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4 pt-4 border-t">
                   {(hotel as any).initial_rooms_cutoff_date && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -295,10 +295,14 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                       <span>Final Cutoff: {formatDateToDDMMYYYY((hotel as any).final_rooms_cutoff_date)}</span>
                     </div>
                   )}
+                </div>
+
+                {/* Cancellation & Attrition Terms */}
+                <div className="mt-4 pt-4 border-t">
                   <div className="flex items-start gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div className="flex-1">
-                      <span className="text-sm font-bold">Cancellation:</span>
+                      <span className="text-sm font-bold">Cancellation & Attrition Terms:</span>
                       <p className="text-sm mt-1 whitespace-pre-wrap break-words">
                         {(hotel as any).cancellation_policy || <span className="text-muted-foreground italic">Nil</span>}
                       </p>
