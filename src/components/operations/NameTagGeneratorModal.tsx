@@ -27,6 +27,10 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
   const { data: tours = [] } = useTours();
   const [selectedTourIds, setSelectedTourIds] = useState<string[]>([]);
   const [showReport, setShowReport] = useState(false);
+  // Host bookings use status = 'host'. They're included by default, but a
+  // host doing multiple tours may not need a name tag for every tour, so this
+  // toggle lets staff exclude them.
+  const [includeHost, setIncludeHost] = useState(true);
 
   const sortedTours = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -44,9 +48,13 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
   };
 
   const { data: report, isLoading } = useQuery({
-    queryKey: ['name-tag-report', selectedTourIds],
+    queryKey: ['name-tag-report', selectedTourIds, includeHost],
     enabled: showReport && selectedTourIds.length > 0,
     queryFn: async (): Promise<TourNames[]> => {
+      // Host bookings use status = 'host'. Excluded when the toggle is off.
+      const excluded = includeHost
+        ? '(cancelled,waitlisted)'
+        : '(cancelled,waitlisted,host)';
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -59,7 +67,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
         .in('tour_id', selectedTourIds)
         // Waitlisted bookings aren't confirmed travellers, so they must not
         // produce name tags (Everest was showing 50 names for 46 travelling).
-        .not('status', 'in', '(cancelled,waitlisted)');
+        .not('status', 'in', excluded);
 
       if (error) throw error;
 
@@ -147,7 +155,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
           </DialogTitle>
           <DialogDescription>
             {showReport
-              ? 'First names of all passengers (in capitals), grouped by tour. Preferred names used where set.'
+              ? `First names of all passengers (in capitals), grouped by tour. Preferred names used where set.${includeHost ? '' : ' Host names excluded.'}`
               : 'Select one or more tours to generate a name list for printing name tags.'}
           </DialogDescription>
         </DialogHeader>
@@ -156,13 +164,22 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{selectedTourIds.length} selected</span>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds(sortedTours.map(t => t.id))}>
-                  Select all
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds([])}>
-                  Clear
-                </Button>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <Checkbox
+                    checked={includeHost}
+                    onCheckedChange={(v) => setIncludeHost(v === true)}
+                  />
+                  Include host name
+                </label>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds(sortedTours.map(t => t.id))}>
+                    Select all
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTourIds([])}>
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
             <ScrollArea className="flex-1 min-h-0 border rounded-md p-2">
