@@ -293,7 +293,25 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
                 <div className="text-2xl font-bold">
                   {totalRoomsReserved > 0 ? `${totalRoomsBooked} of ${totalRoomsReserved}` : "NA"}
                 </div>
-                <p className="text-xs text-muted-foreground">rooms booked</p>
+                <p className="text-xs text-muted-foreground break-words">{roomsCardLabel}</p>
+                {hotelsList.length > 1 && (
+                  <Select value={roomsHotelId} onValueChange={selectHotelForRooms}>
+                    <SelectTrigger className="mt-2 h-7 text-xs">
+                      <SelectValue placeholder="Choose hotel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="first-night" className="text-xs">
+                        First night (default)
+                      </SelectItem>
+                      {hotelsList.map((h) => (
+                        <SelectItem key={h.id} value={h.id} className="text-xs">
+                          {h.name}
+                          {h.default_check_in ? ` — ${formatShortDate(h.default_check_in)}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </CardContent>
             </Card>
 
