@@ -1,6 +1,13 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus, Link2, FileCheck } from "lucide-react";
@@ -98,9 +105,43 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
   const firstNightHotels = earliestCheckIn 
     ? hotelsList.filter(hotel => hotel.default_check_in === earliestCheckIn)
     : [];
-  
-  const totalRoomsReserved = firstNightHotels.reduce((sum, hotel) => sum + (hotel.rooms_reserved || 0), 0);
-  const totalRoomsBooked = firstNightHotels.reduce((sum, hotel) => sum + (hotel.rooms_booked || 0), 0);
+
+  // Staff can override which hotel the Rooms Booked card reflects — the earliest
+  // check-in can be a pre-tour night hotel, which makes the default misleading.
+  const roomsHotelStorageKey = `tour-rooms-hotel:${tour.id}`;
+  const [roomsHotelId, setRoomsHotelId] = useState<string>("first-night");
+
+  useEffect(() => {
+    const saved = localStorage.getItem(roomsHotelStorageKey);
+    setRoomsHotelId(saved || "first-night");
+  }, [roomsHotelStorageKey]);
+
+  const selectHotelForRooms = (value: string) => {
+    setRoomsHotelId(value);
+    if (value === "first-night") {
+      localStorage.removeItem(roomsHotelStorageKey);
+    } else {
+      localStorage.setItem(roomsHotelStorageKey, value);
+    }
+  };
+
+  const selectedRoomsHotel = hotelsList.find((h) => h.id === roomsHotelId);
+  const roomsHotels = selectedRoomsHotel ? [selectedRoomsHotel] : firstNightHotels;
+
+  const totalRoomsReserved = roomsHotels.reduce((sum, hotel) => sum + (hotel.rooms_reserved || 0), 0);
+  const totalRoomsBooked = roomsHotels.reduce((sum, hotel) => sum + (hotel.rooms_booked || 0), 0);
+
+  const formatShortDate = (d?: string | null) => {
+    if (!d) return "";
+    const [y, m, day] = d.split("-");
+    return day && m ? `${day}/${m}` : d;
+  };
+
+  const roomsCardLabel = selectedRoomsHotel
+    ? selectedRoomsHotel.name
+    : firstNightHotels.length > 0
+      ? `First night${firstNightHotels.length > 1 ? ` (${firstNightHotels.length} hotels)` : `: ${firstNightHotels[0].name}`}`
+      : "No hotels";
 
   return (
     <div className="space-y-6">
@@ -252,7 +293,25 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
                 <div className="text-2xl font-bold">
                   {totalRoomsReserved > 0 ? `${totalRoomsBooked} of ${totalRoomsReserved}` : "NA"}
                 </div>
-                <p className="text-xs text-muted-foreground">rooms booked</p>
+                <p className="text-xs text-muted-foreground break-words">{roomsCardLabel}</p>
+                {hotelsList.length > 1 && (
+                  <Select value={roomsHotelId} onValueChange={selectHotelForRooms}>
+                    <SelectTrigger className="mt-2 h-7 text-xs">
+                      <SelectValue placeholder="Choose hotel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="first-night" className="text-xs">
+                        First night (default)
+                      </SelectItem>
+                      {hotelsList.map((h) => (
+                        <SelectItem key={h.id} value={h.id} className="text-xs">
+                          {h.name}
+                          {h.default_check_in ? ` — ${formatShortDate(h.default_check_in)}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </CardContent>
             </Card>
 
