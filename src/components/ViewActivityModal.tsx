@@ -40,6 +40,7 @@ interface ViewActivityModalProps {
 export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: ViewActivityModalProps) => {
   const [paxAttending, setPaxAttending] = useState(0);
   const [activityBookings, setActivityBookings] = useState<ActivityBookingInfo[]>([]);
+  const [showPassengerList, setShowPassengerList] = useState(false);
   const { userRole } = useAuth();
   const isAgent = userRole === 'agent';
 
