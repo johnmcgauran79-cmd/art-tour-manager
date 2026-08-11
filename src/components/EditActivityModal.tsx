@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -14,6 +15,9 @@ import { Activity } from "@/hooks/useActivities";
 import { JourneysEditor, Journey } from "./JourneysEditor";
 import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
 import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
+import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { Download } from "lucide-react";
 import {
   BOOKING_WORKFLOW_STATUS_OPTIONS,
   PAYMENT_WORKFLOW_STATUS_OPTIONS,
@@ -31,6 +35,7 @@ interface EditActivityModalProps {
 
 export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivityModalProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showPassengerList, setShowPassengerList] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -518,9 +523,21 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           )}
 
           <div className="flex justify-between pt-4 border-t">
-            <Button type="button" variant="destructive" onClick={() => setDeleteDialogOpen(true)} disabled={deleteActivity.isPending}>
-              {deleteActivity.isPending ? "Deleting..." : "Delete Activity"}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="destructive" onClick={() => setDeleteDialogOpen(true)} disabled={deleteActivity.isPending}>
+                {deleteActivity.isPending ? "Deleting..." : "Delete Activity"}
+              </Button>
+              {activity && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowPassengerList(true)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Attendee List PDF
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button type="submit" disabled={updateActivity.isPending}>
@@ -547,6 +564,16 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {activity && (
+        <ActivityPassengerListModal
+          open={showPassengerList}
+          onOpenChange={setShowPassengerList}
+          activityId={activity.id}
+          activityName={activity.name}
+          activityDate={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : undefined}
+        />
+      )}
     </Dialog>
   );
 };
