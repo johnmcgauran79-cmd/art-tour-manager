@@ -12,6 +12,7 @@ import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
 import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
 import { JourneysEditor } from "./JourneysEditor";
 import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
+import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 interface ActivityBookingInfo {
   id: string;
   passengers_attending: number;
