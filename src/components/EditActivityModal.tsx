@@ -35,6 +35,7 @@ interface EditActivityModalProps {
 
 export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivityModalProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showPassengerList, setShowPassengerList] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     location: "",
