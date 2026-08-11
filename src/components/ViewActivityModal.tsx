@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, ChevronDown } from "lucide-react";
+import { Edit, ChevronDown, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
@@ -12,6 +12,7 @@ import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
 import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
 import { JourneysEditor } from "./JourneysEditor";
 import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
+import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 interface ActivityBookingInfo {
   id: string;
   passengers_attending: number;
@@ -39,6 +40,7 @@ interface ViewActivityModalProps {
 export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: ViewActivityModalProps) => {
   const [paxAttending, setPaxAttending] = useState(0);
   const [activityBookings, setActivityBookings] = useState<ActivityBookingInfo[]>([]);
+  const [showPassengerList, setShowPassengerList] = useState(false);
   const { userRole } = useAuth();
   const isAgent = userRole === 'agent';
 
@@ -420,6 +422,17 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             Close
           </Button>
           {!isAgent && (
+            <Button
+              variant="outline"
+              onClick={() => setShowPassengerList(true)}
+              className="flex-1 sm:flex-none"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Attendee List PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+          )}
+          {!isAgent && (
             <Button onClick={handleEditClick} className="gap-2 flex-1 sm:flex-none">
               <Edit className="h-4 w-4" />
               <span className="hidden sm:inline">Edit Activity</span>
@@ -427,6 +440,14 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </Button>
           )}
         </DialogFooter>
+
+        <ActivityPassengerListModal
+          open={showPassengerList}
+          onOpenChange={setShowPassengerList}
+          activityId={activity.id}
+          activityName={activity.name}
+          activityDate={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : undefined}
+        />
       </DialogContent>
     </Dialog>
   );
