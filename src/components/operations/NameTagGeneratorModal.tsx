@@ -48,9 +48,13 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
   };
 
   const { data: report, isLoading } = useQuery({
-    queryKey: ['name-tag-report', selectedTourIds],
+    queryKey: ['name-tag-report', selectedTourIds, includeHost],
     enabled: showReport && selectedTourIds.length > 0,
     queryFn: async (): Promise<TourNames[]> => {
+      // Host bookings use status = 'host'. Excluded when the toggle is off.
+      const excluded = includeHost
+        ? '(cancelled,waitlisted)'
+        : '(cancelled,waitlisted,host)';
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -63,7 +67,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
         .in('tour_id', selectedTourIds)
         // Waitlisted bookings aren't confirmed travellers, so they must not
         // produce name tags (Everest was showing 50 names for 46 travelling).
-        .not('status', 'in', '(cancelled,waitlisted)');
+        .not('status', 'in', excluded);
 
       if (error) throw error;
 
