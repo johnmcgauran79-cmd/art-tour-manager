@@ -27,6 +27,10 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
   const { data: tours = [] } = useTours();
   const [selectedTourIds, setSelectedTourIds] = useState<string[]>([]);
   const [showReport, setShowReport] = useState(false);
+  // Host bookings use status = 'host'. They're included by default, but a
+  // host doing multiple tours may not need a name tag for every tour, so this
+  // toggle lets staff exclude them.
+  const [includeHost, setIncludeHost] = useState(true);
 
   const sortedTours = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
