@@ -564,6 +564,16 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {activity && (
+        <ActivityPassengerListModal
+          open={showPassengerList}
+          onOpenChange={setShowPassengerList}
+          activityId={activity.id}
+          activityName={activity.name}
+          activityDate={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : undefined}
+        />
+      )}
     </Dialog>
   );
 };
