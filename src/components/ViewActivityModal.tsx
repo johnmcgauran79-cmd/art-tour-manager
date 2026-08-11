@@ -422,6 +422,17 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             Close
           </Button>
           {!isAgent && (
+            <Button
+              variant="outline"
+              onClick={() => setShowPassengerList(true)}
+              className="flex-1 sm:flex-none"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Attendee List PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+          )}
+          {!isAgent && (
             <Button onClick={handleEditClick} className="gap-2 flex-1 sm:flex-none">
               <Edit className="h-4 w-4" />
               <span className="hidden sm:inline">Edit Activity</span>
@@ -429,6 +440,14 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </Button>
           )}
         </DialogFooter>
+
+        <ActivityPassengerListModal
+          open={showPassengerList}
+          onOpenChange={setShowPassengerList}
+          activityId={activity.id}
+          activityName={activity.name}
+          activityDate={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : undefined}
+        />
       </DialogContent>
     </Dialog>
   );
