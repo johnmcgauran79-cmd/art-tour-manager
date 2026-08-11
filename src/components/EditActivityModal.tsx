@@ -523,9 +523,21 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           )}
 
           <div className="flex justify-between pt-4 border-t">
-            <Button type="button" variant="destructive" onClick={() => setDeleteDialogOpen(true)} disabled={deleteActivity.isPending}>
-              {deleteActivity.isPending ? "Deleting..." : "Delete Activity"}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="destructive" onClick={() => setDeleteDialogOpen(true)} disabled={deleteActivity.isPending}>
+                {deleteActivity.isPending ? "Deleting..." : "Delete Activity"}
+              </Button>
+              {activity && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowPassengerList(true)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Attendee List PDF
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button type="submit" disabled={updateActivity.isPending}>
