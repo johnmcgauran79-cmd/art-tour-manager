@@ -57,7 +57,9 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
           passenger_3:customers!passenger_3_id (first_name, preferred_name)
         `)
         .in('tour_id', selectedTourIds)
-        .neq('status', 'cancelled');
+        // Waitlisted bookings aren't confirmed travellers, so they must not
+        // produce name tags (Everest was showing 50 names for 46 travelling).
+        .not('status', 'in', '(cancelled,waitlisted)');
 
       if (error) throw error;
 
