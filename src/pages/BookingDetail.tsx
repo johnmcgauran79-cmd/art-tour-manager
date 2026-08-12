@@ -41,6 +41,7 @@ import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
 import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
+import { useBrands } from "@/hooks/useBrands";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { ShareButton } from "@/components/ShareButton";
@@ -91,6 +92,11 @@ export default function BookingDetail() {
   const { data: comments = [] } = useBookingComments(booking?.id || '');
   const { data: auditLog = [] } = useBookingAuditLog(booking?.id);
   const { data: bookingComms, isLoading: bookingCommsLoading } = useBookingCommunications(booking?.id);
+  const { data: allBrands } = useBrands();
+  // Co-brand assigned to this specific booking (partner bookings), if any.
+  const bookingBrand = (booking as any)?.brand_id
+    ? (allBrands || []).find((b) => b.id === (booking as any).brand_id) || null
+    : null;
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
