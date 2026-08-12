@@ -21,6 +21,9 @@ export interface Brand {
   company_phone: string | null;
   company_website: string | null;
   footer_text: string | null;
+  partner_name: string | null;
+  partnership_note: string | null;
+  partner_handles_billing: boolean;
   is_default: boolean;
   is_active: boolean;
   sort_order: number;
