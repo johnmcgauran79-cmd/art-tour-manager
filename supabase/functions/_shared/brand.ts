@@ -21,6 +21,8 @@ export interface ResolvedBrand {
   companyPhone: string | null;
   companyWebsite: string | null;
   footerText: string | null;
+  partnerName: string | null;
+  partnershipNote: string | null;
 }
 
 const DEFAULT_HEADER =
@@ -45,6 +47,8 @@ const FALLBACK: ResolvedBrand = {
   companyPhone: null,
   companyWebsite: "australianracingtours.com.au",
   footerText: null,
+  partnerName: null,
+  partnershipNote: null,
 };
 
 function normalize(row: any): ResolvedBrand {
@@ -69,6 +73,8 @@ function normalize(row: any): ResolvedBrand {
     companyPhone: row.company_phone ?? null,
     companyWebsite: row.company_website ?? FALLBACK.companyWebsite,
     footerText: row.footer_text ?? null,
+    partnerName: row.partner_name ?? null,
+    partnershipNote: row.partnership_note ?? null,
   };
 }
 
@@ -122,5 +128,59 @@ export function publicBrandPayload(brand: ResolvedBrand) {
     colorButtonText: brand.colorButtonText,
     colorAccent: brand.colorAccent,
     companyWebsite: brand.companyWebsite,
+    partnerName: brand.partnerName,
+    partnershipNote: brand.partnershipNote,
+  };
+}
+
+/**
+ * Resolve the brand for a specific booking.
+ * Order: booking.brand_id (co-brand for partner bookings) -> tour brand -> default brand.
+ */
+export async function getBrandForBooking(
+  supabase: any,
+  bookingId?: string | null,
+  fallbackTourId?: string | null
+): Promise<ResolvedBrand> {
+  try {
+    if (bookingId) {
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("brand_id, tour_id")
+        .eq("id", bookingId)
+        .maybeSingle();
+      if (booking?.brand_id) {
+        const { data: brand } = await supabase
+          .from("brands")
+          .select("*")
+          .eq("id", booking.brand_id)
+          .maybeSingle();
+        if (brand) return normalize(brand);
+      }
+      if (booking?.tour_id) return await getBrandForTour(supabase, booking.tour_id);
+    }
+    return await getBrandForTour(supabase, fallbackTourId ?? null);
+  } catch (_e) {
+    return FALLBACK;
+  }
+}
+
+/** Merge-field payload exposing brand/partnership info to email templates. */
+export function brandMergeFields(brand: ResolvedBrand) {
+  return {
+    brand: {
+      name: brand.name,
+      legal_name: brand.legalName,
+      short_name: brand.shortName,
+      partner_name: brand.partnerName || "",
+      partnership_note: brand.partnershipNote || "",
+      is_co_branded: !!brand.partnerName,
+      company_website: brand.companyWebsite || "",
+      company_phone: brand.companyPhone || "",
+      company_address: brand.companyAddress || "",
+    },
+    brand_name: brand.name,
+    brand_partner_name: brand.partnerName || "",
+    brand_partnership_note: brand.partnershipNote || "",
   };
 }
