@@ -48,6 +48,10 @@ export default defineTool({
     instalment_details: z.string().optional(),
     final_payment_date: z.string().optional().describe("YYYY-MM-DD."),
     travel_documents_required: z.boolean().optional(),
+    dates_not_confirmed: z
+      .boolean()
+      .optional()
+      .describe("True when the race date is still to be confirmed by the race club."),
     pickup_location_required: z.boolean().optional(),
     is_test_tour: z.boolean().optional(),
     manual_billing: z.boolean().optional(),

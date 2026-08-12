@@ -813,6 +813,7 @@ var update_tour_default = defineTool16({
     instalment_details: z16.string().optional(),
     final_payment_date: z16.string().optional().describe("YYYY-MM-DD."),
     travel_documents_required: z16.boolean().optional(),
+    dates_not_confirmed: z16.boolean().optional().describe("True when the race date is still to be confirmed by the race club."),
     pickup_location_required: z16.boolean().optional(),
     is_test_tour: z16.boolean().optional(),
     manual_billing: z16.boolean().optional(),
