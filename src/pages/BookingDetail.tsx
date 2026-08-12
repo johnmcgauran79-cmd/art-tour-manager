@@ -546,9 +546,18 @@ export default function BookingDetail() {
             <div className="bg-card rounded-lg border p-6 space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Booking Information</h3>
-                <Badge className={getStatusColor(booking.status)}>
-                  {booking.status.replace('_', ' ').toUpperCase()}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {bookingBrand && (
+                    <Badge variant="outline" className="border-primary/40 text-primary">
+                      {bookingBrand.partner_name
+                        ? `Co-branded: ${bookingBrand.partner_name}`
+                        : bookingBrand.name}
+                    </Badge>
+                  )}
+                  <Badge className={getStatusColor(booking.status)}>
+                    {booking.status.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
