@@ -41,6 +41,7 @@ import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
 import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
+import { useBrands } from "@/hooks/useBrands";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { ShareButton } from "@/components/ShareButton";
@@ -91,6 +92,11 @@ export default function BookingDetail() {
   const { data: comments = [] } = useBookingComments(booking?.id || '');
   const { data: auditLog = [] } = useBookingAuditLog(booking?.id);
   const { data: bookingComms, isLoading: bookingCommsLoading } = useBookingCommunications(booking?.id);
+  const { data: allBrands } = useBrands();
+  // Co-brand assigned to this specific booking (partner bookings), if any.
+  const bookingBrand = (booking as any)?.brand_id
+    ? (allBrands || []).find((b) => b.id === (booking as any).brand_id) || null
+    : null;
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
@@ -546,9 +552,18 @@ export default function BookingDetail() {
             <div className="bg-card rounded-lg border p-6 space-y-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Booking Information</h3>
-                <Badge className={getStatusColor(booking.status)}>
-                  {booking.status.replace('_', ' ').toUpperCase()}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {bookingBrand && (
+                    <Badge variant="outline" className="border-primary/40 text-primary">
+                      {bookingBrand.partner_name
+                        ? `Co-branded: ${bookingBrand.partner_name}`
+                        : bookingBrand.name}
+                    </Badge>
+                  )}
+                  <Badge className={getStatusColor(booking.status)}>
+                    {booking.status.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

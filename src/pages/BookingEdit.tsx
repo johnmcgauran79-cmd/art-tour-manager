@@ -29,6 +29,7 @@ import { ContactSearch } from "@/components/booking/ContactSearch";
 import { PassengerContactSearch } from "@/components/booking/PassengerContactSearch";
 import { PassengerContactData } from "@/hooks/useBookingFormState";
 import { BookingAutomationOverrideField } from "@/components/booking/BookingAutomationOverrideField";
+import { BookingBrandField } from "@/components/booking/BookingBrandField";
 import { BookingAutomationOverride } from "@/lib/automationOverrides";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
@@ -87,6 +88,7 @@ export default function BookingEdit() {
     passport_not_required: false,
     selected_pickup_option_id: '',
     automation_override: 'inherit' as BookingAutomationOverride,
+    brand_id: null as string | null,
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -157,6 +159,7 @@ export default function BookingEdit() {
         passport_not_required: (booking as any).passport_not_required ?? false,
         selected_pickup_option_id: booking.selected_pickup_option_id || '',
         automation_override: ((booking as any).automation_override as BookingAutomationOverride) || 'inherit',
+        brand_id: (booking as any).brand_id ?? null,
       });
 
       if (booking.secondary_contact) {
@@ -326,6 +329,7 @@ export default function BookingEdit() {
       passport_not_required: formData.passport_not_required,
       selected_pickup_option_id: formData.selected_pickup_option_id || null,
       automation_override: formData.automation_override,
+      brand_id: formData.brand_id || null,
     }, {
       onSuccess: () => {
         toast({
@@ -899,6 +903,15 @@ export default function BookingEdit() {
                   id="passport_not_required"
                   checked={formData.passport_not_required ?? false}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, passport_not_required: checked }))}
+                />
+              </div>
+
+              <div className="pt-2 border-t">
+                <BookingBrandField
+                  value={formData.brand_id}
+                  onChange={(v) => setFormData(prev => ({ ...prev, brand_id: v }))}
+                  tourBrandId={(tour as any)?.brand_id ?? null}
+                  disabled={isViewOnly}
                 />
               </div>
 

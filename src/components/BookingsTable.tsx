@@ -19,6 +19,7 @@ import { PermissionButton } from "@/components/ui/permission-button";
 import { BulkInvoiceReferenceModal } from "@/components/BulkInvoiceReferenceModal";
 import { InvoiceSyncReviewModal } from "@/components/InvoiceSyncReviewModal";
 import { useToast } from "@/hooks/use-toast";
+import { useBrands } from "@/hooks/useBrands";
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -39,6 +40,15 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const [totalChecked, setTotalChecked] = useState(0);
   const { toast } = useToast();
   const { data: filterCounts } = useFilterCounts();
+  const { data: brands } = useBrands();
+
+  // Co-branded partner bookings (e.g. Racing Breaks) show a small badge in the list.
+  const coBrandLabel = (booking: any) => {
+    if (!booking?.brand_id) return null;
+    const brand = (brands || []).find((b) => b.id === booking.brand_id);
+    if (!brand) return null;
+    return brand.partner_name ? `Co-brand: ${brand.partner_name}` : brand.name;
+  };
   
   // Calculate combined count for deposits owing, instalments owing, and final payments due
   const statusUpdateCount = (filterCounts?.depositsOwing || 0) + (filterCounts?.instalmentsOwing || 0) + (filterCounts?.paymentDue || 0);
@@ -288,6 +298,11 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                         <TableCell className="font-medium">{booking.tours?.name || 'No Tour'}</TableCell>
                         <TableCell>
                           {booking.customers?.first_name} {booking.customers?.last_name}
+                          {coBrandLabel(booking) && (
+                            <Badge variant="outline" className="ml-2 border-primary/40 text-primary text-[10px] align-middle">
+                              {coBrandLabel(booking)}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
