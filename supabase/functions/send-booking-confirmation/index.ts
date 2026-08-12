@@ -380,6 +380,8 @@ const handler = async (req: Request): Promise<Response> => {
     let brandPrimary = '#232628';
     let brandAccent = getGSetting('theme_email_button_text', '#F5C518');
     let brandName = 'Australian Racing Tours';
+    // Resolved brand for this booking (co-brand -> tour brand -> default).
+    let resolvedBrand: any = null;
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -486,10 +488,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Resolve the tour's brand and override branding defaults so this email
-    // uses the correct logo, colours, and sender identity.
+    // Resolve the booking's brand (partner co-brand if set, otherwise the tour's
+    // brand) and override branding defaults so this email uses the correct logo,
+    // colours, and sender identity.
     try {
       const brand = await getBrandForBooking(supabaseClient, bookingId, booking.tour_id);
+      resolvedBrand = brand;
       defaultSenderName = brand.senderName;
       defaultFromEmailClient = brand.fromEmailClient;
       btnBg = brand.colorButton;
