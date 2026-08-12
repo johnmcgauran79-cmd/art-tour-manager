@@ -55,6 +55,7 @@ export const useDuplicateTour = () => {
         capacity: originalTour.capacity,
         minimum_passengers_required: originalTour.minimum_passengers_required,
         travel_documents_required: originalTour.travel_documents_required,
+        dates_not_confirmed: (originalTour as any).dates_not_confirmed ?? false,
         tour_type: originalTour.tour_type,
         url_reference: null,
         ops_notes: null,
