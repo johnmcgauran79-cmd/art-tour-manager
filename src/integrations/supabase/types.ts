@@ -4424,6 +4424,7 @@ export type Database = {
           cancellation_policy_override: Json | null
           capacity: number | null
           created_at: string | null
+          dates_not_confirmed: boolean
           days: number
           deposit_required: number | null
           end_date: string
@@ -4487,6 +4488,7 @@ export type Database = {
           cancellation_policy_override?: Json | null
           capacity?: number | null
           created_at?: string | null
+          dates_not_confirmed?: boolean
           days: number
           deposit_required?: number | null
           end_date: string
@@ -4550,6 +4552,7 @@ export type Database = {
           cancellation_policy_override?: Json | null
           capacity?: number | null
           created_at?: string | null
+          dates_not_confirmed?: boolean
           days?: number
           deposit_required?: number | null
           end_date?: string
