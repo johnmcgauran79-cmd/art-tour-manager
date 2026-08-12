@@ -279,7 +279,7 @@ export default function TourDetail() {
                 {formatDateRange(tour.start_date, tour.end_date)}
               </p>
               {(tour as any).dates_not_confirmed && (
-                <span className="inline-flex items-center rounded-md bg-warning/15 text-warning-foreground border border-warning/40 px-2 py-0.5 text-xs font-medium">
+                <span className="inline-flex items-center rounded-md bg-warning/10 text-warning border border-warning/40 px-2 py-0.5 text-xs font-medium">
                   Dates Not Confirmed
                 </span>
               )}
