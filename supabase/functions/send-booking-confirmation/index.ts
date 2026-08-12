@@ -424,7 +424,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('bookings')
       .select(`
         *,
-        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, instalment_required, travel_documents_required, pickup_location_required, notes),
+        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, instalment_required, travel_documents_required, pickup_location_required, notes, dates_not_confirmed),
         selected_pickup_option:tour_pickup_options!bookings_selected_pickup_option_id_fkey (id, name, pickup_time, details),
         customers:lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, city, state, country, spouse_name, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs, notes),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
@@ -1014,6 +1014,9 @@ const handler = async (req: Request): Promise<Response> => {
       tour_inclusions: booking.tours?.inclusions || '',
       tour_exclusions: booking.tours?.exclusions || '',
       tour_travel_documents_required: booking.tours?.travel_documents_required ? 'Yes' : 'No',
+      tour_dates_note: booking.tours?.dates_not_confirmed
+        ? 'Provisional Tour dates - Race date still to be confirmed by the race club.'
+        : '',
 
       tour: {
         name: booking.tours?.name || '',
@@ -1155,6 +1158,7 @@ const handler = async (req: Request): Promise<Response> => {
       has_group_name: !!booking.group_name,
       has_extra_requests: !!booking.booking_notes,
       tour_requires_travel_docs: !!booking.tours?.travel_documents_required,
+      tour_dates_not_confirmed: !!booking.tours?.dates_not_confirmed,
       tour_requires_pickup: tourRequiresPickup,
       has_pickup_selection: hasPickupSelection,
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
@@ -1255,6 +1259,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (mergeData.tour_name) rows.push(`<tr><td style="${labelStyle}">Tour</td><td style="${valueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`);
       if (mergeData.tour_location) rows.push(`<tr><td style="${labelStyle}">Location</td><td style="${valueStyle}">${mergeData.tour_location}</td></tr>`);
       if (mergeData.tour_start_date && mergeData.tour_end_date) rows.push(`<tr><td style="${labelStyle}">Tour Dates</td><td style="${valueStyle}">${mergeData.tour_start_date} - ${mergeData.tour_end_date}</td></tr>`);
+      if (mergeData.tour_dates_not_confirmed) rows.push(`<tr><td style="${labelStyle}"></td><td style="${valueStyle}font-weight:400;font-style:italic;color:#8a6d1f;">Provisional Tour dates - Race date still to be confirmed by the race club.</td></tr>`);
       if (mergeData.tour_days || mergeData.tour_nights) rows.push(`<tr><td style="${labelStyle}">Duration</td><td style="${valueStyle}">${mergeData.tour_days ? mergeData.tour_days + ' days' : ''}${mergeData.tour_days && mergeData.tour_nights ? ', ' : ''}${mergeData.tour_nights ? mergeData.tour_nights + ' nights' : ''}</td></tr>`);
       if (mergeData.tour_host) rows.push(`<tr><td style="${labelStyle}">Tour Host</td><td style="${valueStyle}">${mergeData.tour_host}</td></tr>`);
       
