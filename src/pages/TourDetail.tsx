@@ -274,9 +274,16 @@ export default function TourDetail() {
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {formatDateRange(tour.start_date, tour.end_date)}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <p className="text-sm text-muted-foreground">
+                {formatDateRange(tour.start_date, tour.end_date)}
+              </p>
+              {(tour as any).dates_not_confirmed && (
+                <span className="inline-flex items-center rounded-md bg-warning/15 text-warning-foreground border border-warning/40 px-2 py-0.5 text-xs font-medium">
+                  Dates Not Confirmed
+                </span>
+              )}
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-2">
