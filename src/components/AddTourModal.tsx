@@ -51,6 +51,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
+    dates_not_confirmed: false,
     brand_id: "" as string,
     manual_billing: false,
     manual_emails: false,
@@ -123,6 +124,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
         final_payment_date: formData.final_payment_date || null,
         travel_documents_required: formData.travel_documents_required,
+        dates_not_confirmed: formData.dates_not_confirmed,
         pickup_location_required: formData.pickup_location_required,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
@@ -175,6 +177,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: "",
         minimum_passengers_required: "",
         tour_type: "domestic",
+        dates_not_confirmed: false,
         brand_id: "",
         manual_billing: false,
         manual_emails: false,
@@ -467,6 +470,25 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="travel_documents_required">Passport Details Required</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dates_not_confirmed">Dates Not Confirmed</Label>
+              <Select
+                value={formData.dates_not_confirmed ? "yes" : "no"}
+                onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, dates_not_confirmed: value === "yes" }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no">No</SelectItem>
+                  <SelectItem value="yes">Yes — race date to be confirmed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 hidden">
               <Select 
                 value={formData.travel_documents_required ? "yes" : "no"} 
                 onValueChange={(value) => {
