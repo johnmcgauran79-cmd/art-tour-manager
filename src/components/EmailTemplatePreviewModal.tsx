@@ -54,7 +54,7 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
         .from('bookings')
         .select(`
           *,
-          tours:tour_id (brand_id, name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount, tour_type, capacity, minimum_passengers_required, price_twin, instalment_details, travel_documents_required),
+          tours:tour_id (brand_id, name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount, tour_type, capacity, minimum_passengers_required, price_twin, instalment_details, travel_documents_required, dates_not_confirmed),
           customers!lead_passenger_id (first_name, last_name, email, phone, city, state, country, spouse_name, dietary_requirements, notes, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
           passenger_2:customers!passenger_2_id (first_name, last_name, email, phone, dietary_requirements, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
           passenger_3:customers!passenger_3_id (first_name, last_name, email, phone, dietary_requirements, preferred_name, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
