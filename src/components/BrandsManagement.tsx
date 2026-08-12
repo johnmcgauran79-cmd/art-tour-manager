@@ -39,6 +39,9 @@ const BLANK: BrandInput = {
   company_phone: "",
   company_website: "",
   footer_text: "",
+  partner_name: "",
+  partnership_note: "",
+  partner_handles_billing: false,
   is_default: false,
   is_active: true,
 };
@@ -213,6 +216,32 @@ const BrandEditor = ({ brand, open, onOpenChange }: { brand: Brand | null; open:
               placeholder="Shown in the footer of branded emails." />
           </div>
 
+          <div className="space-y-3 rounded-lg border border-dashed p-3 bg-muted/30">
+            <div>
+              <Label className="text-sm font-medium">Partnership / Co-branding</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Fill these in for a co-brand used on bookings referred by a partner
+                (e.g. Racing Breaks). Leave blank for a standalone brand.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Partner Name</Label>
+                <Input value={form.partner_name || ""} onChange={(e) => set("partner_name", e.target.value)} placeholder="Racing Breaks" />
+              </div>
+              <div className="space-y-1">
+                <Label>Partnership Note</Label>
+                <Input value={form.partnership_note || ""} onChange={(e) => set("partnership_note", e.target.value)}
+                  placeholder="Your tour is operated by ART in partnership with Racing Breaks." />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={!!form.partner_handles_billing}
+                onChange={(e) => set("partner_handles_billing", e.target.checked)} />
+              Partner invoices the client (skip automated Xero billing for these bookings)
+            </label>
+          </div>
+
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={!!form.is_default} onChange={(e) => set("is_default", e.target.checked)} />
             Set as default brand (used when a tour has no brand assigned)
@@ -284,6 +313,7 @@ export const BrandsManagement = () => {
                   <div className="flex items-center gap-2">
                     <span className="font-medium truncate">{b.name}</span>
                     {b.is_default && <Badge variant="secondary" className="gap-1"><Star className="h-3 w-3" /> Default</Badge>}
+                    {b.partner_name && <Badge variant="outline" className="border-primary/40 text-primary">Co-brand: {b.partner_name}</Badge>}
                     {!b.is_active && <Badge variant="outline">Inactive</Badge>}
                   </div>
                   <div className="flex gap-1 mt-1">
