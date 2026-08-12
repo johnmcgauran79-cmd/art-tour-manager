@@ -1,0 +1,1 @@
+ALTER TABLE public.tours ADD COLUMN IF NOT EXISTS dates_not_confirmed boolean NOT NULL DEFAULT false;

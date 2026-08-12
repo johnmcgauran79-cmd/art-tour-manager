@@ -51,6 +51,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
+    dates_not_confirmed: false,
     brand_id: "" as string,
     manual_billing: false,
     manual_emails: false,
@@ -123,6 +124,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
         final_payment_date: formData.final_payment_date || null,
         travel_documents_required: formData.travel_documents_required,
+        dates_not_confirmed: formData.dates_not_confirmed,
         pickup_location_required: formData.pickup_location_required,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
@@ -175,6 +177,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: "",
         minimum_passengers_required: "",
         tour_type: "domestic",
+        dates_not_confirmed: false,
         brand_id: "",
         manual_billing: false,
         manual_emails: false,
@@ -486,6 +489,27 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               </Select>
               <p className="text-xs text-muted-foreground">
                 When enabled, bookings will show passport details section (passport, ID, etc.)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dates_not_confirmed">Dates Not Confirmed</Label>
+              <Select
+                value={formData.dates_not_confirmed ? "yes" : "no"}
+                onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, dates_not_confirmed: value === "yes" }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no">No</SelectItem>
+                  <SelectItem value="yes">Yes — race date to be confirmed</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Shows a provisional dates notice in guest emails.
               </p>
             </div>
 

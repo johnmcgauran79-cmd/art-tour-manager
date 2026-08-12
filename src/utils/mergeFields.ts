@@ -33,7 +33,8 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{tour_capacity}}', '{{tour_minimum_passengers}}',
     '{{tour_price_single}}', '{{tour_price_double}}', '{{tour_price_twin}}', '{{tour_deposit_required}}',
     '{{tour_final_payment_date}}', '{{tour_instalment_date}}', '{{tour_instalment_amount}}', '{{tour_instalment_details}}',
-    '{{tour_inclusions}}', '{{tour_exclusions}}', '{{tour_travel_documents_required}}'
+    '{{tour_inclusions}}', '{{tour_exclusions}}', '{{tour_travel_documents_required}}',
+    '{{tour_dates_note}}'
   ],
   booking: [
     '{{booking_passenger_count}}', '{{booking_status}}', '{{booking_check_in_date}}', '{{booking_check_out_date}}',
@@ -114,6 +115,8 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{#has_group_name}} ... {{/has_group_name}}',
     '{{#has_extra_requests}} ... {{/has_extra_requests}}',
     '--- Tour Conditions ---',
+    '{{#tour_dates_not_confirmed}} ... {{/tour_dates_not_confirmed}}',
+    '{{^tour_dates_not_confirmed}} ... {{/tour_dates_not_confirmed}}',
     '{{#tour_requires_travel_docs}} ... {{/tour_requires_travel_docs}}',
     '{{^tour_requires_travel_docs}} ... {{/tour_requires_travel_docs}}',
     '{{#tour_requires_pickup}} ... {{/tour_requires_pickup}}',

@@ -49,6 +49,7 @@ export default function TourEdit() {
     start_date: "",
     end_date: "",
     location: "",
+    dates_not_confirmed: false,
     pickup_point: "",
     status: "pending",
     notes: "",
@@ -121,7 +122,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed')
           .eq('id', id)
           .single();
         
@@ -133,6 +134,7 @@ export default function TourEdit() {
             end_date: tour.end_date ? formatDateForInput(tour.end_date) : "",
             location: tour.location,
             pickup_point: tour.pickup_point,
+            dates_not_confirmed: (data as any).dates_not_confirmed || false,
             status: tour.status,
             notes: tour.notes,
             inclusions: tour.inclusions,
@@ -204,6 +206,7 @@ export default function TourEdit() {
       nights: nights,
       location: formData.location || null,
       pickup_point: formData.pickup_point || null,
+      dates_not_confirmed: formData.dates_not_confirmed,
       status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past' | 'cancelled',
       notes: formData.notes || null,
       inclusions: formData.inclusions || null,
@@ -607,6 +610,25 @@ export default function TourEdit() {
               id="pickup_point"
               value={formData.pickup_point}
               onChange={(e) => handleInputChange("pickup_point", e.target.value)}
+            />
+          </div>
+
+          <div className="md:col-span-2 flex items-start justify-between gap-4 rounded-lg border border-dashed p-4 bg-muted/30">
+            <div className="space-y-1">
+              <Label htmlFor="dates_not_confirmed" className="text-base font-medium cursor-pointer">
+                Dates Not Confirmed
+              </Label>
+              <p className="text-xs text-muted-foreground max-w-2xl">
+                Turn on when the race date is still to be confirmed by the race club. Guest emails will
+                show a provisional dates notice under the tour dates.
+              </p>
+            </div>
+            <Switch
+              id="dates_not_confirmed"
+              checked={formData.dates_not_confirmed}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, dates_not_confirmed: checked }))
+              }
             />
           </div>
 

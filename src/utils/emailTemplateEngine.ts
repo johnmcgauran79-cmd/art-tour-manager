@@ -82,6 +82,7 @@ export interface EmailMergeData {
   tour_instalment_amount?: number;
   tour_instalment_details?: string;
   tour_travel_documents_required?: boolean;
+  tour_dates_note?: string;
   
   // Booking fields
   booking_passenger_count?: number;
@@ -219,6 +220,7 @@ export interface EmailMergeData {
     instalment_details?: string;
     travel_documents_required?: boolean;
   };
+
   
   // Hotel booking fields (for multiple hotels, will be handled as arrays)
   hotel_bookings?: Array<{
@@ -289,6 +291,7 @@ export interface EmailMergeData {
   has_hotel_extra_night_price?: boolean;
   has_hotel_room_type?: boolean;
   tour_requires_travel_docs?: boolean;
+  tour_dates_not_confirmed?: boolean;
   tour_requires_pickup?: boolean;
   has_pickup_selection?: boolean;
   missing_pickup_selection?: boolean;
@@ -521,6 +524,9 @@ export class EmailTemplateEngine {
       tour_instalment_amount: tour.instalment_amount,
       tour_instalment_details: tour.instalment_details,
       tour_travel_documents_required: tour.travel_documents_required,
+      tour_dates_note: tour.dates_not_confirmed
+        ? 'Provisional Tour dates - Race date still to be confirmed by the race club.'
+        : '',
 
       tour: {
         name: tour.name,
@@ -690,6 +696,7 @@ export class EmailTemplateEngine {
       has_hotel_extra_night_price: hotelBookings.some((hb: any) => !!(hb.hotels?.extra_night_price && String(hb.hotels.extra_night_price).trim())),
       has_hotel_room_type: hotelBookings.some((hb: any) => !!hb.room_type),
       tour_requires_travel_docs: !!tour.travel_documents_required,
+      tour_dates_not_confirmed: !!tour.dates_not_confirmed,
       tour_requires_pickup: !!tour.pickup_location_required,
       has_pickup_selection: !!booking.selected_pickup_option,
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,

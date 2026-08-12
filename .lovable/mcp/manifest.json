@@ -1049,6 +1049,10 @@
             "travel_documents_required": {
               "type": "boolean"
             },
+            "dates_not_confirmed": {
+              "type": "boolean",
+              "description": "True when the race date is still to be confirmed by the race club."
+            },
             "pickup_location_required": {
               "type": "boolean"
             },
