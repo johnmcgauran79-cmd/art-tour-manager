@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { getBrandForTour } from "../_shared/brand.ts";
+import { getBrandForBooking, brandMergeFields } from "../_shared/brand.ts";
 import { recolorCustomCards } from "../_shared/customCards.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -489,7 +489,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Resolve the tour's brand and override branding defaults so this email
     // uses the correct logo, colours, and sender identity.
     try {
-      const brand = await getBrandForTour(supabaseClient, booking.tour_id);
+      const brand = await getBrandForBooking(supabaseClient, bookingId, booking.tour_id);
       defaultSenderName = brand.senderName;
       defaultFromEmailClient = brand.fromEmailClient;
       btnBg = brand.colorButton;

@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { getBrandForTour } from "../_shared/brand.ts";
+import { getBrandForBooking } from "../_shared/brand.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,7 +214,7 @@ const handler = async (req: Request): Promise<Response> => {
       const booking = bookingRaw as any;
       // Apply the tour's brand branding.
       try {
-        const brand = await getBrandForTour(supabase, booking.tour_id);
+        const brand = await getBrandForBooking(supabase, bookingId, booking.tour_id);
         emailHeaderImageUrl = brand.headerImageUrl;
         senderName = brand.senderName;
         fromEmailAddr = brand.fromEmailClient;

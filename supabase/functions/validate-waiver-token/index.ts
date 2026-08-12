@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getBrandForTour, publicBrandPayload } from "../_shared/brand.ts";
+import { getBrandForBooking, publicBrandPayload } from "../_shared/brand.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -166,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
         waiverVersion: typeof waiverVersion === "number" ? waiverVersion : Number(waiverVersion),
         expiresAt: tokenData.expires_at,
         tokenId: tokenData.id,
-        brand: publicBrandPayload(await getBrandForTour(supabase, (booking.tours as any)?.id || (booking as any).tour_id)),
+        brand: publicBrandPayload(await getBrandForBooking(supabase, booking.id, (booking.tours as any)?.id || (booking as any).tour_id)),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
