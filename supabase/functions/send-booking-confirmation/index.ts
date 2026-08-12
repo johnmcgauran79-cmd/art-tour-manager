@@ -915,6 +915,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Create comprehensive merge data object with nested structures
     // Defined at handler scope so it's accessible to sendToPassenger
     let mergeData: Record<string, any> = {
+      // Brand / partnership fields (co-branded partner bookings)
+      ...(resolvedBrand ? brandMergeFields(resolvedBrand) : {}),
+
       // Customer fields (dynamic - will be overridden for additional passengers)
       customer_first_name: booking.customers?.first_name || '',
       customer_last_name: booking.customers?.last_name || '',
