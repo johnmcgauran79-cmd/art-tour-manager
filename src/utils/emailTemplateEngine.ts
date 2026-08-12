@@ -220,6 +220,7 @@ export interface EmailMergeData {
     instalment_details?: string;
     travel_documents_required?: boolean;
   };
+
   
   // Hotel booking fields (for multiple hotels, will be handled as arrays)
   hotel_bookings?: Array<{
