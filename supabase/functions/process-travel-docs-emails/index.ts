@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { getBrandForTour } from "../_shared/brand.ts";
+import { getBrandForTour, getBrandForBooking } from "../_shared/brand.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -164,6 +164,7 @@ async function processTravelDocsBatch(
       passport_expiry_date,
       passport_country,
       nationality,
+      brand_id,
       customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, email)
     `)
     .eq('tour_id', tour.id)
@@ -210,6 +211,22 @@ async function processTravelDocsBatch(
   for (let i = 0; i < eligibleBookings.length; i++) {
     const booking = eligibleBookings[i];
     const customer = booking.customers;
+
+    // Per-booking co-branding: partner bookings (e.g. Racing Breaks) render with
+    // their own header image and sender identity.
+    let bookingHeaderImageUrl = emailHeaderImageUrl;
+    let bookingSenderName = senderName;
+    let bookingFromEmail = fromEmailAddr;
+    let bookingHeaderBg = '#232628';
+    if (booking.brand_id) {
+      try {
+        const bBrand = await getBrandForBooking(supabase, booking.id, tour.id);
+        bookingHeaderImageUrl = bBrand.headerImageUrl;
+        bookingSenderName = bBrand.senderName;
+        bookingFromEmail = bBrand.fromEmailClient;
+        bookingHeaderBg = bBrand.colorPrimary || bookingHeaderBg;
+      } catch (e) { console.error('Per-booking brand resolution failed:', e); }
+    }
 
     try {
       console.log(`[${i + 1}/${eligibleBookings.length}] Processing ${customer.email}...`);
@@ -328,8 +345,8 @@ async function processTravelDocsBatch(
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px;">
-          <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
+          <div style="background: ${bookingHeaderBg}; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <img src="${bookingHeaderImageUrl}" alt="${bookingSenderName}" style="height: 80px; max-width: 400px; width: auto;" />
             <h1 style="color: #fff; margin: 0; font-size: 24px;">Passport Details Required</h1>
           </div>
           
@@ -347,7 +364,9 @@ async function processTravelDocsBatch(
 
       // Send the email
       const emailResponse = await resend.emails.send({
-        from: template?.from_email || `${senderName} <${fromEmailAddr}>`,
+        from: booking.brand_id
+          ? `${bookingSenderName} <${bookingFromEmail}>`
+          : (template?.from_email || `${senderName} <${fromEmailAddr}>`),
         to: [customer.email],
         subject: emailSubject,
         html: fullEmailHtml,

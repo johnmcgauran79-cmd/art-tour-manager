@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from "https://esm.sh/resend@2.0.0";
-import { getBrandForTour } from "../_shared/brand.ts";
+import { getBrandForBooking, brandMergeFields } from "../_shared/brand.ts";
 import { recolorCustomCards } from "../_shared/customCards.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -380,6 +380,8 @@ const handler = async (req: Request): Promise<Response> => {
     let brandPrimary = '#232628';
     let brandAccent = getGSetting('theme_email_button_text', '#F5C518');
     let brandName = 'Australian Racing Tours';
+    // Resolved brand for this booking (co-brand -> tour brand -> default).
+    let resolvedBrand: any = null;
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -486,10 +488,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Resolve the tour's brand and override branding defaults so this email
-    // uses the correct logo, colours, and sender identity.
+    // Resolve the booking's brand (partner co-brand if set, otherwise the tour's
+    // brand) and override branding defaults so this email uses the correct logo,
+    // colours, and sender identity.
     try {
-      const brand = await getBrandForTour(supabaseClient, booking.tour_id);
+      const brand = await getBrandForBooking(supabaseClient, bookingId, booking.tour_id);
+      resolvedBrand = brand;
       defaultSenderName = brand.senderName;
       defaultFromEmailClient = brand.fromEmailClient;
       btnBg = brand.colorButton;
@@ -911,6 +915,9 @@ const handler = async (req: Request): Promise<Response> => {
     // Create comprehensive merge data object with nested structures
     // Defined at handler scope so it's accessible to sendToPassenger
     let mergeData: Record<string, any> = {
+      // Brand / partnership fields (co-branded partner bookings)
+      ...(resolvedBrand ? brandMergeFields(resolvedBrand) : {}),
+
       // Customer fields (dynamic - will be overridden for additional passengers)
       customer_first_name: booking.customers?.first_name || '',
       customer_last_name: booking.customers?.last_name || '',

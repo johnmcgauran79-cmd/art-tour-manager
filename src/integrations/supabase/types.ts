@@ -1078,6 +1078,7 @@ export type Database = {
           automation_override: Database["public"]["Enums"]["booking_automation_override"]
           booking_agent: string | null
           booking_notes: string | null
+          brand_id: string | null
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -1116,6 +1117,7 @@ export type Database = {
           automation_override?: Database["public"]["Enums"]["booking_automation_override"]
           booking_agent?: string | null
           booking_notes?: string | null
+          brand_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -1154,6 +1156,7 @@ export type Database = {
           automation_override?: Database["public"]["Enums"]["booking_automation_override"]
           booking_agent?: string | null
           booking_notes?: string | null
+          brand_id?: string | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -1188,6 +1191,13 @@ export type Database = {
           whatsapp_group_comms?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_lead_passenger_id_fkey"
             columns: ["lead_passenger_id"]
@@ -1253,6 +1263,8 @@ export type Database = {
           legal_name: string | null
           logo_url: string | null
           name: string
+          partner_name: string | null
+          partnership_note: string | null
           sender_name: string
           short_name: string | null
           sort_order: number
@@ -1278,6 +1290,8 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name: string
+          partner_name?: string | null
+          partnership_note?: string | null
           sender_name?: string
           short_name?: string | null
           sort_order?: number
@@ -1303,6 +1317,8 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name?: string
+          partner_name?: string | null
+          partnership_note?: string | null
           sender_name?: string
           short_name?: string | null
           sort_order?: number
