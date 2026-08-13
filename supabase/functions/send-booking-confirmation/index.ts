@@ -424,7 +424,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('bookings')
       .select(`
         *,
-        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, instalment_required, travel_documents_required, pickup_location_required, notes, dates_not_confirmed),
+        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, instalment_required, travel_documents_required, pickup_location_required, notes, dates_not_confirmed, pickup_arrival_message, welcome_drinks_message),
         selected_pickup_option:tour_pickup_options!bookings_selected_pickup_option_id_fkey (id, name, pickup_time, details),
         customers:lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, city, state, country, spouse_name, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs, notes),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
@@ -1017,6 +1017,8 @@ const handler = async (req: Request): Promise<Response> => {
       tour_dates_note: booking.tours?.dates_not_confirmed
         ? 'Provisional Tour dates - Race date still to be confirmed by the race club.'
         : '',
+      tour_pickup_arrival_message: booking.tours?.pickup_arrival_message || '',
+      tour_welcome_drinks_message: booking.tours?.welcome_drinks_message || '',
 
       tour: {
         name: booking.tours?.name || '',
