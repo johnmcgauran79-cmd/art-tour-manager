@@ -7,6 +7,8 @@ export interface TourWelcomeMessage {
   heading: string;
   body: string;
   signoff: string;
+  pickupArrivalMessage: string;
+  welcomeDrinksMessage: string;
   imagePath: string | null;
   /** signed URL for previewing the stored image */
   imageUrl: string | null;
@@ -25,7 +27,7 @@ export const useTourWelcomeMessage = (tourId: string) => {
       const { data, error } = await supabase
         .from("tours")
         .select(
-          "welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path"
+          "welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message"
         )
         .eq("id", tourId)
         .single();
@@ -45,6 +47,8 @@ export const useTourWelcomeMessage = (tourId: string) => {
         heading: row?.welcome_message_heading ?? DEFAULT_HEADING,
         body: row?.welcome_message_body ?? "",
         signoff: row?.welcome_message_signoff ?? "",
+        pickupArrivalMessage: row?.pickup_arrival_message ?? "",
+        welcomeDrinksMessage: row?.welcome_drinks_message ?? "",
         imagePath: row?.welcome_message_image_path ?? null,
         imageUrl,
       };
@@ -57,6 +61,8 @@ export const useTourWelcomeMessage = (tourId: string) => {
       heading?: string;
       body?: string;
       signoff?: string;
+      pickupArrivalMessage?: string;
+      welcomeDrinksMessage?: string;
       imagePath?: string | null;
     }) => {
       const payload: Record<string, unknown> = {};
@@ -64,6 +70,10 @@ export const useTourWelcomeMessage = (tourId: string) => {
       if (updates.heading !== undefined) payload.welcome_message_heading = updates.heading;
       if (updates.body !== undefined) payload.welcome_message_body = updates.body;
       if (updates.signoff !== undefined) payload.welcome_message_signoff = updates.signoff;
+      if (updates.pickupArrivalMessage !== undefined)
+        payload.pickup_arrival_message = updates.pickupArrivalMessage;
+      if (updates.welcomeDrinksMessage !== undefined)
+        payload.welcome_drinks_message = updates.welcomeDrinksMessage;
       if (updates.imagePath !== undefined) payload.welcome_message_image_path = updates.imagePath;
       const { error } = await supabase.from("tours").update(payload as any).eq("id", tourId);
       if (error) throw error;

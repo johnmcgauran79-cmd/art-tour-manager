@@ -4457,6 +4457,7 @@ export type Database = {
           outbound_flight_number: string | null
           payment_receipts_enabled: boolean
           photos_videos_url: string | null
+          pickup_arrival_message: string | null
           pickup_location_required: boolean
           pickup_point: string | null
           price_double: number | null
@@ -4472,6 +4473,7 @@ export type Database = {
           travel_documents_required: boolean
           updated_at: string | null
           url_reference: string | null
+          welcome_drinks_message: string | null
           welcome_message_body: string | null
           welcome_message_enabled: boolean
           welcome_message_heading: string | null
@@ -4521,6 +4523,7 @@ export type Database = {
           outbound_flight_number?: string | null
           payment_receipts_enabled?: boolean
           photos_videos_url?: string | null
+          pickup_arrival_message?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
           price_double?: number | null
@@ -4536,6 +4539,7 @@ export type Database = {
           travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
+          welcome_drinks_message?: string | null
           welcome_message_body?: string | null
           welcome_message_enabled?: boolean
           welcome_message_heading?: string | null
@@ -4585,6 +4589,7 @@ export type Database = {
           outbound_flight_number?: string | null
           payment_receipts_enabled?: boolean
           photos_videos_url?: string | null
+          pickup_arrival_message?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
           price_double?: number | null
@@ -4600,6 +4605,7 @@ export type Database = {
           travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
+          welcome_drinks_message?: string | null
           welcome_message_body?: string | null
           welcome_message_enabled?: boolean
           welcome_message_heading?: string | null

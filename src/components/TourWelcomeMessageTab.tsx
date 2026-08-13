@@ -24,6 +24,8 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
   const [heading, setHeading] = useState("Welcome");
   const [body, setBody] = useState("");
   const [signoff, setSignoff] = useState("");
+  const [pickupArrival, setPickupArrival] = useState("");
+  const [welcomeDrinks, setWelcomeDrinks] = useState("");
 
   useEffect(() => {
     if (data) {
@@ -31,11 +33,20 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
       setHeading(data.heading || "Welcome");
       setBody(data.body || "");
       setSignoff(data.signoff || "");
+      setPickupArrival(data.pickupArrivalMessage || "");
+      setWelcomeDrinks(data.welcomeDrinksMessage || "");
     }
   }, [data]);
 
   const handleSave = () => {
-    update.mutate({ enabled, heading, body, signoff });
+    update.mutate({
+      enabled,
+      heading,
+      body,
+      signoff,
+      pickupArrivalMessage: pickupArrival,
+      welcomeDrinksMessage: welcomeDrinks,
+    });
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +56,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
   };
 
   if (isLoading) {
-    return <div className="text-muted-foreground p-4">Loading welcome message...</div>;
+    return <div className="text-muted-foreground p-4">Loading messages...</div>;
   }
 
   // Body may be rich-text HTML (new) or legacy plain text. Build preview markup accordingly.
@@ -63,10 +74,10 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold">Welcome Message</h3>
+          <h3 className="text-lg font-semibold">Messages</h3>
           <p className="text-sm text-muted-foreground">
-            A personal welcome from the tour host, shown under the main header of the guest
-            document &mdash; before the list of tour inclusions.
+            Reusable tour messages &mdash; the host welcome shown in the guest document, plus
+            pickup/arrival and welcome drinks details available to email templates.
           </p>
         </div>
         <Button onClick={handleSave} disabled={update.isPending} className="gap-2">
@@ -80,7 +91,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Content</CardTitle>
+              <CardTitle className="text-base">Welcome Message</CardTitle>
               <div className="flex items-center gap-2">
                 <Label htmlFor="welcome-enabled" className="text-sm">Include in document</Label>
                 <Switch id="welcome-enabled" checked={enabled} onCheckedChange={setEnabled} />
@@ -227,6 +238,40 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pickup / Arrival Message</CardTitle>
+          <CardDescription>
+            Where guests should meet if a pickup or arrival transfer is organised. Available in
+            email templates as <code>{"{{tour_pickup_arrival_message}}"}</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RichTextEditor
+            value={pickupArrival}
+            onChange={setPickupArrival}
+            placeholder="e.g. Your driver will meet you in the arrivals hall holding an ART sign..."
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Welcome Drinks</CardTitle>
+          <CardDescription>
+            Where and when guests first meet for welcome drinks or the group gathering. Available
+            in email templates as <code>{"{{tour_welcome_drinks_message}}"}</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RichTextEditor
+            value={welcomeDrinks}
+            onChange={setWelcomeDrinks}
+            placeholder="e.g. Join us in the hotel lobby bar at 6:00pm for welcome drinks..."
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

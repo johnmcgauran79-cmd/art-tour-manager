@@ -83,6 +83,8 @@ export interface EmailMergeData {
   tour_instalment_details?: string;
   tour_travel_documents_required?: boolean;
   tour_dates_note?: string;
+  tour_pickup_arrival_message?: string;
+  tour_welcome_drinks_message?: string;
   
   // Booking fields
   booking_passenger_count?: number;
@@ -527,6 +529,8 @@ export class EmailTemplateEngine {
       tour_dates_note: tour.dates_not_confirmed
         ? 'Provisional Tour dates - Race date still to be confirmed by the race club.'
         : '',
+      tour_pickup_arrival_message: (tour as any).pickup_arrival_message || '',
+      tour_welcome_drinks_message: (tour as any).welcome_drinks_message || '',
 
       tour: {
         name: tour.name,
