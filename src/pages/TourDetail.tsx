@@ -75,7 +75,7 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
         </TabsTrigger>
         <TabsTrigger value="comms" className="flex items-center gap-1.5">
           <Mail className="h-3.5 w-3.5" />
-          Comms
+          Email Settings
         </TabsTrigger>
       </TabsList>
       <TabsContent value="itinerary">
