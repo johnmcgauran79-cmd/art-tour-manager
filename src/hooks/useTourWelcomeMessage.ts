@@ -9,6 +9,11 @@ export interface TourWelcomeMessage {
   signoff: string;
   pickupArrivalMessage: string;
   welcomeDrinksMessage: string;
+  /** optional pickup/arrival document (e.g. arrivals map PDF) */
+  pickupDocPath: string | null;
+  pickupDocName: string | null;
+  /** public URL for the pickup/arrival document */
+  pickupDocUrl: string | null;
   imagePath: string | null;
   /** signed URL for previewing the stored image */
   imageUrl: string | null;
@@ -27,7 +32,7 @@ export const useTourWelcomeMessage = (tourId: string) => {
       const { data, error } = await supabase
         .from("tours")
         .select(
-          "welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message"
+          "welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name"
         )
         .eq("id", tourId)
         .single();
@@ -42,6 +47,13 @@ export const useTourWelcomeMessage = (tourId: string) => {
         imageUrl = signed?.signedUrl ?? null;
       }
 
+      let pickupDocUrl: string | null = null;
+      if (row?.pickup_arrival_doc_path) {
+        pickupDocUrl = supabase.storage
+          .from("email-attachments")
+          .getPublicUrl(row.pickup_arrival_doc_path).data.publicUrl;
+      }
+
       return {
         enabled: row?.welcome_message_enabled ?? false,
         heading: row?.welcome_message_heading ?? DEFAULT_HEADING,
@@ -49,6 +61,9 @@ export const useTourWelcomeMessage = (tourId: string) => {
         signoff: row?.welcome_message_signoff ?? "",
         pickupArrivalMessage: row?.pickup_arrival_message ?? "",
         welcomeDrinksMessage: row?.welcome_drinks_message ?? "",
+        pickupDocPath: row?.pickup_arrival_doc_path ?? null,
+        pickupDocName: row?.pickup_arrival_doc_name ?? null,
+        pickupDocUrl,
         imagePath: row?.welcome_message_image_path ?? null,
         imageUrl,
       };
@@ -136,5 +151,54 @@ export const useTourWelcomeMessage = (tourId: string) => {
     },
   });
 
-  return { ...query, update, uploadImage, removeImage };
+  const uploadPickupDoc = useMutation({
+    mutationFn: async (file: File) => {
+      const safeName = file.name.replace(/[^\w.\-]+/g, "-");
+      const filePath = `pickup-docs/${tourId}/${Date.now()}-${safeName}`;
+      const existing = query.data?.pickupDocPath || null;
+      if (existing) {
+        await supabase.storage.from("email-attachments").remove([existing]);
+      }
+      const { error: uploadError } = await supabase.storage
+        .from("email-attachments")
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
+      if (uploadError) throw uploadError;
+      const { error } = await supabase
+        .from("tours")
+        .update({ pickup_arrival_doc_path: filePath, pickup_arrival_doc_name: file.name } as any)
+        .eq("id", tourId);
+      if (error) throw error;
+      return filePath;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tour-welcome-message", tourId] });
+      toast({ title: "Document uploaded", description: "Pickup/arrival document updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const removePickupDoc = useMutation({
+    mutationFn: async () => {
+      const existing = query.data?.pickupDocPath || null;
+      if (existing) {
+        await supabase.storage.from("email-attachments").remove([existing]);
+      }
+      const { error } = await supabase
+        .from("tours")
+        .update({ pickup_arrival_doc_path: null, pickup_arrival_doc_name: null } as any)
+        .eq("id", tourId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tour-welcome-message", tourId] });
+      toast({ title: "Document removed", description: "Pickup/arrival document removed." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  return { ...query, update, uploadImage, removeImage, uploadPickupDoc, removePickupDoc };
 };

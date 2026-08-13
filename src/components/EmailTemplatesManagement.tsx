@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type, LayoutGrid, List, CreditCard, Space, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type, LayoutGrid, List, CreditCard, Space, Layers, MapPin, Wine } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -442,6 +442,14 @@ export const EmailTemplatesManagement = () => {
     setShowImageInsert(false);
   };
 
+  const insertTourMessageBlock = (variant: 'pickup' | 'drinks') => {
+    const field = variant === 'pickup' ? 'tour_pickup_arrival_message' : 'tour_welcome_drinks_message';
+    const label = variant === 'pickup' ? 'Pickup / Arrival Message' : 'Welcome Drinks Message';
+    // Only renders when the tour has content in that message block.
+    const html = `{{#${field}}}<div style="margin:16px 0;font-size:14px;line-height:1.6;color:#55575d;">{{${field}}}</div>{{/${field}}}`;
+    insertHtmlBlock(html, `Tour Message • ${label}`);
+  };
+
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
@@ -696,6 +704,14 @@ export const EmailTemplatesManagement = () => {
                       }}>
                        <Layers className="h-3 w-3" />
                        Custom Card
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertTourMessageBlock('pickup')}>
+                       <MapPin className="h-3 w-3" />
+                       Pickup / Arrival Message
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertTourMessageBlock('drinks')}>
+                       <Wine className="h-3 w-3" />
+                       Welcome Drinks Message
                      </Button>
                   </div>
                   {showImageInsert && (

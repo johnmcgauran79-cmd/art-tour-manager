@@ -4457,6 +4457,8 @@ export type Database = {
           outbound_flight_number: string | null
           payment_receipts_enabled: boolean
           photos_videos_url: string | null
+          pickup_arrival_doc_name: string | null
+          pickup_arrival_doc_path: string | null
           pickup_arrival_message: string | null
           pickup_location_required: boolean
           pickup_point: string | null
@@ -4523,6 +4525,8 @@ export type Database = {
           outbound_flight_number?: string | null
           payment_receipts_enabled?: boolean
           photos_videos_url?: string | null
+          pickup_arrival_doc_name?: string | null
+          pickup_arrival_doc_path?: string | null
           pickup_arrival_message?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
@@ -4589,6 +4593,8 @@ export type Database = {
           outbound_flight_number?: string | null
           payment_receipts_enabled?: boolean
           photos_videos_url?: string | null
+          pickup_arrival_doc_name?: string | null
+          pickup_arrival_doc_path?: string | null
           pickup_arrival_message?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
