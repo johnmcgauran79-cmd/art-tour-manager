@@ -34,7 +34,7 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{tour_price_single}}', '{{tour_price_double}}', '{{tour_price_twin}}', '{{tour_deposit_required}}',
     '{{tour_final_payment_date}}', '{{tour_instalment_date}}', '{{tour_instalment_amount}}', '{{tour_instalment_details}}',
     '{{tour_inclusions}}', '{{tour_exclusions}}', '{{tour_travel_documents_required}}',
-    '{{tour_dates_note}}'
+    '{{tour_dates_note}}', '{{tour_pickup_arrival_message}}', '{{tour_welcome_drinks_message}}'
   ],
   booking: [
     '{{booking_passenger_count}}', '{{booking_status}}', '{{booking_check_in_date}}', '{{booking_check_out_date}}',
