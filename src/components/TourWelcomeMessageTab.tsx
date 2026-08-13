@@ -24,6 +24,8 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
   const [heading, setHeading] = useState("Welcome");
   const [body, setBody] = useState("");
   const [signoff, setSignoff] = useState("");
+  const [pickupArrival, setPickupArrival] = useState("");
+  const [welcomeDrinks, setWelcomeDrinks] = useState("");
 
   useEffect(() => {
     if (data) {
@@ -31,11 +33,20 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
       setHeading(data.heading || "Welcome");
       setBody(data.body || "");
       setSignoff(data.signoff || "");
+      setPickupArrival(data.pickupArrivalMessage || "");
+      setWelcomeDrinks(data.welcomeDrinksMessage || "");
     }
   }, [data]);
 
   const handleSave = () => {
-    update.mutate({ enabled, heading, body, signoff });
+    update.mutate({
+      enabled,
+      heading,
+      body,
+      signoff,
+      pickupArrivalMessage: pickupArrival,
+      welcomeDrinksMessage: welcomeDrinks,
+    });
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +56,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
   };
 
   if (isLoading) {
-    return <div className="text-muted-foreground p-4">Loading welcome message...</div>;
+    return <div className="text-muted-foreground p-4">Loading messages...</div>;
   }
 
   // Body may be rich-text HTML (new) or legacy plain text. Build preview markup accordingly.
@@ -63,10 +74,10 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold">Welcome Message</h3>
+          <h3 className="text-lg font-semibold">Messages</h3>
           <p className="text-sm text-muted-foreground">
-            A personal welcome from the tour host, shown under the main header of the guest
-            document &mdash; before the list of tour inclusions.
+            Reusable tour messages &mdash; the host welcome shown in the guest document, plus
+            pickup/arrival and welcome drinks details available to email templates.
           </p>
         </div>
         <Button onClick={handleSave} disabled={update.isPending} className="gap-2">
