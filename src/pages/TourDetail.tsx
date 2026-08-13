@@ -446,8 +446,8 @@ export default function TourDetail() {
                 <span className="hidden sm:inline">Tasks</span>
               </TabsTrigger>
               <TabsTrigger value="guest-docs" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Guest Docs (Comms)</span>
+                <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Comms</span>
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
