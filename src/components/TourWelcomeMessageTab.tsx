@@ -91,7 +91,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Content</CardTitle>
+              <CardTitle className="text-base">Welcome Message</CardTitle>
               <div className="flex items-center gap-2">
                 <Label htmlFor="welcome-enabled" className="text-sm">Include in document</Label>
                 <Switch id="welcome-enabled" checked={enabled} onCheckedChange={setEnabled} />
@@ -238,6 +238,40 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pickup / Arrival Message</CardTitle>
+          <CardDescription>
+            Where guests should meet if a pickup or arrival transfer is organised. Available in
+            email templates as <code>{"{{tour_pickup_arrival_message}}"}</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RichTextEditor
+            value={pickupArrival}
+            onChange={setPickupArrival}
+            placeholder="e.g. Your driver will meet you in the arrivals hall holding an ART sign..."
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Welcome Drinks</CardTitle>
+          <CardDescription>
+            Where and when guests first meet for welcome drinks or the group gathering. Available
+            in email templates as <code>{"{{tour_welcome_drinks_message}}"}</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RichTextEditor
+            value={welcomeDrinks}
+            onChange={setWelcomeDrinks}
+            placeholder="e.g. Join us in the hotel lobby bar at 6:00pm for welcome drinks..."
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
