@@ -447,15 +447,11 @@ export default function TourDetail() {
               </TabsTrigger>
               <TabsTrigger value="guest-docs" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Guest Docs</span>
+                <span className="hidden sm:inline">Guest Docs (Comms)</span>
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Forms</span>
-              </TabsTrigger>
-              <TabsTrigger value="comms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Comms</span>
               </TabsTrigger>
               {isAdminOrManager && (
                 <TabsTrigger value="website" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
@@ -565,10 +561,6 @@ export default function TourDetail() {
           <TourCustomFormsTab tourId={tour.id} tourName={tour.name} />
           <Separator />
           <TourWaiverStatusSection tourId={tour.id} tourName={tour.name} />
-        </TabsContent>
-
-        <TabsContent value="comms" className="space-y-4 mt-6">
-          <TourCommsSettingsTab tourId={tour.id} tourName={tour.name} />
         </TabsContent>
 
         {isAdminOrManager && (
