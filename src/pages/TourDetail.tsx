@@ -73,6 +73,10 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
           <ImageIcon className="h-3.5 w-3.5" />
           Images
         </TabsTrigger>
+        <TabsTrigger value="comms" className="flex items-center gap-1.5">
+          <Mail className="h-3.5 w-3.5" />
+          Comms
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="itinerary">
         <TourItineraryTab tour={{
@@ -93,6 +97,9 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
       </TabsContent>
       <TabsContent value="images">
         <TourDocumentImagesTab tourId={tour.id} tourName={tour.name} />
+      </TabsContent>
+      <TabsContent value="comms">
+        <TourCommsSettingsTab tourId={tour.id} tourName={tour.name} />
       </TabsContent>
     </Tabs>
   );
