@@ -100,7 +100,7 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Comms Settings
+            Email Settings
           </CardTitle>
           <CardDescription>
             No active automated email rules found. Create rules in Settings → Automated Emails first.
@@ -118,7 +118,7 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                Comms Settings
+                Email Settings
               </CardTitle>
               <CardDescription>
                 Assign tour-specific email templates to each automated email rule. If no override is set, the global default template from Settings will be used.
