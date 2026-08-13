@@ -67,7 +67,7 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
         </TabsTrigger>
         <TabsTrigger value="welcome-message" className="flex items-center gap-1.5">
           <MessageSquareQuote className="h-3.5 w-3.5" />
-          Welcome Message
+          Messages
         </TabsTrigger>
         <TabsTrigger value="images" className="flex items-center gap-1.5">
           <ImageIcon className="h-3.5 w-3.5" />
