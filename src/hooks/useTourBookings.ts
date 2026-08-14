@@ -65,7 +65,7 @@ export const useBookingById = (bookingId: string | undefined) => {
           revenue, created_at, updated_at, passport_number, passport_expiry_date,
           passport_country, nationality, whatsapp_group_comms, selected_pickup_option_id,
           passport_not_required, split_invoice, id_number,
-          automation_override,
+          automation_override, brand_id,
           tours (name, manual_billing, manual_emails),
           customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs, avatar_url, notes),
           secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone),
