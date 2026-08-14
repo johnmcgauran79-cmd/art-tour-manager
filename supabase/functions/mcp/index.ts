@@ -5730,11 +5730,17 @@ function buildWpItineraryRows(days) {
     const datePart = formatItineraryDate(day.activity_date, isEdge);
     const title = buildDayTitle(day);
     const date_event = [datePart, title].filter(Boolean).join(" - ");
-    return { date_event, details: buildDayDetails(day) };
+    const gallery = (day.gallery_media_ids ?? []).filter(
+      (id) => typeof id === "number" && Number.isFinite(id)
+    );
+    const row = { date_event, details: buildDayDetails(day) };
+    if (gallery.length > 0) row.gallery = gallery;
+    return row;
   }).filter((r) => r.date_event || r.details);
 }
 function preserveGalleries(artRows, wpRows) {
   return artRows.map((row, i) => {
+    if (Array.isArray(row.gallery) && row.gallery.length > 0) return { ...row };
     const gallery = wpRows[i]?.gallery;
     return gallery === void 0 ? { ...row } : { ...row, gallery };
   });
