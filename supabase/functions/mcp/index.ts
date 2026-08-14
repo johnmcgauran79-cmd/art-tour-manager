@@ -5827,7 +5827,9 @@ async function loadArtItineraryRows(ctx, tourId) {
       tour,
       itinerary_id: null,
       days: [],
-      rows: []
+      rows: [],
+      images: [],
+      day_ids: []
     };
   }
   const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("id, day_number, activity_date").eq("itinerary_id", itinerary.id).order("day_number");
@@ -5835,20 +5837,38 @@ async function loadArtItineraryRows(ctx, tourId) {
   const dayIds = (days ?? []).map((d) => d.id);
   const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("id, day_id, subject, content, sort_order").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
   if (entriesError) return { error: entriesError.message };
+  const { data: images, error: imagesError } = dayIds.length ? await supabase.from("tour_itinerary_day_images").select("id, day_id, file_path, file_name, caption, sort_order, wp_media_id, wp_source_url").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
+  if (imagesError) return { error: imagesError.message };
+  const dayImages = images ?? [];
   const shaped = (days ?? []).map((d) => ({
     day_number: d.day_number,
     activity_date: d.activity_date,
+    gallery_media_ids: dayImages.filter((img) => img.day_id === d.id && typeof img.wp_media_id === "number").map((img) => img.wp_media_id),
     entries: (entries ?? []).filter((e) => e.day_id === d.id).map((e) => ({
       subject: e.subject,
       content: e.content ?? null,
       sort_order: e.sort_order ?? 0
     }))
   }));
+  const orderedDays = [...days ?? []].sort(
+    (a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)
+  );
+  const orderedShaped = [...shaped].sort(
+    (a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)
+  );
+  const rows = buildWpItineraryRows(shaped);
+  const dayIdsForRows = [];
+  orderedShaped.forEach((day, i) => {
+    const single = buildWpItineraryRows([day]);
+    if (single.length > 0) dayIdsForRows.push(orderedDays[i]?.id);
+  });
   return {
     tour,
     itinerary_id: itinerary.id,
     days: shaped,
-    rows: buildWpItineraryRows(shaped)
+    rows,
+    images: dayImages,
+    day_ids: dayIdsForRows
   };
 }
 async function loadWordpressTourLink(ctx, tourId) {
