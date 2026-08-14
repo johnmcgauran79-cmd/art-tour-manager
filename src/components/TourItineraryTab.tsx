@@ -31,6 +31,7 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showGuestTextModal, setShowGuestTextModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
   const addDay = useAddItineraryDay();
