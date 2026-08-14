@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles, Globe } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
@@ -10,6 +10,7 @@ import { ItinerarySnapshotSection } from "./itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
 import { GuestDocumentTextModal } from "./itinerary/GuestDocumentTextModal";
+import { PublishItineraryToWebsiteDialog } from "./itinerary/PublishItineraryToWebsiteDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionErrorDialog } from "./PermissionErrorDialog";
@@ -132,6 +133,14 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         <div className="flex items-center gap-2">
           {!isAgent && (
             <>
+              <Button
+                variant="outline"
+                onClick={() => setShowPublishModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Globe className="h-4 w-4" />
+                Publish to Website
+              </Button>
               <Button
                 variant="outline"
                 disabled
