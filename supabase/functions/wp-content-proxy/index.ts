@@ -4,6 +4,13 @@ import { wordpressRequest, WordpressClientError } from "../_shared/wordpressClie
 import { sanitiseAcfUpdate, EDITABLE_ACF_SCALAR_FIELDS, EDITABLE_ACF_REPEATER_FIELDS } from "../_shared/wordpressEditableFields.ts";
 import { TOUR_FIELD_MAP, buildFieldDiff, semanticEqual } from "../_shared/wordpressFieldMap.ts";
 import { ART_SOURCES, tourColumnsForSources, resolveArtSourceValue } from "../_shared/wordpressArtSources.ts";
+import {
+  WP_ITINERARY_FIELD,
+  buildItineraryDiff,
+  normaliseWpItineraryRows,
+  preserveGalleries,
+} from "../_shared/wordpressItinerary.ts";
+import { loadArtItinerary } from "../_shared/wordpressItineraryArt.ts";
 
 // Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
 // JWT and admin/manager role, then executes ONE of a fixed set of read-only
@@ -30,6 +37,8 @@ type Op =
   | { op: "bulk_link_tours"; pairs: Array<{ art_tour_id: string; wp_tour_id: number }> }
   | { op: "bulk_tour_diffs"; include_archived?: boolean }
   | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> }
+  | { op: "itinerary_diff"; art_tour_id: string }
+  | { op: "push_itinerary"; art_tour_id: string }
   | { op: "upload_media"; filename: string; content_type: string; data_base64: string; title?: string };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -1065,6 +1074,168 @@ Deno.serve(async (req) => {
           request_summary: { count: results.length, ok: results.filter((r) => r.ok).length },
         });
         return json({ results });
+      }
+      case "itinerary_diff": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const art = await loadArtItinerary(admin, body.art_tour_id);
+        if ("error" in art) return json({ error: art.error }, 400);
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,link,modified" },
+        });
+        const wpAcf = (wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const wpRows = normaliseWpItineraryRows(wpAcf[WP_ITINERARY_FIELD]);
+        const diff = buildItineraryDiff(art.rows, wpRows);
+        const pendingPhotos = art.images.filter((img) => typeof img.wp_media_id !== "number").length;
+        return json({
+          tour_name: art.tour.name,
+          wp_tour_id: link.wp_tour_id,
+          wp_link: (wpRes.data as { link?: string })?.link ?? null,
+          rows: diff.rows,
+          changed: diff.changed,
+          art_row_count: art.rows.length,
+          wp_row_count: wpRows.length,
+          photo_count: art.images.length,
+          photos_pending_upload: pendingPhotos,
+        });
+      }
+      case "push_itinerary": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const art = await loadArtItinerary(admin, body.art_tour_id);
+        if ("error" in art) return json({ error: art.error }, 400);
+        if (!art.itinerary_id || art.rows.length === 0) {
+          return json({ error: "This tour has no itinerary content to publish — refusing to blank the website itinerary." }, 400);
+        }
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+
+        const baseUrl = Deno.env.get("WORDPRESS_BASE_URL");
+        const username = Deno.env.get("WORDPRESS_USERNAME");
+        const appPassword = Deno.env.get("WORDPRESS_APPLICATION_PASSWORD");
+        if (!baseUrl || !username || !appPassword) return json({ error: "WordPress is not configured" }, 500);
+
+        // 1. Ensure every ART day photo exists in the WordPress media library.
+        const photoErrors: string[] = [];
+        let photosUploaded = 0;
+        for (const img of art.images) {
+          if (typeof img.wp_media_id === "number") continue;
+          try {
+            const dl = await admin.storage.from("attachments").download(img.file_path);
+            if (dl.error || !dl.data) throw new Error(dl.error?.message ?? "download failed");
+            const bytes = new Uint8Array(await dl.data.arrayBuffer());
+            const name = (img.file_name ?? "photo.jpg").replace(/[^\w.\-]+/g, "_");
+            const ext = name.toLowerCase().split(".").pop() ?? "";
+            const contentType = ext === "png"
+              ? "image/png"
+              : ext === "webp"
+              ? "image/webp"
+              : ext === "gif"
+              ? "image/gif"
+              : "image/jpeg";
+            const upRes = await fetch(`${baseUrl.replace(/\/+$/, "")}/wp-json/wp/v2/media`, {
+              method: "POST",
+              headers: {
+                Authorization: `Basic ${btoa(`${username}:${appPassword}`)}`,
+                "Content-Type": contentType,
+                "Content-Disposition": `attachment; filename="${name}"`,
+                Accept: "application/json",
+              },
+              body: bytes,
+            });
+            const txt = await upRes.text();
+            let mediaData: Record<string, unknown> = {};
+            try { mediaData = txt ? JSON.parse(txt) : {}; } catch { mediaData = {}; }
+            if (!upRes.ok || typeof (mediaData as { id?: number }).id !== "number") {
+              throw new Error((mediaData as { message?: string })?.message ?? `WordPress returned ${upRes.status}`);
+            }
+            const mediaId = (mediaData as { id: number }).id;
+            if (img.caption) {
+              try {
+                await wordpressRequest({ endpoint: `media/${mediaId}`, method: "POST", body: { title: img.caption, alt_text: img.caption } });
+              } catch { /* non-fatal */ }
+            }
+            await admin
+              .from("tour_itinerary_day_images")
+              .update({ wp_media_id: mediaId, wp_source_url: (mediaData as { source_url?: string }).source_url ?? null })
+              .eq("id", img.id);
+            img.wp_media_id = mediaId;
+            photosUploaded++;
+          } catch (err) {
+            photoErrors.push(`${img.file_name ?? img.id}: ${(err as Error).message}`);
+          }
+        }
+
+        // 2. Re-render rows so freshly uploaded media ids land in the galleries.
+        const refreshed = await loadArtItinerary(admin, body.art_tour_id);
+        const rowsSource = "error" in refreshed ? art.rows : refreshed.rows;
+
+        let before: Record<string, unknown> | null = null;
+        try {
+          const b = await wordpressRequest<Record<string, unknown>>({
+            endpoint: `tour/${link.wp_tour_id}`,
+            query: { context: "edit", _fields: "id,acf" },
+          });
+          before = (b.data as { acf?: Record<string, unknown> })?.acf ?? null;
+        } catch { /* best effort */ }
+
+        const beforeRows = normaliseWpItineraryRows(before?.[WP_ITINERARY_FIELD]);
+        const rowsToPush = preserveGalleries(rowsSource, beforeRows);
+        const res = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          method: "POST",
+          body: { acf: { [WP_ITINERARY_FIELD]: rowsToPush } },
+        });
+        const after = (res.data as { acf?: Record<string, unknown> })?.acf ?? null;
+        const liveRows = normaliseWpItineraryRows(after?.[WP_ITINERARY_FIELD]);
+        const verify = buildItineraryDiff(rowsToPush, liveRows);
+
+        await admin
+          .from("wordpress_tour_links")
+          .update({ last_synced_at: new Date().toISOString() })
+          .eq("tour_id", body.art_tour_id);
+
+        try {
+          await admin.from("wordpress_integration_audit_logs").insert({
+            user_id: userId,
+            source: "ui",
+            action: "push_tour_itinerary",
+            wordpress_object_type: "tour",
+            wordpress_object_id: link.wp_tour_id,
+            result_status: "success",
+            response_code: res.status,
+            request_summary: {
+              endpoint: `tour/${link.wp_tour_id}`,
+              method: "POST",
+              art_tour_id: body.art_tour_id,
+              changed_fields: [WP_ITINERARY_FIELD],
+              row_count: rowsToPush.length,
+              photos_uploaded: photosUploaded,
+            },
+            before_snapshot: before ? { [WP_ITINERARY_FIELD]: before[WP_ITINERARY_FIELD] ?? null } : null,
+            after_snapshot: { [WP_ITINERARY_FIELD]: after?.[WP_ITINERARY_FIELD] ?? null },
+          });
+        } catch { /* audit must not break */ }
+
+        return json({
+          ok: true,
+          wp_tour_id: link.wp_tour_id,
+          rows_published: rowsToPush.length,
+          live_row_count: liveRows.length,
+          verified: !verify.changed,
+          photos_uploaded: photosUploaded,
+          photo_errors: photoErrors,
+        });
       }
       default:
         return json({ error: "Unknown op" }, 400);
