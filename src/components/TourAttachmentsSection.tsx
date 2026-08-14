@@ -461,6 +461,31 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
           fileName={pdfViewer.fileName}
           filePath={pdfViewer.filePath}
         />
+
+        <ConfirmDeleteFileDialog
+          open={!!pendingDelete}
+          onOpenChange={(open) => !open && setPendingDelete(null)}
+          fileName={pendingDelete?.file_name}
+          itemLabel="attachment"
+          onConfirm={async () => {
+            const target = pendingDelete;
+            setPendingDelete(null);
+            if (target) await handleDelete(target);
+          }}
+        />
+
+        <ConfirmDeleteFileDialog
+          open={!!pendingLinkDelete}
+          onOpenChange={(open) => !open && setPendingLinkDelete(null)}
+          fileName={pendingLinkDelete?.label}
+          itemLabel="external link"
+          isPending={deleteExternalLink.isPending}
+          onConfirm={async () => {
+            const target = pendingLinkDelete;
+            setPendingLinkDelete(null);
+            if (target) await handleDeleteExternalLink(target.id);
+          }}
+        />
       </div>
     </div>
   );
