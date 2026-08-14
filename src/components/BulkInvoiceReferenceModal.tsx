@@ -24,7 +24,7 @@ export const BulkInvoiceReferenceModal = ({ open, onOpenChange, tourId }: BulkIn
   
   const { data: tourBookings } = useTourBookings(tourId);
   const { data: globalBookings } = useBookings();
-  const allBookings = tourId ? tourBookings : globalBookings;
+  const allBookings = (tourId ? tourBookings : globalBookings) as any[] | undefined;
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
 
