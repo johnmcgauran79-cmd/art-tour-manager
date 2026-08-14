@@ -1,0 +1,1 @@
+ALTER TABLE public.tour_itinerary_entries DROP COLUMN IF EXISTS time_slot;
