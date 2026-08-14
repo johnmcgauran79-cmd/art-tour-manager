@@ -30,6 +30,8 @@ export interface ArtItineraryDayInput {
   day_number?: number | null;
   activity_date?: string | null;
   entries?: ArtItineraryEntryInput[] | null;
+  /** WordPress media ids for this day's photos (max 3), in display order. */
+  gallery_media_ids?: number[] | null;
 }
 
 const WEEKDAYS = [
@@ -124,17 +126,28 @@ export function buildWpItineraryRows(days: ArtItineraryDayInput[]): WpItineraryR
       const datePart = formatItineraryDate(day.activity_date, isEdge);
       const title = buildDayTitle(day);
       const date_event = [datePart, title].filter(Boolean).join(" - ");
-      return { date_event, details: buildDayDetails(day) };
+      const gallery = (day.gallery_media_ids ?? []).filter(
+        (id) => typeof id === "number" && Number.isFinite(id),
+      );
+      const row: WpItineraryRow = { date_event, details: buildDayDetails(day) };
+      if (gallery.length > 0) row.gallery = gallery;
+      return row;
     })
     .filter((r) => r.date_event || r.details);
 }
 
-/** Carry each live row's `gallery` value across to the matching new row by index. */
+/**
+ * Carry each live row's `gallery` value across to the matching new row by index.
+ * ART galleries win: when the ART row already carries photos (uploaded in the
+ * admin system and synced to the WordPress media library) they are kept, and the
+ * live WordPress gallery is only used as a fallback for rows ART has no photos for.
+ */
 export function preserveGalleries(
   artRows: WpItineraryRow[],
   wpRows: WpItineraryRow[],
 ): WpItineraryRow[] {
   return artRows.map((row, i) => {
+    if (Array.isArray(row.gallery) && row.gallery.length > 0) return { ...row };
     const gallery = wpRows[i]?.gallery;
     return gallery === undefined ? { ...row } : { ...row, gallery };
   });

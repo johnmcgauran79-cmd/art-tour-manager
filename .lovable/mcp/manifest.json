@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -3801,6 +3801,152 @@
           },
           "required": [
             "subtask_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_itinerary_day_photos",
+        "title": "List itinerary day photos",
+        "description": "List the photos attached to a tour's itinerary days (max 3 per day). Returns each photo with its day number/date, caption, a temporary signed preview URL, and the WordPress media id once the photo has been synced to the website gallery (`wp_media_id` null = not yet on the website). Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "day_id": {
+              "type": "string",
+              "description": "Optional: only return photos for this itinerary day id."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upload_itinerary_day_photo",
+        "title": "Upload an itinerary day photo",
+        "description": "Upload a photo (JPEG/PNG/WEBP/GIF, base64 in `data_base64`, max 20MB) against one day of a tour's itinerary. Maximum 3 photos per day — delete one first with `delete_itinerary_day_photo` if the day is full. Photos live in the ART admin system; publish them to the website day gallery with `wordpress_sync_itinerary_day_photos`. Get day ids from `get_tour_itinerary`. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "day_id": {
+              "type": "string",
+              "description": "The itinerary day id (uuid) from get_tour_itinerary."
+            },
+            "filename": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "description": "Filename including extension, e.g. 'day3-flemington.jpg'."
+            },
+            "content_type": {
+              "type": "string",
+              "minLength": 1,
+              "description": "MIME type. Allowed: image/jpeg, image/png, image/webp, image/gif"
+            },
+            "data_base64": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Base64-encoded image contents (no data: prefix)."
+            },
+            "caption": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Optional caption / alt text, also written to WordPress on sync."
+            }
+          },
+          "required": [
+            "day_id",
+            "filename",
+            "content_type",
+            "data_base64"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "delete_itinerary_day_photo",
+        "title": "Delete an itinerary day photo",
+        "description": "Remove a photo from an itinerary day in the ART admin system (also deletes the stored file). The WordPress media library copy is left in place, but the photo drops out of the website day gallery the next time you run `wordpress_sync_itinerary_day_photos`. Must pass confirm=true. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "photo_id": {
+              "type": "string",
+              "description": "The itinerary day photo id (uuid) from list_itinerary_day_photos."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "Must be true — confirms the user approved deleting this photo."
+            }
+          },
+          "required": [
+            "photo_id",
+            "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_sync_itinerary_day_photos",
+        "title": "Publish itinerary day photos to the website",
+        "description": "Publish the photos attached to a tour's itinerary days (uploaded with `upload_itinerary_day_photo`) into the matching day galleries on the linked WordPress tour post. Any photo not yet in the WordPress media library is uploaded first, then each itinerary row's `gallery` is set to that day's photos in order (days with no ART photos keep whatever gallery is already live). ART is the source of truth and the sync is one-way ART → WordPress. Requires confirm=true; every call is audited with a before/after snapshot. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "Must be true. Confirms the user approved publishing these photos to the live website."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id. Defaults to the linked post for this tour."
+            }
+          },
+          "required": [
+            "tour_id",
+            "confirm"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
