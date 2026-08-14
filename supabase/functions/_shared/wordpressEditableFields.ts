@@ -25,6 +25,7 @@ export const EDITABLE_ACF_SCALAR_FIELDS = [
 // passed through as-is (WordPress validates), but the top-level key must
 // be on this list.
 export const EDITABLE_ACF_REPEATER_FIELDS = [
+  "itinerary",
   "inclusions",
   "exclusions_details",
   "faqs_list",
