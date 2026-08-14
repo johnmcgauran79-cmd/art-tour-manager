@@ -42,6 +42,12 @@ import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useBrands } from "@/hooks/useBrands";
+import {
+  BOOKING_AUTOMATION_OVERRIDE_OPTIONS,
+  BookingAutomationOverride,
+  bookingSkipsBilling,
+  bookingSkipsEmails,
+} from "@/lib/automationOverrides";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { ShareButton } from "@/components/ShareButton";
