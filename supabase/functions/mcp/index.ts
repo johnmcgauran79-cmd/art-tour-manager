@@ -942,23 +942,22 @@ import { z as z19 } from "npm:zod@^3.25.76";
 var upsert_itinerary_entry_default = defineTool19({
   name: "upsert_itinerary_entry",
   title: "Add or edit itinerary entry",
-  description: "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
+  description: "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. content is optional.",
   inputSchema: {
     entry_id: z19.string().optional().describe("Existing entry id (uuid) to edit. Omit to create a new entry."),
     day_id: z19.string().optional().describe("The itinerary day id (uuid). Required when creating."),
     subject: z19.string().optional().describe("The entry title/subject."),
-    time_slot: z19.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
     content: z19.string().optional().describe("Entry details/description."),
     sort_order: z19.number().int().optional().describe("Display order within the day.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
+  handler: async ({ entry_id, day_id, subject, content, sort_order }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
     if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     if (entry_id) {
       const updates = Object.fromEntries(
-        Object.entries({ subject, time_slot, content, sort_order }).filter(([, v]) => v !== void 0)
+        Object.entries({ subject, content, sort_order }).filter(([, v]) => v !== void 0)
       );
       const { data: data2, error: error2 } = await supabase.from("tour_itinerary_entries").update(updates).eq("id", entry_id).select().maybeSingle();
       if (error2)
@@ -972,7 +971,7 @@ var upsert_itinerary_entry_default = defineTool19({
     }
     if (!day_id || !subject)
       return { content: [{ type: "text", text: "day_id and subject are required to create an entry." }], isError: true };
-    const { data, error } = await supabase.from("tour_itinerary_entries").insert({ day_id, subject, time_slot: time_slot ?? null, content: content ?? null, sort_order: sort_order ?? 0 }).select().single();
+    const { data, error } = await supabase.from("tour_itinerary_entries").insert({ day_id, subject, content: content ?? null, sort_order: sort_order ?? 0 }).select().single();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
     return {
@@ -5823,14 +5822,13 @@ async function loadArtItineraryRows(ctx, tourId) {
   const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("id, day_number, activity_date").eq("itinerary_id", itinerary.id).order("day_number");
   if (daysError) return { error: daysError.message };
   const dayIds = (days ?? []).map((d) => d.id);
-  const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("id, day_id, subject, time_slot, content, sort_order").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
+  const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("id, day_id, subject, content, sort_order").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
   if (entriesError) return { error: entriesError.message };
   const shaped = (days ?? []).map((d) => ({
     day_number: d.day_number,
     activity_date: d.activity_date,
     entries: (entries ?? []).filter((e) => e.day_id === d.id).map((e) => ({
       subject: e.subject,
-      time_slot: e.time_slot ?? null,
       content: e.content ?? null,
       sort_order: e.sort_order ?? 0
     }))
@@ -6216,7 +6214,6 @@ import { defineTool as defineTool102 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z98 } from "npm:zod@^3.25.76";
 var entrySchema = z98.object({
   subject: z98.string().min(1).describe("Entry title, e.g. 'Ferry Transfer'."),
-  time_slot: z98.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
   content: z98.string().optional().describe("Entry details/description.")
 });
 var daySchema = z98.object({
@@ -6281,7 +6278,6 @@ var replace_tour_itinerary_default = defineTool102({
         entryRows.push({
           day_id: dayId,
           subject: e.subject,
-          time_slot: e.time_slot ?? null,
           content: e.content ?? null,
           sort_order: j
         });

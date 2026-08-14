@@ -6,7 +6,6 @@ import { toolError } from "./_uploads";
 
 const entrySchema = z.object({
   subject: z.string().min(1).describe("Entry title, e.g. 'Ferry Transfer'."),
-  time_slot: z.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
   content: z.string().optional().describe("Entry details/description."),
 });
 
@@ -108,7 +107,6 @@ export default defineTool({
         entryRows.push({
           day_id: dayId,
           subject: e.subject,
-          time_slot: e.time_slot ?? null,
           content: e.content ?? null,
           sort_order: j,
         });

@@ -676,7 +676,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       day.entries.forEach((entry: any, idx: number) => {
         const showTitle = idx > 0; // first entry's subject already shown in the day header
         html += `<div class="activity">`;
-        if (entry.time_slot) html += `<span class="activity-time">${formatTime(entry.time_slot)}</span>`;
         if (showTitle && entry.subject) html += `<span class="activity-title">${entry.subject}</span>`;
         if (entry.content) html += `<div class="activity-content">${entry.content}</div>`;
         html += `</div>`;

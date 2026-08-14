@@ -301,7 +301,6 @@ async function duplicateItineraries(originalTourId: string, newTourId: string) {
           day_id: newDay.id,
           subject: e.subject,
           content: e.content,
-          time_slot: e.time_slot,
           sort_order: e.sort_order,
         }));
         await supabase.from('tour_itinerary_entries').insert(newEntries);

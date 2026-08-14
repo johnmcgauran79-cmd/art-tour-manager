@@ -181,7 +181,6 @@ export function buildGuestItinerarySourceContext(args: {
     const entries = extractRows(day, ["tour_itinerary_entries", "entries"])
       .map((entry) => ({
         id: stringValue(entry.id),
-        time_slot: stringValue(entry.time_slot),
         subject: boundedText(entry.subject, 500),
         content: stripHtml(entry.content),
         sort_order: entry.sort_order,

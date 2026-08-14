@@ -687,10 +687,6 @@
                           "minLength": 1,
                           "description": "Entry title, e.g. 'Ferry Transfer'."
                         },
-                        "time_slot": {
-                          "type": "string",
-                          "description": "Time of day, e.g. '09:00' or 'Morning'."
-                        },
                         "content": {
                           "type": "string",
                           "description": "Entry details/description."
@@ -1552,7 +1548,7 @@
       {
         "name": "upsert_itinerary_entry",
         "title": "Add or edit itinerary entry",
-        "description": "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
+        "description": "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. content is optional.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
@@ -1572,10 +1568,6 @@
             "subject": {
               "type": "string",
               "description": "The entry title/subject."
-            },
-            "time_slot": {
-              "type": "string",
-              "description": "Time of day, e.g. '09:00' or 'Morning'."
             },
             "content": {
               "type": "string",
