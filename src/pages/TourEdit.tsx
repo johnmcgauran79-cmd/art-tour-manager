@@ -904,19 +904,6 @@ export default function TourEdit() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="keap_tag_id">Keap Tag ID</Label>
-            <Input
-              id="keap_tag_id"
-              value={formData.keap_tag_id}
-              onChange={(e) => handleInputChange("keap_tag_id", e.target.value)}
-              placeholder="Existing Keap tag ID (auto-created if empty)"
-              disabled={formData.is_test_tour}
-            />
-            <p className="text-xs text-muted-foreground">
-              Enter an existing Keap tag ID for this tour, or leave blank to auto-create when a booking is made.
-            </p>
-          </div>
         </div>
 
         {/* Test Mode toggle — Admin only */}
@@ -932,8 +919,8 @@ export default function TourEdit() {
               </div>
               <p className="text-xs text-muted-foreground max-w-2xl">
                 Mark this as a sandbox tour for testing emails, forms, alerts and triggers.
-                When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong> and
-                <strong> skip Keap CRM tagging</strong>. The Xero & Keap fields above are not required.
+                When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong>.
+                The Xero fields above are not required.
                 Everything else (emails, forms, automations, reports) works exactly as a real tour.
               </p>
             </div>
@@ -965,7 +952,7 @@ export default function TourEdit() {
                 Manual billing
               </Label>
               <p className="text-xs text-muted-foreground">
-                Skip automatic Xero invoice creation and Keap CRM tagging for all bookings on this tour.
+                Skip automatic Xero invoice creation for all bookings on this tour.
               </p>
             </div>
             <Switch
@@ -1136,7 +1123,7 @@ export default function TourEdit() {
                 </p>
                 <ul className="list-disc pl-5 text-sm space-y-1">
                   {manualToggleFlags.billingTurnedOn && (
-                    <li>Manual billing — automatic Xero invoicing &amp; Keap tagging will be skipped for new bookings.</li>
+                    <li>Manual billing — automatic Xero invoicing will be skipped for new bookings.</li>
                   )}
                   {manualToggleFlags.emailsTurnedOn && (
                     <li>Manual emails — automated emails will be skipped for this tour going forward.</li>
