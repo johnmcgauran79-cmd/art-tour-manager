@@ -105,6 +105,8 @@ export const PendingEmailPreviewModal = ({
     '{{custom_form_link}}': '#preview-custom-form',
     '{{itinerary_button}}': `<span style="${placeholderButtonStyle}">🗺️ View Itinerary (Preview)</span>`,
     '{{itinerary_link}}': '#preview-itinerary',
+    '{{guest_document_button}}': `<span style="${placeholderButtonStyle}">📄 View Guest Document (Preview)</span>`,
+    '{{guest_document_link}}': '#preview-guest-document',
   };
   for (const [placeholder, replacement] of Object.entries(placeholderReplacements)) {
     processedContent = processedContent.split(placeholder).join(replacement);
