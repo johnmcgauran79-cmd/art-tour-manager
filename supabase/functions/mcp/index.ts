@@ -5684,25 +5684,22 @@ var MONTHS = [
   "NOVEMBER",
   "DECEMBER"
 ];
-function formatItineraryDate(isoDate) {
+function formatItineraryDate(isoDate, includeYear = true) {
   if (!isoDate) return "";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(isoDate).trim());
   if (!m) return "";
   const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
   if (Number.isNaN(d.getTime())) return "";
-  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const base = `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return includeYear ? `${base} ${d.getUTCFullYear()}` : base;
 }
-function escapeHtml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function decodeEntities(s) {
+  return s.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'");
 }
-function looksLikeHtml(s) {
-  return /<\/?[a-z][\s\S]*>/i.test(s);
-}
-function contentToHtml(content) {
-  const trimmed = content.trim();
-  if (!trimmed) return "";
-  if (looksLikeHtml(trimmed)) return trimmed;
-  return escapeHtml(trimmed).replace(/\r?\n/g, "<br />");
+function htmlToPlainParagraphs(content) {
+  if (!content) return "";
+  const withBreaks = String(content).replace(/\r\n/g, "\n").replace(/<\s*br\s*\/?\s*>/gi, "\n").replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n").replace(/<\s*li[^>]*>/gi, "").replace(/<[^>]+>/g, "");
+  return decodeEntities(withBreaks).split(/\n{2,}/).map((p) => p.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim()).filter(Boolean).join("\r\n\r\n");
 }
 function sortedEntries(day) {
   return [...day.entries ?? []].sort(
@@ -5723,30 +5720,19 @@ function buildDayTitle(day, maxParts = 3) {
   }
   return parts.join(" & ");
 }
-function buildDayDetailsHtml(day) {
-  const blocks = [];
-  for (const e of sortedEntries(day)) {
-    const subject = (e.subject ?? "").trim();
-    const time = (e.time_slot ?? "").trim();
-    const body = contentToHtml(e.content ?? "");
-    const heading = [time, subject].filter(Boolean).join(" \u2013 ");
-    if (!heading && !body) continue;
-    if (heading && body) {
-      blocks.push(`<p><strong>${escapeHtml(heading)}</strong><br />${body}</p>`);
-    } else if (heading) {
-      blocks.push(`<p><strong>${escapeHtml(heading)}</strong></p>`);
-    } else {
-      blocks.push(`<p>${body}</p>`);
-    }
-  }
-  return blocks.join("\n");
+function buildDayDetails(day) {
+  return sortedEntries(day).map((e) => htmlToPlainParagraphs(e.content)).filter(Boolean).join("\r\n\r\n");
 }
 function buildWpItineraryRows(days) {
-  return [...days ?? []].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)).map((day) => {
-    const datePart = formatItineraryDate(day.activity_date);
+  const ordered = [...days ?? []].sort(
+    (a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)
+  );
+  return ordered.map((day, i) => {
+    const isEdge = i === 0 || i === ordered.length - 1;
+    const datePart = formatItineraryDate(day.activity_date, isEdge);
     const title = buildDayTitle(day);
     const date_event = [datePart, title].filter(Boolean).join(" - ");
-    return { date_event, details: buildDayDetailsHtml(day) };
+    return { date_event, details: buildDayDetails(day) };
   }).filter((r) => r.date_event || r.details);
 }
 function normaliseWpItineraryRows(value) {
@@ -5756,15 +5742,16 @@ function normaliseWpItineraryRows(value) {
     const r = row;
     return {
       date_event: r.date_event === null || r.date_event === void 0 ? "" : String(r.date_event),
-      details: r.details === null || r.details === void 0 ? "" : String(r.details)
+      details: r.details === null || r.details === void 0 ? "" : String(r.details),
+      gallery: r.gallery
     };
   });
 }
-function normaliseHtml(v) {
-  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
+function normaliseProse(v) {
+  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 function normaliseText(v) {
-  return v.replace(/\s+/g, " ").trim().toLowerCase();
+  return v.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 function buildItineraryDiff(artRows, wpRows) {
   const len = Math.max(artRows.length, wpRows.length);
@@ -5773,7 +5760,7 @@ function buildItineraryDiff(artRows, wpRows) {
   for (let i = 0; i < len; i++) {
     const art = artRows[i] ?? null;
     const wp = wpRows[i] ?? null;
-    const rowChanged = !art || !wp ? true : normaliseText(art.date_event) !== normaliseText(wp.date_event) || normaliseHtml(art.details) !== normaliseHtml(wp.details);
+    const rowChanged = !art || !wp ? true : normaliseText(art.date_event) !== normaliseText(wp.date_event) || normaliseProse(art.details) !== normaliseProse(wp.details);
     if (rowChanged) changed = true;
     rows.push({ index: i, art, wp, changed: rowChanged });
   }

@@ -1,8 +1,14 @@
 // Shared ART -> WordPress itinerary mapping.
 // The WordPress tour post type exposes an ACF repeater named `itinerary`
-// whose rows are { date_event, details }. `date_event` is a display heading
-// such as "WEDNESDAY 16 FEBRUARY 2028 - Ferry Transfer & Welcome Dinner"
-// and `details` is HTML prose.
+// whose rows are { date_event, details, gallery }. `date_event` is a display
+// heading such as "WEDNESDAY 16 FEBRUARY 2028 - Ferry Transfer & Welcome Dinner"
+// and `details` is PLAIN TEXT prose with blank lines between paragraphs
+// (WordPress applies wpautop when rendering).
+//
+// Site conventions verified against the live tour posts:
+//  - the year appears only on the first and last rows
+//  - `details` never repeats the day subject; it is prose only
+//  - each row may carry a `gallery` value that must be preserved on push
 //
 // Mirrored at src/lib/mcp/wordpress/itinerary.ts — keep both in lockstep.
 
@@ -11,10 +17,10 @@ export const WP_ITINERARY_FIELD = "itinerary";
 export interface WpItineraryRow {
   date_event: string;
   details: string;
+  gallery?: unknown;
 }
 
 export interface ArtItineraryEntryInput {
-  time_slot?: string | null;
   subject?: string | null;
   content?: string | null;
   sort_order?: number | null;
@@ -34,32 +40,47 @@ const MONTHS = [
   "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
 ];
 
-/** "2028-02-16" -> "WEDNESDAY 16 FEBRUARY 2028" (UTC-safe, no timezone drift). */
-export function formatItineraryDate(isoDate: string | null | undefined): string {
+/**
+ * "2028-02-16" -> "WEDNESDAY 16 FEBRUARY 2028" (UTC-safe, no timezone drift).
+ * Pass includeYear=false for "WEDNESDAY 16 FEBRUARY".
+ */
+export function formatItineraryDate(
+  isoDate: string | null | undefined,
+  includeYear = true,
+): string {
   if (!isoDate) return "";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(isoDate).trim());
   if (!m) return "";
   const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
   if (Number.isNaN(d.getTime())) return "";
-  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const base = `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return includeYear ? `${base} ${d.getUTCFullYear()}` : base;
 }
 
-function escapeHtml(s: string): string {
+function decodeEntities(s: string): string {
   return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
 }
 
-function looksLikeHtml(s: string): boolean {
-  return /<\/?[a-z][\s\S]*>/i.test(s);
-}
-
-function contentToHtml(content: string): string {
-  const trimmed = content.trim();
-  if (!trimmed) return "";
-  if (looksLikeHtml(trimmed)) return trimmed;
-  return escapeHtml(trimmed).replace(/\r?\n/g, "<br />");
+/** Rich-text HTML -> plain-text paragraphs separated by a blank line (wpautop friendly). */
+export function htmlToPlainParagraphs(content: string | null | undefined): string {
+  if (!content) return "";
+  const withBreaks = String(content)
+    .replace(/\r\n/g, "\n")
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n")
+    .replace(/<\s*li[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "");
+  return decodeEntities(withBreaks)
+    .split(/\n{2,}/)
+    .map((p) => p.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim())
+    .filter(Boolean)
+    .join("\r\n\r\n");
 }
 
 function sortedEntries(day: ArtItineraryDayInput): ArtItineraryEntryInput[] {
@@ -84,36 +105,39 @@ export function buildDayTitle(day: ArtItineraryDayInput, maxParts = 3): string {
   return parts.join(" & ");
 }
 
-export function buildDayDetailsHtml(day: ArtItineraryDayInput): string {
-  const blocks: string[] = [];
-  for (const e of sortedEntries(day)) {
-    const subject = (e.subject ?? "").trim();
-    const time = (e.time_slot ?? "").trim();
-    const body = contentToHtml(e.content ?? "");
-    const heading = [time, subject].filter(Boolean).join(" – ");
-    if (!heading && !body) continue;
-    if (heading && body) {
-      blocks.push(`<p><strong>${escapeHtml(heading)}</strong><br />${body}</p>`);
-    } else if (heading) {
-      blocks.push(`<p><strong>${escapeHtml(heading)}</strong></p>`);
-    } else {
-      blocks.push(`<p>${body}</p>`);
-    }
-  }
-  return blocks.join("\n");
+/** Prose for a day: entry content only, no subject/time headings. */
+export function buildDayDetails(day: ArtItineraryDayInput): string {
+  return sortedEntries(day)
+    .map((e) => htmlToPlainParagraphs(e.content))
+    .filter(Boolean)
+    .join("\r\n\r\n");
 }
 
 /** Render ART itinerary days into WordPress `itinerary` repeater rows. */
 export function buildWpItineraryRows(days: ArtItineraryDayInput[]): WpItineraryRow[] {
-  return [...(days ?? [])]
-    .sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0))
-    .map((day) => {
-      const datePart = formatItineraryDate(day.activity_date);
+  const ordered = [...(days ?? [])].sort(
+    (a, b) => (a.day_number ?? 0) - (b.day_number ?? 0),
+  );
+  return ordered
+    .map((day, i) => {
+      const isEdge = i === 0 || i === ordered.length - 1;
+      const datePart = formatItineraryDate(day.activity_date, isEdge);
       const title = buildDayTitle(day);
       const date_event = [datePart, title].filter(Boolean).join(" - ");
-      return { date_event, details: buildDayDetailsHtml(day) };
+      return { date_event, details: buildDayDetails(day) };
     })
     .filter((r) => r.date_event || r.details);
+}
+
+/** Carry each live row's `gallery` value across to the matching new row by index. */
+export function preserveGalleries(
+  artRows: WpItineraryRow[],
+  wpRows: WpItineraryRow[],
+): WpItineraryRow[] {
+  return artRows.map((row, i) => {
+    const gallery = wpRows[i]?.gallery;
+    return gallery === undefined ? { ...row } : { ...row, gallery };
+  });
 }
 
 /** Coerce whatever WordPress returned for the repeater into rows. */
@@ -125,21 +149,23 @@ export function normaliseWpItineraryRows(value: unknown): WpItineraryRow[] {
     return {
       date_event: r.date_event === null || r.date_event === undefined ? "" : String(r.date_event),
       details: r.details === null || r.details === undefined ? "" : String(r.details),
+      gallery: r.gallery,
     };
   });
 }
 
-function normaliseHtml(v: string): string {
+function normaliseProse(v: string): string {
   return v
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
+    .replace(/[\u2018\u2019]/g, "'")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }
 function normaliseText(v: string): string {
-  return v.replace(/\s+/g, " ").trim().toLowerCase();
+  return v.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 export interface ItineraryDiffRow {
@@ -163,7 +189,7 @@ export function buildItineraryDiff(
     const rowChanged = !art || !wp
       ? true
       : normaliseText(art.date_event) !== normaliseText(wp.date_event) ||
-        normaliseHtml(art.details) !== normaliseHtml(wp.details);
+        normaliseProse(art.details) !== normaliseProse(wp.details);
     if (rowChanged) changed = true;
     rows.push({ index: i, art, wp, changed: rowChanged });
   }
