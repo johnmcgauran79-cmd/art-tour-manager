@@ -70,7 +70,6 @@ export default function TourEdit() {
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
     brand_id: "" as string,
-    keap_tag_id: "",
     xero_product_id: "",
     xero_reference: "",
     is_test_tour: false,
@@ -122,7 +121,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed')
           .eq('id', id)
           .single();
         
@@ -154,7 +153,6 @@ export default function TourEdit() {
             minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
             tour_type: (data.tour_type as "domestic" | "international") || "domestic",
             brand_id: (tour as any).brand_id || "",
-            keap_tag_id: (data as any).keap_tag_id || "",
             xero_product_id: (data as any).xero_product_id || "",
             xero_reference: (data as any).xero_reference || "",
             is_test_tour: (data as any).is_test_tour || false,
@@ -232,7 +230,6 @@ export default function TourEdit() {
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
       tour_type: formData.tour_type,
       brand_id: formData.brand_id || null,
-      keap_tag_id: formData.keap_tag_id || null,
       xero_product_id: formData.xero_product_id || null,
       xero_reference: formData.xero_reference || null,
       is_test_tour: formData.is_test_tour,
