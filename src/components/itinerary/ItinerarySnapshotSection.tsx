@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import { downloadFromStorage } from "@/lib/fileDownload";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface ItinerarySnapshotSectionProps {
   tourId: string;
@@ -36,6 +37,7 @@ export const ItinerarySnapshotSection = ({
 }: ItinerarySnapshotSectionProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -170,7 +172,7 @@ export const ItinerarySnapshotSection = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDelete}
+                    onClick={() => setConfirmOpen(true)}
                     disabled={isDeleting}
                     className="text-destructive hover:text-destructive"
                   >
@@ -191,6 +193,17 @@ export const ItinerarySnapshotSection = ({
           className="hidden"
           accept=".pdf,.jpg,.jpeg,.png,.webp"
           onChange={handleUpload}
+        />
+        <ConfirmDeleteFileDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          fileName={snapshotFileName}
+          itemLabel="file"
+          isPending={isDeleting}
+          onConfirm={async () => {
+            setConfirmOpen(false);
+            await handleDelete();
+          }}
         />
       </CardContent>
     </Card>
