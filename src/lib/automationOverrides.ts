@@ -1,7 +1,7 @@
 /**
  * Shared constants and helpers for the manual-handling automation override system.
  *
- * Tours have two flags: `manual_billing` (skip Xero+Keap) and `manual_emails`
+ * Tours have two flags: `manual_billing` (skip Xero) and `manual_emails`
  * (skip automated emails). Bookings inherit by default but can override via
  * `automation_override`.
  */
@@ -26,27 +26,27 @@ export const BOOKING_AUTOMATION_OVERRIDE_OPTIONS: {
   {
     value: "force_automated",
     label: "Force automated",
-    description: "Always run Xero, Keap and automated emails — even if the tour is manual.",
+    description: "Always run Xero and automated emails — even if the tour is manual.",
   },
   {
     value: "manual_billing",
     label: "Manual billing only",
-    description: "Skip Xero invoice and Keap tag for this booking. Automated emails still send.",
+    description: "Skip Xero invoice for this booking. Automated emails still send.",
   },
   {
     value: "manual_emails",
     label: "Manual emails only",
-    description: "Skip automated emails for this booking. Xero and Keap still run.",
+    description: "Skip automated emails for this booking. Xero still runs.",
   },
   {
     value: "manual_all",
     label: "Fully manual",
-    description: "Skip Xero, Keap and automated emails for this booking.",
+    description: "Skip Xero and automated emails for this booking.",
   },
 ];
 
 /**
- * Compute whether billing automation (Xero invoice + Keap tag) should be skipped
+ * Compute whether billing automation (Xero invoice) should be skipped
  * for a booking, given the tour's flags and the booking's override.
  */
 export const bookingSkipsBilling = (
