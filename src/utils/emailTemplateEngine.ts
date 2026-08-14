@@ -315,6 +315,8 @@ export interface EmailMergeData {
   waiver_link?: string;
   pickup_button?: string;
   pickup_link?: string;
+  travel_docs_button?: string;
+  travel_docs_link?: string;
   itinerary_button?: string;
   itinerary_link?: string;
   guest_document_button?: string;
