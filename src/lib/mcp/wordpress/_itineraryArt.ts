@@ -53,7 +53,7 @@ export async function loadArtItineraryRows(
   const { data: entries, error: entriesError } = dayIds.length
     ? await supabase
         .from("tour_itinerary_entries")
-        .select("id, day_id, subject, time_slot, content, sort_order")
+        .select("id, day_id, subject, content, sort_order")
         .in("day_id", dayIds)
         .order("sort_order")
     : { data: [], error: null };
@@ -66,7 +66,6 @@ export async function loadArtItineraryRows(
       .filter((e) => e.day_id === d.id)
       .map((e) => ({
         subject: e.subject as string,
-        time_slot: (e.time_slot as string | null) ?? null,
         content: (e.content as string | null) ?? null,
         sort_order: (e.sort_order as number | null) ?? 0,
       })),

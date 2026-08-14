@@ -26,7 +26,6 @@ export const ItineraryEntryModal = ({
   tourId,
   tourName 
 }: ItineraryEntryModalProps) => {
-  const [timeSlot, setTimeSlot] = useState("");
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
   
@@ -46,11 +45,9 @@ export const ItineraryEntryModal = ({
 
   useEffect(() => {
     if (entry) {
-      setTimeSlot(entry.time_slot || "");
       setSubject(entry.subject);
       setContent(entry.content || "");
     } else {
-      setTimeSlot("");
       setSubject("");
       setContent("");
     }
@@ -65,7 +62,6 @@ export const ItineraryEntryModal = ({
       entryId: entry?.id,
       dayId: day.id,
       tourId,
-      timeSlot: timeSlot || null,
       subject: subject.trim(),
       content: content.trim() || null,
       sortOrder
@@ -99,27 +95,14 @@ export const ItineraryEntryModal = ({
         </DialogHeader>
         
         <div className="space-y-4 overflow-y-auto pr-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="time-slot">Time (optional)</Label>
-              <Input
-                id="time-slot"
-                type="time"
-                value={timeSlot}
-                onChange={(e) => setTimeSlot(e.target.value)}
-                placeholder="e.g., 09:00"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="subject">Activity Title *</Label>
-              <Input
-                id="subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g., Breakfast at Hotel, City Tour, Free Time"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="subject">Activity Title *</Label>
+            <Input
+              id="subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g., Breakfast at Hotel, City Tour, Free Time"
+            />
           </div>
           
           <div className="space-y-2">

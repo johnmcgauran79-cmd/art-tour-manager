@@ -942,23 +942,22 @@ import { z as z19 } from "npm:zod@^3.25.76";
 var upsert_itinerary_entry_default = defineTool19({
   name: "upsert_itinerary_entry",
   title: "Add or edit itinerary entry",
-  description: "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
+  description: "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. content is optional.",
   inputSchema: {
     entry_id: z19.string().optional().describe("Existing entry id (uuid) to edit. Omit to create a new entry."),
     day_id: z19.string().optional().describe("The itinerary day id (uuid). Required when creating."),
     subject: z19.string().optional().describe("The entry title/subject."),
-    time_slot: z19.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
     content: z19.string().optional().describe("Entry details/description."),
     sort_order: z19.number().int().optional().describe("Display order within the day.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
+  handler: async ({ entry_id, day_id, subject, content, sort_order }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
     if (denied) return denied;
     const supabase = supabaseForUser(ctx);
     if (entry_id) {
       const updates = Object.fromEntries(
-        Object.entries({ subject, time_slot, content, sort_order }).filter(([, v]) => v !== void 0)
+        Object.entries({ subject, content, sort_order }).filter(([, v]) => v !== void 0)
       );
       const { data: data2, error: error2 } = await supabase.from("tour_itinerary_entries").update(updates).eq("id", entry_id).select().maybeSingle();
       if (error2)
@@ -972,7 +971,7 @@ var upsert_itinerary_entry_default = defineTool19({
     }
     if (!day_id || !subject)
       return { content: [{ type: "text", text: "day_id and subject are required to create an entry." }], isError: true };
-    const { data, error } = await supabase.from("tour_itinerary_entries").insert({ day_id, subject, time_slot: time_slot ?? null, content: content ?? null, sort_order: sort_order ?? 0 }).select().single();
+    const { data, error } = await supabase.from("tour_itinerary_entries").insert({ day_id, subject, content: content ?? null, sort_order: sort_order ?? 0 }).select().single();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
     return {
@@ -5684,25 +5683,22 @@ var MONTHS = [
   "NOVEMBER",
   "DECEMBER"
 ];
-function formatItineraryDate(isoDate) {
+function formatItineraryDate(isoDate, includeYear = true) {
   if (!isoDate) return "";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(isoDate).trim());
   if (!m) return "";
   const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
   if (Number.isNaN(d.getTime())) return "";
-  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const base = `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return includeYear ? `${base} ${d.getUTCFullYear()}` : base;
 }
-function escapeHtml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function decodeEntities(s) {
+  return s.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'");
 }
-function looksLikeHtml(s) {
-  return /<\/?[a-z][\s\S]*>/i.test(s);
-}
-function contentToHtml(content) {
-  const trimmed = content.trim();
-  if (!trimmed) return "";
-  if (looksLikeHtml(trimmed)) return trimmed;
-  return escapeHtml(trimmed).replace(/\r?\n/g, "<br />");
+function htmlToPlainParagraphs(content) {
+  if (!content) return "";
+  const withBreaks = String(content).replace(/\r\n/g, "\n").replace(/<\s*br\s*\/?\s*>/gi, "\n").replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n").replace(/<\s*li[^>]*>/gi, "").replace(/<[^>]+>/g, "");
+  return decodeEntities(withBreaks).split(/\n{2,}/).map((p) => p.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim()).filter(Boolean).join("\r\n\r\n");
 }
 function sortedEntries(day) {
   return [...day.entries ?? []].sort(
@@ -5723,31 +5719,26 @@ function buildDayTitle(day, maxParts = 3) {
   }
   return parts.join(" & ");
 }
-function buildDayDetailsHtml(day) {
-  const blocks = [];
-  for (const e of sortedEntries(day)) {
-    const subject = (e.subject ?? "").trim();
-    const time = (e.time_slot ?? "").trim();
-    const body = contentToHtml(e.content ?? "");
-    const heading = [time, subject].filter(Boolean).join(" \u2013 ");
-    if (!heading && !body) continue;
-    if (heading && body) {
-      blocks.push(`<p><strong>${escapeHtml(heading)}</strong><br />${body}</p>`);
-    } else if (heading) {
-      blocks.push(`<p><strong>${escapeHtml(heading)}</strong></p>`);
-    } else {
-      blocks.push(`<p>${body}</p>`);
-    }
-  }
-  return blocks.join("\n");
+function buildDayDetails(day) {
+  return sortedEntries(day).map((e) => htmlToPlainParagraphs(e.content)).filter(Boolean).join("\r\n\r\n");
 }
 function buildWpItineraryRows(days) {
-  return [...days ?? []].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)).map((day) => {
-    const datePart = formatItineraryDate(day.activity_date);
+  const ordered = [...days ?? []].sort(
+    (a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)
+  );
+  return ordered.map((day, i) => {
+    const isEdge = i === 0 || i === ordered.length - 1;
+    const datePart = formatItineraryDate(day.activity_date, isEdge);
     const title = buildDayTitle(day);
     const date_event = [datePart, title].filter(Boolean).join(" - ");
-    return { date_event, details: buildDayDetailsHtml(day) };
+    return { date_event, details: buildDayDetails(day) };
   }).filter((r) => r.date_event || r.details);
+}
+function preserveGalleries(artRows, wpRows) {
+  return artRows.map((row, i) => {
+    const gallery = wpRows[i]?.gallery;
+    return gallery === void 0 ? { ...row } : { ...row, gallery };
+  });
 }
 function normaliseWpItineraryRows(value) {
   if (!Array.isArray(value)) return [];
@@ -5756,15 +5747,16 @@ function normaliseWpItineraryRows(value) {
     const r = row;
     return {
       date_event: r.date_event === null || r.date_event === void 0 ? "" : String(r.date_event),
-      details: r.details === null || r.details === void 0 ? "" : String(r.details)
+      details: r.details === null || r.details === void 0 ? "" : String(r.details),
+      gallery: r.gallery
     };
   });
 }
-function normaliseHtml(v) {
-  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
+function normaliseProse(v) {
+  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 function normaliseText(v) {
-  return v.replace(/\s+/g, " ").trim().toLowerCase();
+  return v.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 function buildItineraryDiff(artRows, wpRows) {
   const len = Math.max(artRows.length, wpRows.length);
@@ -5773,7 +5765,7 @@ function buildItineraryDiff(artRows, wpRows) {
   for (let i = 0; i < len; i++) {
     const art = artRows[i] ?? null;
     const wp = wpRows[i] ?? null;
-    const rowChanged = !art || !wp ? true : normaliseText(art.date_event) !== normaliseText(wp.date_event) || normaliseHtml(art.details) !== normaliseHtml(wp.details);
+    const rowChanged = !art || !wp ? true : normaliseText(art.date_event) !== normaliseText(wp.date_event) || normaliseProse(art.details) !== normaliseProse(wp.details);
     if (rowChanged) changed = true;
     rows.push({ index: i, art, wp, changed: rowChanged });
   }
@@ -5836,14 +5828,13 @@ async function loadArtItineraryRows(ctx, tourId) {
   const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("id, day_number, activity_date").eq("itinerary_id", itinerary.id).order("day_number");
   if (daysError) return { error: daysError.message };
   const dayIds = (days ?? []).map((d) => d.id);
-  const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("id, day_id, subject, time_slot, content, sort_order").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
+  const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("id, day_id, subject, content, sort_order").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
   if (entriesError) return { error: entriesError.message };
   const shaped = (days ?? []).map((d) => ({
     day_number: d.day_number,
     activity_date: d.activity_date,
     entries: (entries ?? []).filter((e) => e.day_id === d.id).map((e) => ({
       subject: e.subject,
-      time_slot: e.time_slot ?? null,
       content: e.content ?? null,
       sort_order: e.sort_order ?? 0
     }))
@@ -5990,14 +5981,16 @@ var wordpress_push_tour_itinerary_default = defineTool98({
     } catch {
     }
     try {
+      const beforeRows = normaliseWpItineraryRows(before?.[WP_ITINERARY_FIELD]);
+      const rowsToPush = preserveGalleries(art.rows, beforeRows);
       const res = await wordpressRequest({
         endpoint,
         method: "POST",
-        body: { acf: { [WP_ITINERARY_FIELD]: art.rows } }
+        body: { acf: { [WP_ITINERARY_FIELD]: rowsToPush } }
       });
       const after = res.data?.acf ?? null;
       const liveRows = normaliseWpItineraryRows(after?.[WP_ITINERARY_FIELD]);
-      const verify = buildItineraryDiff(art.rows, liveRows);
+      const verify = buildItineraryDiff(rowsToPush, liveRows);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "push_tour_itinerary",
@@ -6229,7 +6222,6 @@ import { defineTool as defineTool102 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z98 } from "npm:zod@^3.25.76";
 var entrySchema = z98.object({
   subject: z98.string().min(1).describe("Entry title, e.g. 'Ferry Transfer'."),
-  time_slot: z98.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
   content: z98.string().optional().describe("Entry details/description.")
 });
 var daySchema = z98.object({
@@ -6294,7 +6286,6 @@ var replace_tour_itinerary_default = defineTool102({
         entryRows.push({
           day_id: dayId,
           subject: e.subject,
-          time_slot: e.time_slot ?? null,
           content: e.content ?? null,
           sort_order: j
         });

@@ -3,7 +3,12 @@ import { z } from "zod";
 import { requireAdminOrManager } from "./_perms";
 import { wordpressRequest, requestSummary } from "../wordpress/_client";
 import { auditWordpressCall, categoriseError } from "../wordpress/_audit";
-import { WP_ITINERARY_FIELD, buildItineraryDiff, normaliseWpItineraryRows } from "../wordpress/itinerary";
+import {
+  WP_ITINERARY_FIELD,
+  buildItineraryDiff,
+  normaliseWpItineraryRows,
+  preserveGalleries,
+} from "../wordpress/itinerary";
 import { loadArtItineraryRows, loadWordpressTourLink } from "../wordpress/_itineraryArt";
 
 export default defineTool({
@@ -77,14 +82,16 @@ export default defineTool({
     }
 
     try {
+      const beforeRows = normaliseWpItineraryRows(before?.[WP_ITINERARY_FIELD]);
+      const rowsToPush = preserveGalleries(art.rows, beforeRows);
       const res = await wordpressRequest<Record<string, unknown>>({
         endpoint,
         method: "POST",
-        body: { acf: { [WP_ITINERARY_FIELD]: art.rows } },
+        body: { acf: { [WP_ITINERARY_FIELD]: rowsToPush } },
       });
       const after = (res.data as { acf?: Record<string, unknown> })?.acf ?? null;
       const liveRows = normaliseWpItineraryRows(after?.[WP_ITINERARY_FIELD]);
-      const verify = buildItineraryDiff(art.rows, liveRows);
+      const verify = buildItineraryDiff(rowsToPush, liveRows);
 
       await auditWordpressCall(ctx, {
         source: "mcp",

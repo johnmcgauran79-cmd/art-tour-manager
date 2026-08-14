@@ -98,12 +98,6 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName, onDeleteDay
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      {entry.time_slot && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {entry.time_slot}
-                        </Badge>
-                      )}
                       <h4 className="font-medium text-gray-900">{entry.subject}</h4>
                     </div>
                     {entry.content && (

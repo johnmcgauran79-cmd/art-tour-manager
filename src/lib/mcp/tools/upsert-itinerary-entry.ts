@@ -7,17 +7,16 @@ export default defineTool({
   name: "upsert_itinerary_entry",
   title: "Add or edit itinerary entry",
   description:
-    "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. time_slot and content are optional.",
+    "Add a new entry to an itinerary day, or edit an existing one. To add, provide day_id and subject. To edit, provide entry_id. content is optional.",
   inputSchema: {
     entry_id: z.string().optional().describe("Existing entry id (uuid) to edit. Omit to create a new entry."),
     day_id: z.string().optional().describe("The itinerary day id (uuid). Required when creating."),
     subject: z.string().optional().describe("The entry title/subject."),
-    time_slot: z.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
     content: z.string().optional().describe("Entry details/description."),
     sort_order: z.number().int().optional().describe("Display order within the day."),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ entry_id, day_id, subject, time_slot, content, sort_order }, ctx) => {
+  handler: async ({ entry_id, day_id, subject, content, sort_order }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
     if (denied) return denied;
 
@@ -25,7 +24,7 @@ export default defineTool({
 
     if (entry_id) {
       const updates = Object.fromEntries(
-        Object.entries({ subject, time_slot, content, sort_order }).filter(([, v]) => v !== undefined),
+        Object.entries({ subject, content, sort_order }).filter(([, v]) => v !== undefined),
       );
       const { data, error } = await supabase
         .from("tour_itinerary_entries")
@@ -48,7 +47,7 @@ export default defineTool({
 
     const { data, error } = await supabase
       .from("tour_itinerary_entries")
-      .insert({ day_id, subject, time_slot: time_slot ?? null, content: content ?? null, sort_order: sort_order ?? 0 })
+      .insert({ day_id, subject, content: content ?? null, sort_order: sort_order ?? 0 })
       .select()
       .single();
     if (error)
