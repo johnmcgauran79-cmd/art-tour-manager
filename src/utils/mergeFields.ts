@@ -71,6 +71,7 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{waiver_button}}', '{{waiver_link}}',
     '{{pickup_button}}', '{{pickup_link}}',
     '{{itinerary_button}}', '{{itinerary_link}}',
+    '{{guest_document_button}}', '{{guest_document_link}}',
     '--- Custom Forms ---',
     '{{custom_form_button}}',
     '{{custom_form_button:Form Title}}',

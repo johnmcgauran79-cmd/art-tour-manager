@@ -317,6 +317,8 @@ export interface EmailMergeData {
   pickup_link?: string;
   itinerary_button?: string;
   itinerary_link?: string;
+  guest_document_button?: string;
+  guest_document_link?: string;
   
   // Additional info blocks - rendered server-side
   additional_info_blocks?: string;
