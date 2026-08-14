@@ -443,6 +443,19 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
           </label>
         </div>
       </div>
+
+      <ConfirmDeleteFileDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        fileName={pendingDelete?.file_name}
+        itemLabel="attachment"
+        isPending={deleteAttachment.isPending}
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) deleteAttachment.mutate(target);
+        }}
+      />
     </div>
   );
 };
