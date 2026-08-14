@@ -5371,6 +5371,7 @@ var EDITABLE_ACF_SCALAR_FIELDS = [
   "attach_brochure_here"
 ];
 var EDITABLE_ACF_REPEATER_FIELDS = [
+  "itinerary",
   "inclusions",
   "exclusions_details",
   "faqs_list",

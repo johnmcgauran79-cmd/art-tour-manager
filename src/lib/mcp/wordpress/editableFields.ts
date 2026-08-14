@@ -19,6 +19,7 @@ export const EDITABLE_ACF_SCALAR_FIELDS = [
 ] as const;
 
 export const EDITABLE_ACF_REPEATER_FIELDS = [
+  "itinerary",
   "inclusions",
   "exclusions_details",
   "faqs_list",
