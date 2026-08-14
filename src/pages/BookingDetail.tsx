@@ -42,6 +42,12 @@ import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useBrands } from "@/hooks/useBrands";
+import {
+  BOOKING_AUTOMATION_OVERRIDE_OPTIONS,
+  BookingAutomationOverride,
+  bookingSkipsBilling,
+  bookingSkipsEmails,
+} from "@/lib/automationOverrides";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { ShareButton } from "@/components/ShareButton";
@@ -102,6 +108,17 @@ export default function BookingDetail() {
   const tour = tours.find(t => t.id === booking?.tour_id);
   const { data: pickupOptions = [] } = usePickupOptions(booking?.tour_id || '');
   const selectedPickup = pickupOptions.find(p => p.id === booking?.selected_pickup_option_id);
+
+  // Tour-level brand (used when the booking has no co-brand override)
+  const tourBrand = (tour as any)?.brand_id
+    ? (allBrands || []).find((b) => b.id === (tour as any).brand_id) || null
+    : null;
+
+  const automationOverride = (((booking as any)?.automation_override) || 'inherit') as BookingAutomationOverride;
+  const automationOverrideLabel =
+    BOOKING_AUTOMATION_OVERRIDE_OPTIONS.find(o => o.value === automationOverride)?.label || 'Inherit from tour';
+  const skipsBilling = bookingSkipsBilling(tour as any, automationOverride) || !!bookingBrand?.partner_handles_billing;
+  const skipsEmails = bookingSkipsEmails(tour as any, automationOverride);
 
   const handleDelete = () => {
     if (!booking) return;
@@ -704,6 +721,62 @@ export default function BookingDetail() {
                 {booking.invoice_notes && (
                   <InfoRow label="Invoice Notes" value={booking.invoice_notes} />
                 )}
+              </div>
+            </div>
+
+            {/* Booking Settings */}
+            <div className="bg-card rounded-lg border p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Booking Settings</h3>
+                {!isAgent && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Settings
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoRow label="Status" value={booking.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} />
+                <InfoRow
+                  label="Branding"
+                  value={
+                    bookingBrand
+                      ? bookingBrand.partner_name
+                        ? `${bookingBrand.name} — co-branded with ${bookingBrand.partner_name}`
+                        : bookingBrand.name
+                      : `Tour default${tourBrand ? ` (${tourBrand.name})` : ''}`
+                  }
+                />
+                <InfoRow label="Invoice Reference (Xero)" value={booking.invoice_reference} />
+                <InfoRow label="Split Invoice (per passenger)" value={(booking as any).split_invoice ? 'Yes' : 'No'} />
+                <InfoRow label="Automation Handling" value={automationOverrideLabel} />
+                <InfoRow label="Billing Automation" value={skipsBilling ? 'Manual — no Xero invoice' : 'Automated (Xero)'} />
+                <InfoRow label="Automated Emails" value={skipsEmails ? 'Manual — automated emails off' : 'Automated'} />
+                <InfoRow label="WhatsApp Group Comms" value={booking.whatsapp_group_comms ? 'Yes' : 'No'} />
+                <InfoRow label="Accommodation Required" value={booking.accommodation_required ? 'Yes' : 'No'} />
+                {tour?.travel_documents_required && (
+                  <InfoRow
+                    label="Passport Details"
+                    value={(booking as any).passport_not_required ? 'Not required for this booking' : 'Required'}
+                  />
+                )}
+                {tour?.pickup_location_required && (
+                  <InfoRow
+                    label="Pickup Option"
+                    value={
+                      selectedPickup
+                        ? `${selectedPickup.name}${selectedPickup.pickup_time ? ` (${selectedPickup.pickup_time})` : ''}`
+                        : 'Not selected'
+                    }
+                  />
+                )}
+                <InfoRow label="Booking Agent" value={booking.booking_agent} />
+                <InfoRow label="Created" value={booking.created_at ? formatDateToDDMMYYYY(booking.created_at) : null} />
+                <InfoRow label="Last Updated" value={booking.updated_at ? formatDateToDDMMYYYY(booking.updated_at) : null} />
               </div>
             </div>
 
