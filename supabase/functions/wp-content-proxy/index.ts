@@ -4,6 +4,13 @@ import { wordpressRequest, WordpressClientError } from "../_shared/wordpressClie
 import { sanitiseAcfUpdate, EDITABLE_ACF_SCALAR_FIELDS, EDITABLE_ACF_REPEATER_FIELDS } from "../_shared/wordpressEditableFields.ts";
 import { TOUR_FIELD_MAP, buildFieldDiff, semanticEqual } from "../_shared/wordpressFieldMap.ts";
 import { ART_SOURCES, tourColumnsForSources, resolveArtSourceValue } from "../_shared/wordpressArtSources.ts";
+import {
+  WP_ITINERARY_FIELD,
+  buildItineraryDiff,
+  normaliseWpItineraryRows,
+  preserveGalleries,
+} from "../_shared/wordpressItinerary.ts";
+import { loadArtItinerary } from "../_shared/wordpressItineraryArt.ts";
 
 // Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
 // JWT and admin/manager role, then executes ONE of a fixed set of read-only
@@ -30,6 +37,8 @@ type Op =
   | { op: "bulk_link_tours"; pairs: Array<{ art_tour_id: string; wp_tour_id: number }> }
   | { op: "bulk_tour_diffs"; include_archived?: boolean }
   | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> }
+  | { op: "itinerary_diff"; art_tour_id: string }
+  | { op: "push_itinerary"; art_tour_id: string }
   | { op: "upload_media"; filename: string; content_type: string; data_base64: string; title?: string };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
