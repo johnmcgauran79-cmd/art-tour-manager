@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diff, setDiff] = useState<DiffResult | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!open) return;
@@ -78,6 +80,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
           (res.photos_uploaded ? ` and uploaded ${res.photos_uploaded} photo${res.photos_uploaded === 1 ? "" : "s"}` : ""),
       );
       if (res.photo_errors?.length) toast.error(`Some photos failed: ${res.photo_errors.join("; ")}`);
+      queryClient.invalidateQueries({ queryKey: ["itinerary-day-images"] });
       if (!res.verified) toast.warning("The live itinerary still differs — check the WordPress post.");
       onOpenChange(false);
     } catch (err) {
