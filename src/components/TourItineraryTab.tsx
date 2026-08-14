@@ -252,6 +252,14 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
       )}
 
       {/* Permission Error Dialog */}
+      {showPublishModal && (
+        <PublishItineraryToWebsiteDialog
+          open={showPublishModal}
+          onOpenChange={setShowPublishModal}
+          tourId={tour.id}
+        />
+      )}
+
       <PermissionErrorDialog
         open={createItinerary.permissionError}
         onOpenChange={handleClosePermissionError}
