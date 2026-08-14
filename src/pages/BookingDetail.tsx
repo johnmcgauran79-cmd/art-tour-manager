@@ -103,6 +103,17 @@ export default function BookingDetail() {
   const { data: pickupOptions = [] } = usePickupOptions(booking?.tour_id || '');
   const selectedPickup = pickupOptions.find(p => p.id === booking?.selected_pickup_option_id);
 
+  // Tour-level brand (used when the booking has no co-brand override)
+  const tourBrand = (tour as any)?.brand_id
+    ? (allBrands || []).find((b) => b.id === (tour as any).brand_id) || null
+    : null;
+
+  const automationOverride = (((booking as any)?.automation_override) || 'inherit') as BookingAutomationOverride;
+  const automationOverrideLabel =
+    BOOKING_AUTOMATION_OVERRIDE_OPTIONS.find(o => o.value === automationOverride)?.label || 'Inherit from tour';
+  const skipsBilling = bookingSkipsBilling(tour as any, automationOverride) || !!bookingBrand?.partner_handles_billing;
+  const skipsEmails = bookingSkipsEmails(tour as any, automationOverride);
+
   const handleDelete = () => {
     if (!booking) return;
     deleteBooking.mutate(booking.id, {
