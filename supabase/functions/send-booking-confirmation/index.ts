@@ -200,6 +200,15 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
   );
 };
 
+// Quill can remove server-only placeholders while preserving the surrounding copy.
+// Restore the uploaded guest-document button immediately after that copy at send time.
+const injectGuestDocumentButtonNearCopy = (html: string, buttonHtml: string): string => {
+  return html.replace(
+    /(<p\b[^>]*>[\s\S]*?(?:current\s+itinerary|guest\s+document)[\s\S]*?(?:available\s+here|view|review)[\s\S]*?<\/p>)/i,
+    `$1${buttonHtml}`
+  );
+};
+
 // Sanitise Quill-generated HTML to fix broken heading nesting.
 // Quill sometimes wraps large blocks of content inside <h2><strong>...</strong></h2>
 // when users create headings, causing all subsequent text to inherit heading styles.
@@ -868,11 +877,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if guest document link/button is needed (links to the manually uploaded
     // Guest Document on the tour's Itinerary tab, not the auto-generated itinerary page)
     const hasGuestDocPlaceholder = /\{\{\s*guest_document_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    const hasEncodedGuestDocPlaceholder = /%7B%7Bguest_document_(?:link|button)%7D%7D/i.test(normalizedContentToCheck);
+    const hasGuestDocCopy = /(?:current\s+itinerary|guest\s+document)[\s\S]{0,180}(?:available\s+here|view|review)/i.test(normalizedContentToCheck);
+    const needsGuestDocumentLink = hasGuestDocPlaceholder || hasEncodedGuestDocPlaceholder || hasGuestDocCopy;
 
     let guestDocumentLink = '';
     let guestDocumentButton = '';
 
-    if (hasGuestDocPlaceholder && booking.tour_id) {
+    if (needsGuestDocumentLink && booking.tour_id) {
       try {
         const { data: itinRow } = await supabaseClient
           .from('tour_itineraries')
@@ -889,6 +901,7 @@ const handler = async (req: Request): Promise<Response> => {
           } else if (signed?.signedUrl) {
             guestDocumentLink = signed.signedUrl;
             guestDocumentButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-guest-document="button"><tr><td><a href="${guestDocumentLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">VIEW GUEST DOCUMENT</a></td></tr></table>`;
+            console.log('Generated 28-day guest document link for tour:', booking.tour_id);
           }
         } else {
           console.log('No guest document uploaded for tour:', booking.tour_id);
@@ -1569,6 +1582,16 @@ const handler = async (req: Request): Promise<Response> => {
           emailHtml = injectTravelDocsButtonNearCopy(emailHtml, travelDocsButton);
         }
       }
+
+      // Final safety pass for uploaded guest documents. The rich-text editor can
+      // strip the server-only token from customContent before it reaches us.
+      if (guestDocumentLink && guestDocumentButton) {
+        const hasGuestDocumentButtonAlready = /data-art-guest-document=(['"])button\1/i.test(emailHtml)
+          || emailHtml.includes('VIEW GUEST DOCUMENT');
+        if (!hasGuestDocumentButtonAlready && hasGuestDocCopy) {
+          emailHtml = injectGuestDocumentButtonNearCopy(emailHtml, guestDocumentButton);
+        }
+      }
       
       // Wrap the processed content in the branded email wrapper
       // Recolour custom cards to match the tour's brand theme.
@@ -1900,6 +1923,15 @@ const handler = async (req: Request): Promise<Response> => {
         const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(passengerEmailHtml) || passengerEmailHtml.includes('UPDATE PASSPORT DETAILS');
         if (!hasTravelDocsButtonAlready && /(travel\s+document|passport\s+detail)/i.test(passengerEmailHtml) && passengerTravelDocsButton) {
           passengerEmailHtml = injectTravelDocsButtonNearCopy(passengerEmailHtml, passengerTravelDocsButton);
+        }
+      }
+
+
+      if (guestDocumentLink && guestDocumentButton) {
+        const hasGuestDocumentButtonAlready = /data-art-guest-document=(['"])button\1/i.test(passengerEmailHtml)
+          || passengerEmailHtml.includes('VIEW GUEST DOCUMENT');
+        if (!hasGuestDocumentButtonAlready && hasGuestDocCopy) {
+          passengerEmailHtml = injectGuestDocumentButtonNearCopy(passengerEmailHtml, guestDocumentButton);
         }
       }
       
