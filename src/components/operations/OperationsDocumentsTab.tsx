@@ -17,6 +17,7 @@ import { AddOperationsDocumentModal } from "./AddOperationsDocumentModal";
 import { EditOperationsDocumentModal } from "./EditOperationsDocumentModal";
 import { ManageSectionsModal } from "./ManageSectionsModal";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface Props {
   category: OperationsDocCategory;
@@ -87,9 +88,10 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
     }
   };
 
+  const [pendingDelete, setPendingDelete] = useState<OperationsDocument | null>(null);
+
   const handleDelete = (doc: OperationsDocument) => {
-    if (!confirm(`Delete "${doc.name}"? This cannot be undone.`)) return;
-    deleteMut.mutate(doc);
+    setPendingDelete(doc);
   };
 
   const renderSection = (sectionName: string, items: OperationsDocument[]) => (
@@ -212,6 +214,19 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
         onOpenChange={setManageOpen}
         category={category}
         title={title}
+      />
+
+      <ConfirmDeleteFileDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        fileName={pendingDelete?.name}
+        itemLabel="document"
+        isPending={deleteMut.isPending}
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) deleteMut.mutate(target);
+        }}
       />
     </div>
   );
