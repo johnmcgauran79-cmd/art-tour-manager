@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { PDFViewer } from "./PDFViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
+import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
 
 interface TourAttachmentsSectionProps {
   tourId: string;
@@ -27,6 +28,8 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
     fileName: "",
     filePath: ""
   });
+  const [pendingDelete, setPendingDelete] = useState<any | null>(null);
+  const [pendingLinkDelete, setPendingLinkDelete] = useState<{ id: string; label: string } | null>(null);
   const { data: attachments, isLoading, refetch } = useTourAttachments(tourId);
   const { data: externalLinks, isLoading: isLoadingLinks } = useTourExternalLinks(tourId);
   const { data: tours } = useTours();
@@ -347,7 +350,7 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
                       Edit
                     </Button>
                     <Button
-                      onClick={() => handleDeleteExternalLink(link.id)}
+                      onClick={() => setPendingLinkDelete({ id: link.id, label: link.label })}
                       size="sm"
                       variant="outline"
                       className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -436,7 +439,7 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
                   Download
                 </Button>
                 <Button
-                  onClick={() => handleDelete(attachment)}
+                  onClick={() => setPendingDelete(attachment)}
                   size="sm"
                   variant="outline"
                   className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -457,6 +460,31 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
           onClose={closePDFViewer}
           fileName={pdfViewer.fileName}
           filePath={pdfViewer.filePath}
+        />
+
+        <ConfirmDeleteFileDialog
+          open={!!pendingDelete}
+          onOpenChange={(open) => !open && setPendingDelete(null)}
+          fileName={pendingDelete?.file_name}
+          itemLabel="attachment"
+          onConfirm={async () => {
+            const target = pendingDelete;
+            setPendingDelete(null);
+            if (target) await handleDelete(target);
+          }}
+        />
+
+        <ConfirmDeleteFileDialog
+          open={!!pendingLinkDelete}
+          onOpenChange={(open) => !open && setPendingLinkDelete(null)}
+          fileName={pendingLinkDelete?.label}
+          itemLabel="external link"
+          isPending={deleteExternalLink.isPending}
+          onConfirm={async () => {
+            const target = pendingLinkDelete;
+            setPendingLinkDelete(null);
+            if (target) await handleDeleteExternalLink(target.id);
+          }}
         />
       </div>
     </div>

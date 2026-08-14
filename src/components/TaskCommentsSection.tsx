@@ -10,6 +10,7 @@ import { UserMentionInput } from "@/components/UserMentionInput";
 import { useAuth } from "@/hooks/useAuth";
 import { EntityLinkPicker } from "@/components/entityLinks/EntityLinkPicker";
 import { LinkedTextRenderer } from "@/components/entityLinks/LinkedTextRenderer";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface TaskCommentsSectionProps {
   taskId: string;
@@ -35,6 +36,7 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
   const updateComment = useUpdateTaskComment();
   const uploadAttachments = useUploadCommentAttachments();
   const deleteAttachment = useDeleteCommentAttachment();
+  const [pendingDelete, setPendingDelete] = useState<TaskCommentAttachment | null>(null);
 
   const { topLevelComments, repliesByParent } = useMemo(() => {
     const top: TaskComment[] = [];
@@ -157,7 +159,7 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
             <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => handleDownload(att)}>
               <Download className="h-3 w-3" />
             </Button>
-            <Button size="icon" variant="ghost" className="h-5 w-5 text-destructive" onClick={() => deleteAttachment.mutate(att)}>
+            <Button size="icon" variant="ghost" className="h-5 w-5 text-destructive" onClick={() => setPendingDelete(att)}>
               <X className="h-3 w-3" />
             </Button>
           </div>
@@ -441,6 +443,19 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
           </label>
         </div>
       </div>
+
+      <ConfirmDeleteFileDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        fileName={pendingDelete?.file_name}
+        itemLabel="attachment"
+        isPending={deleteAttachment.isPending}
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) deleteAttachment.mutate(target);
+        }}
+      />
     </div>
   );
 };

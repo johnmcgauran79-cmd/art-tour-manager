@@ -33,6 +33,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { PDFViewer } from "./PDFViewer";
+import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
 
 interface TaskFilesSectionProps {
   taskId: string;
@@ -73,6 +74,8 @@ export const TaskFilesSection = ({ taskId }: TaskFilesSectionProps) => {
     fileName: string;
     filePath: string;
   }>({ isOpen: false, fileName: "", filePath: "" });
+
+  const [pendingDelete, setPendingDelete] = useState<TaskAttachment | null>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -250,7 +253,7 @@ export const TaskFilesSection = ({ taskId }: TaskFilesSectionProps) => {
                       <Download className="h-3.5 w-3.5" />
                     </Button>
                     <Button
-                      onClick={() => handleDelete(attachment)}
+                      onClick={() => setPendingDelete(attachment)}
                       size="sm"
                       variant="ghost"
                       className="h-8 px-2 text-destructive hover:text-destructive"
@@ -422,6 +425,19 @@ export const TaskFilesSection = ({ taskId }: TaskFilesSectionProps) => {
         onClose={closePDFViewer}
         fileName={pdfViewer.fileName}
         filePath={pdfViewer.filePath}
+      />
+
+      <ConfirmDeleteFileDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        fileName={pendingDelete?.file_name}
+        itemLabel="file"
+        isPending={deleteAttachment.isPending}
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) handleDelete(target);
+        }}
       />
     </div>
   );

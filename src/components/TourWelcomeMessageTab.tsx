@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 import { ImagePlus, Trash2, Save, Loader2, UserRound, FileUp, Link2, Copy, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTourWelcomeMessage } from "@/hooks/useTourWelcomeMessage";
@@ -22,6 +23,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
     useTourWelcomeMessage(tourId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
+  const [confirmTarget, setConfirm] = useState<"photo" | "doc" | null>(null);
   const { toast } = useToast();
 
   const [enabled, setEnabled] = useState(false);
@@ -186,7 +188,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
                       variant="ghost"
                       size="sm"
                       className="gap-2 text-destructive hover:text-destructive"
-                      onClick={() => removeImage.mutate()}
+                      onClick={() => setConfirm("photo")}
                       disabled={removeImage.isPending}
                     >
                       <Trash2 className="h-4 w-4" /> Remove
@@ -313,7 +315,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
                   variant="ghost"
                   size="sm"
                   className="gap-1.5 text-destructive hover:text-destructive"
-                  onClick={() => removePickupDoc.mutate()}
+                  onClick={() => setConfirm("doc")}
                   disabled={removePickupDoc.isPending}
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Remove
@@ -370,6 +372,20 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
           />
         </CardContent>
       </Card>
+
+      <ConfirmDeleteFileDialog
+        open={!!confirmTarget}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        fileName={confirmTarget === "doc" ? (data?.pickupDocName || undefined) : undefined}
+        itemLabel={confirmTarget === "doc" ? "document" : "photo"}
+        isPending={confirmTarget === "doc" ? removePickupDoc.isPending : removeImage.isPending}
+        onConfirm={() => {
+          const target = confirmTarget;
+          setConfirm(null);
+          if (target === "doc") removePickupDoc.mutate();
+          else if (target === "photo") removeImage.mutate();
+        }}
+      />
     </div>
   );
 };
