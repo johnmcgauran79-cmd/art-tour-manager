@@ -883,7 +883,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (itinRow?.guest_document_file_path) {
           const { data: signed, error: signErr } = await supabaseClient.storage
             .from('attachments')
-            .createSignedUrl(itinRow.guest_document_file_path, 60 * 60 * 24 * 7);
+            .createSignedUrl(itinRow.guest_document_file_path, 60 * 60 * 24 * 28);
           if (signErr) {
             console.error('Error signing guest document URL:', signErr);
           } else if (signed?.signedUrl) {
