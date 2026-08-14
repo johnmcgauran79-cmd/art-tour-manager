@@ -6,6 +6,7 @@ import { Paperclip, Download, Upload, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { PDFViewer } from "./PDFViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
+import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
 
 interface HotelAttachmentsSectionProps {
   hotelId: string;
@@ -16,6 +17,7 @@ export const HotelAttachmentsSection = ({ hotelId }: HotelAttachmentsSectionProp
   const [pdfViewer, setPdfViewer] = useState<{ isOpen: boolean; fileName: string; filePath: string }>({
     isOpen: false, fileName: "", filePath: ""
   });
+  const [pendingDelete, setPendingDelete] = useState<HotelAttachment | null>(null);
 
   const { data: attachments, isLoading } = useHotelAttachments(hotelId);
   const uploadAttachment = useUploadHotelAttachment();
@@ -45,8 +47,13 @@ export const HotelAttachmentsSection = ({ hotelId }: HotelAttachmentsSectionProp
     }
   };
 
-  const handleDelete = async (attachment: HotelAttachment) => {
-    await deleteAttachment.mutateAsync({ attachment, hotelId });
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await deleteAttachment.mutateAsync({ attachment: pendingDelete, hotelId });
+    } finally {
+      setPendingDelete(null);
+    }
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -107,7 +114,7 @@ export const HotelAttachmentsSection = ({ hotelId }: HotelAttachmentsSectionProp
                 <Button onClick={() => handleDownload(attachment)} size="sm" variant="outline" className="flex items-center gap-1 px-2">
                   <Download className="h-3 w-3" /><span className="hidden sm:inline">Download</span>
                 </Button>
-                <Button onClick={() => handleDelete(attachment)} size="sm" variant="outline" className="flex items-center gap-1 px-2 text-destructive hover:text-destructive hover:bg-destructive/10" disabled={deleteAttachment.isPending}>
+                <Button onClick={() => setPendingDelete(attachment)} size="sm" variant="outline" className="flex items-center gap-1 px-2 text-destructive hover:text-destructive hover:bg-destructive/10" disabled={deleteAttachment.isPending}>
                   <Trash2 className="h-3 w-3" /><span className="hidden sm:inline">Delete</span>
                 </Button>
               </div>
@@ -119,6 +126,15 @@ export const HotelAttachmentsSection = ({ hotelId }: HotelAttachmentsSectionProp
       </div>
 
       <PDFViewer isOpen={pdfViewer.isOpen} onClose={() => setPdfViewer({ isOpen: false, fileName: "", filePath: "" })} fileName={pdfViewer.fileName} filePath={pdfViewer.filePath} />
+
+      <ConfirmDeleteFileDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        fileName={pendingDelete?.file_name}
+        itemLabel="attachment"
+        isPending={deleteAttachment.isPending}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };
