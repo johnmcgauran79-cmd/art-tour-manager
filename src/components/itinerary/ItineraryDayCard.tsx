@@ -9,6 +9,7 @@ import { ItineraryEntryModal } from "./ItineraryEntryModal";
 import { useDeleteItineraryEntry } from "@/hooks/useItinerary";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionErrorDialog } from "../PermissionErrorDialog";
+import { ItineraryDayPhotos } from "./ItineraryDayPhotos";
 
 interface ItineraryDayCardProps {
   day: ItineraryDay;
@@ -132,6 +133,8 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName, onDeleteDay
             ))}
           </div>
         )}
+
+        <ItineraryDayPhotos dayId={day.id} readOnly={isAgent} />
 
         <ItineraryEntryModal
           open={showEntryModal}
