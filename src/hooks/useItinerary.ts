@@ -15,7 +15,6 @@ const isPermissionError = (error: any): boolean => {
 export interface ItineraryEntry {
   id: string;
   day_id: string;
-  time_slot: string | null;
   subject: string;
   content: string | null;
   sort_order: number;
@@ -184,7 +183,6 @@ export const useUpdateItineraryEntry = () => {
       entryId, 
       dayId, 
       tourId,
-      timeSlot, 
       subject, 
       content, 
       sortOrder 
@@ -192,7 +190,6 @@ export const useUpdateItineraryEntry = () => {
       entryId?: string;
       dayId: string;
       tourId: string;
-      timeSlot: string | null;
       subject: string;
       content: string | null;
       sortOrder: number;
@@ -201,7 +198,7 @@ export const useUpdateItineraryEntry = () => {
         // Update existing entry
         const { data, error } = await supabase
           .from('tour_itinerary_entries')
-          .update({ time_slot: timeSlot, subject, content, sort_order: sortOrder })
+          .update({ subject, content, sort_order: sortOrder })
           .eq('id', entryId)
           .select()
           .single();
@@ -214,7 +211,6 @@ export const useUpdateItineraryEntry = () => {
           .from('tour_itinerary_entries')
           .insert({
             day_id: dayId,
-            time_slot: timeSlot,
             subject,
             content,
             sort_order: sortOrder
