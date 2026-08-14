@@ -137,6 +137,8 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
     (mergeData as any).pickup_link = '#preview-pickup';
     mergeData.itinerary_button = `<a href="#" style="${mockButtonStyle}">VIEW ITINERARY (Preview)</a>`;
     mergeData.itinerary_link = '#preview-itinerary';
+    mergeData.guest_document_button = `<a href="#" style="${mockButtonStyle}">VIEW GUEST DOCUMENT (Preview)</a>`;
+    mergeData.guest_document_link = '#preview-guest-document';
     (mergeData as any).custom_form_button = `<a href="#" style="${mockButtonStyle}">COMPLETE FORM (Preview)</a>`;
     (mergeData as any).custom_form_link = '#preview-custom-form';
     (mergeData as any).form_title = 'Sample Form Title';
