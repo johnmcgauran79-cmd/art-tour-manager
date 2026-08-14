@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { PDFViewer } from "./PDFViewer";
 import { ImageViewer } from "./ImageViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
+import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
 
 interface ActivityAttachmentsSectionProps {
   activityId: string;
@@ -24,6 +25,7 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
     fileName: "",
     filePath: ""
   });
+  const [pendingDelete, setPendingDelete] = useState<ActivityAttachment | null>(null);
   
   const { data: attachments, isLoading } = useActivityAttachments(activityId);
   const uploadAttachment = useUploadActivityAttachment();
@@ -58,8 +60,13 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
     }
   };
 
-  const handleDelete = async (attachment: ActivityAttachment) => {
-    await deleteAttachment.mutateAsync({ attachment, activityId });
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await deleteAttachment.mutateAsync({ attachment: pendingDelete, activityId });
+    } finally {
+      setPendingDelete(null);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -195,7 +202,7 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
                   <span className="hidden sm:inline">Download</span>
                 </Button>
                 <Button
-                  onClick={() => handleDelete(attachment)}
+                  onClick={() => setPendingDelete(attachment)}
                   size="sm"
                   variant="outline"
                   className="flex items-center gap-1 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -224,6 +231,15 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
         onClose={() => setImageViewer({ isOpen: false, fileName: "", filePath: "" })}
         fileName={imageViewer.fileName}
         filePath={imageViewer.filePath}
+      />
+
+      <ConfirmDeleteFileDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        fileName={pendingDelete?.file_name}
+        itemLabel="attachment"
+        isPending={deleteAttachment.isPending}
+        onConfirm={handleDelete}
       />
     </div>
   );
