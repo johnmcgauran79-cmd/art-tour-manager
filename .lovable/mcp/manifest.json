@@ -1432,9 +1432,6 @@
             "xero_reference": {
               "type": "string"
             },
-            "keap_tag_id": {
-              "type": "string"
-            },
             "brand_id": {
               "type": "string"
             },

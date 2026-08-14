@@ -821,7 +821,6 @@ var update_tour_default = defineTool16({
     alerts_enabled: z16.boolean().optional(),
     xero_product_id: z16.string().optional(),
     xero_reference: z16.string().optional(),
-    keap_tag_id: z16.string().optional(),
     brand_id: z16.string().optional(),
     photos_videos_url: z16.string().optional(),
     host_flights_status: z16.string().optional(),
