@@ -315,6 +315,8 @@ export interface EmailMergeData {
   waiver_link?: string;
   pickup_button?: string;
   pickup_link?: string;
+  travel_docs_button?: string;
+  travel_docs_link?: string;
   itinerary_button?: string;
   itinerary_link?: string;
   guest_document_button?: string;
@@ -725,6 +727,12 @@ export class EmailTemplateEngine {
       waiver_link: '{{waiver_link}}',
       pickup_button: '{{pickup_button}}',
       pickup_link: '{{pickup_link}}',
+      travel_docs_button: '{{travel_docs_button}}',
+      travel_docs_link: '{{travel_docs_link}}',
+      itinerary_button: '{{itinerary_button}}',
+      itinerary_link: '{{itinerary_link}}',
+      guest_document_button: '{{guest_document_button}}',
+      guest_document_link: '{{guest_document_link}}',
       
       // Additional info blocks - rendered server-side with tour data
       additional_info_blocks: '{{additional_info_blocks}}',
