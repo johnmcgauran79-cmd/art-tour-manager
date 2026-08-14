@@ -1,0 +1,1 @@
+ALTER TABLE public.tours DROP COLUMN IF EXISTS keap_tag_id;

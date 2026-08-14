@@ -55,7 +55,6 @@ interface TourOverviewTabProps {
     startDate: string;
     endDate: string;
     tourHost: string;
-    keapTagId: string;
     xeroProductId: string;
     xeroReference: string;
     photosVideosUrl?: string;
@@ -484,7 +483,7 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
       )}
 
       {/* Integrations */}
-      {!isHost && (tour.xeroProductId || tour.xeroReference || tour.keapTagId) && (
+      {!isHost && (tour.xeroProductId || tour.xeroReference) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -504,12 +503,6 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
                 <div>
                   <span className="font-medium">Xero Reference:</span>{" "}
                   <Badge variant="outline">{tour.xeroReference}</Badge>
-                </div>
-              )}
-              {tour.keapTagId && (
-                <div>
-                  <span className="font-medium">Keap Tag ID:</span>{" "}
-                  <Badge variant="outline">{tour.keapTagId}</Badge>
                 </div>
               )}
             </div>

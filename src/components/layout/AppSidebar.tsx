@@ -48,11 +48,6 @@ export const AppSidebar = () => {
   const { isAdminOrManager } = useIsAdminOrManager();
   const { data: roles = [] } = useUserRoles();
   const isAdmin = roles.includes("admin");
-  // Audience Tagging is Admin-only, with a specific allowlist for trusted staff.
-  const AUDIENCE_TAGGING_ALLOWLIST = new Set<string>([
-    "5d5288f8-2e24-432b-b0b8-61e0534c8371", // Jane Newham
-  ]);
-  const canAccessAudienceTagging = isAdmin || (!!user?.id && AUDIENCE_TAGGING_ALLOWLIST.has(user.id));
   const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -100,9 +95,6 @@ export const AppSidebar = () => {
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });
-  // Audience Tagging temporarily hidden from menu (route still exists for direct access if needed)
-  // if (canAccessAudienceTagging) mainItems.push({ key: "audience-tagging", label: "Audience Tagging", icon: Tag, path: "/audience-tagging" });
-
   const workspaceItems: NavItem[] = [
     { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos", badge: todoCount },
     { key: "notes", label: "Notes", icon: StickyNote, path: "/notes" },

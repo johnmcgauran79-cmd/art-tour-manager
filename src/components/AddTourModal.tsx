@@ -599,8 +599,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                   </div>
                   <p className="text-xs text-muted-foreground max-w-2xl">
                     Mark this as a sandbox tour for testing emails, forms, alerts and triggers.
-                    When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong> and
-                    <strong> skip Keap CRM tagging</strong>. Everything else (emails, forms, automations, reports)
+                    When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong>.
+                    Everything else (emails, forms, automations, reports)
                     works exactly as a real tour.
                   </p>
                 </div>
@@ -633,7 +633,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                   Manual billing
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Skip automatic Xero invoice creation and Keap CRM tagging for all bookings on this tour.
+                  Skip automatic Xero invoice creation for all bookings on this tour.
                 </p>
               </div>
               <Switch

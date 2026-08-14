@@ -4435,7 +4435,6 @@ export type Database = {
           instalment_details: string | null
           instalment_required: boolean
           is_test_tour: boolean
-          keap_tag_id: string | null
           location: string | null
           manual_billing: boolean
           manual_emails: boolean
@@ -4503,7 +4502,6 @@ export type Database = {
           instalment_details?: string | null
           instalment_required?: boolean
           is_test_tour?: boolean
-          keap_tag_id?: string | null
           location?: string | null
           manual_billing?: boolean
           manual_emails?: boolean
@@ -4571,7 +4569,6 @@ export type Database = {
           instalment_details?: string | null
           instalment_required?: boolean
           is_test_tour?: boolean
-          keap_tag_id?: string | null
           location?: string | null
           manual_billing?: boolean
           manual_emails?: boolean

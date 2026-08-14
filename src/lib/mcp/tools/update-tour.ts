@@ -59,7 +59,6 @@ export default defineTool({
     alerts_enabled: z.boolean().optional(),
     xero_product_id: z.string().optional(),
     xero_reference: z.string().optional(),
-    keap_tag_id: z.string().optional(),
     brand_id: z.string().optional(),
     photos_videos_url: z.string().optional(),
     host_flights_status: z.string().optional(),

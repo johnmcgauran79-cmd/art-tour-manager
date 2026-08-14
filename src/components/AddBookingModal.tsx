@@ -269,10 +269,7 @@ export const AddBookingModal = ({
       return;
     }
 
-    // Validate tour has required integration codes.
-    // Note: Keap tag is auto-created by the keap-add-tag edge function on first
-    // booking (named "Booked: <Tour Name>") and saved back to the tour, so we
-    // only require the Xero Product Code up-front.
+    // Validate tour has required integration codes (Xero Product Code only).
     const selectedTour = tours?.find(t => t.id === formData.tour_id);
     if (selectedTour) {
       // Skip integration validation for test tours
@@ -363,10 +360,9 @@ export const AddBookingModal = ({
       console.log('Booking created:', newBooking);
 
       // Integration trigger logic:
-      // - Host: always skip Xero, always trigger Keap (they need tour updates)
-      // - Complimentary: always skip Xero, trigger Keap only if full-tour booking
-      // - Non-full-tour (no whatsapp or no accommodation): skip both Xero and Keap
-      // - All other statuses: trigger both (unless invoice_reference already provided for Xero)
+      // - Host / Complimentary / Waitlist: skip Xero
+      // - Non-full-tour (no whatsapp or no accommodation): skip Xero
+      // - All other statuses: create the Xero invoice unless an invoice_reference was provided
       const status = formData.status;
       const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
       const isHost = status === 'host';
@@ -377,23 +373,20 @@ export const AddBookingModal = ({
       const tourManualBilling = !!(tourForBooking as any)?.manual_billing;
 
       const shouldTriggerXero = !isTestTour && !tourManualBilling && !isWaitlisted && !isHost && !isComplimentary && isFullTourBooking;
-      const shouldTriggerKeap = !isTestTour && !tourManualBilling && !isWaitlisted && (isHost || isFullTourBooking);
 
       if (isTestTour) {
-        console.log('Test Tour: Skipping Xero & Keap integrations for booking', newBooking.id);
+        console.log('Test Tour: Skipping Xero integration for booking', newBooking.id);
       }
       if (tourManualBilling) {
-        console.log('Manual Billing tour: Skipping Xero & Keap integrations for booking', newBooking.id);
+        console.log('Manual Billing tour: Skipping Xero integration for booking', newBooking.id);
       }
       if (isWaitlisted) {
-        console.log('Waitlist booking: Skipping Xero & Keap integrations for booking', newBooking.id);
+        console.log('Waitlist booking: Skipping Xero integration for booking', newBooking.id);
       }
 
       // Track integration failures so we can warn the user without losing the booking.
       let xeroFailed = false;
-      let keapFailed = false;
       let xeroErrorMsg: string | null = null;
-      let keapErrorMsg: string | null = null;
 
       if (shouldTriggerXero) {
         if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
@@ -420,32 +413,6 @@ export const AddBookingModal = ({
         console.log('Skipping Xero invoice - status:', status, 'isFullTourBooking:', isFullTourBooking);
       }
 
-      if (shouldTriggerKeap) {
-        try {
-          const res = await supabase.functions.invoke('keap-add-tag', {
-            body: {
-              contactEmail: selectedContact?.email,
-              bookingId: newBooking.id,
-              tourId: formData.tour_id
-            }
-          });
-          if (res.error) {
-            keapFailed = true;
-            keapErrorMsg = res.error.message || 'Unknown error';
-            console.error('Keap tag error:', res.error);
-          } else {
-            console.log('Keap tag triggered:', res.data);
-          }
-        } catch (err: any) {
-          keapFailed = true;
-          keapErrorMsg = err?.message || 'Network error';
-          console.error('Keap tag exception:', err);
-        }
-      } else {
-        console.log('Skipping Keap tag - status:', status, 'isFullTourBooking:', isFullTourBooking);
-      }
-
-      
       // Save hotel allocations
       const hotelInserts = Object.entries(hotelAllocations)
         .filter(([_, allocation]) => allocation.allocated)
@@ -539,21 +506,9 @@ export const AddBookingModal = ({
       }
       
       // If integrations failed, keep modal open with a persistent error so user can act.
-      if (xeroFailed || keapFailed) {
-        const failures: string[] = [];
-        if (xeroFailed) failures.push(`Xero invoice (${xeroErrorMsg})`);
-        if (keapFailed) failures.push(`Keap tagging (${keapErrorMsg})`);
-
-        // Tailor the recovery hint to which integration actually failed.
-        let recovery: string;
-        if (xeroFailed && keapFailed) {
-          recovery = `Open the booking from the bookings list and use the "Retry Xero Invoice" button (this also re-runs Keap tagging), or contact an admin.`;
-        } else if (xeroFailed) {
-          recovery = `Open the booking from the bookings list and use the "Retry Xero Invoice" button, or contact an admin.`;
-        } else {
-          recovery = `The Xero invoice was created successfully — only Keap tagging failed. Open the booking from the bookings list and use the "Retry Xero Invoice" button (it also re-runs Keap tagging), or contact an admin.`;
-        }
-
+      if (xeroFailed) {
+        const failures: string[] = [`Xero invoice (${xeroErrorMsg})`];
+        const recovery = `Open the booking from the bookings list and use the "Retry Xero Invoice" button, or contact an admin.`;
         const message = `Booking was saved successfully, but the following integration(s) failed: ${failures.join(', ')}. ${recovery}`;
         setValidationError(message);
         toast({
