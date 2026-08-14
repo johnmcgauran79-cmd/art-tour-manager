@@ -70,7 +70,11 @@ export default defineTool({
 
     const { error } = await supabase.from("tours").update(payload).eq("id", tour_id);
     if (error) {
-      await supabase.storage.from(BUCKET).remove([path]).catch?.(() => {});
+      try {
+        await supabase.storage.from(BUCKET).remove([path]);
+      } catch {
+        /* orphan cleanup is non-fatal */
+      }
       return toolError(error.message);
     }
     if (previous && previous !== path) {
