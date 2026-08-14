@@ -52,8 +52,8 @@ export default defineTool({
     if (!wpId) {
       const linked = await loadWordpressTourLink(ctx, tour_id);
       if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
-      const link = linked.link as { wordpress_tour_id?: number | null } | null;
-      wpId = link?.wordpress_tour_id ?? null;
+      const link = linked.link as { wp_tour_id?: number | null } | null;
+      wpId = link?.wp_tour_id ?? null;
     }
     if (!wpId)
       return {
