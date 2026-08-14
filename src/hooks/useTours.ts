@@ -35,7 +35,6 @@ export interface Tour {
   url_reference: string | null;
   tour_type: 'domestic' | 'international' | null;
   xero_product_id: string | null;
-  keap_tag_id: string | null;
   pickup_location_required: boolean;
   is_test_tour: boolean;
   manual_billing: boolean;
