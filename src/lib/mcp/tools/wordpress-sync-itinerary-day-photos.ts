@@ -174,7 +174,7 @@ export default defineTool({
           photos_uploaded: uploadedCount,
           photo_count: art.images.length,
         },
-        result_status: uploadErrors.length ? "partial" : "success",
+        result_status: uploadErrors.length ? "error" : "success",
         response_code: res.status,
         before_snapshot: before ? { [WP_ITINERARY_FIELD]: before[WP_ITINERARY_FIELD] ?? null } : null,
         after_snapshot: { [WP_ITINERARY_FIELD]: after?.[WP_ITINERARY_FIELD] ?? null },
