@@ -6424,13 +6424,390 @@ var reorder_itinerary_entries_default = defineTool104({
   }
 });
 
+// src/lib/mcp/tools/list-itinerary-day-photos.ts
+import { defineTool as defineTool105 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z101 } from "npm:zod@^3.25.76";
+var list_itinerary_day_photos_default = defineTool105({
+  name: "list_itinerary_day_photos",
+  title: "List itinerary day photos",
+  description: "List the photos attached to a tour's itinerary days (max 3 per day). Returns each photo with its day number/date, caption, a temporary signed preview URL, and the WordPress media id once the photo has been synced to the website gallery (`wp_media_id` null = not yet on the website). Admin/manager only.",
+  inputSchema: {
+    tour_id: z101.string().describe("The ART tour id (uuid)."),
+    day_id: z101.string().optional().describe("Optional: only return photos for this itinerary day id.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, day_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: itinerary, error: itError } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tour_id).eq("is_current", true).order("version", { ascending: false }).limit(1).maybeSingle();
+    if (itError) return toolError2(itError.message);
+    if (!itinerary) return toolError2(`Tour ${tour_id} has no current itinerary.`);
+    const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("id, day_number, activity_date").eq("itinerary_id", itinerary.id).order("day_number");
+    if (daysError) return toolError2(daysError.message);
+    const dayIds = (days ?? []).map((d) => d.id).filter((id) => !day_id || id === day_id);
+    if (dayIds.length === 0) {
+      const empty = { tour_id, photo_count: 0, photos: [] };
+      return { content: [{ type: "text", text: JSON.stringify(empty) }], structuredContent: empty };
+    }
+    const { data: images, error: imgError } = await supabase.from("tour_itinerary_day_images").select("id, day_id, file_path, file_name, caption, sort_order, wp_media_id, wp_source_url, created_at").in("day_id", dayIds).order("sort_order");
+    if (imgError) return toolError2(imgError.message);
+    const photos = await Promise.all(
+      (images ?? []).map(async (img) => {
+        const day = (days ?? []).find((d) => d.id === img.day_id);
+        return {
+          ...img,
+          day_number: day?.day_number ?? null,
+          activity_date: day?.activity_date ?? null,
+          signed_url: await signAttachmentUrl(ctx, img.file_path)
+        };
+      })
+    );
+    const out = { tour_id, itinerary_id: itinerary.id, photo_count: photos.length, photos };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/upload-itinerary-day-photo.ts
+import { defineTool as defineTool106 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z102 } from "npm:zod@^3.25.76";
+var MAX_DAY_PHOTOS = 3;
+var upload_itinerary_day_photo_default = defineTool106({
+  name: "upload_itinerary_day_photo",
+  title: "Upload an itinerary day photo",
+  description: "Upload a photo (JPEG/PNG/WEBP/GIF, base64 in `data_base64`, max 20MB) against one day of a tour's itinerary. Maximum 3 photos per day \u2014 delete one first with `delete_itinerary_day_photo` if the day is full. Photos live in the ART admin system; publish them to the website day gallery with `wordpress_sync_itinerary_day_photos`. Get day ids from `get_tour_itinerary`. Admin/manager only.",
+  inputSchema: {
+    day_id: z102.string().describe("The itinerary day id (uuid) from get_tour_itinerary."),
+    filename: z102.string().min(1).max(255).describe("Filename including extension, e.g. 'day3-flemington.jpg'."),
+    content_type: z102.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}`),
+    data_base64: z102.string().min(1).describe("Base64-encoded image contents (no data: prefix)."),
+    caption: z102.string().max(500).optional().describe("Optional caption / alt text, also written to WordPress on sync.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ day_id, filename, content_type, data_base64, caption }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({ filename, content_type, data_base64, allowedTypes: ALLOWED_IMAGE_TYPES });
+    if ("error" in decoded) return decoded.error;
+    const supabase = supabaseForUser(ctx);
+    const { data: day, error: dayError } = await supabase.from("tour_itinerary_days").select("id, day_number, activity_date").eq("id", day_id).maybeSingle();
+    if (dayError) return toolError2(dayError.message);
+    if (!day) return toolError2(`No itinerary day found with id ${day_id}.`);
+    const { data: existing, error: existingError } = await supabase.from("tour_itinerary_day_images").select("id, sort_order").eq("day_id", day_id).order("sort_order");
+    if (existingError) return toolError2(existingError.message);
+    const count = existing?.length ?? 0;
+    if (count >= MAX_DAY_PHOTOS) {
+      return toolError2(
+        `Day ${day.day_number} already has the maximum of ${MAX_DAY_PHOTOS} photos. Delete one before uploading another.`
+      );
+    }
+    const uploaded = await uploadToAttachments(ctx, `itinerary-day-photos/${day_id}`, decoded.file, { upsert: true });
+    if ("error" in uploaded) return uploaded.error;
+    const { data, error } = await supabase.from("tour_itinerary_day_images").insert({
+      day_id,
+      file_path: uploaded.path,
+      file_name: decoded.file.name,
+      caption: caption || null,
+      sort_order: count,
+      uploaded_by: ctx.getUserId()
+    }).select().single();
+    if (error) {
+      await removeFromAttachments(ctx, uploaded.path);
+      return toolError2(error.message);
+    }
+    const out = {
+      photo: data,
+      day_number: day.day_number,
+      activity_date: day.activity_date,
+      photos_on_day: count + 1,
+      signed_url: await signAttachmentUrl(ctx, uploaded.path),
+      next_step: "Run wordpress_sync_itinerary_day_photos (with the user's approval) to publish this photo into the website day gallery."
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/delete-itinerary-day-photo.ts
+import { defineTool as defineTool107 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z103 } from "npm:zod@^3.25.76";
+var delete_itinerary_day_photo_default = defineTool107({
+  name: "delete_itinerary_day_photo",
+  title: "Delete an itinerary day photo",
+  description: "Remove a photo from an itinerary day in the ART admin system (also deletes the stored file). The WordPress media library copy is left in place, but the photo drops out of the website day gallery the next time you run `wordpress_sync_itinerary_day_photos`. Must pass confirm=true. Admin/manager only.",
+  inputSchema: {
+    photo_id: z103.string().describe("The itinerary day photo id (uuid) from list_itinerary_day_photos."),
+    confirm: z103.boolean().describe("Must be true \u2014 confirms the user approved deleting this photo.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+  handler: async ({ photo_id, confirm }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!confirm) return toolError2("Not deleted. Confirm with the user, then call again with confirm=true.");
+    const supabase = supabaseForUser(ctx);
+    const { data: photo, error: readError } = await supabase.from("tour_itinerary_day_images").select("id, day_id, file_path, file_name").eq("id", photo_id).maybeSingle();
+    if (readError) return toolError2(readError.message);
+    if (!photo) return toolError2(`No itinerary day photo found with id ${photo_id}.`);
+    const { error } = await supabase.from("tour_itinerary_day_images").delete().eq("id", photo_id);
+    if (error) return toolError2(error.message);
+    await removeFromAttachments(ctx, photo.file_path);
+    const out = { deleted: true, photo_id, day_id: photo.day_id, file_name: photo.file_name };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/wordpress-sync-itinerary-day-photos.ts
+import { defineTool as defineTool108 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z104 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/wordpress/_media.ts
+function b64Auth2(user, pass) {
+  if (typeof btoa === "function") return btoa(`${user}:${pass}`);
+  return globalThis.Buffer.from(`${user}:${pass}`, "utf8").toString("base64");
+}
+async function uploadWpMedia(args) {
+  const cfg = args.cfg ?? loadWordpressConfig();
+  if (!cfg.baseUrl.startsWith("https://")) return { error: "WORDPRESS_BASE_URL must be an https URL." };
+  const safeName = args.filename.replace(/[^\w.\-]+/g, "_").slice(0, 180) || "photo.jpg";
+  const url = `${cfg.baseUrl.replace(/\/+$/, "")}/wp-json/wp/v2/media`;
+  const auth2 = `Basic ${b64Auth2(cfg.username, cfg.applicationPassword)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: auth2,
+      "Content-Type": args.contentType,
+      "Content-Disposition": `attachment; filename="${safeName}"`,
+      Accept: "application/json",
+      "User-Agent": "ART-Admin-WordPress-Integration/1.0"
+    },
+    body: args.bytes
+  });
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text.slice(0, 500) };
+  }
+  if (!res.ok) {
+    return {
+      error: data?.message ?? `WordPress returned ${res.status} uploading media.`,
+      status: res.status
+    };
+  }
+  const id = data.id ?? null;
+  if (id && (args.title || args.caption)) {
+    try {
+      await fetch(`${url}/${id}`, {
+        method: "POST",
+        headers: { Authorization: auth2, "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          ...args.title ? { title: args.title } : {},
+          ...args.caption ? { caption: args.caption, alt_text: args.caption } : {}
+        })
+      });
+    } catch {
+    }
+  }
+  return { id, source_url: data.source_url ?? null, status: res.status };
+}
+
+// src/lib/mcp/tools/wordpress-sync-itinerary-day-photos.ts
+function guessContentType(name) {
+  const ext = (name ?? "").toLowerCase().split(".").pop() ?? "";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "gif") return "image/gif";
+  return "image/jpeg";
+}
+var wordpress_sync_itinerary_day_photos_default = defineTool108({
+  name: "wordpress_sync_itinerary_day_photos",
+  title: "Publish itinerary day photos to the website",
+  description: "Publish the photos attached to a tour's itinerary days (uploaded with `upload_itinerary_day_photo`) into the matching day galleries on the linked WordPress tour post. Any photo not yet in the WordPress media library is uploaded first, then each itinerary row's `gallery` is set to that day's photos in order (days with no ART photos keep whatever gallery is already live). ART is the source of truth and the sync is one-way ART \u2192 WordPress. Requires confirm=true; every call is audited with a before/after snapshot. Admin/manager only.",
+  inputSchema: {
+    tour_id: z104.string().describe("The ART tour id (uuid)."),
+    confirm: z104.boolean().describe("Must be true. Confirms the user approved publishing these photos to the live website."),
+    wordpress_tour_id: z104.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, confirm, wordpress_tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!confirm)
+      return {
+        content: [{
+          type: "text",
+          text: "Nothing published. Confirm with the user that these day photos should go live, then call again with confirm=true."
+        }],
+        isError: true
+      };
+    const supabase = supabaseForUser(ctx);
+    const art = await loadArtItineraryRows(ctx, tour_id);
+    if ("error" in art) return { content: [{ type: "text", text: art.error }], isError: true };
+    if (!art.itinerary_id || art.rows.length === 0)
+      return {
+        content: [{ type: "text", text: `Tour ${art.tour.name ?? tour_id} has no itinerary rows to attach photos to.` }],
+        isError: true
+      };
+    if (art.images.length === 0)
+      return {
+        content: [{
+          type: "text",
+          text: `No itinerary day photos have been uploaded for ${art.tour.name ?? tour_id}. Upload them first with upload_itinerary_day_photo.`
+        }],
+        isError: true
+      };
+    let wpId = wordpress_tour_id ?? null;
+    if (!wpId) {
+      const linked = await loadWordpressTourLink(ctx, tour_id);
+      if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
+      wpId = linked.link?.wp_tour_id ?? null;
+    }
+    if (!wpId)
+      return {
+        content: [{
+          type: "text",
+          text: "This tour is not linked to a WordPress tour post. Pass wordpress_tour_id explicitly or link the tour first."
+        }],
+        isError: true
+      };
+    const uploadErrors = [];
+    let uploadedCount = 0;
+    for (const img of art.images) {
+      if (typeof img.wp_media_id === "number") continue;
+      const signed = await signAttachmentUrl(ctx, img.file_path, 600);
+      if (!signed) {
+        uploadErrors.push(`${img.file_name ?? img.id}: could not read the stored file.`);
+        continue;
+      }
+      try {
+        const fileRes = await fetch(signed);
+        if (!fileRes.ok) {
+          uploadErrors.push(`${img.file_name ?? img.id}: download failed (${fileRes.status}).`);
+          continue;
+        }
+        const bytes = new Uint8Array(await fileRes.arrayBuffer());
+        const result = await uploadWpMedia({
+          filename: img.file_name ?? `itinerary-photo-${img.id}.jpg`,
+          contentType: guessContentType(img.file_name),
+          bytes,
+          title: img.file_name ?? void 0,
+          caption: img.caption ?? void 0
+        });
+        if ("error" in result) {
+          uploadErrors.push(`${img.file_name ?? img.id}: ${result.error}`);
+          continue;
+        }
+        img.wp_media_id = result.id;
+        img.wp_source_url = result.source_url;
+        uploadedCount++;
+        await supabase.from("tour_itinerary_day_images").update({ wp_media_id: result.id, wp_source_url: result.source_url }).eq("id", img.id);
+        await auditWordpressCall(ctx, {
+          source: "mcp",
+          action: "upload_media",
+          wordpress_object_type: "media",
+          wordpress_object_id: result.id,
+          request_summary: { endpoint: "media", method: "POST", art_itinerary_day_image_id: img.id, size: bytes.byteLength },
+          result_status: "success",
+          response_code: result.status
+        });
+      } catch (err) {
+        uploadErrors.push(`${img.file_name ?? img.id}: ${categoriseError(err).message}`);
+      }
+    }
+    const galleriesByRow = art.day_ids.map(
+      (dayId) => art.images.filter((img) => img.day_id === dayId && typeof img.wp_media_id === "number").sort((a, b) => a.sort_order - b.sort_order).map((img) => img.wp_media_id)
+    );
+    const artRows = art.rows.map(
+      (row, i) => galleriesByRow[i]?.length ? { ...row, gallery: galleriesByRow[i] } : { ...row }
+    );
+    const endpoint = `tour/${wpId}`;
+    let before = null;
+    try {
+      const b = await wordpressRequest({
+        endpoint,
+        query: { context: "edit", _fields: "id,acf" }
+      });
+      before = b.data?.acf ?? null;
+    } catch {
+    }
+    try {
+      const beforeRows = normaliseWpItineraryRows(before?.[WP_ITINERARY_FIELD]);
+      const rowsToPush = preserveGalleries(artRows, beforeRows);
+      const res = await wordpressRequest({
+        endpoint,
+        method: "POST",
+        body: { acf: { [WP_ITINERARY_FIELD]: rowsToPush } }
+      });
+      const after = res.data?.acf ?? null;
+      const liveRows = normaliseWpItineraryRows(after?.[WP_ITINERARY_FIELD]);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "sync_itinerary_day_photos",
+        wordpress_object_type: "tour",
+        wordpress_object_id: wpId,
+        request_summary: {
+          ...requestSummary(endpoint, "POST"),
+          changed_fields: [WP_ITINERARY_FIELD],
+          art_tour_id: tour_id,
+          photos_uploaded: uploadedCount,
+          photo_count: art.images.length
+        },
+        result_status: uploadErrors.length ? "error" : "success",
+        response_code: res.status,
+        before_snapshot: before ? { [WP_ITINERARY_FIELD]: before[WP_ITINERARY_FIELD] ?? null } : null,
+        after_snapshot: { [WP_ITINERARY_FIELD]: after?.[WP_ITINERARY_FIELD] ?? null },
+        error_message: uploadErrors.length ? uploadErrors.join(" | ") : void 0
+      });
+      const out = {
+        tour_id,
+        tour_name: art.tour.name,
+        wordpress_tour_id: wpId,
+        photos_total: art.images.length,
+        photos_uploaded_to_wordpress: uploadedCount,
+        days_with_photos: galleriesByRow.filter((g) => g.length > 0).length,
+        rows_published: rowsToPush.length,
+        live_row_count: liveRows.length,
+        galleries: art.day_ids.map((dayId, i) => ({
+          row_index: i,
+          day_id: dayId,
+          date_event: rowsToPush[i]?.date_event ?? null,
+          media_ids: galleriesByRow[i] ?? []
+        })),
+        errors: uploadErrors
+      };
+      return {
+        content: [{
+          type: "text",
+          text: `Published ${out.photos_total} photo(s) across ${out.days_with_photos} itinerary day(s) for ${out.tour_name}${uploadErrors.length ? ` \u2014 ${uploadErrors.length} photo(s) failed.` : "."}
+${JSON.stringify(out)}`
+        }],
+        structuredContent: out
+      };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "sync_itinerary_day_photos",
+        wordpress_object_type: "tour",
+        wordpress_object_id: wpId,
+        request_summary: { ...requestSummary(endpoint, "POST"), art_tour_id: tour_id },
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message,
+        before_snapshot: before
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.3.1",
-  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
+  version: "2.4.0",
+  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -6545,7 +6922,11 @@ var mcp_default = defineMcp({
     unassign_task_default,
     add_task_subtask_default,
     update_task_subtask_default,
-    delete_task_subtask_default
+    delete_task_subtask_default,
+    list_itinerary_day_photos_default,
+    upload_itinerary_day_photo_default,
+    delete_itinerary_day_photo_default,
+    wordpress_sync_itinerary_day_photos_default
   ]
 });
 
