@@ -4263,6 +4263,56 @@ export type Database = {
         }
         Relationships: []
       }
+      tour_itinerary_day_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          day_id: string
+          file_name: string | null
+          file_path: string
+          id: string
+          sort_order: number
+          updated_at: string
+          uploaded_by: string | null
+          wp_media_id: number | null
+          wp_source_url: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          day_id: string
+          file_name?: string | null
+          file_path: string
+          id?: string
+          sort_order?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          wp_media_id?: number | null
+          wp_source_url?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          day_id?: string
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          sort_order?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          wp_media_id?: number | null
+          wp_source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_itinerary_day_images_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "tour_itinerary_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_itinerary_days: {
         Row: {
           activity_date: string
