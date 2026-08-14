@@ -82,11 +82,15 @@ export const useDeleteHotelAttachment = () => {
         .remove([data.attachment.file_path]);
       if (storageError) throw storageError;
 
-      const { error: dbError } = await supabase
+      const { data: deleted, error: dbError } = await supabase
         .from('hotel_attachments')
         .delete()
-        .eq('id', data.attachment.id);
+        .eq('id', data.attachment.id)
+        .select('id');
       if (dbError) throw dbError;
+      if (!deleted || deleted.length === 0) {
+        throw new Error('You do not have permission to delete this attachment.');
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['hotel-attachments', variables.hotelId] });
