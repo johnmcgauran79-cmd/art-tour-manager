@@ -1170,6 +1170,10 @@ const handler = async (req: Request): Promise<Response> => {
       // Itinerary action fields
       itinerary_link: itineraryLink,
       itinerary_button: itineraryButton,
+
+      // Uploaded Guest Document (tour Itinerary tab) action fields
+      guest_document_link: guestDocumentLink,
+      guest_document_button: guestDocumentButton,
       pickup_location_name: pickupLocationName,
       pickup_location_time: pickupLocationTime,
       pickup_location_details: pickupLocationDetails,
