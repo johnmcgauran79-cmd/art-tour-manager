@@ -5734,6 +5734,12 @@ function buildWpItineraryRows(days) {
     return { date_event, details: buildDayDetails(day) };
   }).filter((r) => r.date_event || r.details);
 }
+function preserveGalleries(artRows, wpRows) {
+  return artRows.map((row, i) => {
+    const gallery = wpRows[i]?.gallery;
+    return gallery === void 0 ? { ...row } : { ...row, gallery };
+  });
+}
 function normaliseWpItineraryRows(value) {
   if (!Array.isArray(value)) return [];
   return value.map((row) => {
@@ -5975,14 +5981,16 @@ var wordpress_push_tour_itinerary_default = defineTool98({
     } catch {
     }
     try {
+      const beforeRows = normaliseWpItineraryRows(before?.[WP_ITINERARY_FIELD]);
+      const rowsToPush = preserveGalleries(art.rows, beforeRows);
       const res = await wordpressRequest({
         endpoint,
         method: "POST",
-        body: { acf: { [WP_ITINERARY_FIELD]: art.rows } }
+        body: { acf: { [WP_ITINERARY_FIELD]: rowsToPush } }
       });
       const after = res.data?.acf ?? null;
       const liveRows = normaliseWpItineraryRows(after?.[WP_ITINERARY_FIELD]);
-      const verify = buildItineraryDiff(art.rows, liveRows);
+      const verify = buildItineraryDiff(rowsToPush, liveRows);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "push_tour_itinerary",
