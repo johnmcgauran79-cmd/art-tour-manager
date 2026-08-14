@@ -5655,12 +5655,765 @@ var wordpress_upload_media_default = defineTool95({
   }
 });
 
+// src/lib/mcp/tools/wordpress-get-tour-itinerary.ts
+import { defineTool as defineTool96 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z92 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/wordpress/itinerary.ts
+var WP_ITINERARY_FIELD = "itinerary";
+var WEEKDAYS = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY"
+];
+var MONTHS = [
+  "JANUARY",
+  "FEBRUARY",
+  "MARCH",
+  "APRIL",
+  "MAY",
+  "JUNE",
+  "JULY",
+  "AUGUST",
+  "SEPTEMBER",
+  "OCTOBER",
+  "NOVEMBER",
+  "DECEMBER"
+];
+function formatItineraryDate(isoDate) {
+  if (!isoDate) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(isoDate).trim());
+  if (!m) return "";
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  if (Number.isNaN(d.getTime())) return "";
+  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function looksLikeHtml(s) {
+  return /<\/?[a-z][\s\S]*>/i.test(s);
+}
+function contentToHtml(content) {
+  const trimmed = content.trim();
+  if (!trimmed) return "";
+  if (looksLikeHtml(trimmed)) return trimmed;
+  return escapeHtml(trimmed).replace(/\r?\n/g, "<br />");
+}
+function sortedEntries(day) {
+  return [...day.entries ?? []].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+}
+function buildDayTitle(day, maxParts = 3) {
+  const seen = /* @__PURE__ */ new Set();
+  const parts = [];
+  for (const e of sortedEntries(day)) {
+    const s = (e.subject ?? "").trim();
+    if (!s) continue;
+    const key = s.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    parts.push(s);
+    if (parts.length >= maxParts) break;
+  }
+  return parts.join(" & ");
+}
+function buildDayDetailsHtml(day) {
+  const blocks = [];
+  for (const e of sortedEntries(day)) {
+    const subject = (e.subject ?? "").trim();
+    const time = (e.time_slot ?? "").trim();
+    const body = contentToHtml(e.content ?? "");
+    const heading = [time, subject].filter(Boolean).join(" \u2013 ");
+    if (!heading && !body) continue;
+    if (heading && body) {
+      blocks.push(`<p><strong>${escapeHtml(heading)}</strong><br />${body}</p>`);
+    } else if (heading) {
+      blocks.push(`<p><strong>${escapeHtml(heading)}</strong></p>`);
+    } else {
+      blocks.push(`<p>${body}</p>`);
+    }
+  }
+  return blocks.join("\n");
+}
+function buildWpItineraryRows(days) {
+  return [...days ?? []].sort((a, b) => (a.day_number ?? 0) - (b.day_number ?? 0)).map((day) => {
+    const datePart = formatItineraryDate(day.activity_date);
+    const title = buildDayTitle(day);
+    const date_event = [datePart, title].filter(Boolean).join(" - ");
+    return { date_event, details: buildDayDetailsHtml(day) };
+  }).filter((r) => r.date_event || r.details);
+}
+function normaliseWpItineraryRows(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map((row) => {
+    if (!row || typeof row !== "object") return { date_event: "", details: "" };
+    const r = row;
+    return {
+      date_event: r.date_event === null || r.date_event === void 0 ? "" : String(r.date_event),
+      details: r.details === null || r.details === void 0 ? "" : String(r.details)
+    };
+  });
+}
+function normaliseHtml(v) {
+  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim().toLowerCase();
+}
+function normaliseText(v) {
+  return v.replace(/\s+/g, " ").trim().toLowerCase();
+}
+function buildItineraryDiff(artRows, wpRows) {
+  const len = Math.max(artRows.length, wpRows.length);
+  const rows = [];
+  let changed = false;
+  for (let i = 0; i < len; i++) {
+    const art = artRows[i] ?? null;
+    const wp = wpRows[i] ?? null;
+    const rowChanged = !art || !wp ? true : normaliseText(art.date_event) !== normaliseText(wp.date_event) || normaliseHtml(art.details) !== normaliseHtml(wp.details);
+    if (rowChanged) changed = true;
+    rows.push({ index: i, art, wp, changed: rowChanged });
+  }
+  return { rows, changed };
+}
+
+// src/lib/mcp/tools/wordpress-get-tour-itinerary.ts
+var wordpress_get_tour_itinerary_default = defineTool96({
+  name: "wordpress_get_tour_itinerary",
+  title: "Get WordPress tour itinerary",
+  description: "Read the live itinerary currently published on a WordPress tour post. Returns the `itinerary` ACF repeater rows in order, each with its `date_event` heading and `details` HTML. Read-only, admin/manager only.",
+  inputSchema: {
+    tour_id: z92.number().int().min(1).describe("The WordPress tour post id (not the ART tour uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    try {
+      const res = await wordpressRequest({
+        endpoint: `tour/${tour_id}`,
+        query: { context: "edit", _fields: "id,title,acf" }
+      });
+      const data = res.data;
+      const rows = normaliseWpItineraryRows(data?.acf?.[WP_ITINERARY_FIELD]);
+      const out = {
+        wordpress_tour_id: tour_id,
+        title: typeof data?.title === "object" && data?.title ? data.title.rendered ?? null : data?.title ?? null,
+        row_count: rows.length,
+        rows
+      };
+      return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+    } catch (err) {
+      const c = categoriseError(err);
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-preview-tour-itinerary.ts
+import { defineTool as defineTool97 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z93 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/wordpress/_itineraryArt.ts
+async function loadArtItineraryRows(ctx, tourId) {
+  const supabase = supabaseForUser(ctx);
+  const { data: tour, error: tourError } = await supabase.from("tours").select("id, name, start_date").eq("id", tourId).maybeSingle();
+  if (tourError) return { error: tourError.message };
+  if (!tour) return { error: `No tour found with id ${tourId}.` };
+  const { data: itinerary, error: itError } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tourId).eq("is_current", true).order("version", { ascending: false }).limit(1).maybeSingle();
+  if (itError) return { error: itError.message };
+  if (!itinerary) {
+    return {
+      tour,
+      itinerary_id: null,
+      days: [],
+      rows: []
+    };
+  }
+  const { data: days, error: daysError } = await supabase.from("tour_itinerary_days").select("id, day_number, activity_date").eq("itinerary_id", itinerary.id).order("day_number");
+  if (daysError) return { error: daysError.message };
+  const dayIds = (days ?? []).map((d) => d.id);
+  const { data: entries, error: entriesError } = dayIds.length ? await supabase.from("tour_itinerary_entries").select("id, day_id, subject, time_slot, content, sort_order").in("day_id", dayIds).order("sort_order") : { data: [], error: null };
+  if (entriesError) return { error: entriesError.message };
+  const shaped = (days ?? []).map((d) => ({
+    day_number: d.day_number,
+    activity_date: d.activity_date,
+    entries: (entries ?? []).filter((e) => e.day_id === d.id).map((e) => ({
+      subject: e.subject,
+      time_slot: e.time_slot ?? null,
+      content: e.content ?? null,
+      sort_order: e.sort_order ?? 0
+    }))
+  }));
+  return {
+    tour,
+    itinerary_id: itinerary.id,
+    days: shaped,
+    rows: buildWpItineraryRows(shaped)
+  };
+}
+async function loadWordpressTourLink(ctx, tourId) {
+  const { data, error } = await supabaseForUser(ctx).from("wordpress_tour_links").select("*").eq("tour_id", tourId).maybeSingle();
+  if (error) return { error: error.message };
+  return { link: data ?? null };
+}
+
+// src/lib/mcp/tools/wordpress-preview-tour-itinerary.ts
+var wordpress_preview_tour_itinerary_default = defineTool97({
+  name: "wordpress_preview_tour_itinerary",
+  title: "Preview itinerary push to website",
+  description: "Dry run before publishing: renders the ART itinerary for a tour into WordPress repeater rows and diffs them row-by-row against what is live on the website. Changes nothing. Use this, show the diff to the user, then call `wordpress_push_tour_itinerary` to publish. Admin/manager only.",
+  inputSchema: {
+    tour_id: z93.string().describe("The ART tour id (uuid)."),
+    wordpress_tour_id: z93.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, wordpress_tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const art = await loadArtItineraryRows(ctx, tour_id);
+    if ("error" in art) return { content: [{ type: "text", text: art.error }], isError: true };
+    if (!art.itinerary_id)
+      return {
+        content: [{ type: "text", text: `Tour ${art.tour.name ?? tour_id} has no itinerary yet.` }],
+        isError: true
+      };
+    let wpId = wordpress_tour_id ?? null;
+    if (!wpId) {
+      const linked = await loadWordpressTourLink(ctx, tour_id);
+      if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
+      const link = linked.link;
+      wpId = link?.wp_tour_id ?? null;
+    }
+    if (!wpId)
+      return {
+        content: [{
+          type: "text",
+          text: "This tour is not linked to a WordPress tour post. Pass wordpress_tour_id explicitly or link the tour first."
+        }],
+        isError: true
+      };
+    try {
+      const res = await wordpressRequest({
+        endpoint: `tour/${wpId}`,
+        query: { context: "edit", _fields: "id,acf" }
+      });
+      const wpRows = normaliseWpItineraryRows(
+        res.data?.acf?.[WP_ITINERARY_FIELD]
+      );
+      const diff = buildItineraryDiff(art.rows, wpRows);
+      const out = {
+        tour_id,
+        tour_name: art.tour.name,
+        wordpress_tour_id: wpId,
+        has_changes: diff.changed,
+        art_row_count: art.rows.length,
+        wordpress_row_count: wpRows.length,
+        changed_rows: diff.rows.filter((r) => r.changed).length,
+        diff: diff.rows
+      };
+      return {
+        content: [{
+          type: "text",
+          text: diff.changed ? `${out.changed_rows} of ${diff.rows.length} itinerary rows differ from the website.
+${JSON.stringify(out)}` : `The website itinerary already matches ART (${art.rows.length} rows).`
+        }],
+        structuredContent: out
+      };
+    } catch (err) {
+      const c = categoriseError(err);
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-push-tour-itinerary.ts
+import { defineTool as defineTool98 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z94 } from "npm:zod@^3.25.76";
+var wordpress_push_tour_itinerary_default = defineTool98({
+  name: "wordpress_push_tour_itinerary",
+  title: "Push itinerary to website",
+  description: "Publish the ART itinerary for a tour to its linked WordPress tour post, replacing the live `itinerary` repeater rows (this is what guests see on the website). ART is the source of truth; the push is one-way ART \u2192 WordPress. Run `wordpress_preview_tour_itinerary` first, show the diff, and only call this once the user has approved \u2014 you must pass confirm=true. Every call is written to the WordPress audit log with a before/after snapshot. Admin/manager only.",
+  inputSchema: {
+    tour_id: z94.string().describe("The ART tour id (uuid)."),
+    confirm: z94.boolean().describe("Must be true. Confirms the user has reviewed the diff and approved publishing to the live website."),
+    wordpress_tour_id: z94.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, confirm, wordpress_tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!confirm)
+      return {
+        content: [{
+          type: "text",
+          text: "Not published. Review the diff with wordpress_preview_tour_itinerary, get the user's approval, then call again with confirm=true."
+        }],
+        isError: true
+      };
+    const art = await loadArtItineraryRows(ctx, tour_id);
+    if ("error" in art) return { content: [{ type: "text", text: art.error }], isError: true };
+    if (!art.itinerary_id || art.rows.length === 0)
+      return {
+        content: [{
+          type: "text",
+          text: `Tour ${art.tour.name ?? tour_id} has no itinerary content to publish. Refusing to blank the website itinerary.`
+        }],
+        isError: true
+      };
+    let wpId = wordpress_tour_id ?? null;
+    if (!wpId) {
+      const linked = await loadWordpressTourLink(ctx, tour_id);
+      if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
+      const link = linked.link;
+      wpId = link?.wp_tour_id ?? null;
+    }
+    if (!wpId)
+      return {
+        content: [{
+          type: "text",
+          text: "This tour is not linked to a WordPress tour post. Pass wordpress_tour_id explicitly or link the tour first."
+        }],
+        isError: true
+      };
+    const endpoint = `tour/${wpId}`;
+    let before = null;
+    try {
+      const b = await wordpressRequest({
+        endpoint,
+        query: { context: "edit", _fields: "id,acf" }
+      });
+      before = b.data?.acf ?? null;
+    } catch {
+    }
+    try {
+      const res = await wordpressRequest({
+        endpoint,
+        method: "POST",
+        body: { acf: { [WP_ITINERARY_FIELD]: art.rows } }
+      });
+      const after = res.data?.acf ?? null;
+      const liveRows = normaliseWpItineraryRows(after?.[WP_ITINERARY_FIELD]);
+      const verify = buildItineraryDiff(art.rows, liveRows);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "push_tour_itinerary",
+        wordpress_object_type: "tour",
+        wordpress_object_id: wpId,
+        request_summary: {
+          ...requestSummary(endpoint, "POST"),
+          changed_fields: [WP_ITINERARY_FIELD],
+          art_tour_id: tour_id,
+          row_count: art.rows.length
+        },
+        result_status: "success",
+        response_code: res.status,
+        before_snapshot: before ? { [WP_ITINERARY_FIELD]: before[WP_ITINERARY_FIELD] ?? null } : null,
+        after_snapshot: { [WP_ITINERARY_FIELD]: after?.[WP_ITINERARY_FIELD] ?? null }
+      });
+      const out = {
+        tour_id,
+        tour_name: art.tour.name,
+        wordpress_tour_id: wpId,
+        rows_published: art.rows.length,
+        live_row_count: liveRows.length,
+        verified: !verify.changed
+      };
+      return {
+        content: [{
+          type: "text",
+          text: out.verified ? `Published ${out.rows_published} itinerary rows to the website for ${out.tour_name}.` : `Published ${out.rows_published} rows, but the live itinerary still differs \u2014 check the WordPress post.
+${JSON.stringify(out)}`
+        }],
+        structuredContent: out
+      };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "push_tour_itinerary",
+        wordpress_object_type: "tour",
+        wordpress_object_id: wpId,
+        request_summary: {
+          ...requestSummary(endpoint, "POST"),
+          changed_fields: [WP_ITINERARY_FIELD],
+          art_tour_id: tour_id
+        },
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message,
+        before_snapshot: before
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/get-tour-messages.ts
+import { defineTool as defineTool99 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z95 } from "npm:zod@^3.25.76";
+var MESSAGE_COLUMNS = "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
+var get_tour_messages_default = defineTool99({
+  name: "get_tour_messages",
+  title: "Get tour messages",
+  description: "Read the three tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, and the Welcome Drinks Message. Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
+  inputSchema: { tour_id: z95.string().describe("The tour id (uuid).") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from("tours").select(MESSAGE_COLUMNS).eq("id", tour_id).maybeSingle();
+    if (error) return toolError2(error.message);
+    if (!data) return toolError2(`No tour found with id ${tour_id}.`);
+    const row = data;
+    let pickup_doc_url = null;
+    if (row.pickup_arrival_doc_path) {
+      pickup_doc_url = supabase.storage.from("email-attachments").getPublicUrl(String(row.pickup_arrival_doc_path)).data.publicUrl;
+    }
+    const out = {
+      tour_id: row.id,
+      tour_name: row.name ?? null,
+      welcome_message: {
+        enabled: row.welcome_message_enabled ?? false,
+        heading: row.welcome_message_heading ?? "",
+        body: row.welcome_message_body ?? "",
+        signoff: row.welcome_message_signoff ?? "",
+        image_path: row.welcome_message_image_path ?? null
+      },
+      pickup_arrival_message: row.pickup_arrival_message ?? "",
+      welcome_drinks_message: row.welcome_drinks_message ?? "",
+      pickup_arrival_document: row.pickup_arrival_doc_path ? {
+        file_name: row.pickup_arrival_doc_name ?? null,
+        file_path: row.pickup_arrival_doc_path,
+        public_url: pickup_doc_url
+      } : null,
+      merge_fields: {
+        welcome_message: "{{#tour_welcome_message_enabled}}\u2026{{/tour_welcome_message_enabled}}",
+        pickup_arrival: "{{tour_pickup_arrival_message}}",
+        welcome_drinks: "{{tour_welcome_drinks_message}}"
+      }
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/update-tour-messages.ts
+import { defineTool as defineTool100 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z96 } from "npm:zod@^3.25.76";
+var update_tour_messages_default = defineTool100({
+  name: "update_tour_messages",
+  title: "Update tour messages",
+  description: "Edit the tour comms messages shown in the tour's Comms \u2192 Messages tab and pulled into email templates: the Welcome Message (turn on/off with `welcome_message_enabled`, plus heading/body/sign-off), the Pickup/Arrival Message and the Welcome Drinks Message. Message bodies are rich text \u2014 pass simple HTML (<p>, <strong>, <em>, <ul>, <a href>). Only the fields you supply are changed. Admin/manager only.",
+  inputSchema: {
+    tour_id: z96.string().describe("The tour id (uuid)."),
+    welcome_message_enabled: z96.boolean().optional().describe("Turn the tour's Welcome Message on (true) or off (false)."),
+    welcome_message_heading: z96.string().optional().describe("Welcome message heading, e.g. 'Welcome'."),
+    welcome_message_body: z96.string().optional().describe("Welcome message body (rich text / simple HTML)."),
+    welcome_message_signoff: z96.string().optional().describe("Welcome message sign-off, e.g. 'The ART Team'."),
+    pickup_arrival_message: z96.string().optional().describe("Pickup/Arrival message (rich text / simple HTML) \u2014 where and when guests are met. May hyperlink the uploaded pickup document."),
+    welcome_drinks_message: z96.string().optional().describe("Welcome Drinks message (rich text / simple HTML) \u2014 where guests first gather.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, ...input }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const map = {
+      welcome_message_enabled: "welcome_message_enabled",
+      welcome_message_heading: "welcome_message_heading",
+      welcome_message_body: "welcome_message_body",
+      welcome_message_signoff: "welcome_message_signoff",
+      pickup_arrival_message: "pickup_arrival_message",
+      welcome_drinks_message: "welcome_drinks_message"
+    };
+    const payload = {};
+    for (const [key, column] of Object.entries(map)) {
+      const value = input[key];
+      if (value !== void 0) payload[column] = value;
+    }
+    if (Object.keys(payload).length === 0)
+      return toolError2("No message fields supplied. Nothing to update.");
+    const { data, error } = await supabaseForUser(ctx).from("tours").update(payload).eq("id", tour_id).select(
+      "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message"
+    ).maybeSingle();
+    if (error) return toolError2(error.message);
+    if (!data) return toolError2("Tour not found or not permitted.");
+    const out = { updated_fields: Object.keys(payload), tour: data };
+    return {
+      content: [{ type: "text", text: `Updated tour messages: ${out.updated_fields.join(", ")}` }],
+      structuredContent: out
+    };
+  }
+});
+
+// src/lib/mcp/tools/upload-tour-pickup-document.ts
+import { defineTool as defineTool101 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z97 } from "npm:zod@^3.25.76";
+var BUCKET = "email-attachments";
+var upload_tour_pickup_document_default = defineTool101({
+  name: "upload_tour_pickup_document",
+  title: "Upload tour pickup/arrival document",
+  description: "Upload the tour's Pickup/Arrival document (e.g. an arrivals map PDF) and attach it to the tour. Provide the file as base64 in `data_base64`, max 20MB. Replaces any existing pickup document. Returns a public URL you can hyperlink from the Pickup/Arrival message (e.g. 'For further details, see map here.'). Set `insert_link_text` to append that hyperlink to the message automatically. Admin/manager only.",
+  inputSchema: {
+    tour_id: z97.string().describe("The tour id (uuid)."),
+    filename: z97.string().min(1).max(255).describe("Filename including extension, e.g. 'sydney-arrivals-map.pdf'."),
+    content_type: z97.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
+    data_base64: z97.string().min(1).describe("Base64-encoded file contents (no data: prefix)."),
+    insert_link_text: z97.string().optional().describe("Optional link text, e.g. 'see map here'. When supplied, a paragraph hyperlinking the document is appended to the Pickup/Arrival message.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ tour_id, filename, content_type, data_base64, insert_link_text }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const decoded = decodeUpload({
+      filename,
+      content_type,
+      data_base64,
+      allowedTypes: ALLOWED_DOCUMENT_TYPES
+    });
+    if ("error" in decoded) return decoded.error;
+    const supabase = supabaseForUser(ctx);
+    const { data: tour, error: tourError } = await supabase.from("tours").select("id, name, pickup_arrival_doc_path, pickup_arrival_message").eq("id", tour_id).maybeSingle();
+    if (tourError) return toolError2(tourError.message);
+    if (!tour) return toolError2(`No tour found with id ${tour_id}.`);
+    const previous = tour.pickup_arrival_doc_path ?? null;
+    const path = `pickup-docs/${tour_id}/${Date.now()}-${decoded.file.name}`;
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, decoded.file.bytes, {
+      contentType: decoded.file.contentType,
+      upsert: true
+    });
+    if (uploadError) return toolError2(`Storage upload failed: ${uploadError.message}`);
+    const public_url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    const payload = {
+      pickup_arrival_doc_path: path,
+      pickup_arrival_doc_name: decoded.file.name
+    };
+    if (insert_link_text && insert_link_text.trim()) {
+      const existing = tour.pickup_arrival_message ?? "";
+      const anchor = `<p><a href="${public_url}" target="_blank" rel="noopener noreferrer">${insert_link_text.trim()}</a></p>`;
+      payload.pickup_arrival_message = existing ? `${existing}
+${anchor}` : anchor;
+    }
+    const { error } = await supabase.from("tours").update(payload).eq("id", tour_id);
+    if (error) {
+      try {
+        await supabase.storage.from(BUCKET).remove([path]);
+      } catch {
+      }
+      return toolError2(error.message);
+    }
+    if (previous && previous !== path) {
+      try {
+        await supabase.storage.from(BUCKET).remove([previous]);
+      } catch {
+      }
+    }
+    const out = {
+      tour_id,
+      tour_name: tour.name ?? null,
+      file_name: decoded.file.name,
+      file_path: path,
+      file_size: decoded.file.size,
+      public_url,
+      link_inserted: !!(insert_link_text && insert_link_text.trim())
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/replace-tour-itinerary.ts
+import { defineTool as defineTool102 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z98 } from "npm:zod@^3.25.76";
+var entrySchema = z98.object({
+  subject: z98.string().min(1).describe("Entry title, e.g. 'Ferry Transfer'."),
+  time_slot: z98.string().optional().describe("Time of day, e.g. '09:00' or 'Morning'."),
+  content: z98.string().optional().describe("Entry details/description.")
+});
+var daySchema = z98.object({
+  activity_date: z98.string().describe("Date for this day, YYYY-MM-DD."),
+  entries: z98.array(entrySchema).default([]).describe("Entries for the day, in display order.")
+});
+var replace_tour_itinerary_default = defineTool102({
+  name: "replace_tour_itinerary",
+  title: "Replace the whole tour itinerary",
+  description: "Replace a tour's current itinerary in one call: every existing day and entry is deleted and rebuilt from the `days` array (day numbers assigned in array order, entry sort order in array order). Destructive \u2014 always show the user the new itinerary and confirm before calling. Creates the itinerary if the tour has none. Admin/manager only.",
+  inputSchema: {
+    tour_id: z98.string().describe("The tour id (uuid)."),
+    days: z98.array(daySchema).min(1).describe("The complete new itinerary, ordered day 1 first."),
+    title: z98.string().optional().describe("Optional itinerary title (only applied when supplied).")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+  handler: async ({ tour_id, days, title }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: tour, error: tourError } = await supabase.from("tours").select("id, name").eq("id", tour_id).maybeSingle();
+    if (tourError) return toolError2(tourError.message);
+    if (!tour) return toolError2(`No tour found with id ${tour_id}.`);
+    let { data: itinerary, error: itError } = await supabase.from("tour_itineraries").select("id").eq("tour_id", tour_id).eq("is_current", true).order("version", { ascending: false }).limit(1).maybeSingle();
+    if (itError) return toolError2(itError.message);
+    if (!itinerary) {
+      const created = await supabase.from("tour_itineraries").insert({
+        tour_id,
+        version: 1,
+        is_current: true,
+        title: title ?? null,
+        created_by: ctx.getUserId()
+      }).select("id").single();
+      if (created.error) return toolError2(created.error.message);
+      itinerary = created.data;
+    } else if (title !== void 0) {
+      await supabase.from("tour_itineraries").update({ title }).eq("id", itinerary.id);
+    }
+    const { data: existingDays, error: existingError } = await supabase.from("tour_itinerary_days").select("id").eq("itinerary_id", itinerary.id);
+    if (existingError) return toolError2(existingError.message);
+    const existingIds = (existingDays ?? []).map((d) => d.id);
+    if (existingIds.length) {
+      const delEntries = await supabase.from("tour_itinerary_entries").delete().in("day_id", existingIds);
+      if (delEntries.error) return toolError2(delEntries.error.message);
+      const delDays = await supabase.from("tour_itinerary_days").delete().in("id", existingIds);
+      if (delDays.error) return toolError2(delDays.error.message);
+    }
+    const dayRows = days.map((d, i) => ({
+      itinerary_id: itinerary.id,
+      activity_date: d.activity_date,
+      day_number: i + 1
+    }));
+    const insertedDays = await supabase.from("tour_itinerary_days").insert(dayRows).select("id, day_number, activity_date");
+    if (insertedDays.error) return toolError2(insertedDays.error.message);
+    const byNumber = /* @__PURE__ */ new Map();
+    for (const d of insertedDays.data ?? []) byNumber.set(d.day_number, d.id);
+    const entryRows = [];
+    days.forEach((d, i) => {
+      const dayId = byNumber.get(i + 1);
+      if (!dayId) return;
+      (d.entries ?? []).forEach((e, j) => {
+        entryRows.push({
+          day_id: dayId,
+          subject: e.subject,
+          time_slot: e.time_slot ?? null,
+          content: e.content ?? null,
+          sort_order: j
+        });
+      });
+    });
+    if (entryRows.length) {
+      const insertedEntries = await supabase.from("tour_itinerary_entries").insert(entryRows);
+      if (insertedEntries.error) return toolError2(insertedEntries.error.message);
+    }
+    const out = {
+      tour_id,
+      tour_name: tour.name ?? null,
+      itinerary_id: itinerary.id,
+      days_created: dayRows.length,
+      entries_created: entryRows.length,
+      days_replaced: existingIds.length
+    };
+    return {
+      content: [{
+        type: "text",
+        text: `Replaced itinerary for ${out.tour_name}: ${out.days_created} days, ${out.entries_created} entries.`
+      }],
+      structuredContent: out
+    };
+  }
+});
+
+// src/lib/mcp/tools/reorder-itinerary-days.ts
+import { defineTool as defineTool103 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z99 } from "npm:zod@^3.25.76";
+var reorder_itinerary_days_default = defineTool103({
+  name: "reorder_itinerary_days",
+  title: "Reorder itinerary days",
+  description: "Renumber the days of an itinerary. Provide `day_ids` in the order you want them shown \u2014 day_number is rewritten as 1,2,3\u2026 Every day of the itinerary must be listed. Dates are not changed. Admin/manager only.",
+  inputSchema: {
+    itinerary_id: z99.string().describe("The itinerary id (uuid)."),
+    day_ids: z99.array(z99.string()).min(1).describe("Itinerary day ids (uuid) in the desired order, first day first.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ itinerary_id, day_ids }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: existing, error } = await supabase.from("tour_itinerary_days").select("id").eq("itinerary_id", itinerary_id);
+    if (error) return toolError2(error.message);
+    const existingIds = new Set((existing ?? []).map((d) => d.id));
+    if (existingIds.size === 0) return toolError2(`Itinerary ${itinerary_id} has no days.`);
+    const unique = Array.from(new Set(day_ids));
+    if (unique.length !== day_ids.length) return toolError2("day_ids contains duplicates.");
+    const unknown = unique.filter((id) => !existingIds.has(id));
+    if (unknown.length)
+      return toolError2(`These day ids do not belong to itinerary ${itinerary_id}: ${unknown.join(", ")}`);
+    if (unique.length !== existingIds.size)
+      return toolError2(
+        `day_ids must list all ${existingIds.size} days of the itinerary (received ${unique.length}).`
+      );
+    for (let i = 0; i < unique.length; i++) {
+      const res = await supabase.from("tour_itinerary_days").update({ day_number: -(i + 1) }).eq("id", unique[i]);
+      if (res.error) return toolError2(res.error.message);
+    }
+    for (let i = 0; i < unique.length; i++) {
+      const res = await supabase.from("tour_itinerary_days").update({ day_number: i + 1 }).eq("id", unique[i]);
+      if (res.error) return toolError2(res.error.message);
+    }
+    const out = { itinerary_id, order: unique };
+    return {
+      content: [{ type: "text", text: `Renumbered ${unique.length} itinerary days.` }],
+      structuredContent: out
+    };
+  }
+});
+
+// src/lib/mcp/tools/reorder-itinerary-entries.ts
+import { defineTool as defineTool104 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z100 } from "npm:zod@^3.25.76";
+var reorder_itinerary_entries_default = defineTool104({
+  name: "reorder_itinerary_entries",
+  title: "Reorder itinerary entries",
+  description: "Set the display order of the entries within one itinerary day. Provide `entry_ids` in the order you want them shown \u2014 sort_order is rewritten as 0,1,2\u2026 Every entry of the day must be listed. Admin/manager only.",
+  inputSchema: {
+    day_id: z100.string().describe("The itinerary day id (uuid)."),
+    entry_ids: z100.array(z100.string()).min(1).describe("Entry ids (uuid) in the desired display order.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ day_id, entry_ids }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: existing, error } = await supabase.from("tour_itinerary_entries").select("id").eq("day_id", day_id);
+    if (error) return toolError2(error.message);
+    const existingIds = new Set((existing ?? []).map((e) => e.id));
+    if (existingIds.size === 0) return toolError2(`Day ${day_id} has no entries.`);
+    const unique = Array.from(new Set(entry_ids));
+    if (unique.length !== entry_ids.length) return toolError2("entry_ids contains duplicates.");
+    const unknown = unique.filter((id) => !existingIds.has(id));
+    if (unknown.length)
+      return toolError2(`These entry ids do not belong to day ${day_id}: ${unknown.join(", ")}`);
+    if (unique.length !== existingIds.size)
+      return toolError2(
+        `entry_ids must list all ${existingIds.size} entries of the day (received ${unique.length}).`
+      );
+    for (let i = 0; i < unique.length; i++) {
+      const res = await supabase.from("tour_itinerary_entries").update({ sort_order: i }).eq("id", unique[i]);
+      if (res.error) return toolError2(res.error.message);
+    }
+    const out = { day_id, order: unique };
+    return {
+      content: [{ type: "text", text: `Reordered ${unique.length} entries on day ${day_id}.` }],
+      structuredContent: out
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.2.0",
+  version: "2.3.0",
   instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`. These WordPress tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
@@ -5684,6 +6437,15 @@ var mcp_default = defineMcp({
     wordpress_get_taxonomies_default,
     wordpress_update_tour_fields_default,
     wordpress_upload_media_default,
+    wordpress_get_tour_itinerary_default,
+    wordpress_preview_tour_itinerary_default,
+    wordpress_push_tour_itinerary_default,
+    get_tour_messages_default,
+    update_tour_messages_default,
+    upload_tour_pickup_document_default,
+    replace_tour_itinerary_default,
+    reorder_itinerary_days_default,
+    reorder_itinerary_entries_default,
     list_tours_default,
     get_next_departing_tour_default,
     get_tour_default,

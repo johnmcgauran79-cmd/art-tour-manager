@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -429,6 +429,368 @@
             "filename",
             "content_type",
             "data_base64"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_get_tour_itinerary",
+        "title": "Get WordPress tour itinerary",
+        "description": "Read the live itinerary currently published on a WordPress tour post. Returns the `itinerary` ACF repeater rows in order, each with its `date_event` heading and `details` HTML. Read-only, admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The WordPress tour post id (not the ART tour uuid)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_preview_tour_itinerary",
+        "title": "Preview itinerary push to website",
+        "description": "Dry run before publishing: renders the ART itinerary for a tour into WordPress repeater rows and diffs them row-by-row against what is live on the website. Changes nothing. Use this, show the diff to the user, then call `wordpress_push_tour_itinerary` to publish. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id. Defaults to the linked post for this tour."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_push_tour_itinerary",
+        "title": "Push itinerary to website",
+        "description": "Publish the ART itinerary for a tour to its linked WordPress tour post, replacing the live `itinerary` repeater rows (this is what guests see on the website). ART is the source of truth; the push is one-way ART → WordPress. Run `wordpress_preview_tour_itinerary` first, show the diff, and only call this once the user has approved — you must pass confirm=true. Every call is written to the WordPress audit log with a before/after snapshot. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "Must be true. Confirms the user has reviewed the diff and approved publishing to the live website."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id. Defaults to the linked post for this tour."
+            }
+          },
+          "required": [
+            "tour_id",
+            "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_tour_messages",
+        "title": "Get tour messages",
+        "description": "Read the three tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, and the Welcome Drinks Message. Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_tour_messages",
+        "title": "Update tour messages",
+        "description": "Edit the tour comms messages shown in the tour's Comms → Messages tab and pulled into email templates: the Welcome Message (turn on/off with `welcome_message_enabled`, plus heading/body/sign-off), the Pickup/Arrival Message and the Welcome Drinks Message. Message bodies are rich text — pass simple HTML (<p>, <strong>, <em>, <ul>, <a href>). Only the fields you supply are changed. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            },
+            "welcome_message_enabled": {
+              "type": "boolean",
+              "description": "Turn the tour's Welcome Message on (true) or off (false)."
+            },
+            "welcome_message_heading": {
+              "type": "string",
+              "description": "Welcome message heading, e.g. 'Welcome'."
+            },
+            "welcome_message_body": {
+              "type": "string",
+              "description": "Welcome message body (rich text / simple HTML)."
+            },
+            "welcome_message_signoff": {
+              "type": "string",
+              "description": "Welcome message sign-off, e.g. 'The ART Team'."
+            },
+            "pickup_arrival_message": {
+              "type": "string",
+              "description": "Pickup/Arrival message (rich text / simple HTML) — where and when guests are met. May hyperlink the uploaded pickup document."
+            },
+            "welcome_drinks_message": {
+              "type": "string",
+              "description": "Welcome Drinks message (rich text / simple HTML) — where guests first gather."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upload_tour_pickup_document",
+        "title": "Upload tour pickup/arrival document",
+        "description": "Upload the tour's Pickup/Arrival document (e.g. an arrivals map PDF) and attach it to the tour. Provide the file as base64 in `data_base64`, max 20MB. Replaces any existing pickup document. Returns a public URL you can hyperlink from the Pickup/Arrival message (e.g. 'For further details, see map here.'). Set `insert_link_text` to append that hyperlink to the message automatically. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            },
+            "filename": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "description": "Filename including extension, e.g. 'sydney-arrivals-map.pdf'."
+            },
+            "content_type": {
+              "type": "string",
+              "minLength": 1,
+              "description": "MIME type. Allowed: application/pdf, image/jpeg, image/png, image/webp, image/gif, text/plain, text/csv, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-powerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            },
+            "data_base64": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Base64-encoded file contents (no data: prefix)."
+            },
+            "insert_link_text": {
+              "type": "string",
+              "description": "Optional link text, e.g. 'see map here'. When supplied, a paragraph hyperlinking the document is appended to the Pickup/Arrival message."
+            }
+          },
+          "required": [
+            "tour_id",
+            "filename",
+            "content_type",
+            "data_base64"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "replace_tour_itinerary",
+        "title": "Replace the whole tour itinerary",
+        "description": "Replace a tour's current itinerary in one call: every existing day and entry is deleted and rebuilt from the `days` array (day numbers assigned in array order, entry sort order in array order). Destructive — always show the user the new itinerary and confirm before calling. Creates the itinerary if the tour has none. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            },
+            "days": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "activity_date": {
+                    "type": "string",
+                    "description": "Date for this day, YYYY-MM-DD."
+                  },
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "subject": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Entry title, e.g. 'Ferry Transfer'."
+                        },
+                        "time_slot": {
+                          "type": "string",
+                          "description": "Time of day, e.g. '09:00' or 'Morning'."
+                        },
+                        "content": {
+                          "type": "string",
+                          "description": "Entry details/description."
+                        }
+                      },
+                      "required": [
+                        "subject"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "default": [],
+                    "description": "Entries for the day, in display order."
+                  }
+                },
+                "required": [
+                  "activity_date"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "description": "The complete new itinerary, ordered day 1 first."
+            },
+            "title": {
+              "type": "string",
+              "description": "Optional itinerary title (only applied when supplied)."
+            }
+          },
+          "required": [
+            "tour_id",
+            "days"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "reorder_itinerary_days",
+        "title": "Reorder itinerary days",
+        "description": "Renumber the days of an itinerary. Provide `day_ids` in the order you want them shown — day_number is rewritten as 1,2,3… Every day of the itinerary must be listed. Dates are not changed. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "itinerary_id": {
+              "type": "string",
+              "description": "The itinerary id (uuid)."
+            },
+            "day_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "Itinerary day ids (uuid) in the desired order, first day first."
+            }
+          },
+          "required": [
+            "itinerary_id",
+            "day_ids"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "reorder_itinerary_entries",
+        "title": "Reorder itinerary entries",
+        "description": "Set the display order of the entries within one itinerary day. Provide `entry_ids` in the order you want them shown — sort_order is rewritten as 0,1,2… Every entry of the day must be listed. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "day_id": {
+              "type": "string",
+              "description": "The itinerary day id (uuid)."
+            },
+            "entry_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "Entry ids (uuid) in the desired display order."
+            }
+          },
+          "required": [
+            "day_id",
+            "entry_ids"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
