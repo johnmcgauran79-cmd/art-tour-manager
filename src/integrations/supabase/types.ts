@@ -1730,10 +1730,12 @@ export type Database = {
           booking_id: string | null
           created_at: string
           error_message: string | null
+          from_email: string | null
           id: string
           message_id: string
           recipient_email: string
           recipient_name: string | null
+          rendered_html: string | null
           sent_at: string
           sent_by: string | null
           subject: string
@@ -1746,10 +1748,12 @@ export type Database = {
           booking_id?: string | null
           created_at?: string
           error_message?: string | null
+          from_email?: string | null
           id?: string
           message_id: string
           recipient_email: string
           recipient_name?: string | null
+          rendered_html?: string | null
           sent_at?: string
           sent_by?: string | null
           subject: string
@@ -1762,10 +1766,12 @@ export type Database = {
           booking_id?: string | null
           created_at?: string
           error_message?: string | null
+          from_email?: string | null
           id?: string
           message_id?: string
           recipient_email?: string
           recipient_name?: string | null
+          rendered_html?: string | null
           sent_at?: string
           sent_by?: string | null
           subject?: string

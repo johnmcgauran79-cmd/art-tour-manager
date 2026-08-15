@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  Eye,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,10 @@ import {
   type SentEmailRow,
   type BulkEmailRow,
 } from "@/hooks/useSentEmailsReport";
+import {
+  EmailHtmlPreviewModal,
+  type EmailPreviewTarget,
+} from "@/components/communications/EmailHtmlPreviewModal";
 
 interface SentEmailsReportProps {
   /** When provided, locks the report to a single tour. */
@@ -69,7 +74,13 @@ const StatusBadge = ({
   );
 };
 
-const BulkRowDetails = ({ row }: { row: BulkEmailRow }) => {
+const BulkRowDetails = ({
+  row,
+  onPreview,
+}: {
+  row: BulkEmailRow;
+  onPreview: (t: EmailPreviewTarget) => void;
+}) => {
   return (
     <div className="bg-muted/30 border rounded-md p-3 space-y-1 text-sm">
       <div className="font-medium mb-2">Recipients ({row.logs.length})</div>
@@ -108,7 +119,26 @@ const BulkRowDetails = ({ row }: { row: BulkEmailRow }) => {
                   </div>
                 )}
               </div>
-              <StatusBadge label={status} />
+              <div className="flex items-center gap-1">
+                <StatusBadge label={status} />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Preview email"
+                  onClick={() =>
+                    onPreview({
+                      subject: l.subject,
+                      recipientEmail: l.recipient_email,
+                      recipientName: l.recipient_name,
+                      sentAt: l.sent_at,
+                      fromEmail: l.from_email ?? null,
+                      renderedHtml: l.rendered_html ?? null,
+                    })
+                  }
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           );
         })}
@@ -124,6 +154,7 @@ export const SentEmailsReport = ({ tourId }: SentEmailsReportProps) => {
   );
   const [search, setSearch] = useState("");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [preview, setPreview] = useState<EmailPreviewTarget | null>(null);
 
   const { data, isLoading } = useSentEmailsReport({ range, tourId });
 
@@ -232,7 +263,7 @@ export const SentEmailsReport = ({ tourId }: SentEmailsReportProps) => {
               <TableHead>Template / Subject</TableHead>
               <TableHead>Recipient(s)</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-[40px]" />
+              <TableHead className="w-[80px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -358,7 +389,26 @@ export const SentEmailsReport = ({ tourId }: SentEmailsReportProps) => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {!isBulk && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Preview email"
+                            onClick={() =>
+                              setPreview({
+                                subject: row.subject,
+                                recipientEmail: row.recipientEmail,
+                                recipientName: row.recipientName,
+                                sentAt: row.sentAt,
+                                fromEmail: row.raw.from_email ?? null,
+                                renderedHtml: row.raw.rendered_html ?? null,
+                              })
+                            }
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
                         {isBulk && (
                           <Button
                             size="icon"
@@ -379,7 +429,7 @@ export const SentEmailsReport = ({ tourId }: SentEmailsReportProps) => {
                     {isExpanded && isBulk && (
                       <TableRow key={`${row.key}-detail`}>
                         <TableCell colSpan={7} className="bg-muted/20">
-                          <BulkRowDetails row={row} />
+                          <BulkRowDetails row={row} onPreview={setPreview} />
                         </TableCell>
                       </TableRow>
                     )}
@@ -390,6 +440,8 @@ export const SentEmailsReport = ({ tourId }: SentEmailsReportProps) => {
           </TableBody>
         </Table>
       </div>
+
+      <EmailHtmlPreviewModal target={preview} onClose={() => setPreview(null)} />
     </div>
   );
 };

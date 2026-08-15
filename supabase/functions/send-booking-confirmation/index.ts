@@ -1718,6 +1718,8 @@ const handler = async (req: Request): Promise<Response> => {
           template_name: template?.name || 'Custom',
           template_id: template?.id || null,
           batch_id: externalBatchId || (willSendToAdditional ? batchId : null),
+          rendered_html: emailHtml,
+          from_email: fromField,
         });
 
       if (logError) {
@@ -1966,6 +1968,8 @@ const handler = async (req: Request): Promise<Response> => {
               template_name: template?.name || 'Custom',
               template_id: template?.id || null,
               batch_id: batchId,
+              rendered_html: passengerEmailHtml,
+              from_email: fromField,
             });
         }
       } catch (passengerEmailError) {

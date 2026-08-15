@@ -13,6 +13,7 @@ import {
   Bot,
   Globe,
   Tag,
+  Mail,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -28,6 +29,7 @@ import { useIsAdminOrManager, useUserRoles } from "@/hooks/useUserRoles";
 import { usePersonalTodos } from "@/hooks/usePersonalTodos";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useBookings } from "@/hooks/useBookings";
+import { usePendingApprovalCount } from "@/hooks/useUpcomingEmails";
 
 interface NavItem {
   key: string;
@@ -58,6 +60,7 @@ export const AppSidebar = () => {
   const { data: todos = [] } = usePersonalTodos();
   const { data: myTasks = [] } = useMyTasks();
   const { data: allBookings = [] } = useBookings();
+  const { data: pendingApprovalCount = 0 } = usePendingApprovalCount();
   const estimatedMonthlyRevenue = (() => {
     const now = new Date();
     return allBookings
@@ -93,6 +96,7 @@ export const AppSidebar = () => {
   mainItems.push({ key: "tours", label: "Tours", icon: Map, tab: "tours" });
   if (!isHost) mainItems.push({ key: "bookings", label: "Bookings", icon: BookOpen, tab: "bookings" });
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
+  if (isAdminOrManager) mainItems.push({ key: "communications", label: "Communications", icon: Mail, path: "/communications", badge: pendingApprovalCount });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });
   const workspaceItems: NavItem[] = [

@@ -376,6 +376,8 @@ const handler = async (req: Request): Promise<Response> => {
             template_name: "profile_update_request",
             booking_id: bookingId || null,
             sent_by: user.id,
+            rendered_html: finalHtml,
+            from_email: fromEmail,
           });
           sentEmails.push(passenger.email);
         }

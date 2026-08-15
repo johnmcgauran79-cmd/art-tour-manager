@@ -259,6 +259,8 @@ serve(async (req) => {
       message_id: messageId,
       sent_at: new Date().toISOString(),
       template_name: "host_pre_tour_briefing",
+      rendered_html: html,
+      from_email: fromAddress,
     });
 
     return new Response(

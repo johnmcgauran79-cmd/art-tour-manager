@@ -437,6 +437,8 @@ const handler = async (req: Request): Promise<Response> => {
             message_id: emailResult.id,
             template_name: "custom_form_request",
             sent_by: user.id,
+            rendered_html: finalHtml,
+            from_email: fromEmail,
           });
         }
 

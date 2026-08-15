@@ -155,6 +155,8 @@ serve(async (req) => {
       message_id: emailResponse?.data?.id || emailResponse?.id || "unknown",
       sent_at: new Date().toISOString(),
       template_name: "tour_itinerary",
+      rendered_html: emailBody,
+      from_email: fromAddress,
     });
 
     return new Response(

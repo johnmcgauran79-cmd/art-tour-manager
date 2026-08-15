@@ -33,6 +33,8 @@ export interface RawEmailLog {
   sent_at: string;
   sent_by: string | null;
   error_message: string | null;
+  rendered_html?: string | null;
+  from_email?: string | null;
   tour?: { id: string; name: string } | null;
   email_events?: { event_type: string; created_at: string }[];
 }
@@ -146,6 +148,8 @@ export const useSentEmailsReport = (options: Options = {}) => {
           sent_at,
           sent_by,
           error_message,
+          rendered_html,
+          from_email,
           tour:tours(id, name),
           email_events(event_type, created_at)
         `

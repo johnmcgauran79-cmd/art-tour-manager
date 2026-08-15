@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ShareButton } from "@/components/ShareButton";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen, MessageSquareQuote, Image as ImageIcon, Globe } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen, MessageSquareQuote, Image as ImageIcon, Globe, BarChart3 } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -33,6 +33,7 @@ import { TourAdditionalInfoTab } from "@/components/TourAdditionalInfoTab";
 import { TourWelcomeMessageTab } from "@/components/TourWelcomeMessageTab";
 import { TourDocumentImagesTab } from "@/components/TourDocumentImagesTab";
 import { TourCommsSettingsTab } from "@/components/TourCommsSettingsTab";
+import { TourCommsReport } from "@/components/communications/TourCommsReport";
 import { TourWebsiteSyncTab } from "@/components/TourWebsiteSyncTab";
 import { TourWaiverStatusSection } from "@/components/TourWaiverStatusSection";
 import { Separator } from "@/components/ui/separator";
@@ -73,6 +74,10 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
           <ImageIcon className="h-3.5 w-3.5" />
           Images
         </TabsTrigger>
+        <TabsTrigger value="comms-report" className="flex items-center gap-1.5">
+          <BarChart3 className="h-3.5 w-3.5" />
+          Comms Report
+        </TabsTrigger>
         <TabsTrigger value="comms" className="flex items-center gap-1.5">
           <Mail className="h-3.5 w-3.5" />
           Email Settings
@@ -97,6 +102,9 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
       </TabsContent>
       <TabsContent value="images">
         <TourDocumentImagesTab tourId={tour.id} tourName={tour.name} />
+      </TabsContent>
+      <TabsContent value="comms-report">
+        <TourCommsReport tourId={tour.id} tourName={tour.name} />
       </TabsContent>
       <TabsContent value="comms">
         <TourCommsSettingsTab tourId={tour.id} tourName={tour.name} />
