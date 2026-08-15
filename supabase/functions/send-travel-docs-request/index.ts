@@ -517,6 +517,8 @@ const handler = async (req: Request): Promise<Response> => {
             booking_id: bookingId,
             tour_id: tour.id,
             sent_by: user.id,
+            rendered_html: finalHtml,
+            from_email: fromEmail,
           });
           sentEmails.push(passenger.email);
         }
