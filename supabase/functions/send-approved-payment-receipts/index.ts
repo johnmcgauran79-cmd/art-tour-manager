@@ -222,6 +222,8 @@ serve(async (req) => {
           subject,
           template_name: template.name,
           template_id: template.id,
+          rendered_html: html,
+          from_email: fromField,
         });
 
         sent++;
