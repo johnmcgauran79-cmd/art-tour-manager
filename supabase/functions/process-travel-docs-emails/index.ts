@@ -382,6 +382,7 @@ async function processTravelDocsBatch(
           recipient_name: `${customer.first_name} ${customer.last_name}`,
           subject: `Passport Details Required - ${tour.name}`,
           template_name: 'travel_documents_request',
+          rendered_html: fullEmailHtml,
           booking_id: booking.id,
           tour_id: tour.id,
         });
