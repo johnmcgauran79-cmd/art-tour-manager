@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,14 +15,6 @@ export default function Communications() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
-      <Helmet>
-        <title>Communications | ART Admin</title>
-        <meta
-          name="description"
-          content="Approve, schedule and review every client email sent by ART Admin — delivery, open and bounce reporting in one place."
-        />
-      </Helmet>
-
       <AppBreadcrumbs items={[{ label: "Communications" }]} />
 
       <div>

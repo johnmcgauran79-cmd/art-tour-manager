@@ -23,6 +23,7 @@ import BookingEdit from "./pages/BookingEdit";
 import TaskDetail from "./pages/TaskDetail";
 import TaskEdit from "./pages/TaskEdit";
 import PersonalTodos from "./pages/PersonalTodos";
+import Communications from "./pages/Communications";
 import PersonalNotes from "./pages/PersonalNotes";
 import PersonalCalendar from "./pages/PersonalCalendar";
 import ContactDetail from "./pages/ContactDetail";
@@ -224,6 +225,16 @@ function App() {
                   <TaskRoute>
                     <AppLayout>
                       <TaskEdit />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/communications"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <Communications />
                     </AppLayout>
                   </TaskRoute>
                 }

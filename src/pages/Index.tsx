@@ -18,7 +18,6 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
-import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { PendingPaymentReceipts } from "@/components/operations/PendingPaymentReceipts";
 import { BookingsReviewsChecks } from "@/components/bookings/BookingsReviewsChecks";
 // import { PaymentlessPaidAmounts } from "@/components/operations/PaymentlessPaidAmounts";
@@ -166,7 +165,6 @@ const Index = () => {
       
       <TabsContent value="bookings" className="space-y-4 mt-0">
         {!isAgent && <BookingsReviewsChecks />}
-        {!isAgent && <UnifiedEmailApprovals />}
         {!isAgent && <PendingPaymentReceipts />}
         {/* PaymentlessPaidAmounts hidden — batch-deposit fix in place; keep code for potential future re-enable */}
         {/* {!isAgent && <PaymentlessPaidAmounts />} */}
