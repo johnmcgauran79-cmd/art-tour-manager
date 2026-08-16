@@ -78,6 +78,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
     Component: AlertsWidget,
     default: { i: "alerts", x: 8, y: 20, w: 4, h: 10, minW: 3, minH: 4 },
   },
+  {
+    id: "upcoming_comms",
+    title: "Upcoming Comms",
+    Component: UpcomingCommsWidget,
+    default: { i: "upcoming_comms", x: 0, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
+  },
 ];
 
 export const DEFAULT_LAYOUT: LayoutItem[] = DASHBOARD_WIDGETS.map((w) => ({
