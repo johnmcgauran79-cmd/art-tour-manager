@@ -8,6 +8,7 @@ import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { MyApprovalsWidget } from "@/components/dashboard/MyApprovalsWidget";
 import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 import { MyTodosWidget } from "@/components/dashboard/MyTodosWidget";
+import { UpcomingCommsWidget } from "@/components/dashboard/UpcomingCommsWidget";
 import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
@@ -76,6 +77,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
     title: "Alerts",
     Component: AlertsWidget,
     default: { i: "alerts", x: 8, y: 20, w: 4, h: 10, minW: 3, minH: 4 },
+  },
+  {
+    id: "upcoming_comms",
+    title: "Upcoming Comms",
+    Component: UpcomingCommsWidget,
+    default: { i: "upcoming_comms", x: 0, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
   },
 ];
 
