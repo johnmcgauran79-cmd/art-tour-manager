@@ -1,4 +1,5 @@
 
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,43 +10,48 @@ import { useThemeProvider } from "@/hooks/useThemeProvider";
 import { AiContextProvider } from "@/contexts/AiContext";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Index from "./pages/Index";
-import ArtAi from "./pages/ArtAi";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import NotFound from "./pages/NotFound";
-import TourDetail from "./pages/TourDetail";
-import TourEdit from "./pages/TourEdit";
-import TourItinerary from "./pages/TourItinerary";
-import BookingDetail from "./pages/BookingDetail";
-import BookingEdit from "./pages/BookingEdit";
-import TaskDetail from "./pages/TaskDetail";
-import TaskEdit from "./pages/TaskEdit";
-import PersonalTodos from "./pages/PersonalTodos";
-import Communications from "./pages/Communications";
-import PersonalNotes from "./pages/PersonalNotes";
-import PersonalCalendar from "./pages/PersonalCalendar";
-import ContactDetail from "./pages/ContactDetail";
-import ContactEdit from "./pages/ContactEdit";
-import BulkBookingStatus from "./pages/BulkBookingStatus";
-import UpdateProfile from "./pages/UpdateProfile";
-import UpdateTravelDocs from "./pages/UpdateTravelDocs";
-import SignWaiver from "./pages/SignWaiver";
-import SelectPickup from "./pages/SelectPickup";
-import CustomForm from "./pages/CustomForm";
-import ViewItinerary from "./pages/ViewItinerary";
-import TeamsOAuthComplete from "./pages/TeamsOAuthComplete";
-import OAuthConsent from "./pages/OAuthConsent";
-import HostReport from "./pages/HostReport";
-import BeddingReview from "./pages/operations/BeddingReview";
-import ActivityBookings from "./pages/operations/ActivityBookings";
+import { ErrorBoundary } from "@/components/system/ErrorBoundary";
+import { RouteFallback } from "@/components/system/RouteFallback";
 
-import HotelAllocations from "./pages/operations/HotelAllocations";
-import BookingChanges from "./pages/operations/BookingChanges";
-import PaymentStatus from "./pages/operations/PaymentStatus";
-import MissingPhoneNumbers from "./pages/operations/MissingPhoneNumbers";
-import WordpressContent from "./pages/WordpressContent";
+// Route-level code splitting: each page ships as its own chunk so the initial
+// load no longer pulls the entire admin portal (reports, editors, PDF and
+// rich-text tooling) down in a single bundle.
+import Index from "./pages/Index";
+import Login from "./pages/Login";
+const ArtAi = lazy(() => import("./pages/ArtAi"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const TourDetail = lazy(() => import("./pages/TourDetail"));
+const TourEdit = lazy(() => import("./pages/TourEdit"));
+const TourItinerary = lazy(() => import("./pages/TourItinerary"));
+const BookingDetail = lazy(() => import("./pages/BookingDetail"));
+const BookingEdit = lazy(() => import("./pages/BookingEdit"));
+const TaskDetail = lazy(() => import("./pages/TaskDetail"));
+const TaskEdit = lazy(() => import("./pages/TaskEdit"));
+const PersonalTodos = lazy(() => import("./pages/PersonalTodos"));
+const Communications = lazy(() => import("./pages/Communications"));
+const PersonalNotes = lazy(() => import("./pages/PersonalNotes"));
+const PersonalCalendar = lazy(() => import("./pages/PersonalCalendar"));
+const ContactDetail = lazy(() => import("./pages/ContactDetail"));
+const ContactEdit = lazy(() => import("./pages/ContactEdit"));
+const BulkBookingStatus = lazy(() => import("./pages/BulkBookingStatus"));
+const UpdateProfile = lazy(() => import("./pages/UpdateProfile"));
+const UpdateTravelDocs = lazy(() => import("./pages/UpdateTravelDocs"));
+const SignWaiver = lazy(() => import("./pages/SignWaiver"));
+const SelectPickup = lazy(() => import("./pages/SelectPickup"));
+const CustomForm = lazy(() => import("./pages/CustomForm"));
+const ViewItinerary = lazy(() => import("./pages/ViewItinerary"));
+const TeamsOAuthComplete = lazy(() => import("./pages/TeamsOAuthComplete"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const HostReport = lazy(() => import("./pages/HostReport"));
+const BeddingReview = lazy(() => import("./pages/operations/BeddingReview"));
+const ActivityBookings = lazy(() => import("./pages/operations/ActivityBookings"));
+const HotelAllocations = lazy(() => import("./pages/operations/HotelAllocations"));
+const BookingChanges = lazy(() => import("./pages/operations/BookingChanges"));
+const PaymentStatus = lazy(() => import("./pages/operations/PaymentStatus"));
+const MissingPhoneNumbers = lazy(() => import("./pages/operations/MissingPhoneNumbers"));
+const WordpressContent = lazy(() => import("./pages/WordpressContent"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,7 +67,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   
   if (loading) {
-    return <div>Loading...</div>;
+    return <RouteFallback label="Checking your session…" />;
   }
   
   if (!user) {
@@ -82,7 +88,7 @@ const TaskRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   if (loading || rolesLoading) {
-    return <div>Loading...</div>;
+    return <RouteFallback label="Checking your access…" />;
   }
 
   if (!user) {
@@ -107,7 +113,7 @@ const WorkspaceRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   if (loading || rolesLoading) {
-    return <div>Loading...</div>;
+    return <RouteFallback label="Checking your access…" />;
   }
 
   if (!user) {
@@ -134,6 +140,7 @@ const TaskStatusesLoader = () => {
 
 function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeApplier />
@@ -143,6 +150,7 @@ function App() {
           <Sonner />
           <AiContextProvider>
           <BrowserRouter>
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -403,11 +411,13 @@ function App() {
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
           </AiContextProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
