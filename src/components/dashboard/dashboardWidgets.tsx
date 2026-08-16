@@ -8,6 +8,7 @@ import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { MyApprovalsWidget } from "@/components/dashboard/MyApprovalsWidget";
 import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 import { MyTodosWidget } from "@/components/dashboard/MyTodosWidget";
+import { UpcomingCommsWidget } from "@/components/dashboard/UpcomingCommsWidget";
 import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
