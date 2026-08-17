@@ -14,6 +14,7 @@ import {
   slugify,
   type EmailAttachment,
 } from "@/hooks/useEmailAttachments";
+import { emailAttachmentUrl } from "@/lib/emailFileUrl";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
