@@ -5301,6 +5301,7 @@ export type Database = {
         Args: { check_in: string; check_out: string }
         Returns: number
       }
+      can_write_attachments: { Args: { _user_id: string }; Returns: boolean }
       check_ai_rate_limit: {
         Args: {
           _max_requests?: number
