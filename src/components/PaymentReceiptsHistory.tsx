@@ -2,7 +2,21 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Receipt, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Receipt, AlertCircle, Send } from "lucide-react";
+import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Link } from "react-router-dom";
 
 type Scope =
