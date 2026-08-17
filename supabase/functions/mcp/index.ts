@@ -6210,7 +6210,7 @@ var upload_tour_pickup_document_default = defineTool101({
       upsert: true
     });
     if (uploadError) return toolError2(`Storage upload failed: ${uploadError.message}`);
-    const public_url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    const public_url = tourPickupDocUrl(tour_id);
     const payload = {
       pickup_arrival_doc_path: path,
       pickup_arrival_doc_name: decoded.file.name
