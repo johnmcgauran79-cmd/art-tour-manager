@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { emailAttachmentUrl } from "@/lib/emailFileUrl";
 
 export interface EmailAttachment {
   id: string;
@@ -56,7 +57,6 @@ export const useUpsertEmailAttachment = () => {
       const cleanSlug = slugify(slug);
       if (!cleanSlug) throw new Error("Slug is required");
 
-      const ext = file.name.split(".").pop() || "bin";
       const path = `${cleanSlug}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
       const { error: upErr } = await supabase.storage
@@ -64,10 +64,10 @@ export const useUpsertEmailAttachment = () => {
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const fileUrl = pub.publicUrl;
-
       if (existing) {
+        // Permanent guest link (redirects to a fresh signed URL on each open)
+        // so the email-attachments bucket can stay private.
+        const fileUrl = emailAttachmentUrl(existing.id);
         // Remove the old file if path changed
         if (existing.file_path && existing.file_path !== path) {
           await supabase.storage.from(BUCKET).remove([existing.file_path]);
@@ -87,12 +87,15 @@ export const useUpsertEmailAttachment = () => {
           .eq("id", existing.id);
         if (error) throw error;
       } else {
+        // Mint the id up front so the stored link can reference it.
+        const id = crypto.randomUUID();
         const { error } = await supabase.from("email_attachments").insert({
+          id,
           slug: cleanSlug,
           label,
           description: description || null,
           file_path: path,
-          file_url: fileUrl,
+          file_url: emailAttachmentUrl(id),
           file_name: file.name,
           mime_type: file.type || null,
           size_bytes: file.size,
