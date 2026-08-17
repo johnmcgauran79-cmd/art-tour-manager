@@ -152,3 +152,6 @@ verify_jwt = false
 
 [functions.generate-guest-document-docx]
 verify_jwt = false
+
+[functions.email-file]
+verify_jwt = false
