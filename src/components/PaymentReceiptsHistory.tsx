@@ -55,6 +55,45 @@ function formatAmount(amount: number, currency: string | null) {
 export function PaymentReceiptsHistory(props: Scope & { title?: string }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { canPerformAction } = usePermissions();
+  const canResend = canPerformAction("booking", "edit").allowed;
+  const [resendTarget, setResendTarget] = useState<Row | null>(null);
+  const [resendEmail, setResendEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleResend = async () => {
+    if (!resendTarget) return;
+    setSending(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getUser();
+      const { data, error: fnErr } = await supabase.functions.invoke(
+        "send-approved-payment-receipts",
+        {
+          body: {
+            receipt_ids: [resendTarget.id],
+            action: "approve",
+            resend: true,
+            approver_id: sessionData?.user?.id ?? null,
+            override_recipient_email:
+              resendEmail && resendEmail !== resendTarget.recipient_email ? resendEmail : undefined,
+          },
+        }
+      );
+      if (fnErr) throw fnErr;
+      if ((data as any)?.sent > 0) {
+        toast.success(`Receipt resent to ${resendEmail || resendTarget.recipient_email}`);
+      } else {
+        toast.error("Receipt could not be resent — check the recipient email and try again.");
+      }
+      setResendTarget(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to resend receipt");
+    } finally {
+      setSending(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +145,7 @@ export function PaymentReceiptsHistory(props: Scope & { title?: string }) {
     return () => {
       cancelled = true;
     };
-  }, [(props as any).bookingId, (props as any).customerId]);
+  }, [(props as any).bookingId, (props as any).customerId, reloadKey]);
 
   const isContactScope = "customerId" in props;
 
@@ -215,6 +254,22 @@ export function PaymentReceiptsHistory(props: Scope & { title?: string }) {
                           {r.recipient_email}
                         </div>
                       )}
+                      {canResend && (
+                        <div className="mt-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              setResendTarget(r);
+                              setResendEmail(r.recipient_email || "");
+                            }}
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            {r.receipt_email_sent_at ? "Resend" : "Send receipt"}
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -223,6 +278,55 @@ export function PaymentReceiptsHistory(props: Scope & { title?: string }) {
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!resendTarget} onOpenChange={(o) => !o && setResendTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send payment receipt</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resendTarget && (
+                <>
+                  Receipt for {formatAmount(resendTarget.amount, resendTarget.currency_code)}
+                  {resendTarget.payment_date
+                    ? ` paid on ${formatDateToDDMMYYYY(resendTarget.payment_date)}`
+                    : ""}
+                  {resendTarget.xero_invoice_number ? ` (${resendTarget.xero_invoice_number})` : ""}.
+                  {resendTarget.receipt_email_sent_at
+                    ? " This receipt was already emailed — sending again will deliver a duplicate."
+                    : ""}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Send to</label>
+            <Input
+              type="email"
+              value={resendEmail}
+              onChange={(e) => setResendEmail(e.target.value)}
+              placeholder="client@example.com"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleResend();
+              }}
+              disabled={sending || !resendEmail.includes("@")}
+            >
+              {sending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…
+                </>
+              ) : (
+                "Send receipt"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
