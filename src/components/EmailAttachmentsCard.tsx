@@ -226,7 +226,7 @@ export const EmailAttachmentsCard = () => {
                     asChild
                     title="Open file"
                   >
-                    <a href={a.file_url} target="_blank" rel="noopener noreferrer">
+                    <a href={emailAttachmentUrl(a.id)} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   </Button>
