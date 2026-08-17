@@ -6073,6 +6073,12 @@ ${JSON.stringify(out)}`
 // src/lib/mcp/tools/get-tour-messages.ts
 import { defineTool as defineTool99 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z95 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_emailFileUrl.ts
+var functionsBase = () => `${process.env.SUPABASE_URL}/functions/v1`;
+var tourPickupDocUrl = (tourId) => `${functionsBase()}/email-file?p=${tourId}`;
+
+// src/lib/mcp/tools/get-tour-messages.ts
 var MESSAGE_COLUMNS = "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
 var get_tour_messages_default = defineTool99({
   name: "get_tour_messages",
@@ -6090,7 +6096,7 @@ var get_tour_messages_default = defineTool99({
     const row = data;
     let pickup_doc_url = null;
     if (row.pickup_arrival_doc_path) {
-      pickup_doc_url = supabase.storage.from("email-attachments").getPublicUrl(String(row.pickup_arrival_doc_path)).data.publicUrl;
+      pickup_doc_url = tourPickupDocUrl(tour_id);
     }
     const out = {
       tour_id: row.id,
