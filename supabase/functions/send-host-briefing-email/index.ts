@@ -220,9 +220,14 @@ serve(async (req) => {
       const uniqueSlugs = Array.from(new Set(attachmentSlugs));
       const { data: atts } = await supabase
         .from("email_attachments")
-        .select("slug, file_url")
+        .select("id, slug")
         .in("slug", uniqueSlugs);
-      const urlBySlug = new Map((atts || []).map((a: any) => [a.slug, a.file_url]));
+      // Always resolve through the permanent email-file route (rather than the
+      // stored file_url) so links keep working for rows created before the
+      // email-attachments bucket was made private.
+      const urlBySlug = new Map(
+        (atts || []).map((a: any) => [a.slug, emailAttachmentUrl(a.id)]),
+      );
       contentWithAttachments = contentWithAttachments.replace(
         /\{\{\s*attachment:([a-zA-Z0-9_-]+)\s*\}\}/g,
         (_m, slug) => urlBySlug.get(slug) || "",
