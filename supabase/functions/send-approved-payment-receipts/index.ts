@@ -50,6 +50,13 @@ serve(async (req) => {
     const action: "approve" | "reject" = body?.action === "reject" ? "reject" : "approve";
     const rejectionReason: string | null = body?.rejection_reason || null;
     const approverId: string | null = body?.approver_id || null;
+    // Resend mode: re-send a receipt regardless of its current approval status
+    // (used when a client missed / lost the original email).
+    const isResend: boolean = body?.resend === true;
+    const overrideRecipient: string | null =
+      typeof body?.override_recipient_email === "string" && body.override_recipient_email.includes("@")
+        ? body.override_recipient_email.trim()
+        : null;
 
     if (receiptIds.length === 0) {
       return new Response(JSON.stringify({ error: "receipt_ids required" }), {
@@ -59,7 +66,7 @@ serve(async (req) => {
     }
 
     // REJECT path — no email, just mark rejected
-    if (action === "reject") {
+    if (action === "reject" && !isResend) {
       const { error } = await supabase
         .from("xero_payment_receipts")
         .update({
@@ -136,12 +143,13 @@ serve(async (req) => {
     let errors = 0;
 
     for (const r of receipts ?? []) {
-      if (r.approval_status !== "pending") continue;
+      if (!isResend && r.approval_status !== "pending") continue;
       const b: any = (r as any).bookings;
       const tour = b?.tours;
       const cust = b?.customers;
-      const recipient = r.recipient_email || cust?.email;
+      const recipient = overrideRecipient || r.recipient_email || cust?.email;
       if (!recipient) {
+        if (isResend) { errors++; continue; }
         await supabase.from("xero_payment_receipts").update({
           approval_status: "skipped",
           skipped_reason: "no_recipient_email",
@@ -206,10 +214,12 @@ serve(async (req) => {
 
         await supabase.from("xero_payment_receipts").update({
           approval_status: "approved",
-          approved_at: new Date().toISOString(),
+          approved_at: r.approval_status === "approved" ? undefined : new Date().toISOString(),
           approved_by: approverId,
           receipt_email_sent_at: new Date().toISOString(),
           receipt_email_id: messageId,
+          recipient_email: recipient,
+          skipped_reason: null,
           send_error: null,
         }).eq("id", r.id);
 
