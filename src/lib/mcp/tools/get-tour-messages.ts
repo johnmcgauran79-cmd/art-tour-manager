@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
 import { requireAdminOrManager } from "./_perms";
 import { toolError } from "./_uploads";
+import { tourPickupDocUrl } from "./_emailFileUrl";
 
 const MESSAGE_COLUMNS =
   "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
@@ -30,9 +31,7 @@ export default defineTool({
     const row = data as Record<string, unknown>;
     let pickup_doc_url: string | null = null;
     if (row.pickup_arrival_doc_path) {
-      pickup_doc_url = supabase.storage
-        .from("email-attachments")
-        .getPublicUrl(String(row.pickup_arrival_doc_path)).data.publicUrl;
+      pickup_doc_url = tourPickupDocUrl(tour_id);
     }
 
     const out = {

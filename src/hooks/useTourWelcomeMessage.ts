@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { tourPickupDocUrl } from "@/lib/emailFileUrl";
 
 export interface TourWelcomeMessage {
   enabled: boolean;
@@ -49,9 +50,9 @@ export const useTourWelcomeMessage = (tourId: string) => {
 
       let pickupDocUrl: string | null = null;
       if (row?.pickup_arrival_doc_path) {
-        pickupDocUrl = supabase.storage
-          .from("email-attachments")
-          .getPublicUrl(row.pickup_arrival_doc_path).data.publicUrl;
+        // Permanent guest link (redirects to a fresh signed URL) so the
+        // email-attachments bucket can stay private.
+        pickupDocUrl = tourPickupDocUrl(tourId);
       }
 
       return {

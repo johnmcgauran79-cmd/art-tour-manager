@@ -3,9 +3,11 @@ import { z } from "zod";
 import { supabaseForUser } from "./_supabase";
 import { requireAdminOrManager } from "./_perms";
 import { ALLOWED_DOCUMENT_TYPES, decodeUpload, toolError } from "./_uploads";
+import { tourPickupDocUrl } from "./_emailFileUrl";
 
 // The pickup/arrival document must be readable by guests straight from an
-// email, so it lives in the public `email-attachments` bucket (same as the UI).
+// email, so it lives in the `email-attachments` bucket (same as the UI) and is
+// linked through the permanent `email-file` route rather than a raw public URL.
 const BUCKET = "email-attachments";
 
 export default defineTool({
@@ -55,7 +57,7 @@ export default defineTool({
       });
     if (uploadError) return toolError(`Storage upload failed: ${uploadError.message}`);
 
-    const public_url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    const public_url = tourPickupDocUrl(tour_id);
 
     const payload: Record<string, unknown> = {
       pickup_arrival_doc_path: path,
