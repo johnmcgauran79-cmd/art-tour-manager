@@ -59,42 +59,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
-      console.log('[Auth] Profile fetch result:', { data, error });
-      
+
       if (!error && data) {
         setProfile(data);
         setMustChangePassword(data?.must_change_password || false);
       } else if (error) {
-        console.log('[Auth] Profile fetch error:', error);
+        console.warn('[Auth] Could not load profile:', error.message);
       }
-    } catch (error) {
-      console.log('[Auth] Profile fetch exception:', error);
+    } catch {
+      console.warn('[Auth] Unexpected error while loading profile.');
     }
   };
 
   const fetchUserRole = async (userId: string) => {
     try {
-      console.log('[Auth] Fetching user role for:', userId);
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();
-      
-      console.log('[Auth] User role query result:', { data, error });
-      
+
       if (error) {
-        console.log('[Auth] Role fetch error:', error.message, error.code);
+        console.warn('[Auth] Could not load role:', error.message);
         setUserRole(null);
         return;
       }
-      
-      const role = data?.role || null;
-      console.log('[Auth] Setting user role to:', role);
-      setUserRole(role);
-    } catch (error) {
-      console.log('[Auth] Role fetch exception:', error);
+
+      setUserRole(data?.role || null);
+    } catch {
+      console.warn('[Auth] Unexpected error while loading role.');
       setUserRole(null);
     }
   };
@@ -109,16 +102,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      console.log('[Auth] Validating session from:', source);
       const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
 
       if (checkId !== authCheckId.current) return;
 
       if (error || !verifiedUser) {
-        console.log('[Auth] Session validation failed:', error?.message ?? 'No verified user');
+        console.warn('[Auth] Session invalid, signing out locally.');
         clearAuthState();
-        await supabase.auth.signOut({ scope: 'local' }).catch((signOutError) => {
-          console.log('[Auth] Local sign-out after invalid session failed:', signOutError);
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {
+          /* already signed out locally */
         });
         setLoading(false);
         return;
@@ -132,21 +124,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         fetchUserRole(verifiedUser.id)
       ]);
       setLoading(false);
-    } catch (error) {
+    } catch {
       if (checkId !== authCheckId.current) return;
-      console.log('[Auth] Session validation exception:', error);
+      console.warn('[Auth] Unexpected error while validating session.');
       clearAuthState();
       setLoading(false);
     }
   }, [clearAuthState]);
 
   useEffect(() => {
-    console.log('[Auth] Initializing auth listener and session check');
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('[Auth] onAuthStateChange event:', event, { hasSession: !!session, userId: session?.user?.id });
-
         if (!session?.user) {
           clearAuthState();
           setLoading(false);
@@ -176,19 +165,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Fallback to ensure we never hang on loading
     const fallbackTimeout = setTimeout(() => {
-      console.log('[Auth] Fallback timeout triggered – forcing loading=false');
       setLoading(false);
     }, 5000);
 
     // Check for existing session
     const initializeAuth = async () => {
       try {
-        console.log('[Auth] getSession start');
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('[Auth] getSession result:', { hasSession: !!session, userId: session?.user?.id });
         await validateSession(session, 'initial load');
-      } catch (error) {
-        console.log('[Auth] getSession error:', error, '- forcing loading=false');
+      } catch {
+        console.warn('[Auth] Could not read existing session.');
         clearAuthState();
         setLoading(false);
       }
@@ -197,7 +183,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
 
     return () => {
-      console.log('[Auth] Cleaning up auth listener');
       clearTimeout(fallbackTimeout);
       subscription.unsubscribe();
     };

@@ -105,7 +105,6 @@ export const CSVUploadModal = ({ open, onOpenChange }: CSVUploadModalProps) => {
           // Prepare customer data with proper null handling
           const customerData = prepareCustomerData(contact);
 
-          console.log('Customer data being processed:', customerData);
 
           if (existingContact) {
             // Check if any fields need updating
