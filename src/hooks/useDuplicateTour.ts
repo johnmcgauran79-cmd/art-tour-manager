@@ -237,10 +237,6 @@ async function duplicateAdditionalInfo(originalTourId: string, newTourId: string
   if (insertErr) throw insertErr;
 }
 
-async function duplicateItineraries(originalTourId: string, newTourId: string) {
-  return duplicateItinerariesInner(originalTourId, newTourId);
-}
-
 async function duplicateInclusionItems(originalTourId: string, newTourId: string) {
   const { data: items, error } = await supabase
     .from('tour_inclusion_items')
@@ -256,7 +252,7 @@ async function duplicateInclusionItems(originalTourId: string, newTourId: string
   if (insErr) throw insErr;
 }
 
-async function duplicateItinerariesInner(originalTourId: string, newTourId: string) {
+async function duplicateItineraries(originalTourId: string, newTourId: string) {
   const { data: itineraries, error } = await supabase
     .from('tour_itineraries')
     .select('*')
