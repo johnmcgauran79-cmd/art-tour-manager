@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { TourInclusionsSection } from "@/components/tours/TourInclusionsSection";
 import { useParams, Navigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
