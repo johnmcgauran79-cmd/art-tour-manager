@@ -134,14 +134,16 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         <div className="flex items-center gap-2">
           {!isAgent && (
             <>
-              <Button
-                variant="outline"
-                onClick={() => setShowPublishModal(true)}
-                className="flex items-center gap-2"
-              >
-                <Globe className="h-4 w-4" />
-                Publish to Website
-              </Button>
+              {isWebsiteApprover && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPublishModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  Publish to Website
+                </Button>
+              )}
               <Button
                 variant="outline"
                 disabled
