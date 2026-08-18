@@ -39,6 +39,7 @@ interface TourOverviewTabProps {
     notes: string;
     inclusions: string;
     exclusions: string;
+    websiteDescription: string;
     pricing: {
       single: number;
       double: number;
