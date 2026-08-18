@@ -19,14 +19,15 @@ interface Props {
   tourName: string;
 }
 
-interface PassengerWaiverRow {
+interface BookingWaiverRow {
   bookingId: string;
   groupName: string | null;
-  passengerSlot: number;
-  customerId: string | null;
-  firstName: string;
-  lastName: string;
+  leadCustomerId: string | null;
+  leadFirstName: string;
+  leadLastName: string;
   email: string | null;
+  passengerCount: number;
+  passengerNames: string[];
   signedName: string | null;
   signedAt: string | null;
   waiverVersion: number | null;
@@ -68,36 +69,43 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
         .select("booking_id, passenger_slot, signed_name, signed_at, waiver_version, ip_address, customer_id")
         .in("booking_id", bookingIds);
 
-      const waiverMap = new Map<string, any>();
+      // Waivers are signed once per booking (by the lead booker) and cover
+      // every passenger on that booking. Keep the earliest signature found.
+      const waiverByBooking = new Map<string, any>();
       (waivers || []).forEach((w) => {
-        waiverMap.set(`${w.booking_id}_${w.passenger_slot}`, w);
+        if (!w.signed_at) return;
+        const existing = waiverByBooking.get(w.booking_id);
+        if (!existing || new Date(w.signed_at) < new Date(existing.signed_at)) {
+          waiverByBooking.set(w.booking_id, w);
+        }
       });
 
-      const rows: PassengerWaiverRow[] = [];
+      const rows: BookingWaiverRow[] = [];
 
       for (const booking of bookings) {
-        const addRow = (slot: number, customer: any) => {
-          if (!customer) return;
-          const waiver = waiverMap.get(`${booking.id}_${slot}`);
-          rows.push({
-            bookingId: booking.id,
-            groupName: booking.group_name,
-            passengerSlot: slot,
-            customerId: customer.id,
-            firstName: customer.first_name,
-            lastName: customer.last_name,
-            email: customer.email,
-            signedName: waiver?.signed_name || null,
-            signedAt: waiver?.signed_at || null,
-            waiverVersion: waiver?.waiver_version || null,
-            ipAddress: waiver?.ip_address || null,
-          });
-        };
-
         const lead = booking.lead_passenger as any;
-        if (lead) addRow(1, lead);
-        if (booking.passenger_count >= 2 && booking.passenger_2) addRow(2, booking.passenger_2 as any);
-        if (booking.passenger_count >= 3 && booking.passenger_3) addRow(3, booking.passenger_3 as any);
+        if (!lead) continue;
+        const waiver = waiverByBooking.get(booking.id);
+        const names: string[] = [`${lead.first_name} ${lead.last_name}`];
+        const p2 = booking.passenger_2 as any;
+        const p3 = booking.passenger_3 as any;
+        if ((booking.passenger_count || 1) >= 2 && p2) names.push(`${p2.first_name} ${p2.last_name}`);
+        if ((booking.passenger_count || 1) >= 3 && p3) names.push(`${p3.first_name} ${p3.last_name}`);
+
+        rows.push({
+          bookingId: booking.id,
+          groupName: booking.group_name,
+          leadCustomerId: lead.id,
+          leadFirstName: lead.first_name,
+          leadLastName: lead.last_name,
+          email: lead.email,
+          passengerCount: booking.passenger_count || 1,
+          passengerNames: names,
+          signedName: waiver?.signed_name || null,
+          signedAt: waiver?.signed_at || null,
+          waiverVersion: waiver?.waiver_version || null,
+          ipAddress: waiver?.ip_address || null,
+        });
       }
 
       return rows;
@@ -246,13 +254,6 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
     );
   }
 
-  // Group rows by booking for the select-all checkbox logic
-  const bookingGroups = new Map<string, PassengerWaiverRow[]>();
-  waiverData.forEach((r) => {
-    if (!bookingGroups.has(r.bookingId)) bookingGroups.set(r.bookingId, []);
-    bookingGroups.get(r.bookingId)!.push(r);
-  });
-
   return (
     <Card>
       <CardHeader>
@@ -263,7 +264,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
               Waiver Status
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Track waiver completion across all passengers. Use{" "}
+              One waiver per booking — signed by the lead booker on behalf of all passengers. Use{" "}
               <code className="bg-muted px-1 rounded text-xs">{"{{waiver_button}}"}</code> in
               email templates to include waiver links.
             </p>
@@ -334,7 +335,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                   <TableHead className="w-10"></TableHead>
                 )}
                 <TableHead>Booking</TableHead>
-                <TableHead>Passenger</TableHead>
+                <TableHead>Lead booker</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Signed As</TableHead>
                 <TableHead>Date</TableHead>
@@ -342,18 +343,14 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {waiverData.map((row, idx) => {
-                const hasUnsigned = !row.signedAt && row.email;
-                // Show checkbox only for first passenger per booking
-                const isFirstInBooking =
-                  idx === 0 || waiverData[idx - 1].bookingId !== row.bookingId;
+              {waiverData.map((row) => {
                 const bookingHasUnsigned = unsignedBookingIds.includes(row.bookingId);
 
                 return (
-                  <TableRow key={`${row.bookingId}_${row.passengerSlot}`}>
+                  <TableRow key={row.bookingId}>
                     {!isViewOnly && unsignedBookingIds.length > 0 && (
                       <TableCell>
-                        {isFirstInBooking && bookingHasUnsigned && (
+                        {bookingHasUnsigned && (
                           <Checkbox
                             checked={selectedBookings.has(row.bookingId)}
                             onCheckedChange={() => toggleBooking(row.bookingId)}
@@ -362,27 +359,27 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                       </TableCell>
                     )}
                     <TableCell className="font-medium">
-                      {isFirstInBooking
-                        ? row.groupName || `${row.firstName} ${row.lastName}`
-                        : ""}
+                      {row.groupName || `${row.leadFirstName} ${row.leadLastName}`}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span>
-                          {row.firstName} {row.lastName}
-                        </span>
-                        {row.passengerSlot === 1 && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            Lead
-                          </Badge>
-                        )}
-                        {!row.email && (
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span>
+                            {row.leadFirstName} {row.leadLastName}
+                          </span>
+                          {!row.email && (
                           <Badge
                             variant="outline"
                             className="text-[10px] px-1 py-0 text-amber-600 border-amber-300"
                           >
                             No email
                           </Badge>
+                          )}
+                        </div>
+                        {row.passengerCount > 1 && (
+                          <span className="text-xs text-muted-foreground">
+                            Covers {row.passengerCount} passengers: {row.passengerNames.join(", ")}
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -438,7 +435,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                   for <strong>{tourName}</strong>.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Each passenger will receive a personalised email with a secure link to sign the waiver. Links expire in 7 days.
+                  The lead booker receives a secure link to sign one waiver covering everyone on the booking. Links expire in 7 days.
                 </p>
               </div>
 
@@ -449,9 +446,9 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                   <Table>
                     <TableBody>
                       {selectedRecipients.map((r, i) => (
-                        <TableRow key={`${r.bookingId}_${r.passengerSlot}`} className="text-sm">
+                        <TableRow key={r.bookingId} className="text-sm">
                           <TableCell className="py-1.5 font-medium">
-                            {r.firstName} {r.lastName}
+                            {r.leadFirstName} {r.leadLastName}
                           </TableCell>
                           <TableCell className="py-1.5 text-muted-foreground">
                             {r.email}

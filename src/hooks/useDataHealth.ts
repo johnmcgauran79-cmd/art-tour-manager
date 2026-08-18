@@ -18,7 +18,6 @@ export type DataHealthCheckId =
   | "passports"
   | "phones"
   | "emergency"
-  | "profile"
   | "hotel"
   | "activities"
   | "waivers"
@@ -40,10 +39,9 @@ export const DATA_HEALTH_CHECKS: DataHealthCheckMeta[] = [
   { id: "passports", label: "Passport details", weight: 4, description: "Passengers with no passport details recorded" },
   { id: "phones", label: "Phone numbers", weight: 3, description: "Lead passengers with no phone number" },
   { id: "emergency", label: "Emergency contacts", weight: 2, description: "Lead passengers with no emergency contact" },
-  { id: "profile", label: "Dietary / medical", weight: 1, description: "Lead passengers who never completed their profile" },
   { id: "hotel", label: "Hotel allocation", weight: 5, description: "Confirmed bookings with no hotel room allocated" },
   { id: "activities", label: "Activity allocation", weight: 4, description: "Bookings not allocated to a tour activity" },
-  { id: "waivers", label: "Waivers", weight: 3, description: "Passengers with no signed waiver" },
+  { id: "waivers", label: "Waivers", weight: 3, description: "Bookings with no signed waiver from the lead booker" },
   { id: "forms", label: "Custom forms", weight: 2, description: "Outstanding responses to a published tour form" },
   { id: "pickups", label: "Pickups", weight: 2, description: "Bookings with no pickup option selected" },
   { id: "payments", label: "Payments", weight: 5, description: "Bookings not yet paid close to departure" },
@@ -160,7 +158,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         .select(
           `id, tour_id, status, passenger_count, passport_not_required, selected_pickup_option_id,
            group_name, lead_passenger_id, passenger_2_id, passenger_3_id, passenger_2_name, passenger_3_name,
-           customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, phone, phone_missing_acknowledged_at, emergency_contact_name, emergency_contact_phone, dietary_requirements, medical_conditions)`
+           customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, phone, phone_missing_acknowledged_at, emergency_contact_name, emergency_contact_phone)`
         )
         .in("tour_id", tourIds);
       if (bookingError) throw bookingError;
@@ -237,8 +235,9 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         hotelByBooking.set(h.booking_id, list);
       });
 
-      const waiverKeys = new Set(
-        (waiverRes.data || []).filter((w: any) => w.signed_at).map((w: any) => `${w.booking_id}:${w.passenger_slot}`)
+      // Waivers are per booking: one signature from the lead booker covers everyone.
+      const signedWaiverBookings = new Set(
+        (waiverRes.data || []).filter((w: any) => w.signed_at).map((w: any) => w.booking_id)
       );
       const docKeys = new Set(
         (docsRes.data || []).filter((d: any) => !blank(d.passport_number)).map((d: any) => `${d.booking_id}:${d.passenger_slot}`)
@@ -323,10 +322,6 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           if (blank(lead?.emergency_contact_name) || blank(lead?.emergency_contact_phone)) {
             items.push(base("emergency", leadName, "No emergency contact name or phone", b.id));
           }
-          if (blank(lead?.dietary_requirements) && blank(lead?.medical_conditions)) {
-            items.push(base("profile", leadName, "Dietary and medical details never provided", b.id));
-          }
-
           // Passports.
           if (tour.travel_documents_required && !b.passport_not_required) {
             for (let slot = 1; slot <= Math.min(paxCount, 3); slot++) {
@@ -337,12 +332,11 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
             }
           }
 
-          // Waivers.
-          for (let slot = 1; slot <= Math.min(paxCount, 3); slot++) {
-            if (!waiverKeys.has(`${b.id}:${slot}`)) {
-              const who = slot === 1 ? leadName : b[`passenger_${slot}_name`] || `Passenger ${slot}`;
-              items.push(base("waivers", who, `No signed waiver on file (Pax ${slot})`, b.id));
-            }
+          // Waivers — one per booking, signed by the lead booker for everyone.
+          if (!signedWaiverBookings.has(b.id)) {
+            items.push(
+              base("waivers", leadName, "No signed waiver on file for this booking", b.id)
+            );
           }
 
           // Hotel allocation.
