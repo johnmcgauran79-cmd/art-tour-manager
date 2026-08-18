@@ -174,6 +174,7 @@ export default function TourDetail() {
     notes: tour.notes || "",
     inclusions: tour.inclusions || "",
     exclusions: tour.exclusions || "",
+    websiteDescription: tour.website_description || "",
     pricing: {
       single: tour.price_single || 0,
       double: tour.price_double || 0,

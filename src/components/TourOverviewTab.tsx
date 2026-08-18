@@ -39,6 +39,7 @@ interface TourOverviewTabProps {
     notes: string;
     inclusions: string;
     exclusions: string;
+    websiteDescription: string;
     pricing: {
       single: number;
       double: number;
@@ -506,6 +507,21 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tour Description */}
+      {!isHost && tour.websiteDescription && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tour Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="prose prose-sm max-w-none text-sm"
+              dangerouslySetInnerHTML={{ __html: tour.websiteDescription }}
+            />
           </CardContent>
         </Card>
       )}
