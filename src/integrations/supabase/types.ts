@@ -4221,6 +4221,44 @@ export type Database = {
           },
         ]
       }
+      tour_inclusion_items: {
+        Row: {
+          content_html: string
+          created_at: string
+          id: string
+          kind: string
+          sort_order: number
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          content_html?: string
+          created_at?: string
+          id?: string
+          kind: string
+          sort_order?: number
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          content_html?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          sort_order?: number
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_inclusion_items_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_itineraries: {
         Row: {
           created_at: string
@@ -4527,6 +4565,7 @@ export type Database = {
           travel_documents_required: boolean
           updated_at: string | null
           url_reference: string | null
+          website_description: string | null
           welcome_drinks_message: string | null
           welcome_message_body: string | null
           welcome_message_enabled: boolean
@@ -4594,6 +4633,7 @@ export type Database = {
           travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
+          website_description?: string | null
           welcome_drinks_message?: string | null
           welcome_message_body?: string | null
           welcome_message_enabled?: boolean
@@ -4661,6 +4701,7 @@ export type Database = {
           travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
+          website_description?: string | null
           welcome_drinks_message?: string | null
           welcome_message_body?: string | null
           welcome_message_enabled?: boolean

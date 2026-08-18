@@ -6807,13 +6807,527 @@ ${JSON.stringify(out)}`
   }
 });
 
+// src/lib/mcp/tools/get-tour-inclusions.ts
+import { defineTool as defineTool109 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z105 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/wordpress/inclusions.ts
+var WP_INCLUSIONS_FIELD = "inclusions";
+var WP_EXCLUSIONS_FIELD = "exclusions_details";
+var ALLOWED_INLINE = /^(b|strong|i|em|u|a|br)$/i;
+function sanitiseInlineHtml(input) {
+  if (!input) return "";
+  let s = String(input).replace(/\r\n/g, "\n").replace(/<\s*(script|style)[^>]*>[\s\S]*?<\/\s*\1\s*>/gi, "").replace(/<\s*\/?\s*(p|div|li|ul|ol|h[1-6]|span|table|tr|td|tbody|thead)[^>]*>/gi, " ");
+  s = s.replace(/<\s*(\/?)([a-zA-Z0-9]+)([^>]*)>/g, (_m, slash, tag, attrs) => {
+    if (!ALLOWED_INLINE.test(tag)) return "";
+    const t = tag.toLowerCase();
+    if (slash) return `</${t}>`;
+    if (t === "br") return "<br>";
+    if (t === "a") {
+      const href = /href\s*=\s*("([^"]*)"|'([^']*)')/i.exec(attrs);
+      const url = (href?.[2] ?? href?.[3] ?? "").trim();
+      if (!/^(https?:\/\/|mailto:|\/)/i.test(url)) return "<a>";
+      return `<a href="${url.replace(/"/g, "&quot;")}">`;
+    }
+    return `<${t}>`;
+  });
+  return s.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, " ").trim();
+}
+function stripToText(input) {
+  if (!input) return "";
+  return String(input).replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#8217;|&rsquo;/gi, "'").replace(/\s+/g, " ").trim();
+}
+function comparable(v) {
+  return stripToText(v).toLowerCase().replace(/[\u2013\u2014]/g, "-").replace(/[.,;:]+$/g, "");
+}
+function detectRowShape(value) {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  for (const row of value) {
+    if (typeof row === "string") return { kind: "string" };
+    if (row && typeof row === "object") {
+      const entries = Object.entries(row);
+      const textKey = entries.find(([, v]) => typeof v === "string");
+      if (textKey) return { kind: "object", key: textKey[0] };
+    }
+  }
+  return null;
+}
+function normaliseWpItems(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  for (const row of value) {
+    if (typeof row === "string") {
+      out.push(row.trim());
+      continue;
+    }
+    if (row && typeof row === "object") {
+      const first = Object.values(row).find((v) => typeof v === "string");
+      out.push(typeof first === "string" ? first.trim() : "");
+    }
+  }
+  return out.filter((s) => s.length > 0);
+}
+function buildWpRows(items, shape) {
+  if (!shape) return items.slice();
+  if (shape.kind === "string") return items.slice();
+  return items.map((text) => ({ [shape.key]: text }));
+}
+function buildItemsDiff(artItems, wpItems) {
+  const len = Math.max(artItems.length, wpItems.length);
+  const rows = [];
+  for (let i = 0; i < len; i++) {
+    const art = artItems[i] ?? null;
+    const wp = wpItems[i] ?? null;
+    rows.push({ index: i, art, wp, changed: comparable(art) !== comparable(wp) });
+  }
+  return { rows, changed: rows.some((r) => r.changed) };
+}
+function htmlEqual(a, b) {
+  return comparable(a) === comparable(b);
+}
+function extractListItems(html) {
+  if (!html) return [];
+  const out = [];
+  const re = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+  let m;
+  while ((m = re.exec(String(html))) !== null) {
+    const text = stripToText(m[1]);
+    if (text) out.push(text);
+  }
+  return out;
+}
+function describeDescriptionMismatch(descriptionHtml, inclusionItems) {
+  const inDesc = extractListItems(descriptionHtml);
+  if (inDesc.length === 0) {
+    return { mismatch: false, description_items: [], missing_from_description: [], extra_in_description: [] };
+  }
+  const descSet = new Set(inDesc.map((s) => comparable(s)));
+  const itemSet = new Set(inclusionItems.map((s) => comparable(s)));
+  const missing = inclusionItems.filter((s) => !descSet.has(comparable(s)));
+  const extra = inDesc.filter((s) => !itemSet.has(comparable(s)));
+  return {
+    mismatch: missing.length > 0 || extra.length > 0,
+    description_items: inDesc,
+    missing_from_description: missing,
+    extra_in_description: extra
+  };
+}
+
+// src/lib/mcp/wordpress/_inclusionsArt.ts
+async function loadArtInclusions(ctx, tourId) {
+  const supabase = supabaseForUser(ctx);
+  const { data: tour, error: tourError } = await supabase.from("tours").select("id, name, website_description").eq("id", tourId).maybeSingle();
+  if (tourError) return { error: tourError.message };
+  if (!tour) return { error: `No tour found with id ${tourId}.` };
+  const { data: items, error: itemsError } = await supabase.from("tour_inclusion_items").select("id, kind, content_html, sort_order").eq("tour_id", tourId).order("sort_order", { ascending: true });
+  if (itemsError) return { error: itemsError.message };
+  const rows = items ?? [];
+  const pick = (kind) => rows.filter((r) => r.kind === kind).map((r) => sanitiseInlineHtml(r.content_html)).filter((s) => s.length > 0);
+  return {
+    tour: { id: tour.id, name: tour.name ?? null },
+    items: rows,
+    inclusions: pick("inclusion"),
+    exclusions: pick("exclusion"),
+    website_description: tour.website_description ?? ""
+  };
+}
+
+// src/lib/mcp/tools/get-tour-inclusions.ts
+var get_tour_inclusions_default = defineTool109({
+  name: "get_tour_inclusions",
+  title: "Get tour inclusions & exclusions",
+  description: "Read a tour's structured inclusion and exclusion items (in display order, with their ids) plus the tour's Website Description block. These are what publish to the WordPress tour page. Admin/manager only.",
+  inputSchema: { tour_id: z105.string().describe("The ART tour id (uuid).") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const art = await loadArtInclusions(ctx, tour_id);
+    if ("error" in art) return { content: [{ type: "text", text: art.error }], isError: true };
+    const out = {
+      tour_id,
+      tour_name: art.tour.name,
+      inclusions: art.items.filter((i) => i.kind === "inclusion"),
+      exclusions: art.items.filter((i) => i.kind === "exclusion"),
+      website_description: art.website_description,
+      description_mismatch: describeDescriptionMismatch(art.website_description, art.inclusions)
+    };
+    return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/update-tour-inclusions.ts
+import { defineTool as defineTool110 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z106 } from "npm:zod@^3.25.76";
+var update_tour_inclusions_default = defineTool110({
+  name: "update_tour_inclusions",
+  title: "Replace tour inclusions or exclusions",
+  description: "Replace the full inclusion OR exclusion list for a tour with the supplied items, in the order given. Each item is one bullet on the website; light inline HTML (<b>, <i>, <a href>) is kept, block markup is stripped. This replaces the existing list for that kind \u2014 read it with `get_tour_inclusions` first. Nothing is published to the website until `wordpress_push_tour_inclusions` is called. Admin/manager only.",
+  inputSchema: {
+    tour_id: z106.string().describe("The ART tour id (uuid)."),
+    kind: z106.enum(["inclusion", "exclusion"]).describe("Which list to replace."),
+    items: z106.array(z106.string().min(1)).describe("The full list of items, in display order.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, kind, items }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const cleaned = items.map((s) => sanitiseInlineHtml(s)).filter((s) => s.length > 0);
+    const del = await supabase.from("tour_inclusion_items").delete().eq("tour_id", tour_id).eq("kind", kind);
+    if (del.error) return { content: [{ type: "text", text: del.error.message }], isError: true };
+    if (cleaned.length > 0) {
+      const { error } = await supabase.from("tour_inclusion_items").insert(
+        cleaned.map((content_html, i) => ({ tour_id, kind, content_html, sort_order: i }))
+      );
+      if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    const out = { tour_id, kind, item_count: cleaned.length, items: cleaned };
+    return {
+      content: [{ type: "text", text: `Saved ${cleaned.length} ${kind} item(s) in ART. Not yet published to the website.` }],
+      structuredContent: out
+    };
+  }
+});
+
+// src/lib/mcp/tools/reorder-tour-inclusions.ts
+import { defineTool as defineTool111 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z107 } from "npm:zod@^3.25.76";
+var reorder_tour_inclusions_default = defineTool111({
+  name: "reorder_tour_inclusions",
+  title: "Reorder tour inclusions or exclusions",
+  description: "Set the display order of a tour's inclusion or exclusion items by listing their ids in the desired order (ids come from `get_tour_inclusions`). Admin/manager only.",
+  inputSchema: {
+    tour_id: z107.string().describe("The ART tour id (uuid)."),
+    item_ids: z107.array(z107.string()).min(1).describe("Item ids in the desired display order.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, item_ids }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    for (let i = 0; i < item_ids.length; i++) {
+      const { error } = await supabase.from("tour_inclusion_items").update({ sort_order: i }).eq("id", item_ids[i]).eq("tour_id", tour_id);
+      if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    const out = { tour_id, reordered: item_ids.length };
+    return { content: [{ type: "text", text: `Reordered ${item_ids.length} item(s).` }], structuredContent: out };
+  }
+});
+
+// src/lib/mcp/tools/update-tour-website-description.ts
+import { defineTool as defineTool112 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z108 } from "npm:zod@^3.25.76";
+var update_tour_website_description_default = defineTool112({
+  name: "update_tour_website_description",
+  title: "Update tour website description",
+  description: "Set the tour's Website Description block \u2014 the HTML that publishes to the Tour Details section of the WordPress tour page (intro copy, notes and the inclusions copy shown there). Nothing goes live until `wordpress_push_tour_inclusions` is called. Admin/manager only.",
+  inputSchema: {
+    tour_id: z108.string().describe("The ART tour id (uuid)."),
+    website_description: z108.string().describe("HTML for the Tour Details description block.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, website_description }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { error } = await supabaseForUser(ctx).from("tours").update({ website_description }).eq("id", tour_id);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const out = { tour_id, length: website_description.length };
+    return {
+      content: [{ type: "text", text: "Website description saved in ART. Not yet published to the website." }],
+      structuredContent: out
+    };
+  }
+});
+
+// src/lib/mcp/tools/wordpress-preview-tour-inclusions.ts
+import { defineTool as defineTool113 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z109 } from "npm:zod@^3.25.76";
+var wordpress_preview_tour_inclusions_default = defineTool113({
+  name: "wordpress_preview_tour_inclusions",
+  title: "Preview inclusions push to website",
+  description: "Dry run before publishing inclusions/exclusions/description: diffs the ART lists and Website Description against what is live on the linked WordPress tour page. Changes nothing. Show the diff to the user, then call `wordpress_push_tour_inclusions` with confirm=true. Admin/manager only.",
+  inputSchema: {
+    tour_id: z109.string().describe("The ART tour id (uuid)."),
+    wordpress_tour_id: z109.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, wordpress_tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const art = await loadArtInclusions(ctx, tour_id);
+    if ("error" in art) return { content: [{ type: "text", text: art.error }], isError: true };
+    let wpId = wordpress_tour_id ?? null;
+    if (!wpId) {
+      const linked = await loadWordpressTourLink(ctx, tour_id);
+      if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
+      wpId = linked.link?.wp_tour_id ?? null;
+    }
+    if (!wpId) {
+      return {
+        content: [{ type: "text", text: "This tour is not linked to a WordPress tour post. Pass wordpress_tour_id or link the tour first." }],
+        isError: true
+      };
+    }
+    try {
+      const res = await wordpressRequest({
+        endpoint: `tour/${wpId}`,
+        query: { context: "edit", _fields: "id,acf,content" }
+      });
+      const acf = res.data?.acf ?? {};
+      const wpDescription = res.data?.content?.raw ?? res.data?.content?.rendered ?? "";
+      const inclusions = buildItemsDiff(art.inclusions, normaliseWpItems(acf[WP_INCLUSIONS_FIELD]));
+      const exclusions = buildItemsDiff(art.exclusions, normaliseWpItems(acf[WP_EXCLUSIONS_FIELD]));
+      const descriptionChanged = art.website_description.trim().length > 0 && !htmlEqual(art.website_description, wpDescription);
+      const out = {
+        tour_id,
+        tour_name: art.tour.name,
+        wordpress_tour_id: wpId,
+        inclusions,
+        exclusions,
+        description: { changed: descriptionChanged, art_empty: art.website_description.trim().length === 0 },
+        description_mismatch: describeDescriptionMismatch(art.website_description, art.inclusions),
+        row_shape_known: {
+          inclusions: detectRowShape(acf[WP_INCLUSIONS_FIELD]) !== null,
+          exclusions: detectRowShape(acf[WP_EXCLUSIONS_FIELD]) !== null
+        },
+        has_changes: inclusions.changed || exclusions.changed || descriptionChanged
+      };
+      return {
+        content: [{
+          type: "text",
+          text: out.has_changes ? `Differences found against the website.
+${JSON.stringify(out)}` : "The website already matches ART for inclusions, exclusions and the description."
+        }],
+        structuredContent: out
+      };
+    } catch (err) {
+      const c = categoriseError(err);
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-push-tour-inclusions.ts
+import { defineTool as defineTool114 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z110 } from "npm:zod@^3.25.76";
+var wordpress_push_tour_inclusions_default = defineTool114({
+  name: "wordpress_push_tour_inclusions",
+  title: "Push inclusions to website",
+  description: "Publish a tour's inclusion/exclusion lists and Website Description to its linked WordPress tour page, replacing the live `inclusions` / `exclusions_details` repeaters and the Tour Details content. ART is the source of truth; the push is one-way ART \u2192 WordPress. Run `wordpress_preview_tour_inclusions` first, show the diff, and only call this once the user approves \u2014 confirm=true is required. Empty ART lists are never pushed (it will not blank the website). Admin/manager only.",
+  inputSchema: {
+    tour_id: z110.string().describe("The ART tour id (uuid)."),
+    confirm: z110.boolean().describe("Must be true. Confirms the user reviewed the diff and approved publishing."),
+    sections: z110.array(z110.enum(["inclusions", "exclusions", "description"])).optional().describe("Which sections to publish. Defaults to all three."),
+    wordpress_tour_id: z110.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, confirm, sections, wordpress_tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!confirm) {
+      return {
+        content: [{
+          type: "text",
+          text: "Not published. Review the diff with wordpress_preview_tour_inclusions, get approval, then call again with confirm=true."
+        }],
+        isError: true
+      };
+    }
+    const wanted = new Set(sections ?? ["inclusions", "exclusions", "description"]);
+    const art = await loadArtInclusions(ctx, tour_id);
+    if ("error" in art) return { content: [{ type: "text", text: art.error }], isError: true };
+    let wpId = wordpress_tour_id ?? null;
+    if (!wpId) {
+      const linked = await loadWordpressTourLink(ctx, tour_id);
+      if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
+      wpId = linked.link?.wp_tour_id ?? null;
+    }
+    if (!wpId) {
+      return {
+        content: [{ type: "text", text: "This tour is not linked to a WordPress tour post. Pass wordpress_tour_id or link the tour first." }],
+        isError: true
+      };
+    }
+    const endpoint = `tour/${wpId}`;
+    try {
+      const beforeRes = await wordpressRequest({
+        endpoint,
+        query: { context: "edit", _fields: "id,acf,content" }
+      });
+      const beforeAcf = beforeRes.data?.acf ?? {};
+      const beforeContent = beforeRes.data?.content?.raw ?? beforeRes.data?.content?.rendered ?? "";
+      const acfPayload = {};
+      const pushed = [];
+      const skipped = [];
+      const addList = (section, field, items) => {
+        if (!wanted.has(section)) return;
+        if (items.length === 0) {
+          skipped.push(`${section}: nothing in ART \u2014 refusing to blank the website list`);
+          return;
+        }
+        const shape = detectRowShape(beforeAcf[field]);
+        if (!shape) {
+          skipped.push(`${section}: the live list is empty so its row format can't be detected \u2014 add one row on the WordPress tour once, then push again`);
+          return;
+        }
+        acfPayload[field] = buildWpRows(items, shape);
+        pushed.push(section);
+      };
+      addList("inclusions", WP_INCLUSIONS_FIELD, art.inclusions);
+      addList("exclusions", WP_EXCLUSIONS_FIELD, art.exclusions);
+      const body = {};
+      if (Object.keys(acfPayload).length > 0) body.acf = acfPayload;
+      if (wanted.has("description")) {
+        if (art.website_description.trim().length === 0) {
+          skipped.push("description: empty in ART \u2014 refusing to blank the website description");
+        } else if (htmlEqual(art.website_description, beforeContent)) {
+          skipped.push("description: already matches the website");
+        } else {
+          body.content = art.website_description;
+          pushed.push("description");
+        }
+      }
+      if (Object.keys(body).length === 0) {
+        const out2 = { tour_id, wordpress_tour_id: wpId, pushed: [], skipped };
+        return { content: [{ type: "text", text: `Nothing published. ${skipped.join("; ")}` }], structuredContent: out2 };
+      }
+      const res = await wordpressRequest({ endpoint, method: "POST", body });
+      const afterAcf = res.data?.acf ?? {};
+      const afterContent = res.data?.content?.raw ?? res.data?.content?.rendered ?? "";
+      const verified = (!pushed.includes("inclusions") || !buildItemsDiff(art.inclusions, normaliseWpItems(afterAcf[WP_INCLUSIONS_FIELD])).changed) && (!pushed.includes("exclusions") || !buildItemsDiff(art.exclusions, normaliseWpItems(afterAcf[WP_EXCLUSIONS_FIELD])).changed) && (!pushed.includes("description") || htmlEqual(art.website_description, afterContent));
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "push_tour_inclusions",
+        wordpress_object_type: "tour",
+        wordpress_object_id: wpId,
+        request_summary: { ...requestSummary(endpoint, "POST"), art_tour_id: tour_id, changed_fields: pushed },
+        result_status: "success",
+        response_code: res.status,
+        before_snapshot: {
+          [WP_INCLUSIONS_FIELD]: beforeAcf[WP_INCLUSIONS_FIELD] ?? null,
+          [WP_EXCLUSIONS_FIELD]: beforeAcf[WP_EXCLUSIONS_FIELD] ?? null,
+          content: beforeContent
+        },
+        after_snapshot: {
+          [WP_INCLUSIONS_FIELD]: afterAcf[WP_INCLUSIONS_FIELD] ?? null,
+          [WP_EXCLUSIONS_FIELD]: afterAcf[WP_EXCLUSIONS_FIELD] ?? null,
+          content: afterContent
+        }
+      });
+      const out = { tour_id, tour_name: art.tour.name, wordpress_tour_id: wpId, pushed, skipped, verified };
+      return {
+        content: [{
+          type: "text",
+          text: `Published ${pushed.join(", ") || "nothing"} to the website${verified ? "" : " \u2014 but the live page still differs, check the WordPress post"}.${skipped.length ? ` Skipped: ${skipped.join("; ")}` : ""}`
+        }],
+        structuredContent: out
+      };
+    } catch (err) {
+      const c = categoriseError(err);
+      await auditWordpressCall(ctx, {
+        source: "mcp",
+        action: "push_tour_inclusions",
+        wordpress_object_type: "tour",
+        wordpress_object_id: wpId,
+        request_summary: { ...requestSummary(endpoint, "POST"), art_tour_id: tour_id },
+        result_status: "error",
+        response_code: c.status,
+        error_message: c.message
+      });
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
+// src/lib/mcp/tools/wordpress-pull-tour-inclusions.ts
+import { defineTool as defineTool115 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z111 } from "npm:zod@^3.25.76";
+var wordpress_pull_tour_inclusions_default = defineTool115({
+  name: "wordpress_pull_tour_inclusions",
+  title: "Import inclusions from website",
+  description: "One-time import: reads the live WordPress tour page's inclusions, exclusions and Tour Details description and copies them into ART for that tour. Call without confirm to preview what would be imported; call with confirm=true to write (this REPLACES the tour's ART lists). Admin/manager only.",
+  inputSchema: {
+    tour_id: z111.string().describe("The ART tour id (uuid)."),
+    confirm: z111.boolean().optional().describe("true to write the imported content into ART. Omit to preview."),
+    wordpress_tour_id: z111.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  handler: async ({ tour_id, confirm, wordpress_tour_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let wpId = wordpress_tour_id ?? null;
+    if (!wpId) {
+      const linked = await loadWordpressTourLink(ctx, tour_id);
+      if ("error" in linked) return { content: [{ type: "text", text: linked.error }], isError: true };
+      wpId = linked.link?.wp_tour_id ?? null;
+    }
+    if (!wpId) {
+      return {
+        content: [{ type: "text", text: "This tour is not linked to a WordPress tour post. Pass wordpress_tour_id or link the tour first." }],
+        isError: true
+      };
+    }
+    try {
+      const res = await wordpressRequest({
+        endpoint: `tour/${wpId}`,
+        query: { context: "edit", _fields: "id,acf,content" }
+      });
+      const acf = res.data?.acf ?? {};
+      const inclusions = normaliseWpItems(acf[WP_INCLUSIONS_FIELD]).map((s) => sanitiseInlineHtml(s));
+      const exclusions = normaliseWpItems(acf[WP_EXCLUSIONS_FIELD]).map((s) => sanitiseInlineHtml(s));
+      const description = res.data?.content?.raw ?? res.data?.content?.rendered ?? "";
+      if (confirm !== true) {
+        const preview = { tour_id, wordpress_tour_id: wpId, preview: true, inclusions, exclusions, description };
+        return {
+          content: [{
+            type: "text",
+            text: `Would import ${inclusions.length} inclusion(s), ${exclusions.length} exclusion(s) and the description. Call again with confirm=true to write.
+${JSON.stringify(preview)}`
+          }],
+          structuredContent: preview
+        };
+      }
+      const supabase = supabaseForUser(ctx);
+      const del = await supabase.from("tour_inclusion_items").delete().eq("tour_id", tour_id);
+      if (del.error) return { content: [{ type: "text", text: del.error.message }], isError: true };
+      const rows = [
+        ...inclusions.map((content_html, i) => ({ tour_id, kind: "inclusion", content_html, sort_order: i })),
+        ...exclusions.map((content_html, i) => ({ tour_id, kind: "exclusion", content_html, sort_order: i }))
+      ];
+      if (rows.length > 0) {
+        const { error } = await supabase.from("tour_inclusion_items").insert(rows);
+        if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+      }
+      if (description.trim().length > 0) {
+        const { error } = await supabase.from("tours").update({ website_description: description }).eq("id", tour_id);
+        if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+      }
+      const out = {
+        tour_id,
+        wordpress_tour_id: wpId,
+        imported_inclusions: inclusions.length,
+        imported_exclusions: exclusions.length,
+        imported_description: description.trim().length > 0
+      };
+      return {
+        content: [{ type: "text", text: `Imported ${inclusions.length} inclusion(s) and ${exclusions.length} exclusion(s) into ART.` }],
+        structuredContent: out
+      };
+    } catch (err) {
+      const c = categoriseError(err);
+      return { content: [{ type: "text", text: c.message }], isError: true };
+    }
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.4.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
+  version: "2.5.0",
+  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -6932,7 +7446,14 @@ var mcp_default = defineMcp({
     list_itinerary_day_photos_default,
     upload_itinerary_day_photo_default,
     delete_itinerary_day_photo_default,
-    wordpress_sync_itinerary_day_photos_default
+    wordpress_sync_itinerary_day_photos_default,
+    get_tour_inclusions_default,
+    update_tour_inclusions_default,
+    reorder_tour_inclusions_default,
+    update_tour_website_description_default,
+    wordpress_preview_tour_inclusions_default,
+    wordpress_push_tour_inclusions_default,
+    wordpress_pull_tour_inclusions_default
   ]
 });
 

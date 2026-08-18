@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.4.0",
+      "version": "2.5.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -3947,6 +3947,252 @@
           "required": [
             "tour_id",
             "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_tour_inclusions",
+        "title": "Get tour inclusions & exclusions",
+        "description": "Read a tour's structured inclusion and exclusion items (in display order, with their ids) plus the tour's Website Description block. These are what publish to the WordPress tour page. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_tour_inclusions",
+        "title": "Replace tour inclusions or exclusions",
+        "description": "Replace the full inclusion OR exclusion list for a tour with the supplied items, in the order given. Each item is one bullet on the website; light inline HTML (<b>, <i>, <a href>) is kept, block markup is stripped. This replaces the existing list for that kind — read it with `get_tour_inclusions` first. Nothing is published to the website until `wordpress_push_tour_inclusions` is called. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "inclusion",
+                "exclusion"
+              ],
+              "description": "Which list to replace."
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "The full list of items, in display order."
+            }
+          },
+          "required": [
+            "tour_id",
+            "kind",
+            "items"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "reorder_tour_inclusions",
+        "title": "Reorder tour inclusions or exclusions",
+        "description": "Set the display order of a tour's inclusion or exclusion items by listing their ids in the desired order (ids come from `get_tour_inclusions`). Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "item_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "Item ids in the desired display order."
+            }
+          },
+          "required": [
+            "tour_id",
+            "item_ids"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_tour_website_description",
+        "title": "Update tour website description",
+        "description": "Set the tour's Website Description block — the HTML that publishes to the Tour Details section of the WordPress tour page (intro copy, notes and the inclusions copy shown there). Nothing goes live until `wordpress_push_tour_inclusions` is called. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "website_description": {
+              "type": "string",
+              "description": "HTML for the Tour Details description block."
+            }
+          },
+          "required": [
+            "tour_id",
+            "website_description"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_preview_tour_inclusions",
+        "title": "Preview inclusions push to website",
+        "description": "Dry run before publishing inclusions/exclusions/description: diffs the ART lists and Website Description against what is live on the linked WordPress tour page. Changes nothing. Show the diff to the user, then call `wordpress_push_tour_inclusions` with confirm=true. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_push_tour_inclusions",
+        "title": "Push inclusions to website",
+        "description": "Publish a tour's inclusion/exclusion lists and Website Description to its linked WordPress tour page, replacing the live `inclusions` / `exclusions_details` repeaters and the Tour Details content. ART is the source of truth; the push is one-way ART → WordPress. Run `wordpress_preview_tour_inclusions` first, show the diff, and only call this once the user approves — confirm=true is required. Empty ART lists are never pushed (it will not blank the website). Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "Must be true. Confirms the user reviewed the diff and approved publishing."
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "inclusions",
+                  "exclusions",
+                  "description"
+                ]
+              },
+              "description": "Which sections to publish. Defaults to all three."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id."
+            }
+          },
+          "required": [
+            "tour_id",
+            "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_pull_tour_inclusions",
+        "title": "Import inclusions from website",
+        "description": "One-time import: reads the live WordPress tour page's inclusions, exclusions and Tour Details description and copies them into ART for that tour. Call without confirm to preview what would be imported; call with confirm=true to write (this REPLACES the tour's ART lists). Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "true to write the imported content into ART. Omit to preview."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id."
+            }
+          },
+          "required": [
+            "tour_id"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"

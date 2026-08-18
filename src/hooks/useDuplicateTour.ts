@@ -87,6 +87,7 @@ export const useDuplicateTour = () => {
         duplicateActivities(originalTourId, newTour.id),
         duplicateAdditionalInfo(originalTourId, newTour.id),
         duplicateItineraries(originalTourId, newTour.id),
+        duplicateInclusionItems(originalTourId, newTour.id),
         duplicateCustomForms(originalTourId, newTour.id),
       ]);
 
@@ -234,6 +235,21 @@ async function duplicateAdditionalInfo(originalTourId: string, newTourId: string
     .from('tour_additional_info_sections')
     .insert(newSections);
   if (insertErr) throw insertErr;
+}
+
+async function duplicateInclusionItems(originalTourId: string, newTourId: string) {
+  const { data: items, error } = await supabase
+    .from('tour_inclusion_items')
+    .select('kind, content_html, sort_order')
+    .eq('tour_id', originalTourId)
+    .order('sort_order');
+  if (error) throw error;
+  if (!items?.length) return;
+
+  const { error: insErr } = await supabase
+    .from('tour_inclusion_items')
+    .insert(items.map(i => ({ ...i, tour_id: newTourId })));
+  if (insErr) throw insErr;
 }
 
 async function duplicateItineraries(originalTourId: string, newTourId: string) {
