@@ -11,6 +11,18 @@ import {
   preserveGalleries,
 } from "../_shared/wordpressItinerary.ts";
 import { loadArtItinerary } from "../_shared/wordpressItineraryArt.ts";
+import {
+  WP_INCLUSIONS_FIELD,
+  WP_EXCLUSIONS_FIELD,
+  buildItemsDiff,
+  buildWpRows,
+  detectRowShape,
+  normaliseWpItems,
+  htmlEqual,
+  sanitiseInlineHtml,
+  describeDescriptionMismatch,
+  loadArtInclusions,
+} from "../_shared/wordpressInclusions.ts";
 
 // Thin proxy for the WordPress Content UI in ART Admin. Verifies the user's
 // JWT and admin/manager role, then executes ONE of a fixed set of read-only
@@ -39,6 +51,9 @@ type Op =
   | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> }
   | { op: "itinerary_diff"; art_tour_id: string }
   | { op: "push_itinerary"; art_tour_id: string }
+  | { op: "inclusions_diff"; art_tour_id: string }
+  | { op: "push_inclusions"; art_tour_id: string; sections?: Array<"inclusions" | "exclusions" | "description"> }
+  | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
   | { op: "upload_media"; filename: string; content_type: string; data_base64: string; title?: string };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
