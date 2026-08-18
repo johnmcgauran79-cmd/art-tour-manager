@@ -158,7 +158,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         .select(
           `id, tour_id, status, passenger_count, passport_not_required, selected_pickup_option_id,
            group_name, lead_passenger_id, passenger_2_id, passenger_3_id, passenger_2_name, passenger_3_name,
-           customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, phone, phone_missing_acknowledged_at, emergency_contact_name, emergency_contact_phone, dietary_requirements, medical_conditions)`
+           customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, phone, phone_missing_acknowledged_at, emergency_contact_name, emergency_contact_phone)`
         )
         .in("tour_id", tourIds);
       if (bookingError) throw bookingError;
