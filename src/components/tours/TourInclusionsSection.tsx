@@ -14,6 +14,7 @@ import {
   type TourInclusionItem,
 } from "@/hooks/useTourInclusions";
 import { PublishTourContentDialog } from "@/components/wordpress/PublishTourContentDialog";
+import { useIsWebsiteApprover } from "@/hooks/useWebsiteChanges";
 
 function ItemRow({
   item,
@@ -205,6 +206,7 @@ interface Props {
 export function TourInclusionsSection({ tourId }: Props) {
   const { inclusions, exclusions, isLoading, addItem, updateItem, deleteItem, reorder } = useTourInclusions(tourId);
   const { description, isLoading: descLoading, save: saveDescription } = useTourWebsiteDescription(tourId);
+  const isApprover = useIsWebsiteApprover();
   const [descDraft, setDescDraft] = useState("");
   const [publishOpen, setPublishOpen] = useState(false);
 
