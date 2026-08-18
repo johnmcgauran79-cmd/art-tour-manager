@@ -1,6 +1,6 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bot } from "lucide-react";
+import { Bot, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -8,6 +8,7 @@ import { SecondaryContextBar } from "@/components/layout/SecondaryContextBar";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { UserDropdown } from "@/components/UserDropdown";
 import { ShareButton } from "@/components/ShareButton";
+import { GlobalSearchDialog } from "@/components/search/GlobalSearchDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppLayoutProps {
@@ -17,11 +18,17 @@ interface AppLayoutProps {
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  // Global "Ask ART AI" shortcut: Ctrl/Cmd+K opens the ART AI workspace.
+  // Global shortcuts: Ctrl/Cmd+K opens search, Ctrl/Cmd+J opens ART AI.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "k") {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      } else if (key === "j") {
         e.preventDefault();
         navigate("/art-ai");
       }
@@ -62,6 +69,21 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setSearchOpen(true)}
+              className="gap-2 text-brand-yellow hover:bg-white/10 hover:text-brand-yellow"
+              aria-label="Search everything"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Search</span>
+              {!isMobile && (
+                <kbd className="hidden rounded bg-white/15 px-1.5 py-0.5 text-[10px] font-medium lg:inline">
+                  ⌘K
+                </kbd>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate("/art-ai")}
               className="gap-2 text-brand-yellow hover:bg-white/10 hover:text-brand-yellow"
               aria-label="Ask ART AI"
@@ -70,7 +92,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               <span className="hidden sm:inline">Ask ART AI</span>
               {!isMobile && (
                 <kbd className="hidden rounded bg-white/15 px-1.5 py-0.5 text-[10px] font-medium lg:inline">
-                  ⌘K
+                  ⌘J
                 </kbd>
               )}
             </Button>
@@ -90,6 +112,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           </main>
         </div>
       </div>
+
+      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Global floating Share button — copies the current URL so teammates can
           deep-link to whatever page or settings sub-tab is currently open. */}
