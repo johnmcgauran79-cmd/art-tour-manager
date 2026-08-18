@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarClock, Send } from "lucide-react";
+import { CalendarClock, Globe, Send } from "lucide-react";
 import { UpcomingEmailsPanel } from "./UpcomingEmailsPanel";
+import { WebsiteChangesPanel } from "./WebsiteChangesPanel";
 import { SentEmailsReport } from "@/components/operations/SentEmailsReport";
 
 interface Props {
@@ -10,6 +11,22 @@ interface Props {
 
 export const TourCommsReport = ({ tourId }: Props) => (
   <div className="space-y-6">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="h-5 w-5" />
+          Website Changes
+        </CardTitle>
+        <CardDescription>
+          Customer-facing content for this tour waiting on marketing approval before it publishes to the
+          website.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <WebsiteChangesPanel tourId={tourId} />
+      </CardContent>
+    </Card>
+
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
