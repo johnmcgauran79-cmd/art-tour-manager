@@ -1383,7 +1383,6 @@ Deno.serve(async (req) => {
       case "push_inclusions": {
         // (see save_art_content below for the editable review flow)
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        void admin;
         const sections = new Set(body.sections ?? ["inclusions", "exclusions", "description"]);
         const art = await loadArtInclusions(admin, body.art_tour_id);
         if ("error" in art) return json({ error: art.error }, 400);
@@ -1502,6 +1501,8 @@ Deno.serve(async (req) => {
         return json({ ok: true, pushed, skipped, verified, wp_tour_id: link.wp_tour_id });
       }
       case "pull_inclusions": {
+        const admin0 = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        void admin0;
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const { data: link } = await admin
           .from("wordpress_tour_links")
