@@ -627,6 +627,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
 /** Compact summary used by the dashboard widget. */
 export const useDataHealthSummary = () => {
   const { data, isLoading } = useDataHealth(60);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(
     () => ({
       isLoading,
