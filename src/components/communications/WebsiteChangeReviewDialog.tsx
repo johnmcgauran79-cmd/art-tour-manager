@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +20,10 @@ import {
   Globe,
   History,
   Loader2,
+  Pencil,
+  RotateCcw,
+  Save,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -47,6 +53,12 @@ interface InclusionsDiff {
   inclusions: ListDiff;
   exclusions: ListDiff;
   description: { art: string; wp: string; changed: boolean; art_empty: boolean };
+  art_items?: Array<{
+    id: string;
+    kind: "inclusion" | "exclusion";
+    content_html: string;
+    sort_order: number;
+  }>;
   changed: boolean;
 }
 
@@ -62,6 +74,13 @@ interface ItineraryDiff {
   rows: ItineraryDiffRow[];
   changed: boolean;
   photos_pending_upload: number;
+  day_ids?: string[];
+  art_days?: Array<{
+    day_id: string;
+    day_number: number | null;
+    activity_date: string | null;
+    entries: Array<{ id: string; subject: string; content: string | null }>;
+  }>;
 }
 
 async function callProxy<T>(op: string, payload: Record<string, unknown>): Promise<T> {
