@@ -904,6 +904,30 @@ export default function TourEdit() {
 
         </div>
 
+        {id && <TourInclusionsSection tourId={id} />}
+
+        <div className="space-y-2">
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => handleInputChange("notes", e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        {/* Email Template Overrides */}
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-base font-medium">Email Template Overrides</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Assign tour-specific email templates for each automated rule. If not set, the global default from Settings will be used.
+          </p>
+          <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
+        </div>
+
         {/* Test Mode toggle — Admin only */}
         {isAdmin && (
         <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
@@ -998,30 +1022,6 @@ export default function TourEdit() {
               }
             />
           </div>
-        </div>
-
-        {id && <TourInclusionsSection tourId={id} />}
-
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes</Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => handleInputChange("notes", e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        {/* Email Template Overrides */}
-        <div className="space-y-3 border-t pt-4">
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-base font-medium">Email Template Overrides</Label>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Assign tour-specific email templates for each automated rule. If not set, the global default from Settings will be used.
-          </p>
-          <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
         </div>
 
         <div className="flex justify-end gap-2">
