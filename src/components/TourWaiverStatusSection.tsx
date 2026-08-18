@@ -254,13 +254,6 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
     );
   }
 
-  // Group rows by booking for the select-all checkbox logic
-  const bookingGroups = new Map<string, PassengerWaiverRow[]>();
-  waiverData.forEach((r) => {
-    if (!bookingGroups.has(r.bookingId)) bookingGroups.set(r.bookingId, []);
-    bookingGroups.get(r.bookingId)!.push(r);
-  });
-
   return (
     <Card>
       <CardHeader>
@@ -342,7 +335,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                   <TableHead className="w-10"></TableHead>
                 )}
                 <TableHead>Booking</TableHead>
-                <TableHead>Passenger</TableHead>
+                <TableHead>Lead booker</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Signed As</TableHead>
                 <TableHead>Date</TableHead>
@@ -350,18 +343,14 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {waiverData.map((row, idx) => {
-                const hasUnsigned = !row.signedAt && row.email;
-                // Show checkbox only for first passenger per booking
-                const isFirstInBooking =
-                  idx === 0 || waiverData[idx - 1].bookingId !== row.bookingId;
+              {waiverData.map((row) => {
                 const bookingHasUnsigned = unsignedBookingIds.includes(row.bookingId);
 
                 return (
-                  <TableRow key={`${row.bookingId}_${row.passengerSlot}`}>
+                  <TableRow key={row.bookingId}>
                     {!isViewOnly && unsignedBookingIds.length > 0 && (
                       <TableCell>
-                        {isFirstInBooking && bookingHasUnsigned && (
+                        {bookingHasUnsigned && (
                           <Checkbox
                             checked={selectedBookings.has(row.bookingId)}
                             onCheckedChange={() => toggleBooking(row.bookingId)}
@@ -370,27 +359,27 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                       </TableCell>
                     )}
                     <TableCell className="font-medium">
-                      {isFirstInBooking
-                        ? row.groupName || `${row.firstName} ${row.lastName}`
-                        : ""}
+                      {row.groupName || `${row.leadFirstName} ${row.leadLastName}`}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span>
-                          {row.firstName} {row.lastName}
-                        </span>
-                        {row.passengerSlot === 1 && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            Lead
-                          </Badge>
-                        )}
-                        {!row.email && (
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1">
+                          <span>
+                            {row.leadFirstName} {row.leadLastName}
+                          </span>
+                          {!row.email && (
                           <Badge
                             variant="outline"
                             className="text-[10px] px-1 py-0 text-amber-600 border-amber-300"
                           >
                             No email
                           </Badge>
+                          )}
+                        </div>
+                        {row.passengerCount > 1 && (
+                          <span className="text-xs text-muted-foreground">
+                            Covers {row.passengerCount} passengers: {row.passengerNames.join(", ")}
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -457,9 +446,9 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                   <Table>
                     <TableBody>
                       {selectedRecipients.map((r, i) => (
-                        <TableRow key={`${r.bookingId}_${r.passengerSlot}`} className="text-sm">
+                        <TableRow key={r.bookingId} className="text-sm">
                           <TableCell className="py-1.5 font-medium">
-                            {r.firstName} {r.lastName}
+                            {r.leadFirstName} {r.leadLastName}
                           </TableCell>
                           <TableCell className="py-1.5 text-muted-foreground">
                             {r.email}
