@@ -1147,6 +1147,41 @@ Deno.serve(async (req) => {
         const wpRows = normaliseWpItineraryRows(wpAcf[WP_ITINERARY_FIELD]);
         const diff = buildItineraryDiff(art.rows, wpRows);
         const pendingPhotos = art.images.filter((img) => typeof img.wp_media_id !== "number").length;
+
+        // Entry-level ART content so marketing can edit the "will become" side
+        // directly in the review dialog. Rows are aligned with art.day_ids.
+        const artDays: Array<{
+          day_id: string;
+          day_number: number | null;
+          activity_date: string | null;
+          entries: Array<{ id: string; subject: string; content: string | null }>;
+        }> = [];
+        if (art.itinerary_id) {
+          const { data: dayRows } = await admin
+            .from("tour_itinerary_days")
+            .select("id, day_number, activity_date")
+            .eq("itinerary_id", art.itinerary_id)
+            .order("day_number");
+          const ids = (dayRows ?? []).map((d: { id: string }) => d.id);
+          const { data: entryRows } = ids.length
+            ? await admin
+                .from("tour_itinerary_entries")
+                .select("id, day_id, subject, content, sort_order")
+                .in("day_id", ids)
+                .order("sort_order")
+            : { data: [] as unknown[] };
+          (dayRows ?? []).forEach((d: { id: string; day_number: number; activity_date: string }) => {
+            artDays.push({
+              day_id: d.id,
+              day_number: d.day_number ?? null,
+              activity_date: d.activity_date ?? null,
+              entries: ((entryRows ?? []) as Array<{ id: string; day_id: string; subject: string; content: string | null }>)
+                .filter((e) => e.day_id === d.id)
+                .map((e) => ({ id: e.id, subject: e.subject, content: e.content })),
+            });
+          });
+        }
+
         return json({
           tour_name: art.tour.name,
           wp_tour_id: link.wp_tour_id,
@@ -1157,6 +1192,8 @@ Deno.serve(async (req) => {
           wp_row_count: wpRows.length,
           photo_count: art.images.length,
           photos_pending_upload: pendingPhotos,
+          day_ids: art.day_ids,
+          art_days: artDays,
         });
       }
       case "push_itinerary": {
