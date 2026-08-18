@@ -87,6 +87,7 @@ export const useDuplicateTour = () => {
         duplicateActivities(originalTourId, newTour.id),
         duplicateAdditionalInfo(originalTourId, newTour.id),
         duplicateItineraries(originalTourId, newTour.id),
+        duplicateInclusionItems(originalTourId, newTour.id),
         duplicateCustomForms(originalTourId, newTour.id),
       ]);
 
