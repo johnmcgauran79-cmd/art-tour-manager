@@ -1502,7 +1502,6 @@ Deno.serve(async (req) => {
       }
       case "pull_inclusions": {
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const { data: link } = await admin
           .from("wordpress_tour_links")
           .select("*")
