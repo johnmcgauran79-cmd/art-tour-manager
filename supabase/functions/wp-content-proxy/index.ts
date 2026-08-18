@@ -114,12 +114,14 @@ Deno.serve(async (req) => {
   if (userErr || !userRes?.user) return json({ error: "Unauthorized" }, 401);
   const userId = userRes.user.id;
 
-  const [{ data: isAdmin }, { data: isManager }] = await Promise.all([
+  // Admins and managers, plus marketing/comms staff who approve website changes.
+  const [{ data: isAdmin }, { data: isManager }, { data: isApprover }] = await Promise.all([
     userClient.rpc("has_role", { _user_id: userId, _role: "admin" }),
     userClient.rpc("has_role", { _user_id: userId, _role: "manager" }),
+    userClient.rpc("is_website_approver", { _user_id: userId }),
   ]);
-  if (isAdmin !== true && isManager !== true) {
-    return json({ error: "Forbidden — admin or manager only" }, 403);
+  if (isAdmin !== true && isManager !== true && isApprover !== true) {
+    return json({ error: "Forbidden — admin, manager or marketing only" }, 403);
   }
 
   let body: Op;

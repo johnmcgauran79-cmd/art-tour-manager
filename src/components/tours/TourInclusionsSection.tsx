@@ -14,6 +14,7 @@ import {
   type TourInclusionItem,
 } from "@/hooks/useTourInclusions";
 import { PublishTourContentDialog } from "@/components/wordpress/PublishTourContentDialog";
+import { useIsWebsiteApprover } from "@/hooks/useWebsiteChanges";
 
 function ItemRow({
   item,
@@ -205,6 +206,7 @@ interface Props {
 export function TourInclusionsSection({ tourId }: Props) {
   const { inclusions, exclusions, isLoading, addItem, updateItem, deleteItem, reorder } = useTourInclusions(tourId);
   const { description, isLoading: descLoading, save: saveDescription } = useTourWebsiteDescription(tourId);
+  const isApprover = useIsWebsiteApprover();
   const [descDraft, setDescDraft] = useState("");
   const [publishOpen, setPublishOpen] = useState(false);
 
@@ -220,9 +222,15 @@ export function TourInclusionsSection({ tourId }: Props) {
             website when you're ready.
           </CardDescription>
         </div>
-        <Button type="button" variant="outline" onClick={() => setPublishOpen(true)}>
-          <Globe className="mr-2 h-4 w-4" /> Publish to Website
-        </Button>
+        {isApprover ? (
+          <Button type="button" variant="outline" onClick={() => setPublishOpen(true)}>
+            <Globe className="mr-2 h-4 w-4" /> Publish to Website
+          </Button>
+        ) : (
+          <p className="max-w-[14rem] text-right text-xs text-muted-foreground">
+            Your edits are queued for marketing approval under Communications → Website Changes.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (

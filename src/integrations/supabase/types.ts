@@ -4911,6 +4911,109 @@ export type Database = {
         }
         Relationships: []
       }
+      website_change_events: {
+        Row: {
+          after_value: Json | null
+          before_value: Json | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          request_id: string
+          section: string
+          summary: string
+          tour_id: string
+        }
+        Insert: {
+          after_value?: Json | null
+          before_value?: Json | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          request_id: string
+          section: string
+          summary: string
+          tour_id: string
+        }
+        Update: {
+          after_value?: Json | null
+          before_value?: Json | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          request_id?: string
+          section?: string
+          summary?: string
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_change_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "website_change_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_change_requests: {
+        Row: {
+          change_count: number
+          created_at: string
+          first_changed_at: string
+          id: string
+          last_changed_at: string
+          last_changed_by: string | null
+          published_at: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          section: string
+          status: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          change_count?: number
+          created_at?: string
+          first_changed_at?: string
+          id?: string
+          last_changed_at?: string
+          last_changed_by?: string | null
+          published_at?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          section: string
+          status?: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          change_count?: number
+          created_at?: string
+          first_changed_at?: string
+          id?: string
+          last_changed_at?: string
+          last_changed_by?: string | null
+          published_at?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          section?: string
+          status?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_change_requests_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wordpress_field_mappings: {
         Row: {
           art_source: string | null
@@ -5483,6 +5586,7 @@ export type Database = {
         Args: { _todo_id: string; _user_id: string }
         Returns: boolean
       }
+      is_website_approver: { Args: { _user_id: string }; Returns: boolean }
       log_sensitive_operation: {
         Args: {
           details?: Json
@@ -5510,6 +5614,16 @@ export type Database = {
       purge_passport_data: { Args: never; Returns: number }
       recompute_customer_latest_tour: {
         Args: { _customer_id: string }
+        Returns: undefined
+      }
+      record_website_change: {
+        Args: {
+          _after: Json
+          _before: Json
+          _section: string
+          _summary: string
+          _tour_id: string
+        }
         Returns: undefined
       }
       refresh_capacity_alerts: { Args: never; Returns: number }
