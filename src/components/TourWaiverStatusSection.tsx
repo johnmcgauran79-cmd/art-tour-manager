@@ -19,14 +19,15 @@ interface Props {
   tourName: string;
 }
 
-interface PassengerWaiverRow {
+interface BookingWaiverRow {
   bookingId: string;
   groupName: string | null;
-  passengerSlot: number;
-  customerId: string | null;
-  firstName: string;
-  lastName: string;
+  leadCustomerId: string | null;
+  leadFirstName: string;
+  leadLastName: string;
   email: string | null;
+  passengerCount: number;
+  passengerNames: string[];
   signedName: string | null;
   signedAt: string | null;
   waiverVersion: number | null;
@@ -68,36 +69,43 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
         .select("booking_id, passenger_slot, signed_name, signed_at, waiver_version, ip_address, customer_id")
         .in("booking_id", bookingIds);
 
-      const waiverMap = new Map<string, any>();
+      // Waivers are signed once per booking (by the lead booker) and cover
+      // every passenger on that booking. Keep the earliest signature found.
+      const waiverByBooking = new Map<string, any>();
       (waivers || []).forEach((w) => {
-        waiverMap.set(`${w.booking_id}_${w.passenger_slot}`, w);
+        if (!w.signed_at) return;
+        const existing = waiverByBooking.get(w.booking_id);
+        if (!existing || new Date(w.signed_at) < new Date(existing.signed_at)) {
+          waiverByBooking.set(w.booking_id, w);
+        }
       });
 
-      const rows: PassengerWaiverRow[] = [];
+      const rows: BookingWaiverRow[] = [];
 
       for (const booking of bookings) {
-        const addRow = (slot: number, customer: any) => {
-          if (!customer) return;
-          const waiver = waiverMap.get(`${booking.id}_${slot}`);
-          rows.push({
-            bookingId: booking.id,
-            groupName: booking.group_name,
-            passengerSlot: slot,
-            customerId: customer.id,
-            firstName: customer.first_name,
-            lastName: customer.last_name,
-            email: customer.email,
-            signedName: waiver?.signed_name || null,
-            signedAt: waiver?.signed_at || null,
-            waiverVersion: waiver?.waiver_version || null,
-            ipAddress: waiver?.ip_address || null,
-          });
-        };
-
         const lead = booking.lead_passenger as any;
-        if (lead) addRow(1, lead);
-        if (booking.passenger_count >= 2 && booking.passenger_2) addRow(2, booking.passenger_2 as any);
-        if (booking.passenger_count >= 3 && booking.passenger_3) addRow(3, booking.passenger_3 as any);
+        if (!lead) continue;
+        const waiver = waiverByBooking.get(booking.id);
+        const names: string[] = [`${lead.first_name} ${lead.last_name}`];
+        const p2 = booking.passenger_2 as any;
+        const p3 = booking.passenger_3 as any;
+        if ((booking.passenger_count || 1) >= 2 && p2) names.push(`${p2.first_name} ${p2.last_name}`);
+        if ((booking.passenger_count || 1) >= 3 && p3) names.push(`${p3.first_name} ${p3.last_name}`);
+
+        rows.push({
+          bookingId: booking.id,
+          groupName: booking.group_name,
+          leadCustomerId: lead.id,
+          leadFirstName: lead.first_name,
+          leadLastName: lead.last_name,
+          email: lead.email,
+          passengerCount: booking.passenger_count || 1,
+          passengerNames: names,
+          signedName: waiver?.signed_name || null,
+          signedAt: waiver?.signed_at || null,
+          waiverVersion: waiver?.waiver_version || null,
+          ipAddress: waiver?.ip_address || null,
+        });
       }
 
       return rows;
