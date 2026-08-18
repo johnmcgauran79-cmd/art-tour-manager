@@ -1352,6 +1352,11 @@ Deno.serve(async (req) => {
             "") as string;
         const inclusionsDiff = buildItemsDiff(art.inclusions, wpIncl);
         const exclusionsDiff = buildItemsDiff(art.exclusions, wpExcl);
+        const { data: artItemRows } = await admin
+          .from("tour_inclusion_items")
+          .select("id, kind, content_html, sort_order")
+          .eq("tour_id", body.art_tour_id)
+          .order("sort_order");
         const descriptionChanged =
           art.website_description.trim().length > 0 && !htmlEqual(art.website_description, wpDescription);
         return json({
@@ -1360,6 +1365,7 @@ Deno.serve(async (req) => {
           wp_link: (wpRes.data as { link?: string })?.link ?? null,
           inclusions: inclusionsDiff,
           exclusions: exclusionsDiff,
+          art_items: artItemRows ?? [],
           description: {
             art: art.website_description,
             wp: wpDescription,
@@ -1375,6 +1381,7 @@ Deno.serve(async (req) => {
         });
       }
       case "push_inclusions": {
+        // (see save_art_content below for the editable review flow)
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const sections = new Set(body.sections ?? ["inclusions", "exclusions", "description"]);
         const art = await loadArtInclusions(admin, body.art_tour_id);
