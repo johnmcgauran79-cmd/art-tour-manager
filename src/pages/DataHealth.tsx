@@ -226,119 +226,15 @@ export default function DataHealth() {
           ) : (
             <div className="space-y-3">
               {tours.map((tour) => (
-                <Collapsible key={tour.tourId} asChild>
-                  <Card>
-                    <CollapsibleTrigger className="w-full text-left">
-                      <CardHeader className="flex flex-row flex-wrap items-center gap-3 space-y-0">
-                        <HealthScoreBadge score={tour.opsScore} />
-                        <div className="min-w-0 flex-1">
-                          <CardTitle className="truncate text-base">{tour.tourName}</CardTitle>
-                          <p className="text-xs text-muted-foreground">
-                            Departs {formatDateToDDMMYYYY(tour.startDate)}
-                            {tour.daysOut !== null && ` · ${tour.daysOut} day(s) out`} · {tour.bookings} booking(s) ·{" "}
-                            {tour.pax} pax
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1">
-                          <Badge variant="outline" className="text-[11px]">
-                            Guest data {tour.guestScore}
-                          </Badge>
-                          {Object.entries(tour.byCheck).map(([key, count]) => (
-                            <Badge key={key} variant="secondary" className="text-[11px]">
-                              {CHECK_LABELS[key as DataHealthCheckId]} {count}
-                            </Badge>
-                          ))}
-                          {tour.items.length === 0 && (
-                            <Badge variant="outline" className="text-[11px]">
-                              All clear
-                            </Badge>
-                          )}
-                        </div>
-                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <CardContent className="space-y-4">
-                        <div className="flex flex-wrap gap-2">
-                          {DATA_HEALTH_CHECKS.filter((c) => tour.categoryScores[c.id] !== undefined).map((c) => (
-                            <Badge key={c.id} variant="outline" className="text-[11px] font-normal">
-                              <span className="text-muted-foreground">
-                                {c.group === "ops" ? "Ops" : "Guest"} · {c.label}
-                              </span>
-                              <span className="ml-1 font-semibold tabular-nums">{tour.categoryScores[c.id]}</span>
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {tour.items.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            Nothing outstanding — this tour is ready to run.
-                          </p>
-                        ) : (
-                          <div className="space-y-6">
-                            {(["ops", "guest"] as const).map((group) => {
-                              const groupItems = group === "ops" ? tour.opsItems : tour.guestItems;
-                              if (groupItems.length === 0) return null;
-                              return (
-                                <div key={group} className="space-y-2">
-                                  <h4 className="text-sm font-semibold">
-                                    {group === "ops"
-                                      ? `Operational readiness (${groupItems.length})`
-                                      : `Guest data completeness (${groupItems.length}) — does not affect the tour score`}
-                                  </h4>
-                                  <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Check</TableHead>
-                                  <TableHead>Who / what</TableHead>
-                                  <TableHead>Detail</TableHead>
-                                  <TableHead className="text-right">Open</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {groupItems.map((item, idx) => (
-                                  <TableRow key={`${item.checkId}-${idx}`}>
-                                    <TableCell className="whitespace-nowrap text-xs">
-                                      {CHECK_LABELS[item.checkId]}
-                                    </TableCell>
-                                    <TableCell className="text-sm">{item.subject}</TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">{item.detail}</TableCell>
-                                    <TableCell className="text-right">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          navigate(item.bookingId ? `/bookings/${item.bookingId}` : `/tours/${item.tourId}`)
-                                        }
-                                      >
-                                        Open
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {tour.acknowledged.length > 0 && (
-                          <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-                            {tour.acknowledged.length} item(s) acknowledged and excluded from the score.
-                          </div>
-                        )}
-
-                        <Button asChild variant="outline" size="sm">
-                          <Link to={`/tours/${tour.tourId}`}>Open tour</Link>
-                        </Button>
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
+                <div key={tour.tourId} className="space-y-2">
+                  <TourHealthPanel tour={tour} />
+                  <div className="px-1 text-xs text-muted-foreground">
+                    Departs {formatDateToDDMMYYYY(tour.startDate)} · {tour.bookings} booking(s) · {tour.pax} pax ·{" "}
+                    <Link to={`/tours/${tour.tourId}`} className="underline">
+                      Open tour
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
           )}
