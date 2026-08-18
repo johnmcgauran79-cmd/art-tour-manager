@@ -410,6 +410,16 @@ function App() {
                   </TaskRoute>
                 }
               />
+              <Route
+                path="/data-health"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <DataHealth />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
