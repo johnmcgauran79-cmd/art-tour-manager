@@ -220,9 +220,15 @@ export function TourInclusionsSection({ tourId }: Props) {
             website when you're ready.
           </CardDescription>
         </div>
-        <Button type="button" variant="outline" onClick={() => setPublishOpen(true)}>
-          <Globe className="mr-2 h-4 w-4" /> Publish to Website
-        </Button>
+        {isApprover ? (
+          <Button type="button" variant="outline" onClick={() => setPublishOpen(true)}>
+            <Globe className="mr-2 h-4 w-4" /> Publish to Website
+          </Button>
+        ) : (
+          <p className="max-w-[14rem] text-right text-xs text-muted-foreground">
+            Your edits are queued for marketing approval under Communications → Website Changes.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {isLoading ? (
