@@ -14,6 +14,7 @@ import {
   Globe,
   Tag,
   Mail,
+  ShieldCheck,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -97,6 +98,7 @@ export const AppSidebar = () => {
   if (!isHost) mainItems.push({ key: "bookings", label: "Bookings", icon: BookOpen, tab: "bookings" });
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "communications", label: "Communications", icon: Mail, path: "/communications", badge: pendingApprovalCount });
+  if (isAdminOrManager) mainItems.push({ key: "data-health", label: "Data Health", icon: ShieldCheck, path: "/data-health" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });
   const workspaceItems: NavItem[] = [
