@@ -129,6 +129,12 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
   const [itineraryDiff, setItineraryDiff] = useState<ItineraryDiff | null>(null);
   const [rejectNote, setRejectNote] = useState("");
   const [showReject, setShowReject] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [descDraft, setDescDraft] = useState("");
+  const [itemDrafts, setItemDrafts] = useState<Record<string, string>>({});
+  const [removedItems, setRemovedItems] = useState<string[]>([]);
+  const [entryDrafts, setEntryDrafts] = useState<Record<string, string>>({});
 
   const sections = group.requests.map((r) => r.section);
   const needsContent = sections.some(
@@ -136,39 +142,101 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
   );
   const needsItinerary = sections.some((s) => s === "itinerary" || s === "itinerary_photos");
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
+  const seedDrafts = (content: InclusionsDiff | null, itinerary: ItineraryDiff | null) => {
+    setDescDraft(content?.description.art ?? "");
+    const items: Record<string, string> = {};
+    (content?.art_items ?? []).forEach((i) => {
+      items[i.id] = i.content_html ?? "";
+    });
+    setItemDrafts(items);
+    setRemovedItems([]);
+    const entries: Record<string, string> = {};
+    (itinerary?.art_days ?? []).forEach((d) =>
+      d.entries.forEach((e) => {
+        entries[e.id] = e.content ?? "";
+      }),
+    );
+    setEntryDrafts(entries);
+  };
+
+  const loadDiffs = async () => {
     setLoading(true);
     setError(null);
+    try {
+      const [content, itinerary] = await Promise.all([
+        needsContent
+          ? callProxy<InclusionsDiff>("inclusions_diff", { art_tour_id: group.tourId })
+          : Promise.resolve(null),
+        needsItinerary
+          ? callProxy<ItineraryDiff>("itinerary_diff", { art_tour_id: group.tourId })
+          : Promise.resolve(null),
+      ]);
+      setContentDiff(content);
+      setItineraryDiff(itinerary);
+      seedDrafts(content, itinerary);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
     setContentDiff(null);
     setItineraryDiff(null);
-
-    Promise.all([
-      needsContent
-        ? callProxy<InclusionsDiff>("inclusions_diff", { art_tour_id: group.tourId })
-        : Promise.resolve(null),
-      needsItinerary
-        ? callProxy<ItineraryDiff>("itinerary_diff", { art_tour_id: group.tourId })
-        : Promise.resolve(null),
-    ])
-      .then(([content, itinerary]) => {
-        if (cancelled) return;
-        setContentDiff(content);
-        setItineraryDiff(itinerary);
-      })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    setEditing(false);
+    void loadDiffs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, group.tourId]);
+
+  const dirty =
+    (contentDiff && descDraft !== (contentDiff.description.art ?? "")) ||
+    removedItems.length > 0 ||
+    (contentDiff?.art_items ?? []).some((i) => (itemDrafts[i.id] ?? "") !== (i.content_html ?? "")) ||
+    (itineraryDiff?.art_days ?? []).some((d) =>
+      d.entries.some((e) => (entryDrafts[e.id] ?? "") !== (e.content ?? "")),
+    );
+
+  const handleSaveEdits = async () => {
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = { art_tour_id: group.tourId };
+      if (contentDiff && descDraft !== (contentDiff.description.art ?? "")) {
+        payload.description = descDraft;
+      }
+      const items: Array<Record<string, unknown>> = [];
+      (contentDiff?.art_items ?? []).forEach((i) => {
+        if (removedItems.includes(i.id)) {
+          items.push({ id: i.id, kind: i.kind, content_html: i.content_html, remove: true });
+        } else if ((itemDrafts[i.id] ?? "") !== (i.content_html ?? "")) {
+          items.push({ id: i.id, kind: i.kind, content_html: itemDrafts[i.id] ?? "" });
+        }
+      });
+      if (items.length > 0) payload.items = items;
+      const entries: Array<Record<string, unknown>> = [];
+      (itineraryDiff?.art_days ?? []).forEach((d) =>
+        d.entries.forEach((e) => {
+          if ((entryDrafts[e.id] ?? "") !== (e.content ?? "")) {
+            entries.push({ id: e.id, content: entryDrafts[e.id] ?? "" });
+          }
+        }),
+      );
+      if (entries.length > 0) payload.itinerary_entries = entries;
+
+      if (Object.keys(payload).length === 1) {
+        toast.info("No edits to save");
+        return;
+      }
+      await callProxy("save_art_content", payload);
+      toast.success("Edits saved to the system — review the refreshed comparison, then publish");
+      await loadDiffs();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const wpLink = contentDiff?.wp_link ?? itineraryDiff?.wp_link ?? null;
   const nothingToPublish =
