@@ -904,7 +904,7 @@ export default function TourEdit() {
 
         </div>
 
-        {id && <TourInclusionsSection tourId={id} />
+        {id && <TourInclusionsSection tourId={id} />}
 
         <div className="space-y-2">
           <Label htmlFor="notes">Notes</Label>
