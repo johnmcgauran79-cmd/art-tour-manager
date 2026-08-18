@@ -6,47 +6,57 @@ import { isPlaceholderBooking } from "@/lib/placeholderBookings";
 /**
  * Data Health engine.
  *
- * Computes, for every upcoming tour in scope, the operational gaps that would
- * stop us running the tour cleanly (missing passports, unallocated hotels,
- * unsigned waivers, ...) and turns them into a 0-100 readiness score.
+ * Two independent dimensions:
+ *  - Ops readiness  : can we actually run this tour? (hotels, activities,
+ *                     host/itinerary/guest doc/capacity, payments, website)
+ *  - Guest data     : how complete is passenger-supplied information?
+ *                     (passports, waivers, phones, emergency, forms, pickups)
  *
- * Egress rules: every query is scoped to the in-scope tour/booking id set —
- * no global table scans.
+ * Guest-data gaps never drag down the headline Ops readiness score.
+ *
+ * Scoring: each check becomes a ratio of ready units vs total applicable units,
+ * so one recurring gap can no longer zero a tour. Category ratios are combined
+ * as a weighted average, then the shortfall is amplified by departure urgency.
+ *
+ * Egress rules: every query is scoped to the in-scope tour/booking id set.
  */
 
+export type DataHealthGroup = "ops" | "guest";
+
 export type DataHealthCheckId =
+  | "hotel"
+  | "activities"
+  | "ops"
+  | "payments"
+  | "website"
   | "passports"
   | "phones"
   | "emergency"
-  | "hotel"
-  | "activities"
   | "waivers"
   | "forms"
-  | "pickups"
-  | "payments"
-  | "ops"
-  | "website";
+  | "pickups";
 
 export interface DataHealthCheckMeta {
   id: DataHealthCheckId;
   label: string;
-  /** Points deducted per open item (before the urgency multiplier). */
+  group: DataHealthGroup;
+  /** Relative importance of this category within its group. */
   weight: number;
   description: string;
 }
 
 export const DATA_HEALTH_CHECKS: DataHealthCheckMeta[] = [
-  { id: "passports", label: "Passport details", weight: 4, description: "Passengers with no passport details recorded" },
-  { id: "phones", label: "Phone numbers", weight: 3, description: "Lead passengers with no phone number" },
-  { id: "emergency", label: "Emergency contacts", weight: 2, description: "Lead passengers with no emergency contact" },
-  { id: "hotel", label: "Hotel allocation", weight: 5, description: "Confirmed bookings with no hotel room allocated" },
-  { id: "activities", label: "Activity allocation", weight: 4, description: "Bookings not allocated to a tour activity" },
-  { id: "waivers", label: "Waivers", weight: 3, description: "Bookings with no signed waiver from the lead booker" },
-  { id: "forms", label: "Custom forms", weight: 2, description: "Outstanding responses to a published tour form" },
-  { id: "pickups", label: "Pickups", weight: 2, description: "Bookings with no pickup option selected" },
-  { id: "payments", label: "Payments", weight: 5, description: "Bookings not yet paid close to departure" },
-  { id: "ops", label: "Ops readiness", weight: 4, description: "Missing host, itinerary, guest document or capacity" },
-  { id: "website", label: "Website", weight: 2, description: "Not linked to WordPress, or changes awaiting publish" },
+  { id: "hotel", label: "Hotels", group: "ops", weight: 30, description: "Hotel contract status, terms, contract file and room allocation" },
+  { id: "activities", label: "Activities", group: "ops", weight: 30, description: "Activity booking and payment status, capacity and supplier details" },
+  { id: "ops", label: "Tour setup", group: "ops", weight: 25, description: "Host, itinerary, guest document and capacity" },
+  { id: "payments", label: "Payments", group: "ops", weight: 10, description: "Bookings not yet settled close to departure" },
+  { id: "website", label: "Website", group: "ops", weight: 5, description: "Not linked to WordPress, or changes awaiting publish" },
+  { id: "passports", label: "Passport details", group: "guest", weight: 25, description: "Passengers with no passport details recorded" },
+  { id: "waivers", label: "Waivers", group: "guest", weight: 25, description: "Bookings with no signed waiver from the lead booker" },
+  { id: "phones", label: "Phone numbers", group: "guest", weight: 20, description: "Lead passengers with no phone number" },
+  { id: "emergency", label: "Emergency contacts", group: "guest", weight: 15, description: "Lead passengers with no emergency contact" },
+  { id: "forms", label: "Custom forms", group: "guest", weight: 10, description: "Outstanding responses to a published tour form" },
+  { id: "pickups", label: "Pickups", group: "guest", weight: 5, description: "Bookings with no pickup option selected" },
 ];
 
 export const CHECK_LABELS: Record<DataHealthCheckId, string> = DATA_HEALTH_CHECKS.reduce(
@@ -54,12 +64,18 @@ export const CHECK_LABELS: Record<DataHealthCheckId, string> = DATA_HEALTH_CHECK
   {} as Record<DataHealthCheckId, string>
 );
 
+export const CHECK_GROUP: Record<DataHealthCheckId, DataHealthGroup> = DATA_HEALTH_CHECKS.reduce(
+  (acc, c) => ({ ...acc, [c.id]: c.group }),
+  {} as Record<DataHealthCheckId, DataHealthGroup>
+);
+
 export interface DataHealthItem {
   checkId: DataHealthCheckId;
+  group: DataHealthGroup;
   tourId: string;
   tourName: string;
   startDate: string | null;
-  /** Booking the gap belongs to (absent for tour-level ops/website gaps). */
+  /** Booking the gap belongs to (absent for tour-level gaps). */
   bookingId?: string;
   /** Who / what the gap is about, e.g. "John Smith (Pax 2)". */
   subject: string;
@@ -74,16 +90,24 @@ export interface TourHealth {
   daysOut: number | null;
   pax: number;
   bookings: number;
+  /** Headline score = operational readiness. */
   score: number;
+  opsScore: number;
+  guestScore: number;
   items: DataHealthItem[];
+  opsItems: DataHealthItem[];
+  guestItems: DataHealthItem[];
   acknowledged: DataHealthItem[];
   byCheck: Record<string, number>;
+  /** 0-100 readiness per category (only categories that applied). */
+  categoryScores: Partial<Record<DataHealthCheckId, number>>;
 }
 
 export interface DataHealthResult {
   tours: TourHealth[];
   allItems: DataHealthItem[];
   portfolioScore: number;
+  guestPortfolioScore: number;
   atRisk: number;
   warning: number;
 }
@@ -92,6 +116,14 @@ export type DataHealthWindow = 30 | 60 | 120 | 0; // 0 = all upcoming
 
 const EXCLUDED_TOUR_STATUSES = ["cancelled", "archived", "past"];
 const NON_COUNTING_BOOKING_STATUSES = ["cancelled", "waitlisted"];
+const SETTLED_BOOKING_STATUSES = ["fully_paid", "complimentary", "host", "racing_breaks_invoice"];
+
+/** Hotel is contractually locked in. */
+const HOTEL_READY_STATUSES = ["confirmed", "contracted", "paid", "finalised"];
+/** Activity is locked in with the supplier. */
+const ACTIVITY_READY_STATUSES = ["confirmed", "finalised", "booked", "fully_paid", "paid_deposit"];
+const PAYMENT_READY_STATUSES = ["fully_paid", "partially_paid", "not_required"];
+const TRANSPORT_READY_STATUSES = ["booked", "confirmed", "paid_deposit", "fully_paid", "not_required"];
 
 const todayIso = () => new Date().toISOString().split("T")[0];
 
@@ -109,12 +141,12 @@ const daysBetween = (iso: string | null) => {
   return Math.round((start.getTime() - now.getTime()) / 86400000);
 };
 
-/** Issues cost more the closer the tour is to departure. */
+/** Gaps cost more the closer the tour is to departure. */
 const urgencyMultiplier = (daysOut: number | null) => {
   if (daysOut === null) return 1;
-  if (daysOut <= 14) return 2;
-  if (daysOut <= 30) return 1.5;
-  if (daysOut <= 60) return 1.2;
+  if (daysOut <= 14) return 1.6;
+  if (daysOut <= 30) return 1.35;
+  if (daysOut <= 60) return 1.15;
   return 1;
 };
 
@@ -149,7 +181,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       const tourIds = tours.map((t: any) => t.id);
 
       if (tourIds.length === 0) {
-        return { tours: [], allItems: [], portfolioScore: 100, atRisk: 0, warning: 0 };
+        return { tours: [], allItems: [], portfolioScore: 100, guestPortfolioScore: 100, atRisk: 0, warning: 0 };
       }
 
       // --- 2. Bookings for those tours --------------------------------------
@@ -171,9 +203,8 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       const bookingIds = bookings.map((b: any) => b.id);
 
       // --- 3. Related records (all scoped by the id sets above) -------------
-      const chunk = <T,>(rows: T[]) => rows; // ids come from a bounded tour window
-
       const [
+        hotelsRes,
         hotelRes,
         waiverRes,
         docsRes,
@@ -188,23 +219,28 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         allocationRes,
         allocationAckRes,
         invoiceRes,
+        activityRes,
       ] = await Promise.all([
+        supabase
+          .from("hotels")
+          .select("id, tour_id, name, booking_status, payment_status, cancellation_policy, rooms_reserved, rooms_booked, default_check_in, default_check_out, contact_name, contact_phone")
+          .in("tour_id", tourIds),
         bookingIds.length
-          ? supabase.from("hotel_bookings").select("id, booking_id, hotel_id, allocated, required, cancelled_at").in("booking_id", chunk(bookingIds))
+          ? supabase.from("hotel_bookings").select("id, booking_id, hotel_id, allocated, required, cancelled_at").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
         bookingIds.length
-          ? supabase.from("booking_waivers").select("booking_id, passenger_slot, signed_at").in("booking_id", chunk(bookingIds))
+          ? supabase.from("booking_waivers").select("booking_id, passenger_slot, signed_at").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
         bookingIds.length
-          ? supabase.from("booking_travel_docs").select("booking_id, passenger_slot, passport_number").in("booking_id", chunk(bookingIds))
+          ? supabase.from("booking_travel_docs").select("booking_id, passenger_slot, passport_number").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("tour_pickup_options").select("id, tour_id").in("tour_id", tourIds),
         supabase.from("tour_custom_forms").select("id, tour_id, form_title, is_published, response_mode").in("tour_id", tourIds),
         bookingIds.length
-          ? supabase.from("tour_custom_form_responses").select("form_id, booking_id, passenger_slot").in("booking_id", chunk(bookingIds))
+          ? supabase.from("tour_custom_form_responses").select("form_id, booking_id, passenger_slot").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
         bookingIds.length
-          ? supabase.from("tour_custom_form_exemptions").select("form_id, booking_id, passenger_slot").in("booking_id", chunk(bookingIds))
+          ? supabase.from("tour_custom_form_exemptions").select("form_id, booking_id, passenger_slot").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
         supabase
           .from("tour_itineraries")
@@ -216,16 +252,42 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         supabase.rpc("get_activity_allocation_discrepancies"),
         supabase.from("activity_discrepancy_acknowledgments").select("booking_id, activity_id").in("tour_id", tourIds),
         bookingIds.length
-          ? supabase.from("xero_invoice_mappings").select("booking_id, amount_due, xero_status").in("booking_id", chunk(bookingIds))
+          ? supabase.from("xero_invoice_mappings").select("booking_id, amount_due, xero_status").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
+        supabase
+          .from("activities")
+          .select("id, tour_id, name, activity_date, start_time, location, booking_status, payment_status, transport_status, transport_mode, spots_available, spots_booked, contact_name, contact_phone")
+          .in("tour_id", tourIds),
       ]);
 
       const firstError = [
-        hotelRes, waiverRes, docsRes, pickupRes, formRes, formResponseRes,
+        hotelsRes, hotelRes, waiverRes, docsRes, pickupRes, formRes, formResponseRes,
         formExemptionRes, itineraryRes, attachmentRes, wpLinkRes, websiteChangeRes,
-        allocationRes, allocationAckRes, invoiceRes,
+        allocationRes, allocationAckRes, invoiceRes, activityRes,
       ].find((r: any) => r?.error)?.error;
       if (firstError) throw firstError;
+
+      const tourHotels = (hotelsRes.data || []) as any[];
+      const hotelIds = tourHotels.map((h) => h.id);
+      const { data: hotelAttachmentRows } = hotelIds.length
+        ? await supabase.from("hotel_attachments").select("hotel_id").in("hotel_id", hotelIds)
+        : ({ data: [] } as any);
+      const hotelsWithContract = new Set((hotelAttachmentRows || []).map((a: any) => a.hotel_id));
+
+      const hotelsByTour = new Map<string, any[]>();
+      tourHotels.forEach((h) => {
+        const list = hotelsByTour.get(h.tour_id) || [];
+        list.push(h);
+        hotelsByTour.set(h.tour_id, list);
+      });
+
+      const activitiesByTour = new Map<string, any[]>();
+      ((activityRes.data || []) as any[]).forEach((a) => {
+        if (a.booking_status === "cancelled") return;
+        const list = activitiesByTour.get(a.tour_id) || [];
+        list.push(a);
+        activitiesByTour.set(a.tour_id, list);
+      });
 
       const hotelByBooking = new Map<string, any[]>();
       (hotelRes.data || []).forEach((h: any) => {
@@ -298,114 +360,228 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         const acknowledged: DataHealthItem[] = [];
         const daysOut = daysBetween(tour.start_date);
 
-        const base = (checkId: DataHealthCheckId, subject: string, detail: string, bookingId?: string): DataHealthItem => ({
-          checkId,
-          tourId: tour.id,
-          tourName: tour.name,
-          startDate: tour.start_date,
-          bookingId,
-          subject,
-          detail,
+        /** applicable checkpoints vs failed checkpoints, per category */
+        const tally: Partial<Record<DataHealthCheckId, { total: number; failed: number }>> = {};
+        const track = (checkId: DataHealthCheckId, total: number) => {
+          const t = tally[checkId] || { total: 0, failed: 0 };
+          t.total += total;
+          tally[checkId] = t;
+        };
+
+        const flag = (
+          checkId: DataHealthCheckId,
+          subject: string,
+          detail: string,
+          bookingId?: string,
+          opts?: { acknowledged?: boolean }
+        ) => {
+          const item: DataHealthItem = {
+            checkId,
+            group: CHECK_GROUP[checkId],
+            tourId: tour.id,
+            tourName: tour.name,
+            startDate: tour.start_date,
+            bookingId,
+            subject,
+            detail,
+          };
+          if (opts?.acknowledged) {
+            acknowledged.push({ ...item, acknowledged: true });
+            return;
+          }
+          const t = tally[checkId] || { total: 0, failed: 0 };
+          t.failed += 1;
+          tally[checkId] = t;
+          items.push(item);
+        };
+
+        // ================= OPS: HOTELS =====================================
+        const hotels = hotelsByTour.get(tour.id) || [];
+        if (hotels.length === 0) {
+          track("hotel", 1);
+          flag("hotel", tour.name, "No hotels set up for this tour");
+        } else {
+          // 5 checkpoints per hotel: status, terms, contract file, room block, contact
+          track("hotel", hotels.length * 5);
+          hotels.forEach((h: any) => {
+            if (!HOTEL_READY_STATUSES.includes(h.booking_status)) {
+              flag("hotel", h.name, `Hotel status "${(h.booking_status || "pending").replace(/_/g, " ")}" — not contracted/confirmed`);
+            }
+            if (blank(h.cancellation_policy)) {
+              flag("hotel", h.name, "No cancellation & attrition terms recorded");
+            }
+            if (!hotelsWithContract.has(h.id)) {
+              flag("hotel", h.name, "No contract file uploaded");
+            }
+            if (!h.rooms_reserved || h.rooms_reserved <= 0) {
+              flag("hotel", h.name, "No room block reserved");
+            } else if ((h.rooms_booked || 0) > h.rooms_reserved) {
+              flag("hotel", h.name, `Oversold: ${h.rooms_booked} rooms booked against ${h.rooms_reserved} reserved`);
+            }
+            if (blank(h.contact_name) || blank(h.contact_phone)) {
+              flag("hotel", h.name, "Missing hotel contact name or phone");
+            }
+          });
+        }
+
+        // ================= OPS: ACTIVITIES =================================
+        const activities = activitiesByTour.get(tour.id) || [];
+        if (activities.length > 0) {
+          // 5 checkpoints per activity: booking status, payment, capacity, core details, transport
+          track("activities", activities.length * 5);
+          activities.forEach((a: any) => {
+            if (!ACTIVITY_READY_STATUSES.includes(a.booking_status)) {
+              flag("activities", a.name, `Activity status "${(a.booking_status || "pending").replace(/_/g, " ")}" — not booked with supplier`);
+            }
+            if (!PAYMENT_READY_STATUSES.includes(a.payment_status)) {
+              flag("activities", a.name, `Payment status "${(a.payment_status || "unpaid").replace(/_/g, " ")}"`);
+            }
+            if (!a.spots_available || a.spots_available <= 0) {
+              flag("activities", a.name, "No spots reserved with the supplier");
+            } else if ((a.spots_booked || 0) > a.spots_available) {
+              flag("activities", a.name, `Oversold: ${a.spots_booked} attending against ${a.spots_available} spots`);
+            }
+            const missing: string[] = [];
+            if (blank(a.activity_date)) missing.push("date");
+            if (blank(a.start_time)) missing.push("start time");
+            if (blank(a.location)) missing.push("location");
+            if (blank(a.contact_name) || blank(a.contact_phone)) missing.push("supplier contact");
+            if (missing.length) {
+              flag("activities", a.name, `Missing ${missing.join(", ")}`);
+            }
+            if (!TRANSPORT_READY_STATUSES.includes(a.transport_status)) {
+              flag("activities", a.name, `Transport status "${(a.transport_status || "pending").replace(/_/g, " ")}"`);
+            }
+          });
+        }
+
+        // Activity allocations (from the shared RPC) — counted under activities.
+        const tourAllocationRows = allocationRows.filter(
+          (r: any) => r.tour_id === tour.id && !NON_COUNTING_BOOKING_STATUSES.includes(r.status)
+        );
+        track("activities", tourAllocationRows.length);
+        tourAllocationRows.forEach((r: any) => {
+          const who = [r.lead_passenger_first_name, r.lead_passenger_last_name].filter(Boolean).join(" ") || r.group_name || "Booking";
+          flag(
+            "activities",
+            who,
+            `${r.activity_name}: ${r.discrepancy_type?.replace(/_/g, " ") || "allocation mismatch"}`,
+            r.booking_id,
+            { acknowledged: allocationAckKeys.has(`${r.booking_id}:${r.activity_id}`) }
+          );
         });
+
+        // ================= OPS: TOUR SETUP =================================
+        track("ops", 4);
+        if (blank(tour.tour_host)) flag("ops", tour.name, "No tour host assigned");
+        const itinerary = itineraryByTour.get(tour.id);
+        const dayCount = itinerary?.tour_itinerary_days?.length || 0;
+        if (!itinerary || dayCount === 0) flag("ops", tour.name, "Itinerary has no days built");
+        if (!itinerary?.guest_document_file_path && (attachmentCountByTour.get(tour.id) || 0) === 0) {
+          flag("ops", tour.name, "No guest document uploaded");
+        }
+        if (!tour.capacity || tour.capacity <= 0) flag("ops", tour.name, "Tour capacity not set");
+
+        // ================= OPS: WEBSITE ====================================
+        track("website", 2);
+        if (!wpLinked.has(tour.id)) flag("website", tour.name, "Not linked to a WordPress tour");
+        const pendingChanges = websiteChangesByTour.get(tour.id) || [];
+        const pendingReview = pendingChanges.filter((c: any) => c.status === "pending").length;
+        const approvedUnpublished = pendingChanges.filter((c: any) => c.status === "approved").length;
+        if (pendingReview > 0) flag("website", tour.name, `${pendingReview} website change(s) awaiting review`);
+        if (approvedUnpublished > 0) flag("website", tour.name, `${approvedUnpublished} approved change(s) not yet published`);
+
+        // ================= PER-BOOKING CHECKS ==============================
+        const forms = formsByTour.get(tour.id) || [];
+        const pickupsOffered = (pickupCountByTour.get(tour.id) || 0) > 0;
 
         tourBookings.forEach((b: any) => {
           const lead = b.customers;
           const leadName = nameOf(lead);
           const paxCount = b.passenger_count || 1;
 
-          // Phone / emergency / profile — lead passenger record.
+          // --- guest data ---
+          track("phones", 1);
           if (blank(lead?.phone)) {
-            const item = base("phones", leadName, "No phone number on the contact record", b.id);
-            if (lead?.phone_missing_acknowledged_at) acknowledged.push({ ...item, acknowledged: true });
-            else items.push(item);
+            flag("phones", leadName, "No phone number on the contact record", b.id, {
+              acknowledged: !!lead?.phone_missing_acknowledged_at,
+            });
           }
+          track("emergency", 1);
           if (blank(lead?.emergency_contact_name) || blank(lead?.emergency_contact_phone)) {
-            items.push(base("emergency", leadName, "No emergency contact name or phone", b.id));
+            flag("emergency", leadName, "No emergency contact name or phone", b.id);
           }
-          // Passports.
           if (tour.travel_documents_required && !b.passport_not_required) {
-            for (let slot = 1; slot <= Math.min(paxCount, 3); slot++) {
+            const slots = Math.min(paxCount, 3);
+            track("passports", slots);
+            for (let slot = 1; slot <= slots; slot++) {
               if (!docKeys.has(`${b.id}:${slot}`)) {
                 const who = slot === 1 ? leadName : b[`passenger_${slot}_name`] || `Passenger ${slot}`;
-                items.push(base("passports", who, `No passport details recorded (Pax ${slot})`, b.id));
+                flag("passports", who, `No passport details recorded (Pax ${slot})`, b.id);
               }
             }
           }
-
-          // Waivers — one per booking, signed by the lead booker for everyone.
+          track("waivers", 1);
           if (!signedWaiverBookings.has(b.id)) {
-            items.push(
-              base("waivers", leadName, "No signed waiver on file for this booking", b.id)
-            );
+            flag("waivers", leadName, "No signed waiver on file for this booking", b.id);
           }
-
-          // Hotel allocation.
-          const hotels = hotelByBooking.get(b.id) || [];
-          const needsHotel = hotels.length === 0 || hotels.some((h: any) => h.required !== false && !h.hotel_id);
-          if (needsHotel) {
-            items.push(base("hotel", leadName, "No hotel room allocated", b.id));
+          if (forms.length) {
+            track("forms", forms.length);
+            forms.forEach((form: any) => {
+              const key = `${form.id}:${b.id}`;
+              if (!responseKeys.has(key) && !exemptionKeys.has(key)) {
+                flag("forms", leadName, `No response to "${form.form_title}"`, b.id);
+              }
+            });
           }
-
-          // Pickups.
-          if ((pickupCountByTour.get(tour.id) || 0) > 0 && !b.selected_pickup_option_id) {
-            items.push(base("pickups", leadName, "No pickup option selected", b.id));
-          }
-
-          // Custom forms.
-          (formsByTour.get(tour.id) || []).forEach((form: any) => {
-            const key = `${form.id}:${b.id}`;
-            if (!responseKeys.has(key) && !exemptionKeys.has(key)) {
-              items.push(base("forms", leadName, `No response to "${form.form_title}"`, b.id));
+          if (pickupsOffered) {
+            track("pickups", 1);
+            if (!b.selected_pickup_option_id) {
+              flag("pickups", leadName, "No pickup option selected", b.id);
             }
-          });
+          }
 
-          // Payments — anything not fully settled inside 30 days of departure.
+          // --- ops: hotel room allocated for this booking ---
+          const bookingHotels = hotelByBooking.get(b.id) || [];
+          track("hotel", 1);
+          const needsHotel = bookingHotels.length === 0 || bookingHotels.some((h: any) => h.required !== false && !h.hotel_id);
+          if (needsHotel) {
+            flag("hotel", leadName, "No hotel room allocated", b.id);
+          }
+
+          // --- ops: payments inside 30 days ---
           if (daysOut !== null && daysOut <= 30) {
-            const settledStatuses = ["fully_paid", "complimentary", "host", "racing_breaks_invoice"];
-            const isSettled = settledStatuses.includes(b.status);
+            track("payments", 1);
+            const isSettled = SETTLED_BOOKING_STATUSES.includes(b.status);
             const mapping = invoiceByBooking.get(b.id);
             const unpaid = mapping ? Number(mapping.amount_due || 0) > 0 : !isSettled;
             if (unpaid && !isSettled) {
-              items.push(
-                base("payments", leadName, `Status "${b.status}" with ${daysOut} day(s) to departure`, b.id)
-              );
+              flag("payments", leadName, `Status "${b.status}" with ${daysOut} day(s) to departure`, b.id);
             }
           }
         });
 
-        // Activity allocations (from the shared RPC).
-        allocationRows
-          .filter((r: any) => r.tour_id === tour.id)
-          .forEach((r: any) => {
-            if (NON_COUNTING_BOOKING_STATUSES.includes(r.status)) return;
-            const who = [r.lead_passenger_first_name, r.lead_passenger_last_name].filter(Boolean).join(" ") || r.group_name || "Booking";
-            const item = base("activities", who, `${r.activity_name}: ${r.discrepancy_type?.replace(/_/g, " ") || "allocation mismatch"}`, r.booking_id);
-            if (allocationAckKeys.has(`${r.booking_id}:${r.activity_id}`)) acknowledged.push({ ...item, acknowledged: true });
-            else items.push(item);
-          });
-
-        // Ops readiness (tour level).
-        if (blank(tour.tour_host)) items.push(base("ops", tour.name, "No tour host assigned"));
-        const itinerary = itineraryByTour.get(tour.id);
-        const dayCount = itinerary?.tour_itinerary_days?.length || 0;
-        if (!itinerary || dayCount === 0) items.push(base("ops", tour.name, "Itinerary has no days built"));
-        if (!itinerary?.guest_document_file_path && (attachmentCountByTour.get(tour.id) || 0) === 0) {
-          items.push(base("ops", tour.name, "No guest document uploaded"));
-        }
-        if (!tour.capacity || tour.capacity <= 0) items.push(base("ops", tour.name, "Tour capacity not set"));
-
-        // Website.
-        if (!wpLinked.has(tour.id)) items.push(base("website", tour.name, "Not linked to a WordPress tour"));
-        const pendingChanges = websiteChangesByTour.get(tour.id) || [];
-        const pendingReview = pendingChanges.filter((c: any) => c.status === "pending").length;
-        const approvedUnpublished = pendingChanges.filter((c: any) => c.status === "approved").length;
-        if (pendingReview > 0) items.push(base("website", tour.name, `${pendingReview} website change(s) awaiting review`));
-        if (approvedUnpublished > 0) items.push(base("website", tour.name, `${approvedUnpublished} approved change(s) not yet published`));
-
+        // ================= SCORING =========================================
         const multiplier = urgencyMultiplier(daysOut);
-        const weightById = new Map(DATA_HEALTH_CHECKS.map((c) => [c.id, c.weight]));
-        const deduction = items.reduce((sum, i) => sum + (weightById.get(i.checkId) || 2) * multiplier, 0);
-        const score = Math.max(0, Math.round(100 - deduction));
+        const categoryScores: Partial<Record<DataHealthCheckId, number>> = {};
+        DATA_HEALTH_CHECKS.forEach((c) => {
+          const t = tally[c.id];
+          if (!t || t.total === 0) return;
+          const ratio = Math.max(0, 1 - t.failed / t.total);
+          categoryScores[c.id] = Math.round(ratio * 100);
+        });
+
+        const groupScore = (group: DataHealthGroup) => {
+          const applicable = DATA_HEALTH_CHECKS.filter((c) => c.group === group && categoryScores[c.id] !== undefined);
+          if (applicable.length === 0) return 100;
+          const totalWeight = applicable.reduce((s, c) => s + c.weight, 0);
+          const raw = applicable.reduce((s, c) => s + (categoryScores[c.id] as number) * c.weight, 0) / totalWeight;
+          const shortfall = (100 - raw) * multiplier;
+          return Math.max(0, Math.round(100 - shortfall));
+        };
+
+        const opsScore = groupScore("ops");
+        const guestScore = groupScore("guest");
 
         const byCheck = items.reduce<Record<string, number>>((acc, i) => {
           acc[i.checkId] = (acc[i.checkId] || 0) + 1;
@@ -419,24 +595,28 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           daysOut,
           pax: tourBookings.reduce((sum: number, b: any) => sum + (b.passenger_count || 0), 0),
           bookings: tourBookings.length,
-          score,
+          score: opsScore,
+          opsScore,
+          guestScore,
           items,
+          opsItems: items.filter((i) => i.group === "ops"),
+          guestItems: items.filter((i) => i.group === "guest"),
           acknowledged,
           byCheck,
+          categoryScores,
         };
       });
 
       const allItems = tourHealth.flatMap((t) => t.items);
-      const portfolioScore = tourHealth.length
-        ? Math.round(tourHealth.reduce((sum, t) => sum + t.score, 0) / tourHealth.length)
-        : 100;
+      const avg = (nums: number[]) => (nums.length ? Math.round(nums.reduce((s, n) => s + n, 0) / nums.length) : 100);
 
       return {
         tours: tourHealth,
         allItems,
-        portfolioScore,
-        atRisk: tourHealth.filter((t) => t.score < 70).length,
-        warning: tourHealth.filter((t) => t.score >= 70 && t.score < 90).length,
+        portfolioScore: avg(tourHealth.map((t) => t.opsScore)),
+        guestPortfolioScore: avg(tourHealth.map((t) => t.guestScore)),
+        atRisk: tourHealth.filter((t) => t.opsScore < 70).length,
+        warning: tourHealth.filter((t) => t.opsScore >= 70 && t.opsScore < 90).length,
       };
     },
   });
@@ -451,10 +631,11 @@ export const useDataHealthSummary = () => {
     () => ({
       isLoading,
       score: data?.portfolioScore ?? 100,
+      guestScore: data?.guestPortfolioScore ?? 100,
       atRisk: data?.atRisk ?? 0,
       warning: data?.warning ?? 0,
-      openIssues: data?.allItems.length ?? 0,
-      worst: (data?.tours || []).slice().sort((a, b) => a.score - b.score).slice(0, 3),
+      openIssues: data?.allItems.filter((i) => i.group === "ops").length ?? 0,
+      worst: (data?.tours || []).slice().sort((a, b) => a.opsScore - b.opsScore).slice(0, 3),
     }),
     [data, isLoading]
   );
