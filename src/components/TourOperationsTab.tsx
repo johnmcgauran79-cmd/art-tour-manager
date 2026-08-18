@@ -13,6 +13,8 @@ import { useActivities } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
+import { useTourHealth } from "@/hooks/useDataHealth";
+import { TourHealthPanel, TourHealthPanelSkeleton } from "@/components/datahealth/TourHealthPanel";
 import { usePickupReportData } from "@/components/reports/PickupLocationReport";
 import { HostFlightsSection } from "@/components/HostFlightsSection";
 import { usePassportReport } from "@/hooks/usePassportReport";
@@ -56,6 +58,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const passportMissingCount = travelDocumentsRequired ? (passportData?.filter(p => !p.hasDocuments).length || 0) : 0;
   const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tourId);
   const { forms: customForms } = useCustomForms(tourId);
+  const { tour: tourHealth, isLoading: healthLoading } = useTourHealth(tourId);
 
   // Handle initial report type from parent (e.g., navigating from Overview tab)
   useEffect(() => {
@@ -493,6 +496,26 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         </CardContent>
       </Card>
 
+
+      {/* Operational Readiness (Data Health) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-brand-navy">
+            Operational Readiness
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {healthLoading ? (
+            <TourHealthPanelSkeleton />
+          ) : tourHealth ? (
+            <TourHealthPanel tour={tourHealth} showTourName={false} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Readiness scoring applies to upcoming tours only.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Operations Notes Section */}
       <TourOperationsNotesSection 
