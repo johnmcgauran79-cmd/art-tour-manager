@@ -13,6 +13,8 @@ import { useActivities } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
+import { useTourHealth } from "@/hooks/useDataHealth";
+import { TourHealthPanel, TourHealthPanelSkeleton } from "@/components/datahealth/TourHealthPanel";
 import { usePickupReportData } from "@/components/reports/PickupLocationReport";
 import { HostFlightsSection } from "@/components/HostFlightsSection";
 import { usePassportReport } from "@/hooks/usePassportReport";
