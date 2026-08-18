@@ -14,6 +14,7 @@ import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
 import { AiRetentionSettingsCard } from "./AiRetentionSettingsCard";
 import { TeamsChannelNotifyCard } from "./TeamsChannelNotifyCard";
 import { IntegrationStatusPanel } from "./datahealth/IntegrationStatusPanel";
+import { BackupStatusCard } from "./BackupStatusCard";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -227,6 +228,12 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Accounting Integration</h2>
         <XeroIntegrationSettings />
+      </div>
+
+      {/* Backups */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Backups</h2>
+        <BackupStatusCard />
       </div>
 
       {/* Integration Status */}
