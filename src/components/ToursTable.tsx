@@ -27,6 +27,8 @@ import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
 import { SavedViewsMenu } from "@/components/SavedViewsMenu";
 import { useSavedViews } from "@/hooks/useSavedViews";
 import { downloadCsv, exportStamp } from "@/lib/csvExport";
+import { useOpsScoreMap } from "@/hooks/useDataHealth";
+import { HealthScoreBadge } from "@/components/datahealth/HealthScoreBadge";
 
 type ToursViewFilters = { searchQuery: string; showArchived: boolean; view: 'grid' | 'table' };
 
@@ -75,6 +77,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const { navigateWithContext } = useNavigationContext();
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
+  const { scores: opsScores, isLoading: opsScoresLoading } = useOpsScoreMap();
   const { isViewOnly, hasEditAccess, userRole } = usePermissions();
   const { user } = useAuth();
   const isHost = userRole === 'host';
@@ -155,6 +158,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
       { header: 'Start Date', value: (t: any) => formatDateToDDMMYYYY(t.start_date) },
       { header: 'End Date', value: (t: any) => formatDateToDDMMYYYY(t.end_date) },
       { header: 'Total Pax', value: (t: any) => getTotalPassengers(t.id) },
+      { header: 'Ops Readiness', value: (t: any) => opsScores[t.id] ?? '' },
       { header: 'Status', value: (t: any) => formatStatusText(t.status) },
       { header: 'Notes', value: (t: any) => t.notes || '' },
     ]);
@@ -312,6 +316,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                       <TableHead className="min-w-[120px]">Tour Host</TableHead>
                       <TableHead className="min-w-[100px]">Start Date</TableHead>
                       <TableHead className="min-w-[80px]">Total Pax</TableHead>
+                      <TableHead className="min-w-[110px]">Ops Readiness</TableHead>
                       <TableHead className="min-w-[70px]">Alerts</TableHead>
                       <TableHead className="min-w-[70px]">Details</TableHead>
                       <TableHead className="min-w-[100px]">Status</TableHead>
@@ -347,6 +352,15 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                         </TableCell>
                         <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
                         <TableCell>{getTotalPassengers(tour.id)}</TableCell>
+                        <TableCell>
+                          {opsScoresLoading ? (
+                            <span className="text-muted-foreground">…</span>
+                          ) : opsScores[tour.id] !== undefined ? (
+                            <HealthScoreBadge score={opsScores[tour.id]} />
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <TourAlertsCell tourId={tour.id} alertsEnabled={(tour as any).alerts_enabled ?? true} />
                         </TableCell>
