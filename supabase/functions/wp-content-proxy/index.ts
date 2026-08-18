@@ -54,6 +54,19 @@ type Op =
   | { op: "inclusions_diff"; art_tour_id: string }
   | { op: "push_inclusions"; art_tour_id: string; sections?: Array<"inclusions" | "exclusions" | "description"> }
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
+  | {
+      op: "save_art_content";
+      art_tour_id: string;
+      description?: string;
+      items?: Array<{
+        id?: string;
+        kind: "inclusion" | "exclusion";
+        content_html: string;
+        sort_order?: number;
+        remove?: boolean;
+      }>;
+      itinerary_entries?: Array<{ id: string; subject?: string; content?: string }>;
+    }
   | { op: "upload_media"; filename: string; content_type: string; data_base64: string; title?: string };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -1134,6 +1147,41 @@ Deno.serve(async (req) => {
         const wpRows = normaliseWpItineraryRows(wpAcf[WP_ITINERARY_FIELD]);
         const diff = buildItineraryDiff(art.rows, wpRows);
         const pendingPhotos = art.images.filter((img) => typeof img.wp_media_id !== "number").length;
+
+        // Entry-level ART content so marketing can edit the "will become" side
+        // directly in the review dialog. Rows are aligned with art.day_ids.
+        const artDays: Array<{
+          day_id: string;
+          day_number: number | null;
+          activity_date: string | null;
+          entries: Array<{ id: string; subject: string; content: string | null }>;
+        }> = [];
+        if (art.itinerary_id) {
+          const { data: dayRows } = await admin
+            .from("tour_itinerary_days")
+            .select("id, day_number, activity_date")
+            .eq("itinerary_id", art.itinerary_id)
+            .order("day_number");
+          const ids = (dayRows ?? []).map((d: { id: string }) => d.id);
+          const { data: entryRows } = ids.length
+            ? await admin
+                .from("tour_itinerary_entries")
+                .select("id, day_id, subject, content, sort_order")
+                .in("day_id", ids)
+                .order("sort_order")
+            : { data: [] as unknown[] };
+          (dayRows ?? []).forEach((d: { id: string; day_number: number; activity_date: string }) => {
+            artDays.push({
+              day_id: d.id,
+              day_number: d.day_number ?? null,
+              activity_date: d.activity_date ?? null,
+              entries: ((entryRows ?? []) as Array<{ id: string; day_id: string; subject: string; content: string | null }>)
+                .filter((e) => e.day_id === d.id)
+                .map((e) => ({ id: e.id, subject: e.subject, content: e.content })),
+            });
+          });
+        }
+
         return json({
           tour_name: art.tour.name,
           wp_tour_id: link.wp_tour_id,
@@ -1144,6 +1192,8 @@ Deno.serve(async (req) => {
           wp_row_count: wpRows.length,
           photo_count: art.images.length,
           photos_pending_upload: pendingPhotos,
+          day_ids: art.day_ids,
+          art_days: artDays,
         });
       }
       case "push_itinerary": {
@@ -1302,6 +1352,11 @@ Deno.serve(async (req) => {
             "") as string;
         const inclusionsDiff = buildItemsDiff(art.inclusions, wpIncl);
         const exclusionsDiff = buildItemsDiff(art.exclusions, wpExcl);
+        const { data: artItemRows } = await admin
+          .from("tour_inclusion_items")
+          .select("id, kind, content_html, sort_order")
+          .eq("tour_id", body.art_tour_id)
+          .order("sort_order");
         const descriptionChanged =
           art.website_description.trim().length > 0 && !htmlEqual(art.website_description, wpDescription);
         return json({
@@ -1310,6 +1365,7 @@ Deno.serve(async (req) => {
           wp_link: (wpRes.data as { link?: string })?.link ?? null,
           inclusions: inclusionsDiff,
           exclusions: exclusionsDiff,
+          art_items: artItemRows ?? [],
           description: {
             art: art.website_description,
             wp: wpDescription,
@@ -1325,6 +1381,7 @@ Deno.serve(async (req) => {
         });
       }
       case "push_inclusions": {
+        // (see save_art_content below for the editable review flow)
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const sections = new Set(body.sections ?? ["inclusions", "exclusions", "description"]);
         const art = await loadArtInclusions(admin, body.art_tour_id);
@@ -1442,6 +1499,84 @@ Deno.serve(async (req) => {
         } catch { /* audit must not break */ }
 
         return json({ ok: true, pushed, skipped, verified, wp_tour_id: link.wp_tour_id });
+      }
+      // Marketing/comms edits made inside the review dialog. Writes to the ART
+      // source of truth with the service role (so marketing staff without
+      // admin/manager table rights can still correct copy), then the normal
+      // Approve & Publish flow pushes the saved content to WordPress.
+      case "save_art_content": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const saved: string[] = [];
+
+        if (typeof body.description === "string") {
+          const html = sanitiseInlineHtml(body.description) === "" && body.description.trim() === ""
+            ? ""
+            : body.description;
+          if (html.trim().length === 0) {
+            return json({ error: "The website description cannot be emptied here." }, 400);
+          }
+          const { error } = await admin
+            .from("tours")
+            .update({ website_description: html })
+            .eq("id", body.art_tour_id);
+          if (error) return json({ error: error.message }, 400);
+          saved.push("description");
+        }
+
+        for (const item of body.items ?? []) {
+          if (item.remove && item.id) {
+            const { error } = await admin
+              .from("tour_inclusion_items")
+              .delete()
+              .eq("id", item.id)
+              .eq("tour_id", body.art_tour_id);
+            if (error) return json({ error: error.message }, 400);
+            saved.push(`${item.kind} removed`);
+            continue;
+          }
+          const content = (item.content_html ?? "").trim();
+          if (content.length === 0) continue;
+          if (item.id) {
+            const { error } = await admin
+              .from("tour_inclusion_items")
+              .update({ content_html: content })
+              .eq("id", item.id)
+              .eq("tour_id", body.art_tour_id);
+            if (error) return json({ error: error.message }, 400);
+          } else {
+            const { error } = await admin.from("tour_inclusion_items").insert({
+              tour_id: body.art_tour_id,
+              kind: item.kind,
+              content_html: content,
+              sort_order: item.sort_order ?? 999,
+            });
+            if (error) return json({ error: error.message }, 400);
+          }
+          saved.push(item.kind);
+        }
+
+        for (const entry of body.itinerary_entries ?? []) {
+          const patch: Record<string, unknown> = {};
+          if (typeof entry.subject === "string" && entry.subject.trim().length > 0) {
+            patch.subject = entry.subject.trim();
+          }
+          if (typeof entry.content === "string") patch.content = entry.content;
+          if (Object.keys(patch).length === 0) continue;
+          const { error } = await admin
+            .from("tour_itinerary_entries")
+            .update(patch)
+            .eq("id", entry.id);
+          if (error) return json({ error: error.message }, 400);
+          saved.push("itinerary");
+        }
+
+        await auditLog(userId, {
+          action: "save_art_content_from_review",
+          result_status: "success",
+          response_code: 200,
+          request_summary: { art_tour_id: body.art_tour_id, saved },
+        });
+        return json({ ok: true, saved });
       }
       case "pull_inclusions": {
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
