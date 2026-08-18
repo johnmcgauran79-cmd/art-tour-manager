@@ -320,21 +320,79 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
             {sections.includes("description") && contentDiff.description.changed && (
               <div className="space-y-1">
                 <p className="text-sm font-medium">Website description</p>
-                <SideBySide
-                  before={plain(contentDiff.description.wp).slice(0, 1200)}
-                  after={plain(contentDiff.description.art).slice(0, 1200)}
-                />
+                {editing ? (
+                  <div className="grid gap-3 rounded-md border p-2 text-sm md:grid-cols-2">
+                    <div>
+                      <p className="mb-1 text-xs uppercase text-muted-foreground">
+                        Currently on the website
+                      </p>
+                      <p className="whitespace-pre-wrap text-muted-foreground">
+                        {plain(contentDiff.description.wp).slice(0, 1200) ||
+                          "— not on the website —"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs uppercase text-muted-foreground">
+                        Will become (editable)
+                      </p>
+                      <RichTextEditor value={descDraft} onChange={setDescDraft} />
+                    </div>
+                  </div>
+                ) : (
+                  <SideBySide
+                    before={plain(contentDiff.description.wp).slice(0, 1200)}
+                    after={plain(contentDiff.description.art).slice(0, 1200)}
+                  />
+                )}
               </div>
             )}
             {(["inclusions", "exclusions"] as const).map((kind) =>
-              sections.includes(kind) && contentDiff[kind].changed ? (
+              sections.includes(kind) && (contentDiff[kind].changed || editing) ? (
                 <div key={kind} className="space-y-2">
                   <p className="text-sm font-medium capitalize">{kind}</p>
-                  {contentDiff[kind].rows
-                    .filter((r) => r.changed)
-                    .map((row) => (
-                      <SideBySide key={row.index} before={plain(row.wp)} after={plain(row.art)} />
-                    ))}
+                  {editing
+                    ? (contentDiff.art_items ?? [])
+                        .filter((i) => i.kind === (kind === "inclusions" ? "inclusion" : "exclusion"))
+                        .map((item) => {
+                          const removed = removedItems.includes(item.id);
+                          return (
+                            <div
+                              key={item.id}
+                              className="flex items-start gap-2 rounded-md border p-2"
+                            >
+                              <Textarea
+                                rows={2}
+                                className={removed ? "line-through opacity-50" : ""}
+                                disabled={removed}
+                                value={itemDrafts[item.id] ?? ""}
+                                onChange={(ev) =>
+                                  setItemDrafts((prev) => ({ ...prev, [item.id]: ev.target.value }))
+                                }
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={removed ? "Keep this item" : "Remove this item"}
+                                onClick={() =>
+                                  setRemovedItems((prev) =>
+                                    removed ? prev.filter((id) => id !== item.id) : [...prev, item.id],
+                                  )
+                                }
+                              >
+                                {removed ? (
+                                  <RotateCcw className="h-4 w-4" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                )}
+                              </Button>
+                            </div>
+                          );
+                        })
+                    : contentDiff[kind].rows
+                        .filter((r) => r.changed)
+                        .map((row) => (
+                          <SideBySide key={row.index} before={plain(row.wp)} after={plain(row.art)} />
+                        ))}
                 </div>
               ) : null,
             )}
@@ -348,7 +406,33 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
               {itineraryDiff.photos_pending_upload > 0 &&
                 ` · ${itineraryDiff.photos_pending_upload} photo(s) not on the website yet`}
             </p>
-            {itineraryDiff.rows
+            {editing
+              ? (itineraryDiff.art_days ?? []).map((day) => (
+                  <div key={day.day_id} className="space-y-2 rounded-md border p-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Day {day.day_number ?? "?"}
+                      {day.activity_date
+                        ? ` · ${format(parseISO(day.activity_date), "dd/MM/yyyy")}`
+                        : ""}
+                    </p>
+                    {day.entries.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No entries for this day.</p>
+                    )}
+                    {day.entries.map((entry) => (
+                      <div key={entry.id} className="space-y-1">
+                        <p className="text-xs font-medium">{entry.subject}</p>
+                        <Textarea
+                          rows={3}
+                          value={entryDrafts[entry.id] ?? ""}
+                          onChange={(ev) =>
+                            setEntryDrafts((prev) => ({ ...prev, [entry.id]: ev.target.value }))
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))
+              : itineraryDiff.rows
               .filter((r) => r.changed)
               .map((row) => (
                 <div key={row.index} className="space-y-1">
