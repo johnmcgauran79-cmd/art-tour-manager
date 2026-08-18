@@ -54,6 +54,19 @@ type Op =
   | { op: "inclusions_diff"; art_tour_id: string }
   | { op: "push_inclusions"; art_tour_id: string; sections?: Array<"inclusions" | "exclusions" | "description"> }
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
+  | {
+      op: "save_art_content";
+      art_tour_id: string;
+      description?: string;
+      items?: Array<{
+        id?: string;
+        kind: "inclusion" | "exclusion";
+        content_html: string;
+        sort_order?: number;
+        remove?: boolean;
+      }>;
+      itinerary_entries?: Array<{ id: string; subject?: string; content?: string }>;
+    }
   | { op: "upload_media"; filename: string; content_type: string; data_base64: string; title?: string };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
