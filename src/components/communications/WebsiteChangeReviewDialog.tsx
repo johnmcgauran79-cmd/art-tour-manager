@@ -487,10 +487,37 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
           </Button>
           {isApprover && (
             <>
+              {editing ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      seedDrafts(contentDiff, itineraryDiff);
+                      setEditing(false);
+                    }}
+                    disabled={saving}
+                  >
+                    Cancel edits
+                  </Button>
+                  <Button variant="secondary" onClick={handleSaveEdits} disabled={saving || !dirty}>
+                    {saving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save edits
+                  </Button>
+                </>
+              ) : (
+                <Button variant="secondary" onClick={() => setEditing(true)} disabled={busy || loading}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit content
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 onClick={() => (showReject ? handleReject() : setShowReject(true))}
-                disabled={busy}
+                disabled={busy || editing}
               >
                 {reject.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -499,7 +526,7 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
                 )}
                 {showReject ? "Confirm reject" : "Reject"}
               </Button>
-              <Button onClick={handleApprove} disabled={busy || loading}>
+              <Button onClick={handleApprove} disabled={busy || loading || (editing && dirty)}>
                 {approve.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
