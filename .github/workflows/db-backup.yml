@@ -1,0 +1,72 @@
+name: Supabase database backup
+
+on:
+  schedule:
+    # 16:00 UTC = 02:00 Brisbane (AEST, UTC+10)
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record start time
+        id: start
+        run: echo "at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Dump database
+        id: dump
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          STAMP=$(date -u +%Y-%m-%d)
+          supabase db dump --db-url "$DB_URL" --role-only -f roles.sql
+          supabase db dump --db-url "$DB_URL" -f schema.sql
+          supabase db dump --db-url "$DB_URL" --data-only --use-copy -f data.sql
+          ARTIFACT="art-backup-$STAMP.tar.gz"
+          tar czf "$ARTIFACT" roles.sql schema.sql data.sql
+          echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
+          echo "size=$(stat -c%s "$ARTIFACT")" >> "$GITHUB_OUTPUT"
+
+      # Replace this step with your own off-site destination (S3, B2, Google Drive…)
+      - name: Upload backup to S3
+        id: upload
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+        run: |
+          set -euo pipefail
+          aws s3 cp "${{ steps.dump.outputs.artifact }}" "s3://$BUCKET/supabase/"
+          echo "destination=s3://$BUCKET/supabase/${{ steps.dump.outputs.artifact }}" >> "$GITHUB_OUTPUT"
+
+      - name: Report result to the app
+        if: always()
+        env:
+          SECRET: ${{ secrets.BACKUP_WEBHOOK_SECRET }}
+        run: |
+          STATUS="success"
+          if [ "${{ job.status }}" != "success" ]; then STATUS="failed"; fi
+          curl -sS -X POST \
+            "https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/backup-report" \
+            -H "Content-Type: application/json" \
+            -H "x-backup-secret: $SECRET" \
+            -d "$(cat <<JSON
+          {
+            "source": "github-actions",
+            "kind": "database",
+            "status": "$STATUS",
+            "started_at": "${{ steps.start.outputs.at }}",
+            "finished_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "size_bytes": ${{ steps.dump.outputs.size || 0 }},
+            "artifact_name": "${{ steps.dump.outputs.artifact }}",
+            "destination": "${{ steps.upload.outputs.destination }}",
+            "metadata": { "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+          }
+          JSON
+          )"

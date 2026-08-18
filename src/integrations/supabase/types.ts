@@ -860,6 +860,57 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_runs: {
+        Row: {
+          artifact_name: string | null
+          created_at: string
+          destination: string | null
+          duration_seconds: number | null
+          error_message: string | null
+          finished_at: string
+          id: string
+          kind: string
+          metadata: Json
+          size_bytes: number | null
+          source: string
+          started_at: string | null
+          status: string
+          tables_count: number | null
+        }
+        Insert: {
+          artifact_name?: string | null
+          created_at?: string
+          destination?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          finished_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          size_bytes?: number | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          tables_count?: number | null
+        }
+        Update: {
+          artifact_name?: string | null
+          created_at?: string
+          destination?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          finished_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          size_bytes?: number | null
+          source?: string
+          started_at?: string | null
+          status?: string
+          tables_count?: number | null
+        }
+        Relationships: []
+      }
       booking_assignments: {
         Row: {
           agent_id: string
