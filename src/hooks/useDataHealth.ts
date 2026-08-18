@@ -627,7 +627,6 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
 /** Compact summary used by the dashboard widget. */
 export const useDataHealthSummary = () => {
   const { data, isLoading } = useDataHealth(60);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(
     () => ({
       isLoading,
@@ -644,3 +643,29 @@ export const useDataHealthSummary = () => {
 
 export const scoreTone = (score: number) =>
   score >= 90 ? "good" : score >= 70 ? "warn" : "bad";
+
+/**
+ * Readiness for a single tour. Reuses the shared "all upcoming" query so the
+ * data is fetched once and shared across Data Health, Operations and Tours.
+ */
+export const useTourHealth = (tourId?: string) => {
+  const { data, isLoading, isFetching } = useDataHealth(0);
+  const tour = useMemo(
+    () => (tourId ? (data?.tours || []).find((t) => t.tourId === tourId) : undefined),
+    [data, tourId]
+  );
+  return { tour, isLoading, isFetching };
+};
+
+/** Map of tourId -> ops readiness score for all upcoming tours. */
+export const useOpsScoreMap = () => {
+  const { data, isLoading } = useDataHealth(0);
+  const scores = useMemo(() => {
+    const map: Record<string, number> = {};
+    (data?.tours || []).forEach((t) => {
+      map[t.tourId] = t.opsScore;
+    });
+    return map;
+  }, [data]);
+  return { scores, isLoading };
+};
