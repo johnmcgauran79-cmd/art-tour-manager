@@ -270,8 +270,9 @@ export function WebsiteChangeReviewDialog({ open, onOpenChange, group }: Props) 
             Review website changes — {group.tourName}
           </DialogTitle>
           <DialogDescription>
-            Customer-facing content edited in the system. Compare it with the live website, then approve
-            and publish, or reject the changes.
+            Left column is what is live on the website now, right column is what will replace it. Use
+            <span className="font-medium"> Edit content</span> to correct the wording here, save it back
+            into the system, then Approve &amp; Publish — or reject the changes.
           </DialogDescription>
         </DialogHeader>
 
