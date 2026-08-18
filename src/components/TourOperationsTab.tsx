@@ -496,6 +496,26 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
       </Card>
 
 
+      {/* Operational Readiness (Data Health) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-brand-navy">
+            Operational Readiness
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {healthLoading ? (
+            <TourHealthPanelSkeleton />
+          ) : tourHealth ? (
+            <TourHealthPanel tour={tourHealth} showTourName={false} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Readiness scoring applies to upcoming tours only.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Operations Notes Section */}
       <TourOperationsNotesSection 
         tourId={tourId} 
