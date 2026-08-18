@@ -511,6 +511,21 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
         </Card>
       )}
 
+      {/* Tour Description */}
+      {!isHost && tour.websiteDescription && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tour Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="prose prose-sm max-w-none text-sm"
+              dangerouslySetInnerHTML={{ __html: tour.websiteDescription }}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tour Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tour.inclusions && (
