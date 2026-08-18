@@ -1500,9 +1500,85 @@ Deno.serve(async (req) => {
 
         return json({ ok: true, pushed, skipped, verified, wp_tour_id: link.wp_tour_id });
       }
+      // Marketing/comms edits made inside the review dialog. Writes to the ART
+      // source of truth with the service role (so marketing staff without
+      // admin/manager table rights can still correct copy), then the normal
+      // Approve & Publish flow pushes the saved content to WordPress.
+      case "save_art_content": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const saved: string[] = [];
+
+        if (typeof body.description === "string") {
+          const html = sanitiseInlineHtml(body.description) === "" && body.description.trim() === ""
+            ? ""
+            : body.description;
+          if (html.trim().length === 0) {
+            return json({ error: "The website description cannot be emptied here." }, 400);
+          }
+          const { error } = await admin
+            .from("tours")
+            .update({ website_description: html })
+            .eq("id", body.art_tour_id);
+          if (error) return json({ error: error.message }, 400);
+          saved.push("description");
+        }
+
+        for (const item of body.items ?? []) {
+          if (item.remove && item.id) {
+            const { error } = await admin
+              .from("tour_inclusion_items")
+              .delete()
+              .eq("id", item.id)
+              .eq("tour_id", body.art_tour_id);
+            if (error) return json({ error: error.message }, 400);
+            saved.push(`${item.kind} removed`);
+            continue;
+          }
+          const content = (item.content_html ?? "").trim();
+          if (content.length === 0) continue;
+          if (item.id) {
+            const { error } = await admin
+              .from("tour_inclusion_items")
+              .update({ content_html: content })
+              .eq("id", item.id)
+              .eq("tour_id", body.art_tour_id);
+            if (error) return json({ error: error.message }, 400);
+          } else {
+            const { error } = await admin.from("tour_inclusion_items").insert({
+              tour_id: body.art_tour_id,
+              kind: item.kind,
+              content_html: content,
+              sort_order: item.sort_order ?? 999,
+            });
+            if (error) return json({ error: error.message }, 400);
+          }
+          saved.push(item.kind);
+        }
+
+        for (const entry of body.itinerary_entries ?? []) {
+          const patch: Record<string, unknown> = {};
+          if (typeof entry.subject === "string" && entry.subject.trim().length > 0) {
+            patch.subject = entry.subject.trim();
+          }
+          if (typeof entry.content === "string") patch.content = entry.content;
+          if (Object.keys(patch).length === 0) continue;
+          const { error } = await admin
+            .from("tour_itinerary_entries")
+            .update(patch)
+            .eq("id", entry.id);
+          if (error) return json({ error: error.message }, 400);
+          saved.push("itinerary");
+        }
+
+        await auditLog(userId, {
+          action: "save_art_content_from_review",
+          result_status: "success",
+          response_code: 200,
+          request_summary: { art_tour_id: body.art_tour_id, saved },
+        });
+        return json({ ok: true, saved });
+      }
       case "pull_inclusions": {
-        const admin0 = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        void admin0;
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const { data: link } = await admin
           .from("wordpress_tour_links")
