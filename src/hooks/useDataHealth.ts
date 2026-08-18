@@ -235,8 +235,9 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         hotelByBooking.set(h.booking_id, list);
       });
 
-      const waiverKeys = new Set(
-        (waiverRes.data || []).filter((w: any) => w.signed_at).map((w: any) => `${w.booking_id}:${w.passenger_slot}`)
+      // Waivers are per booking: one signature from the lead booker covers everyone.
+      const signedWaiverBookings = new Set(
+        (waiverRes.data || []).filter((w: any) => w.signed_at).map((w: any) => w.booking_id)
       );
       const docKeys = new Set(
         (docsRes.data || []).filter((d: any) => !blank(d.passport_number)).map((d: any) => `${d.booking_id}:${d.passenger_slot}`)
