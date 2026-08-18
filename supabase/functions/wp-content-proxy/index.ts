@@ -1252,6 +1252,232 @@ Deno.serve(async (req) => {
           photo_errors: photoErrors,
         });
       }
+      case "inclusions_diff": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const art = await loadArtInclusions(admin, body.art_tour_id);
+        if ("error" in art) return json({ error: art.error }, 400);
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) {
+          return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+        }
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,content,link,modified" },
+        });
+        const wpAcf = (wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const wpIncl = normaliseWpItems(wpAcf[WP_INCLUSIONS_FIELD]);
+        const wpExcl = normaliseWpItems(wpAcf[WP_EXCLUSIONS_FIELD]);
+        const wpDescription =
+          ((wpRes.data as { content?: { raw?: string; rendered?: string } })?.content?.raw ??
+            (wpRes.data as { content?: { rendered?: string } })?.content?.rendered ??
+            "") as string;
+        const inclusionsDiff = buildItemsDiff(art.inclusions, wpIncl);
+        const exclusionsDiff = buildItemsDiff(art.exclusions, wpExcl);
+        const descriptionChanged =
+          art.website_description.trim().length > 0 && !htmlEqual(art.website_description, wpDescription);
+        return json({
+          tour_name: art.tour.name,
+          wp_tour_id: link.wp_tour_id,
+          wp_link: (wpRes.data as { link?: string })?.link ?? null,
+          inclusions: inclusionsDiff,
+          exclusions: exclusionsDiff,
+          description: {
+            art: art.website_description,
+            wp: wpDescription,
+            changed: descriptionChanged,
+            art_empty: art.website_description.trim().length === 0,
+          },
+          description_mismatch: describeDescriptionMismatch(art.website_description, art.inclusions),
+          row_shape_known: {
+            inclusions: detectRowShape(wpAcf[WP_INCLUSIONS_FIELD]) !== null,
+            exclusions: detectRowShape(wpAcf[WP_EXCLUSIONS_FIELD]) !== null,
+          },
+          changed: inclusionsDiff.changed || exclusionsDiff.changed || descriptionChanged,
+        });
+      }
+      case "push_inclusions": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const sections = new Set(body.sections ?? ["inclusions", "exclusions", "description"]);
+        const art = await loadArtInclusions(admin, body.art_tour_id);
+        if ("error" in art) return json({ error: art.error }, 400);
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) {
+          return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+        }
+
+        const beforeRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,content" },
+        });
+        const beforeAcf = (beforeRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const beforeContent =
+          ((beforeRes.data as { content?: { raw?: string; rendered?: string } })?.content?.raw ??
+            (beforeRes.data as { content?: { rendered?: string } })?.content?.rendered ??
+            "") as string;
+
+        const acfPayload: Record<string, unknown> = {};
+        const pushed: string[] = [];
+        const skipped: string[] = [];
+
+        const pushList = (
+          section: "inclusions" | "exclusions",
+          field: string,
+          items: string[],
+        ) => {
+          if (!sections.has(section)) return;
+          if (items.length === 0) {
+            skipped.push(`${section}: nothing in ART — refusing to blank the website list`);
+            return;
+          }
+          const shape = detectRowShape(beforeAcf[field]);
+          if (!shape) {
+            skipped.push(
+              `${section}: the live website list is empty so the row format can't be detected — add one ${section === "inclusions" ? "inclusion" : "exclusion"} row on the WordPress tour once, then publish again`,
+            );
+            return;
+          }
+          acfPayload[field] = buildWpRows(items, shape);
+          pushed.push(section);
+        };
+
+        pushList("inclusions", WP_INCLUSIONS_FIELD, art.inclusions);
+        pushList("exclusions", WP_EXCLUSIONS_FIELD, art.exclusions);
+
+        const wpBody: Record<string, unknown> = {};
+        if (Object.keys(acfPayload).length > 0) wpBody.acf = acfPayload;
+        if (sections.has("description")) {
+          if (art.website_description.trim().length === 0) {
+            skipped.push("description: empty in ART — refusing to blank the website description");
+          } else if (htmlEqual(art.website_description, beforeContent)) {
+            skipped.push("description: already matches the website");
+          } else {
+            wpBody.content = art.website_description;
+            pushed.push("description");
+          }
+        }
+
+        if (Object.keys(wpBody).length === 0) {
+          return json({ ok: true, pushed: [], skipped, note: "Nothing to publish." });
+        }
+
+        const res = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          method: "POST",
+          body: wpBody,
+        });
+        const afterAcf = (res.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const afterContent =
+          ((res.data as { content?: { raw?: string; rendered?: string } })?.content?.raw ??
+            (res.data as { content?: { rendered?: string } })?.content?.rendered ??
+            "") as string;
+        const verified =
+          (!pushed.includes("inclusions") || !buildItemsDiff(art.inclusions, normaliseWpItems(afterAcf[WP_INCLUSIONS_FIELD])).changed) &&
+          (!pushed.includes("exclusions") || !buildItemsDiff(art.exclusions, normaliseWpItems(afterAcf[WP_EXCLUSIONS_FIELD])).changed) &&
+          (!pushed.includes("description") || htmlEqual(art.website_description, afterContent));
+
+        await admin
+          .from("wordpress_tour_links")
+          .update({ last_synced_at: new Date().toISOString() })
+          .eq("tour_id", body.art_tour_id);
+
+        try {
+          await admin.from("wordpress_integration_audit_logs").insert({
+            user_id: userId,
+            source: "ui",
+            action: "push_inclusions",
+            wordpress_object_type: "tour",
+            wordpress_object_id: link.wp_tour_id,
+            result_status: "success",
+            response_code: res.status,
+            request_summary: {
+              endpoint: `tour/${link.wp_tour_id}`,
+              method: "POST",
+              art_tour_id: body.art_tour_id,
+              changed_fields: pushed,
+            },
+            before_snapshot: {
+              [WP_INCLUSIONS_FIELD]: beforeAcf[WP_INCLUSIONS_FIELD] ?? null,
+              [WP_EXCLUSIONS_FIELD]: beforeAcf[WP_EXCLUSIONS_FIELD] ?? null,
+              content: beforeContent,
+            },
+            after_snapshot: {
+              [WP_INCLUSIONS_FIELD]: afterAcf[WP_INCLUSIONS_FIELD] ?? null,
+              [WP_EXCLUSIONS_FIELD]: afterAcf[WP_EXCLUSIONS_FIELD] ?? null,
+              content: afterContent,
+            },
+          });
+        } catch { /* audit must not break */ }
+
+        return json({ ok: true, pushed, skipped, verified, wp_tour_id: link.wp_tour_id });
+      }
+      case "pull_inclusions": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) {
+          return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+        }
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,content,link" },
+        });
+        const wpAcf = (wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const inclusions = normaliseWpItems(wpAcf[WP_INCLUSIONS_FIELD]).map((s) => sanitiseInlineHtml(s));
+        const exclusions = normaliseWpItems(wpAcf[WP_EXCLUSIONS_FIELD]).map((s) => sanitiseInlineHtml(s));
+        const description =
+          ((wpRes.data as { content?: { raw?: string; rendered?: string } })?.content?.raw ??
+            (wpRes.data as { content?: { rendered?: string } })?.content?.rendered ??
+            "") as string;
+
+        if (body.confirm !== true) {
+          return json({
+            preview: true,
+            wp_tour_id: link.wp_tour_id,
+            wp_link: (wpRes.data as { link?: string })?.link ?? null,
+            inclusions,
+            exclusions,
+            description,
+          });
+        }
+
+        await admin.from("tour_inclusion_items").delete().eq("tour_id", body.art_tour_id);
+        const rows = [
+          ...inclusions.map((content_html, i) => ({ tour_id: body.art_tour_id, kind: "inclusion", content_html, sort_order: i })),
+          ...exclusions.map((content_html, i) => ({ tour_id: body.art_tour_id, kind: "exclusion", content_html, sort_order: i })),
+        ];
+        if (rows.length > 0) {
+          const { error: insErr } = await admin.from("tour_inclusion_items").insert(rows);
+          if (insErr) return json({ error: insErr.message }, 400);
+        }
+        if (description.trim().length > 0) {
+          await admin.from("tours").update({ website_description: description }).eq("id", body.art_tour_id);
+        }
+        await auditLog(userId, {
+          action: "pull_inclusions",
+          result_status: "success",
+          response_code: 200,
+          wordpress_object_type: "tour",
+          wordpress_object_id: link.wp_tour_id,
+          request_summary: { art_tour_id: body.art_tour_id, inclusions: inclusions.length, exclusions: exclusions.length },
+        });
+        return json({
+          ok: true,
+          imported_inclusions: inclusions.length,
+          imported_exclusions: exclusions.length,
+          imported_description: description.trim().length > 0,
+        });
+      }
       default:
         return json({ error: "Unknown op" }, 400);
     }
