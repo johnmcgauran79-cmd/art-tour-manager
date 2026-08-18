@@ -1383,6 +1383,7 @@ Deno.serve(async (req) => {
       case "push_inclusions": {
         // (see save_art_content below for the editable review flow)
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        void admin;
         const sections = new Set(body.sections ?? ["inclusions", "exclusions", "description"]);
         const art = await loadArtInclusions(admin, body.art_tour_id);
         if ("error" in art) return json({ error: art.error }, 400);
