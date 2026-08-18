@@ -16,6 +16,8 @@ import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { GlobalTourAlertsModal } from "@/components/GlobalTourAlertsModal";
 import { TourAlertButton } from "./TourAlertButton";
 import { TourDocumentsAlertButton } from "./TourDocumentsAlertButton";
+import { useDataHealth } from "@/hooks/useDataHealth";
+import { TourHealthPanel, TourHealthPanelSkeleton } from "@/components/datahealth/TourHealthPanel";
 
 
 const getDaysUntilTour = (startDate: string) => {
@@ -51,6 +53,8 @@ export const OperationsToursOverview = () => {
   const { toast } = useToast();
   const { navigateWithContext } = useNavigationContext();
   const { unacknowledgedCount, criticalCount } = useGlobalTourAlerts();
+  const { data: healthData, isLoading: healthLoading } = useDataHealth(0);
+  const healthByTour = new Map((healthData?.tours || []).map((t) => [t.tourId, t]));
 
   // Function to get confirmed passenger count for a tour
   const getConfirmedPassengerCount = (tourId: string) => {
@@ -376,6 +380,15 @@ export const OperationsToursOverview = () => {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Operational readiness (Data Health) */}
+                <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                  {healthLoading ? (
+                    <TourHealthPanelSkeleton />
+                  ) : healthByTour.has(tour.id) ? (
+                    <TourHealthPanel tour={healthByTour.get(tour.id)!} showTourName={false} />
+                  ) : null}
                 </div>
               </div>
             );
