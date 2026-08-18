@@ -139,6 +139,27 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
     navigateWithContext(`/tours/${tour.id}`);
   };
 
+  const { views, saveView, deleteView } = useSavedViews<ToursViewFilters>('tours');
+
+  const applySavedView = (filters: ToursViewFilters) => {
+    setSearchQuery(filters.searchQuery ?? "");
+    setShowArchived(!!filters.showArchived);
+    if (filters.view === 'grid' || filters.view === 'table') setView(filters.view);
+  };
+
+  const handleExportCsv = () => {
+    downloadCsv(`tours-${exportStamp()}`, searchFilteredTours, [
+      { header: 'Tour Name', value: (t: any) => t.name || '' },
+      { header: 'Tour Host', value: (t: any) => t.tour_host || 'TBD' },
+      { header: 'Location', value: (t: any) => t.location || '' },
+      { header: 'Start Date', value: (t: any) => formatDateToDDMMYYYY(t.start_date) },
+      { header: 'End Date', value: (t: any) => formatDateToDDMMYYYY(t.end_date) },
+      { header: 'Total Pax', value: (t: any) => getTotalPassengers(t.id) },
+      { header: 'Status', value: (t: any) => formatStatusText(t.status) },
+      { header: 'Notes', value: (t: any) => t.notes || '' },
+    ]);
+  };
+
   if (isLoading) {
     return <div>Loading tours...</div>;
   }
@@ -162,6 +183,22 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <SavedViewsMenu<ToursViewFilters>
+                views={views}
+                currentFilters={{ searchQuery, showArchived, view }}
+                onApply={applySavedView}
+                onSave={saveView}
+                onDelete={deleteView}
+              />
+              <Button
+                onClick={handleExportCsv}
+                variant="outline"
+                size="sm"
+                disabled={searchFilteredTours.length === 0}
+              >
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </Button>
               {showOnlyActive && onViewAll && (
                 <Button onClick={onViewAll} variant="outline" size="sm">
                   <Eye className="h-4 w-4 sm:mr-2" />
