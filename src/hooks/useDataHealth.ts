@@ -361,9 +361,11 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
 
           // Payments — anything not fully settled inside 30 days of departure.
           if (daysOut !== null && daysOut <= 30) {
+            const settledStatuses = ["fully_paid", "complimentary", "host", "racing_breaks_invoice"];
+            const isSettled = settledStatuses.includes(b.status);
             const mapping = invoiceByBooking.get(b.id);
-            const unpaid = mapping ? Number(mapping.amount_due || 0) > 0 : !["paid", "complimentary"].includes(b.status);
-            if (unpaid && !["paid", "complimentary"].includes(b.status)) {
+            const unpaid = mapping ? Number(mapping.amount_due || 0) > 0 : !isSettled;
+            if (unpaid && !isSettled) {
               items.push(
                 base("payments", leadName, `Status "${b.status}" with ${daysOut} day(s) to departure`, b.id)
               );
