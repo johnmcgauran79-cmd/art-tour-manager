@@ -100,6 +100,7 @@ export const TourDetailModalWithHotelsTab = ({
         notes: currentTour.notes || "",
         inclusions: currentTour.inclusions || "",
         exclusions: currentTour.exclusions || "",
+        websiteDescription: currentTour.website_description || "",
         pricing: {
           single: currentTour.price_single || 0,
           double: currentTour.price_double || 0,
