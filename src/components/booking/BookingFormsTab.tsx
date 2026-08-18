@@ -202,6 +202,7 @@ export function BookingFormsTab({
                   <SendTravelDocsRequestButton
                     bookingId={bookingId}
                     tourName={tourName}
+                    travelDocsRequired
                     leadPassenger={passengerInfo(leadPassenger) || undefined}
                     passenger2={passengerInfo(passenger2)}
                     passenger3={passengerInfo(passenger3)}
@@ -236,7 +237,6 @@ export function BookingFormsTab({
             !isAgent && leadPassenger ? (
               <SendPickupRequestButton
                 bookingId={bookingId}
-                tourId={tourId}
                 tourName={tourName}
                 customerName={`${leadPassenger.first_name} ${leadPassenger.last_name}`}
                 customerEmail={leadPassenger.email || null}
