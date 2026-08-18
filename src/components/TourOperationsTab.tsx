@@ -58,6 +58,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const passportMissingCount = travelDocumentsRequired ? (passportData?.filter(p => !p.hasDocuments).length || 0) : 0;
   const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tourId);
   const { forms: customForms } = useCustomForms(tourId);
+  const { tour: tourHealth, isLoading: healthLoading } = useTourHealth(tourId);
 
   // Handle initial report type from parent (e.g., navigating from Overview tab)
   useEffect(() => {
