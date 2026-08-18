@@ -93,8 +93,10 @@ export default function DataHealth() {
         { header: "Days out", value: (t) => t.daysOut ?? "" },
         { header: "Bookings", value: (t) => t.bookings },
         { header: "Passengers", value: (t) => t.pax },
-        { header: "Score", value: (t) => t.score },
-        { header: "Open issues", value: (t) => t.items.length },
+        { header: "Ops readiness", value: (t) => t.opsScore },
+        { header: "Guest data", value: (t) => t.guestScore },
+        { header: "Ops issues", value: (t) => t.opsItems.length },
+        { header: "Guest data issues", value: (t) => t.guestItems.length },
         {
           header: "Categories",
           value: (t) =>
@@ -352,7 +354,7 @@ export default function DataHealth() {
                 <SelectItem value="all">All checks</SelectItem>
                 {DATA_HEALTH_CHECKS.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.label}
+                    {c.group === "ops" ? "Ops" : "Guest"} · {c.label}
                   </SelectItem>
                 ))}
               </SelectContent>
