@@ -80,7 +80,10 @@ export default function BookingDetail() {
   
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [searchParams] = useSearchParams();
-  const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
+  const initialTab = searchParams.get('tab') || "details";
+  const [currentTab, setCurrentTab] = useState(
+    initialTab === 'waiver' || initialTab === 'travel' ? 'forms' : initialTab
+  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRemoveSecondaryContactDialog, setShowRemoveSecondaryContactDialog] = useState(false);
   const [isRetryingXero, setIsRetryingXero] = useState(false);
@@ -545,15 +548,9 @@ export default function BookingDetail() {
               {!isMobile && <Heart className="h-4 w-4" />}
               <span>Medical</span>
             </TabsTrigger>
-            {tour?.travel_documents_required && (
-              <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
-                {!isMobile && <Plane className="h-4 w-4" />}
-                <span>Passport Details</span>
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="waiver" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
-              {!isMobile && <Shield className="h-4 w-4" />}
-              <span>Waiver</span>
+            <TabsTrigger value="forms" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <ClipboardList className="h-4 w-4" />}
+              <span>Forms</span>
             </TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
               {!isMobile && <MessageSquare className="h-4 w-4" />}
