@@ -11,6 +11,7 @@ import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
 import { GuestDocumentTextModal } from "./itinerary/GuestDocumentTextModal";
 import { PublishItineraryToWebsiteDialog } from "./itinerary/PublishItineraryToWebsiteDialog";
+import { useIsWebsiteApprover } from "@/hooks/useWebsiteChanges";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionErrorDialog } from "./PermissionErrorDialog";
@@ -38,6 +39,7 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const deleteDay = useDeleteItineraryDay();
   const { userRole } = useAuth();
   const { hasEditAccess } = usePermissions();
+  const isWebsiteApprover = useIsWebsiteApprover();
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
