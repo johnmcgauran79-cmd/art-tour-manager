@@ -70,11 +70,14 @@ const loadNames = async (ids: string[]): Promise<Map<string, string>> => {
   if (unique.length === 0) return new Map();
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email")
+    .select("id, first_name, last_name, email")
     .in("id", unique);
   const map = new Map<string, string>();
-  (data ?? []).forEach((p: { id: string; full_name: string | null; email: string | null }) =>
-    map.set(p.id, p.full_name || p.email || "Unknown user"),
+  ((data ?? []) as any[]).forEach((p) =>
+    map.set(
+      p.id,
+      [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Unknown user",
+    ),
   );
   return map;
 };
