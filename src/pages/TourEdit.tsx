@@ -999,25 +999,7 @@ export default function TourEdit() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="inclusions">Inclusions</Label>
-          <Textarea
-            id="inclusions"
-            value={formData.inclusions}
-            onChange={(e) => handleInputChange("inclusions", e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="exclusions">Exclusions</Label>
-          <Textarea
-            id="exclusions"
-            value={formData.exclusions}
-            onChange={(e) => handleInputChange("exclusions", e.target.value)}
-            rows={3}
-          />
-        </div>
+        {id && <TourInclusionsSection tourId={id} />}
 
         <div className="space-y-2">
           <Label htmlFor="notes">Notes</Label>
