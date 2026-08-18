@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Plus, Eye, Search, Bell, BellOff, FileCheck } from "lucide-react";
+import { Plus, Eye, Search, Bell, BellOff, FileCheck, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
@@ -24,6 +24,11 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
+import { SavedViewsMenu } from "@/components/SavedViewsMenu";
+import { useSavedViews } from "@/hooks/useSavedViews";
+import { downloadCsv, exportStamp } from "@/lib/csvExport";
+
+type ToursViewFilters = { searchQuery: string; showArchived: boolean; view: 'grid' | 'table' };
 
 interface ToursTableProps {
   showOnlyActive?: boolean;
