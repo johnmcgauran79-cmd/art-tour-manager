@@ -183,7 +183,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <SavedViewsMenu<ToursViewFilters>
+              <SavedViewsMenu
                 views={views}
                 currentFilters={{ searchQuery, showArchived, view }}
                 onApply={applySavedView}

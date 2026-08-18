@@ -162,7 +162,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
             
             {/* Action buttons - wrap on mobile */}
             <div className="flex flex-wrap gap-2">
-              <SavedViewsMenu<BookingsViewFilters>
+              <SavedViewsMenu
                 views={views}
                 currentFilters={{ searchQuery, view }}
                 onApply={applySavedView}
