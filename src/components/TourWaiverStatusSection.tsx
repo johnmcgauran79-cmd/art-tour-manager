@@ -264,7 +264,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
               Waiver Status
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Track waiver completion across all passengers. Use{" "}
+              One waiver per booking — signed by the lead booker on behalf of all passengers. Use{" "}
               <code className="bg-muted px-1 rounded text-xs">{"{{waiver_button}}"}</code> in
               email templates to include waiver links.
             </p>
@@ -435,7 +435,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
                   for <strong>{tourName}</strong>.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Each passenger will receive a personalised email with a secure link to sign the waiver. Links expire in 7 days.
+                  The lead booker receives a secure link to sign one waiver covering everyone on the booking. Links expire in 7 days.
                 </p>
               </div>
 
