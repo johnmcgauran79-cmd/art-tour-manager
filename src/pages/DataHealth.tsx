@@ -38,7 +38,6 @@ import {
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { HealthScoreBadge } from "@/components/datahealth/HealthScoreBadge";
 import { TourHealthPanel } from "@/components/datahealth/TourHealthPanel";
-import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import {
   CHECK_LABELS,
   DATA_HEALTH_CHECKS,
@@ -150,14 +149,13 @@ export default function DataHealth() {
 
   return (
     <div className="space-y-6">
-      <AppBreadcrumbs items={[{ label: "Home", href: "/" }, { label: "Data Health" }]} />
+      <AppBreadcrumbs items={[{ label: "Home", href: "/" }, { label: "Tour Health" }]} />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Data Health &amp; Integrations</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Tour Readiness</h1>
           <p className="text-muted-foreground">
-            Operational readiness of upcoming tours (hotels, activities, tour setup), guest data completeness, and the
-            live status of every connected system.
+            Operational readiness of upcoming tours (hotels, activities, tour setup) and guest data completeness.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -199,7 +197,6 @@ export default function DataHealth() {
         <TabsList>
           <TabsTrigger value="tours">By tour</TabsTrigger>
           <TabsTrigger value="category">By check</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tours" className="space-y-4">
@@ -319,9 +316,6 @@ export default function DataHealth() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="integrations">
-          <IntegrationStatusPanel />
-        </TabsContent>
       </Tabs>
     </div>
   );

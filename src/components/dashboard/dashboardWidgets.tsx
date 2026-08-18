@@ -95,7 +95,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
   },
   {
     id: "data_health",
-    title: "Data Health",
+    title: "Tour Health",
     Component: DataHealthWidget,
     default: { i: "data_health", x: 8, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
   },
