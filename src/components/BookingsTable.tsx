@@ -97,6 +97,23 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
     navigateWithContext(`/bookings/${booking.id}`);
   };
 
+  const handleExportCsv = () => {
+    downloadCsv(`bookings-${exportStamp()}`, filteredBookings, [
+      { header: 'Tour', value: (b: any) => b.tours?.name || '' },
+      { header: 'Lead Passenger', value: (b: any) => `${b.customers?.first_name || ''} ${b.customers?.last_name || ''}`.trim() },
+      { header: 'Passenger 2', value: (b: any) => b.passenger_2_name || '' },
+      { header: 'Passenger 3', value: (b: any) => b.passenger_3_name || '' },
+      { header: 'Group', value: (b: any) => b.group_name || '' },
+      { header: 'Pax', value: (b: any) => b.passenger_count ?? '' },
+      { header: 'Check In', value: (b: any) => (b.accommodation_required ? formatDateToDDMMYYYY(b.check_in_date) : 'NA') },
+      { header: 'Check Out', value: (b: any) => (b.accommodation_required ? formatDateToDDMMYYYY(b.check_out_date) : 'NA') },
+      { header: 'Nights', value: (b: any) => b.total_nights ?? '' },
+      { header: 'Status', value: (b: any) => formatStatusText(b.status || 'pending') },
+      { header: 'Created', value: (b: any) => formatDateToDDMMYYYY(b.created_at) },
+      { header: 'Notes', value: (b: any) => b.booking_notes || '' },
+    ]);
+  };
+
   const handleSyncInvoices = async () => {
     setIsSyncingInvoices(true);
     try {
