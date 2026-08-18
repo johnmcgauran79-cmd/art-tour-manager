@@ -16,7 +16,7 @@ const toneFor = (state: string) =>
 export const IntegrationStatusWidget = () => {
   const navigate = useNavigate();
   const { data = [], isLoading } = useIntegrationHealth();
-  const go = () => navigate("/data-health");
+  const go = () => navigate("/?tab=settings&stab=system");
   const problems = data.filter((i) => i.state !== "connected").length;
 
   return (

@@ -13,6 +13,7 @@ import { WaiverSettingsCard } from "./WaiverSettingsCard";
 import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
 import { AiRetentionSettingsCard } from "./AiRetentionSettingsCard";
 import { TeamsChannelNotifyCard } from "./TeamsChannelNotifyCard";
+import { IntegrationStatusPanel } from "./datahealth/IntegrationStatusPanel";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -226,6 +227,17 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Accounting Integration</h2>
         <XeroIntegrationSettings />
+      </div>
+
+      {/* Integration Status */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Integration Status</h2>
+          <p className="text-sm text-muted-foreground">
+            Live connection health for Xero, WordPress, Keap, email and Teams.
+          </p>
+        </div>
+        <IntegrationStatusPanel />
       </div>
 
       {/* Microsoft Teams Notifications */}
