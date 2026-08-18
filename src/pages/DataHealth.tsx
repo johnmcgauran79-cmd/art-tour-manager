@@ -120,28 +120,28 @@ export default function DataHealth() {
 
   const summaryCards = [
     {
-      label: "Portfolio score",
+      label: "Ops readiness",
       value: data ? `${data.portfolioScore}` : "—",
-      hint: "Average readiness across tours in scope",
+      hint: "Average operational readiness across tours in scope",
       Icon: ShieldCheck,
+    },
+    {
+      label: "Guest data",
+      value: data ? `${data.guestPortfolioScore}` : "—",
+      hint: "Completeness of passenger-supplied information",
+      Icon: CheckCircle2,
     },
     {
       label: "Tours at risk",
       value: data?.atRisk ?? 0,
-      hint: "Score below 70",
+      hint: "Ops readiness below 70",
       Icon: TriangleAlert,
     },
     {
       label: "Tours to watch",
       value: data?.warning ?? 0,
-      hint: "Score 70–89",
+      hint: "Ops readiness 70–89",
       Icon: ActivitySquare,
-    },
-    {
-      label: "Open issues",
-      value: data?.allItems.length ?? 0,
-      hint: "Across every check",
-      Icon: CheckCircle2,
     },
   ];
 
@@ -153,7 +153,8 @@ export default function DataHealth() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Health &amp; Integrations</h1>
           <p className="text-muted-foreground">
-            Operational gaps on upcoming tours, plus the live status of every connected system.
+            Operational readiness of upcoming tours (hotels, activities, tour setup), guest data completeness, and the
+            live status of every connected system.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
