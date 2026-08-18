@@ -4,7 +4,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield, Plane, RefreshCw } from "lucide-react";
+import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield, Plane, RefreshCw, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
@@ -40,6 +40,7 @@ import { PaymentReceiptsHistory } from "@/components/PaymentReceiptsHistory";
 import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
 import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
+import { BookingFormsTab } from "@/components/booking/BookingFormsTab";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useBrands } from "@/hooks/useBrands";
 import {
@@ -884,60 +885,26 @@ export default function BookingDetail() {
             </div>
           </TabsContent>
 
-          {tour?.travel_documents_required && (
-            <TabsContent value="travel" className="space-y-4 mt-6">
-              <div className="bg-card rounded-lg border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Passport Details</h3>
-                  {!isAgent && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigateWithContext(`/bookings/${booking.id}/edit?tab=travel`)}
-                      className="gap-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit Passport Details
-                    </Button>
-                  )}
-                </div>
-                <BookingTravelDocsDisplay
-                  bookingId={booking.id}
-                  passengerCount={booking.passenger_count}
-                  passportNotRequired={(booking as any).passport_not_required}
-                  leadPassenger={booking.customers}
-                  passenger2={(booking as any).passenger_2}
-                  passenger3={(booking as any).passenger_3}
-                />
-              </div>
-            </TabsContent>
-          )}
-
-          <TabsContent value="waiver" className="space-y-4 mt-6">
-            <div className="bg-card rounded-lg border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Waiver Status</h3>
-                {!isAgent && booking.customers && (
-                  <SendWaiverRequestButton
-                    bookingId={booking.id}
-                    customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
-                    customerEmail={booking.customers.email || null}
-                    tourName={tour?.name || 'Unknown Tour'}
-                    leadPassenger={booking.customers}
-                    passenger2={(booking as any).passenger_2}
-                    passenger3={(booking as any).passenger_3}
-                    passengerCount={booking.passenger_count}
-                  />
-                )}
-              </div>
-              <WaiverStatusDisplay
-                bookingId={booking.id}
-                passengerCount={booking.passenger_count}
-                leadPassenger={booking.customers}
-                passenger2={(booking as any).passenger_2}
-                passenger3={(booking as any).passenger_3}
-              />
-            </div>
+          <TabsContent value="forms" className="space-y-4 mt-6">
+            <BookingFormsTab
+              bookingId={booking.id}
+              tourId={booking.tour_id}
+              tourName={tour?.name || 'Unknown Tour'}
+              passengerCount={booking.passenger_count}
+              leadPassenger={booking.customers as any}
+              passenger2={(booking as any).passenger_2}
+              passenger3={(booking as any).passenger_3}
+              travelDocsRequired={!!tour?.travel_documents_required}
+              passportNotRequired={(booking as any).passport_not_required}
+              pickupRequired={!!tour?.pickup_location_required}
+              selectedPickupLabel={
+                selectedPickup
+                  ? `${selectedPickup.name}${selectedPickup.pickup_time ? ` (${selectedPickup.pickup_time})` : ''}`
+                  : null
+              }
+              isAgent={isAgent}
+              onEditPassport={() => navigateWithContext(`/bookings/${booking.id}/edit?tab=travel`)}
+            />
           </TabsContent>
 
           <TabsContent value="comments" className="space-y-6 mt-6">
