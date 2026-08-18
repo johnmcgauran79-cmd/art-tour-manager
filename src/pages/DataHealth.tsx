@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { HealthScoreBadge } from "@/components/datahealth/HealthScoreBadge";
+import { TourHealthPanel } from "@/components/datahealth/TourHealthPanel";
 import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import {
   CHECK_LABELS,
