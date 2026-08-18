@@ -93,8 +93,10 @@ export default function DataHealth() {
         { header: "Days out", value: (t) => t.daysOut ?? "" },
         { header: "Bookings", value: (t) => t.bookings },
         { header: "Passengers", value: (t) => t.pax },
-        { header: "Score", value: (t) => t.score },
-        { header: "Open issues", value: (t) => t.items.length },
+        { header: "Ops readiness", value: (t) => t.opsScore },
+        { header: "Guest data", value: (t) => t.guestScore },
+        { header: "Ops issues", value: (t) => t.opsItems.length },
+        { header: "Guest data issues", value: (t) => t.guestItems.length },
         {
           header: "Categories",
           value: (t) =>
@@ -120,28 +122,28 @@ export default function DataHealth() {
 
   const summaryCards = [
     {
-      label: "Portfolio score",
+      label: "Ops readiness",
       value: data ? `${data.portfolioScore}` : "—",
-      hint: "Average readiness across tours in scope",
+      hint: "Average operational readiness across tours in scope",
       Icon: ShieldCheck,
+    },
+    {
+      label: "Guest data",
+      value: data ? `${data.guestPortfolioScore}` : "—",
+      hint: "Completeness of passenger-supplied information",
+      Icon: CheckCircle2,
     },
     {
       label: "Tours at risk",
       value: data?.atRisk ?? 0,
-      hint: "Score below 70",
+      hint: "Ops readiness below 70",
       Icon: TriangleAlert,
     },
     {
       label: "Tours to watch",
       value: data?.warning ?? 0,
-      hint: "Score 70–89",
+      hint: "Ops readiness 70–89",
       Icon: ActivitySquare,
-    },
-    {
-      label: "Open issues",
-      value: data?.allItems.length ?? 0,
-      hint: "Across every check",
-      Icon: CheckCircle2,
     },
   ];
 
@@ -153,7 +155,8 @@ export default function DataHealth() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Health &amp; Integrations</h1>
           <p className="text-muted-foreground">
-            Operational gaps on upcoming tours, plus the live status of every connected system.
+            Operational readiness of upcoming tours (hotels, activities, tour setup), guest data completeness, and the
+            live status of every connected system.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -227,7 +230,7 @@ export default function DataHealth() {
                   <Card>
                     <CollapsibleTrigger className="w-full text-left">
                       <CardHeader className="flex flex-row flex-wrap items-center gap-3 space-y-0">
-                        <HealthScoreBadge score={tour.score} />
+                        <HealthScoreBadge score={tour.opsScore} />
                         <div className="min-w-0 flex-1">
                           <CardTitle className="truncate text-base">{tour.tourName}</CardTitle>
                           <p className="text-xs text-muted-foreground">
@@ -237,6 +240,9 @@ export default function DataHealth() {
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-1">
+                          <Badge variant="outline" className="text-[11px]">
+                            Guest data {tour.guestScore}
+                          </Badge>
                           {Object.entries(tour.byCheck).map(([key, count]) => (
                             <Badge key={key} variant="secondary" className="text-[11px]">
                               {CHECK_LABELS[key as DataHealthCheckId]} {count}
@@ -253,12 +259,34 @@ export default function DataHealth() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                          {DATA_HEALTH_CHECKS.filter((c) => tour.categoryScores[c.id] !== undefined).map((c) => (
+                            <Badge key={c.id} variant="outline" className="text-[11px] font-normal">
+                              <span className="text-muted-foreground">
+                                {c.group === "ops" ? "Ops" : "Guest"} · {c.label}
+                              </span>
+                              <span className="ml-1 font-semibold tabular-nums">{tour.categoryScores[c.id]}</span>
+                            </Badge>
+                          ))}
+                        </div>
+
                         {tour.items.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             Nothing outstanding — this tour is ready to run.
                           </p>
                         ) : (
-                          <div className="overflow-x-auto">
+                          <div className="space-y-6">
+                            {(["ops", "guest"] as const).map((group) => {
+                              const groupItems = group === "ops" ? tour.opsItems : tour.guestItems;
+                              if (groupItems.length === 0) return null;
+                              return (
+                                <div key={group} className="space-y-2">
+                                  <h4 className="text-sm font-semibold">
+                                    {group === "ops"
+                                      ? `Operational readiness (${groupItems.length})`
+                                      : `Guest data completeness (${groupItems.length}) — does not affect the tour score`}
+                                  </h4>
+                                  <div className="overflow-x-auto">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -269,7 +297,7 @@ export default function DataHealth() {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {tour.items.map((item, idx) => (
+                                {groupItems.map((item, idx) => (
                                   <TableRow key={`${item.checkId}-${idx}`}>
                                     <TableCell className="whitespace-nowrap text-xs">
                                       {CHECK_LABELS[item.checkId]}
@@ -291,6 +319,10 @@ export default function DataHealth() {
                                 ))}
                               </TableBody>
                             </Table>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
 
@@ -322,7 +354,7 @@ export default function DataHealth() {
                 <SelectItem value="all">All checks</SelectItem>
                 {DATA_HEALTH_CHECKS.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.label}
+                    {c.group === "ops" ? "Ops" : "Guest"} · {c.label}
                   </SelectItem>
                 ))}
               </SelectContent>

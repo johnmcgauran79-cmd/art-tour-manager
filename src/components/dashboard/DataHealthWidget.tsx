@@ -7,7 +7,7 @@ import { useDataHealthSummary } from "@/hooks/useDataHealth";
 
 export const DataHealthWidget = () => {
   const navigate = useNavigate();
-  const { isLoading, score, atRisk, openIssues, worst } = useDataHealthSummary();
+  const { isLoading, score, guestScore, atRisk, openIssues, worst } = useDataHealthSummary();
   const go = () => navigate("/data-health");
 
   return (
@@ -15,7 +15,7 @@ export const DataHealthWidget = () => {
       <CardHeader className="cursor-pointer rounded-t-xl pb-3 transition-colors hover:bg-muted/40" onClick={go}>
         <CardTitle className="flex items-center gap-2 text-base">
           <ShieldCheck className="h-4 w-4 text-primary" />
-          Data Health
+          Ops Readiness
           {!isLoading && <HealthScoreBadge score={score} className="ml-1" />}
           <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground" />
         </CardTitle>
@@ -24,7 +24,7 @@ export const DataHealthWidget = () => {
         {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
         {!isLoading && (
           <p className="text-xs text-muted-foreground">
-            {openIssues} open issue(s) across tours departing in the next 60 days
+            {openIssues} operational gap(s) across tours departing in the next 60 days · guest data {guestScore}
             {atRisk > 0 && ` · ${atRisk} tour(s) at risk`}
           </p>
         )}
@@ -38,9 +38,9 @@ export const DataHealthWidget = () => {
               <div className="flex items-center justify-between gap-2">
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{tour.tourName}</span>
                 <Badge variant="secondary" className="shrink-0">
-                  {tour.items.length}
+                  {tour.opsItems.length}
                 </Badge>
-                <HealthScoreBadge score={tour.score} />
+                <HealthScoreBadge score={tour.opsScore} />
               </div>
             </button>
           ))}
