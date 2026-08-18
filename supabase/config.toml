@@ -155,3 +155,6 @@ verify_jwt = false
 
 [functions.email-file]
 verify_jwt = false
+
+[functions.backup-report]
+verify_jwt = false
