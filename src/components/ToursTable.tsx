@@ -356,7 +356,22 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                           {opsScoresLoading ? (
                             <span className="text-muted-foreground">…</span>
                           ) : opsScores[tour.id] !== undefined ? (
-                            <HealthScoreBadge score={opsScores[tour.id]} />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateWithContext(`/tours/${tour.id}?tab=operations`);
+                                  }}
+                                  aria-label={`Open ${tour.name} Operations tab`}
+                                >
+                                  <HealthScoreBadge score={opsScores[tour.id]} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Open Operations tab</TooltipContent>
+                            </Tooltip>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
