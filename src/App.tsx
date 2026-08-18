@@ -52,6 +52,7 @@ const BookingChanges = lazy(() => import("./pages/operations/BookingChanges"));
 const PaymentStatus = lazy(() => import("./pages/operations/PaymentStatus"));
 const MissingPhoneNumbers = lazy(() => import("./pages/operations/MissingPhoneNumbers"));
 const WordpressContent = lazy(() => import("./pages/WordpressContent"));
+const DataHealth = lazy(() => import("./pages/DataHealth"));
 
 const queryClient = new QueryClient({
   defaultOptions: {

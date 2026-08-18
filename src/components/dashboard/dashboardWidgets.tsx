@@ -10,6 +10,8 @@ import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 import { MyTodosWidget } from "@/components/dashboard/MyTodosWidget";
 import { UpcomingCommsWidget } from "@/components/dashboard/UpcomingCommsWidget";
 import { WebsiteChangesWidget } from "@/components/dashboard/WebsiteChangesWidget";
+import { DataHealthWidget } from "@/components/dashboard/DataHealthWidget";
+import { IntegrationStatusWidget } from "@/components/dashboard/IntegrationStatusWidget";
 import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
@@ -19,7 +21,7 @@ export interface DashboardWidgetDef {
   default: LayoutItem;
 }
 
-export const DASHBOARD_LAYOUT_VERSION = 5;
+export const DASHBOARD_LAYOUT_VERSION = 6;
 
 // 12-column grid. Default widgets span all 12 columns for a single-column start.
 // x/y in grid units, w/h in grid units. minW/minH keep widgets usable.
@@ -90,6 +92,18 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
     title: "Approve Website Changes",
     Component: WebsiteChangesWidget,
     default: { i: "website_changes", x: 4, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
+  },
+  {
+    id: "data_health",
+    title: "Data Health",
+    Component: DataHealthWidget,
+    default: { i: "data_health", x: 8, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
+  },
+  {
+    id: "integration_status",
+    title: "Integration Status",
+    Component: IntegrationStatusWidget,
+    default: { i: "integration_status", x: 0, y: 40, w: 4, h: 10, minW: 3, minH: 3 },
   },
 ];
 
