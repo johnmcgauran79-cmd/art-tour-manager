@@ -115,13 +115,36 @@ Deno.serve(async (req) => {
   const userId = userRes.user.id;
 
   // Admins and managers, plus marketing/comms staff who approve website changes.
-  const [{ data: isAdmin }, { data: isManager }, { data: isApprover }] = await Promise.all([
-    userClient.rpc("has_role", { _user_id: userId, _role: "admin" }),
-    userClient.rpc("has_role", { _user_id: userId, _role: "manager" }),
-    userClient.rpc("is_website_approver", { _user_id: userId }),
+  // Read roles/departments with the service-role client so the check never
+  // depends on the caller's table grants or RLS policies.
+  const roleClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const [rolesRes, deptsRes] = await Promise.all([
+    roleClient.from("user_roles").select("role").eq("user_id", userId),
+    roleClient.from("user_departments").select("department").eq("user_id", userId),
   ]);
-  if (isAdmin !== true && isManager !== true && isApprover !== true) {
-    return json({ error: "Forbidden — admin, manager or marketing only" }, 403);
+  if (rolesRes.error || deptsRes.error) {
+    console.error(
+      "[wp-content-proxy] permission lookup failed:",
+      rolesRes.error?.message ?? deptsRes.error?.message,
+    );
+    return json({ error: "Could not verify your permissions — please try again" }, 500);
+  }
+  const roles = (rolesRes.data ?? []).map((r: { role: string }) => r.role);
+  const departments = (deptsRes.data ?? []).map((d: { department: string }) => d.department);
+  const allowed =
+    roles.includes("admin") || roles.includes("manager") || departments.includes("marketing");
+  if (!allowed) {
+    return json(
+      {
+        error:
+          "Forbidden — publishing to the website is limited to admins, managers and the marketing department",
+        your_roles: roles,
+        your_departments: departments,
+      },
+      403,
+    );
   }
 
   let body: Op;
