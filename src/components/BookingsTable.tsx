@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, TrendingUp, FileText, RefreshCw, Loader2 } from "lucide-react";
+import { Plus, Search, TrendingUp, FileText, RefreshCw, Loader2, Download } from "lucide-react";
 import { InvoiceSyncProgressModal } from "@/components/InvoiceSyncProgressModal";
 import { useBookings, useFilterCounts } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -20,6 +20,11 @@ import { BulkInvoiceReferenceModal } from "@/components/BulkInvoiceReferenceModa
 import { InvoiceSyncReviewModal } from "@/components/InvoiceSyncReviewModal";
 import { useToast } from "@/hooks/use-toast";
 import { useBrands } from "@/hooks/useBrands";
+import { SavedViewsMenu } from "@/components/SavedViewsMenu";
+import { useSavedViews } from "@/hooks/useSavedViews";
+import { downloadCsv, exportStamp } from "@/lib/csvExport";
+
+type BookingsViewFilters = { searchQuery: string; view: 'grid' | 'table' };
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -41,6 +46,12 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const { toast } = useToast();
   const { data: filterCounts } = useFilterCounts();
   const { data: brands } = useBrands();
+  const { views, saveView, deleteView } = useSavedViews<BookingsViewFilters>('bookings');
+
+  const applySavedView = (filters: BookingsViewFilters) => {
+    setSearchQuery(filters.searchQuery ?? "");
+    if (filters.view === 'grid' || filters.view === 'table') setView(filters.view);
+  };
 
   // Co-branded partner bookings (e.g. Racing Breaks) show a small badge in the list.
   const coBrandLabel = (booking: any) => {
@@ -134,6 +145,23 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
             
             {/* Action buttons - wrap on mobile */}
             <div className="flex flex-wrap gap-2">
+              <SavedViewsMenu<BookingsViewFilters>
+                views={views}
+                currentFilters={{ searchQuery, view }}
+                onApply={applySavedView}
+                onSave={saveView}
+                onDelete={deleteView}
+              />
+              <Button
+                onClick={handleExportCsv}
+                variant="outline"
+                size="sm"
+                className="text-xs sm:text-sm"
+                disabled={filteredBookings.length === 0}
+              >
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </Button>
               {onViewAnalytics && !isViewOnly && (
                 <Button 
                   onClick={onViewAnalytics} 
