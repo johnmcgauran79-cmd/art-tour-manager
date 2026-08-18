@@ -9,6 +9,7 @@ import { MyApprovalsWidget } from "@/components/dashboard/MyApprovalsWidget";
 import { MyTasksWidget } from "@/components/dashboard/MyTasksWidget";
 import { MyTodosWidget } from "@/components/dashboard/MyTodosWidget";
 import { UpcomingCommsWidget } from "@/components/dashboard/UpcomingCommsWidget";
+import { WebsiteChangesWidget } from "@/components/dashboard/WebsiteChangesWidget";
 import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
@@ -18,7 +19,7 @@ export interface DashboardWidgetDef {
   default: LayoutItem;
 }
 
-export const DASHBOARD_LAYOUT_VERSION = 4;
+export const DASHBOARD_LAYOUT_VERSION = 5;
 
 // 12-column grid. Default widgets span all 12 columns for a single-column start.
 // x/y in grid units, w/h in grid units. minW/minH keep widgets usable.
@@ -83,6 +84,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
     title: "Upcoming Comms",
     Component: UpcomingCommsWidget,
     default: { i: "upcoming_comms", x: 0, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
+  },
+  {
+    id: "website_changes",
+    title: "Approve Website Changes",
+    Component: WebsiteChangesWidget,
+    default: { i: "website_changes", x: 4, y: 30, w: 4, h: 10, minW: 3, minH: 3 },
   },
 ];
 
