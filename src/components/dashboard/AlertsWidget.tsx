@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, ArrowRight, AlertTriangle, Info, AlertCircle, Check } from "lucide-react";
 import { useGlobalTourAlerts } from "@/hooks/useGlobalTourAlerts";
-import { GlobalTourAlertsModal } from "@/components/GlobalTourAlertsModal";
+import { GlobalTourAlertsModal } from "@/components/tours/GlobalTourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";

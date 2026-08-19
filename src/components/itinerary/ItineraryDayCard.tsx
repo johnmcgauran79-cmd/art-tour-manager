@@ -8,7 +8,7 @@ import { ItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryEntryModal } from "./ItineraryEntryModal";
 import { useDeleteItineraryEntry } from "@/hooks/useItinerary";
 import { useAuth } from "@/hooks/useAuth";
-import { PermissionErrorDialog } from "../PermissionErrorDialog";
+import { PermissionErrorDialog } from "@/components/shared/PermissionErrorDialog";
 import { ItineraryDayPhotos } from "./ItineraryDayPhotos";
 
 interface ItineraryDayCardProps {

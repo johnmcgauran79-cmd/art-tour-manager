@@ -17,13 +17,13 @@ import { formatDateForInput } from "@/lib/utils";
 import { useUpdateTour, useTours } from "@/hooks/useTours";
 import { useBrands } from "@/hooks/useBrands";
 import { supabase } from "@/integrations/supabase/client";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
+import { TourCommsSettingsInline, CommsOverride } from "@/components/tours/TourCommsSettingsInline";
 import { useTourEmailOverrides, useUpsertTourEmailOverride, useDeleteTourEmailOverride } from "@/hooks/useTourEmailOverrides";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 import { renderInstalmentDetails, DEFAULT_INSTALMENT_TEMPLATE } from "@/lib/instalmentDetailsTemplate";
-import { TourEditWordpressSyncPrompt } from "@/components/TourEditWordpressSyncPrompt";
+import { TourEditWordpressSyncPrompt } from "@/components/tours/TourEditWordpressSyncPrompt";
 
 export default function TourEdit() {
   const { id } = useParams();

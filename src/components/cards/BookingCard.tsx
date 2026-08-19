@@ -7,7 +7,7 @@ import { Calendar, Users, MapPin, Eye, Camera, Loader2 } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
-import { ContactAvatar } from "@/components/ContactAvatar";
+import { ContactAvatar } from "@/components/contacts/ContactAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

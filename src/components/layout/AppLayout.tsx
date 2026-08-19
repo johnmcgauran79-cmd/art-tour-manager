@@ -6,8 +6,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { SecondaryContextBar } from "@/components/layout/SecondaryContextBar";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { UserDropdown } from "@/components/UserDropdown";
-import { ShareButton } from "@/components/ShareButton";
+import { UserDropdown } from "@/components/users/UserDropdown";
+import { ShareButton } from "@/components/shared/ShareButton";
 import { GlobalSearchDialog } from "@/components/search/GlobalSearchDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 

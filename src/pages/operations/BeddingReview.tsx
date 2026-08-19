@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { BookingValidationReport } from "@/components/BookingValidationReport";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { BookingValidationReport } from "@/components/reports/BookingValidationReport";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 
 export default function BeddingReview() {
   const navigate = useNavigate();

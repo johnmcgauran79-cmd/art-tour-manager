@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WeeklyBookingChangesReport } from "@/components/reports/WeeklyBookingChangesReport";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { BookingChangesReportPDF } from "@/components/reports/BookingChangesReportPDF";
 import { useState } from "react";
 

@@ -9,20 +9,20 @@ import { useCustomerById } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
-import { ContactBookingsList } from "@/components/ContactBookingsList";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
+import { ContactBookingsList } from "@/components/contacts/ContactBookingsList";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useEffect, type ReactNode } from "react";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { ContactAvatar } from "@/components/ContactAvatar";
-import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
+import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
+import { ContactAvatar } from "@/components/contacts/ContactAvatar";
+import { SendProfileUpdateButton } from "@/components/email/SendProfileUpdateButton";
 import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { useContactCommunications } from "@/hooks/useCommunications";
 import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
 import { MessageSquare } from "lucide-react";
-import { PaymentReceiptsHistory } from "@/components/PaymentReceiptsHistory";
+import { PaymentReceiptsHistory } from "@/components/finance/PaymentReceiptsHistory";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>

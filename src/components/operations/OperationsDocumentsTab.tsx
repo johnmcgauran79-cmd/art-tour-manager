@@ -17,7 +17,7 @@ import { AddOperationsDocumentModal } from "./AddOperationsDocumentModal";
 import { EditOperationsDocumentModal } from "./EditOperationsDocumentModal";
 import { ManageSectionsModal } from "./ManageSectionsModal";
 import { useToast } from "@/hooks/use-toast";
-import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
+import { ConfirmDeleteFileDialog } from "@/components/shared/ConfirmDeleteFileDialog";
 
 interface Props {
   category: OperationsDocCategory;

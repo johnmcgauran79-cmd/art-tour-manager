@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarClock, CheckSquare, Send, Mail, Globe } from "lucide-react";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { UpcomingEmailsPanel } from "@/components/communications/UpcomingEmailsPanel";
 import { SentEmailsReport } from "@/components/operations/SentEmailsReport";

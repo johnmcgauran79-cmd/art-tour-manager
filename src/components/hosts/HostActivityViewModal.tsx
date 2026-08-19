@@ -7,9 +7,9 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
-import { ActivityAttachmentsSection } from "@/components/ActivityAttachmentsSection";
-import { ActivityExternalLinksSection } from "@/components/ActivityExternalLinksSection";
-import { JourneysEditor } from "@/components/JourneysEditor";
+import { ActivityAttachmentsSection } from "@/components/activities/ActivityAttachmentsSection";
+import { ActivityExternalLinksSection } from "@/components/activities/ActivityExternalLinksSection";
+import { JourneysEditor } from "@/components/itinerary/JourneysEditor";
 
 interface ActivityBookingInfo {
   id: string;

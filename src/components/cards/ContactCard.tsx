@@ -4,7 +4,7 @@ import { Phone, Mail, Eye, Calendar } from "lucide-react";
 import { formatAustralianMobile, Customer } from "@/hooks/useCustomers";
 import { formatNameWithTitle } from "@/lib/contactTitles";
 import { typography } from "@/lib/typography";
-import { ContactAvatar } from "@/components/ContactAvatar";
+import { ContactAvatar } from "@/components/contacts/ContactAvatar";
 
 interface ContactCardProps {
   customer: Customer;

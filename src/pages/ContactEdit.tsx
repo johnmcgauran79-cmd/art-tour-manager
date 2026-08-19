@@ -14,7 +14,7 @@ import { useCustomerById } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 
 export default function ContactEdit() {
   const { id } = useParams();

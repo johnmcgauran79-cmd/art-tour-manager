@@ -3,16 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmailTemplatesManagement } from "@/components/EmailTemplatesManagement";
-import { AutomatedEmailRulesManagement } from "@/components/AutomatedEmailRulesManagement";
-import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
-import { SystemSettings } from "@/components/SystemSettings";
-import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRulesManagement";
-import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTemplatesManagement";
-import { CancellationPolicySettings } from "@/components/CancellationPolicySettings";
-import { InvoiceLineTemplatesManagement } from "@/components/InvoiceLineTemplatesManagement";
-import { EmailSettingsTab } from "@/components/EmailSettingsTab";
-import { BrandsManagement } from "@/components/BrandsManagement";
+import { EmailTemplatesManagement } from "@/components/email/EmailTemplatesManagement";
+import { AutomatedEmailRulesManagement } from "@/components/email/AutomatedEmailRulesManagement";
+import { TaskTemplatesManagement } from "@/components/tasks/TaskTemplatesManagement";
+import { SystemSettings } from "@/components/settings/SystemSettings";
+import { AutomatedReportRulesManagement } from "@/components/reports/AutomatedReportRulesManagement";
+import { AdditionalInfoTemplatesManagement } from "@/components/email/AdditionalInfoTemplatesManagement";
+import { CancellationPolicySettings } from "@/components/settings/CancellationPolicySettings";
+import { InvoiceLineTemplatesManagement } from "@/components/settings/InvoiceLineTemplatesManagement";
+import { EmailSettingsTab } from "@/components/email/EmailSettingsTab";
+import { BrandsManagement } from "@/components/settings/BrandsManagement";
 
 interface SettingsProps {
   onBack: () => void;

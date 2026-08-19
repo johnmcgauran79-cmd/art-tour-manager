@@ -1,7 +1,7 @@
 import { useState, forwardRef } from "react";
 import { Button, ButtonProps } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PermissionErrorDialog } from "@/components/PermissionErrorDialog";
+import { PermissionErrorDialog } from "@/components/shared/PermissionErrorDialog";
 import { usePermissions, ResourceType, ActionType } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 

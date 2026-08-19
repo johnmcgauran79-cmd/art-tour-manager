@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { HotelAllocationCheckReport } from "@/components/HotelAllocationCheckReport";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { HotelAllocationCheckReport } from "@/components/reports/HotelAllocationCheckReport";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 
 export default function HotelAllocations() {
   const navigate = useNavigate();
