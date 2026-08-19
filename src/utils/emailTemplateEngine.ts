@@ -305,6 +305,7 @@ export interface EmailMergeData {
   needs_passport_submission?: boolean;
   has_instalment?: boolean;
   has_tour_host?: boolean;
+  has_host_details?: boolean;
   waiver_not_signed?: boolean;
 
   // Pickup location fields
@@ -451,7 +452,15 @@ export class EmailTemplateEngine {
     const tour = booking.tours || {};
     const hotelBookings = booking.hotel_bookings || [];
     const activityBookings = booking.activity_bookings || [];
-    
+
+    // Tour host contact (the booking on this tour with status 'host'), when supplied
+    const hostContact = booking.host_contact || null;
+    const hostName = hostContact
+      ? `${hostContact.first_name || ''} ${hostContact.last_name || ''}`.trim()
+      : (tour.tour_host && tour.tour_host !== 'TBD' ? tour.tour_host : '');
+    const hostPhone = formatPhoneInternational(hostContact?.phone);
+    const hostDetails = buildHostDetails(hostName, hostContact?.phone);
+
     return {
       // Customer fields (dynamic - will be overridden for additional passengers)
       customer_first_name: customer.first_name,
@@ -524,6 +533,9 @@ export class EmailTemplateEngine {
       tour_inclusions: tour.inclusions,
       tour_exclusions: tour.exclusions,
       tour_host: tour.tour_host,
+      host_name: hostName,
+      host_phone: hostPhone,
+      host_details: hostDetails,
       tour_capacity: tour.capacity,
       tour_minimum_passengers: tour.minimum_passengers_required,
       tour_price_single: tour.price_single,
@@ -715,6 +727,7 @@ export class EmailTemplateEngine {
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
       has_instalment: !!tour.instalment_required,
       has_tour_host: !!tour.tour_host && tour.tour_host !== 'TBD' && tour.tour_host.trim() !== '',
+      has_host_details: !!hostDetails,
       waiver_not_signed: true,  // Client-side defaults to true; server overrides per-recipient with actual waiver status
       needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient
 
