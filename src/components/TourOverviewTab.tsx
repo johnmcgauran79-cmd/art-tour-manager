@@ -26,6 +26,7 @@ import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { useTourHostAssignments, useHostUsers } from "@/hooks/useTourHostAssignments";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTourInclusions } from "@/hooks/useTourInclusions";
 
 interface TourOverviewTabProps {
   tour: {
