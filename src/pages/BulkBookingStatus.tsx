@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter, AlertTriangle } from "lucide-react";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { formatDateToDDMMYYYY } from "@/lib/utils";

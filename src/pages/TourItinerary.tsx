@@ -2,8 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
-import { TourItineraryTab } from "@/components/TourItineraryTab";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { TourItineraryTab } from "@/components/tours/TourItineraryTab";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 
 export default function TourItinerary() {
   const { id } = useParams();

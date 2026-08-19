@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AggregatedActivityMatrixReport } from "@/components/operations/AggregatedActivityMatrixReport";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 
 export default function ActivityBookings() {
   const navigate = useNavigate();

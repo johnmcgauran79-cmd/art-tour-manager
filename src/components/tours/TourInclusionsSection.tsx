@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
+import { ConfirmDeleteFileDialog } from "@/components/shared/ConfirmDeleteFileDialog";
 import { Bold, ChevronDown, ChevronUp, GripVertical, Globe, Italic, Link2, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {

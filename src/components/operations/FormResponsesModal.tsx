@@ -7,7 +7,7 @@ import { useCustomForms } from "@/hooks/useCustomForms";
 import { useTourBookings } from "@/hooks/useTourBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
+import { CustomFormResponsesView } from "@/components/forms/CustomFormResponsesView";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 
 interface FormResponsesModalProps {

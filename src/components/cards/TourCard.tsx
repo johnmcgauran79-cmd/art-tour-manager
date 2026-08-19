@@ -8,7 +8,7 @@ import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "
 import { typography } from "@/lib/typography";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
-import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
+import { ManualHandlingIndicator } from "@/components/shared/ManualHandlingIndicator";
 import { useAuth } from "@/hooks/useAuth";
 
 interface TourCardProps {

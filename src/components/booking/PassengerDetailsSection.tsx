@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp, User, Phone, Mail, Heart, AlertCircle, Accessibility, Users, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
+import { SendProfileUpdateButton } from "@/components/email/SendProfileUpdateButton";
 
 interface PassengerContact {
   id: string;

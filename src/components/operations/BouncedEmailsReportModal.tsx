@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmailSuppressionsManagement } from "@/components/EmailSuppressionsManagement";
+import { EmailSuppressionsManagement } from "@/components/email/EmailSuppressionsManagement";
 
 interface BouncedEmailsReportModalProps {
   open: boolean;

@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import { downloadFromStorage } from "@/lib/fileDownload";
-import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
+import { ConfirmDeleteFileDialog } from "@/components/shared/ConfirmDeleteFileDialog";
 
 interface ItinerarySnapshotSectionProps {
   tourId: string;

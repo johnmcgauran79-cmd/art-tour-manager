@@ -35,7 +35,7 @@ import {
   ShieldCheck,
   TriangleAlert,
 } from "lucide-react";
-import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { HealthScoreBadge } from "@/components/datahealth/HealthScoreBadge";
 import { TourHealthPanel } from "@/components/datahealth/TourHealthPanel";
 import {

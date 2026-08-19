@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { UserDropdown } from "@/components/UserDropdown";
+import { UserDropdown } from "@/components/users/UserDropdown";
 import { DateTimeDisplay } from "./DateTimeDisplay";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useIsMobile } from "@/hooks/use-mobile";

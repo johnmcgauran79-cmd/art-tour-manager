@@ -6,12 +6,12 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Edit, Shield, Plane, ClipboardList, MapPin, CheckCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
-import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
+import { WaiverStatusDisplay } from "@/components/tours/WaiverStatusDisplay";
 import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
-import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
-import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestButton";
-import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
-import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
+import { SendWaiverRequestButton } from "@/components/email/SendWaiverRequestButton";
+import { SendTravelDocsRequestButton } from "@/components/email/SendTravelDocsRequestButton";
+import { SendCustomFormRequestButton } from "@/components/email/SendCustomFormRequestButton";
+import { SendPickupRequestButton } from "@/components/email/SendPickupRequestButton";
 import type { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 
 interface Passenger {

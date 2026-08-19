@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
-import { ShareButton } from "@/components/ShareButton";
+import { ShareButton } from "@/components/shared/ShareButton";
 
 interface ReportPDFViewerProps {
   open: boolean;
