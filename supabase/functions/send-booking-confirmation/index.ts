@@ -958,6 +958,25 @@ const handler = async (req: Request): Promise<Response> => {
     const leadHasPassportDetails = computeHasPassportDetails(leadTravelDocs);
     const leadExistingPassportDetails = buildExistingPassportDetailsHtml(leadTravelDocs);
 
+    // Tour host details ({{host_details}}) — resolved from the booking on this
+    // tour that carries the 'host' status, so we get the host's real phone.
+    let hostContact: { first_name?: string; last_name?: string; phone?: string } | null = null;
+    if (booking.tour_id) {
+      const { data: hostBooking } = await supabaseClient
+        .from('bookings')
+        .select('customers:lead_passenger_id (first_name, last_name, phone)')
+        .eq('tour_id', booking.tour_id)
+        .eq('status', 'host')
+        .limit(1)
+        .maybeSingle();
+      hostContact = (hostBooking as any)?.customers ?? null;
+    }
+    const hostName = hostContact
+      ? `${hostContact.first_name || ''} ${hostContact.last_name || ''}`.trim()
+      : (booking.tours?.tour_host && booking.tours.tour_host !== 'TBD' ? booking.tours.tour_host : '');
+    const hostPhone = formatPhoneInternational(hostContact?.phone);
+    const hostDetails = hostName && hostPhone ? `${hostName} - ${hostPhone}` : (hostName || hostPhone);
+
     // Create comprehensive merge data object with nested structures
     // Defined at handler scope so it's accessible to sendToPassenger
     let mergeData: Record<string, any> = {
