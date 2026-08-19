@@ -16,6 +16,7 @@ import { useUserEmails } from "@/hooks/useUserEmails";
 import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrands, resolveBrand } from "@/hooks/useBrands";
+import { useTourHostContact } from "@/hooks/useTourHostContact";
 import { recolorCustomCards } from "@/lib/customCardTheme";
 import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
 import ReactQuill, { Quill } from "react-quill";
@@ -183,6 +184,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
     refetchOnWindowFocus: false,
   });
 
+  const { data: hostContact } = useTourHostContact((booking as any)?.tour_id, open);
+
   // Auto-select blank template as default
   useEffect(() => {
     if (selectedTemplateId === null) {
@@ -213,7 +216,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         setOriginalContentTemplate(template.content_template);
 
         if (booking) {
-          const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
+          const mergeData = EmailTemplateEngine.convertBookingToMergeData({ ...booking, host_contact: hostContact });
           const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
           const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
           setEditedSubject(processedSubject);

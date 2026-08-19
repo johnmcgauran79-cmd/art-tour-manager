@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useBrands, resolveBrand } from "@/hooks/useBrands";
+import { useTourHostContact } from "@/hooks/useTourHostContact";
 import { recolorCustomCards } from "@/lib/customCardTheme";
 
 interface PendingEmailPreviewModalProps {
@@ -82,7 +83,10 @@ export const PendingEmailPreviewModal = ({
     staleTime: 60 * 1000,
   });
 
-  const mergeData = booking ? EmailTemplateEngine.convertBookingToMergeData(booking) : null;
+  const { data: hostContact } = useTourHostContact((booking as any)?.tour_id ?? tourId, open);
+  const mergeData = booking
+    ? EmailTemplateEngine.convertBookingToMergeData({ ...booking, host_contact: hostContact })
+    : null;
   const processedSubject = mergeData
     ? EmailTemplateEngine.processTemplate(templateSubject, mergeData)
     : templateSubject;

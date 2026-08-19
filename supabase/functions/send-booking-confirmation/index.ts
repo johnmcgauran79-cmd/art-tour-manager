@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { getBrandForBooking, brandMergeFields } from "../_shared/brand.ts";
 import { recolorCustomCards } from "../_shared/customCards.ts";
+import { formatPhoneInternational } from "../_shared/hostDetails.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -958,6 +959,25 @@ const handler = async (req: Request): Promise<Response> => {
     const leadHasPassportDetails = computeHasPassportDetails(leadTravelDocs);
     const leadExistingPassportDetails = buildExistingPassportDetailsHtml(leadTravelDocs);
 
+    // Tour host details ({{host_details}}) — resolved from the booking on this
+    // tour that carries the 'host' status, so we get the host's real phone.
+    let hostContact: { first_name?: string; last_name?: string; phone?: string } | null = null;
+    if (booking.tour_id) {
+      const { data: hostBooking } = await supabaseClient
+        .from('bookings')
+        .select('customers:lead_passenger_id (first_name, last_name, phone)')
+        .eq('tour_id', booking.tour_id)
+        .eq('status', 'host')
+        .limit(1)
+        .maybeSingle();
+      hostContact = (hostBooking as any)?.customers ?? null;
+    }
+    const hostName = hostContact
+      ? `${hostContact.first_name || ''} ${hostContact.last_name || ''}`.trim()
+      : (booking.tours?.tour_host && booking.tours.tour_host !== 'TBD' ? booking.tours.tour_host : '');
+    const hostPhone = formatPhoneInternational(hostContact?.phone);
+    const hostDetails = hostName && hostPhone ? `${hostName} - ${hostPhone}` : (hostName || hostPhone);
+
     // Create comprehensive merge data object with nested structures
     // Defined at handler scope so it's accessible to sendToPassenger
     let mergeData: Record<string, any> = {
@@ -1046,6 +1066,9 @@ const handler = async (req: Request): Promise<Response> => {
       tour_nights: booking.tours?.nights || '',
       tour_pickup_point: booking.tours?.pickup_point || '',
       tour_host: booking.tours?.tour_host || '',
+      host_name: hostName,
+      host_phone: hostPhone,
+      host_details: hostDetails,
       tour_capacity: booking.tours?.capacity || '',
       tour_minimum_passengers: booking.tours?.minimum_passengers_required || '',
       tour_price_single: booking.tours?.price_single || '',
@@ -1216,6 +1239,7 @@ const handler = async (req: Request): Promise<Response> => {
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
       has_instalment: !!booking.tours?.instalment_required,
       has_tour_host: !!booking.tours?.tour_host && booking.tours.tour_host !== 'TBD' && booking.tours.tour_host.trim() !== '',
+      has_host_details: !!hostDetails,
       waiver_not_signed: !leadWaiverSigned,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
