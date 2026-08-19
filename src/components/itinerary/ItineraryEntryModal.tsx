@@ -7,7 +7,7 @@ import { ItineraryDay, ItineraryEntry, useUpdateItineraryEntry } from "@/hooks/u
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
-import { PermissionErrorDialog } from "../PermissionErrorDialog";
+import { PermissionErrorDialog } from "@/components/shared/PermissionErrorDialog";
 
 interface ItineraryEntryModalProps {
   open: boolean;
