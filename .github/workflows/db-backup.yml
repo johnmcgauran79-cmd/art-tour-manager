@@ -18,6 +18,21 @@ jobs:
         with:
           version: latest
 
+      - name: Check required secrets
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WEBHOOK: ${{ secrets.BACKUP_WEBHOOK_SECRET }}
+        run: |
+          missing=""
+          [ -n "$DB_URL" ] || missing="$missing SUPABASE_DB_URL"
+          [ -n "$SERVICE_KEY" ] || missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -n "$WEBHOOK" ] || missing="$missing BACKUP_WEBHOOK_SECRET"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub repository secrets:$missing"
+            exit 1
+          fi
+
       - name: Dump database
         id: dump
         env:
@@ -33,17 +48,35 @@ jobs:
           echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
           echo "size=$(stat -c%s "$ARTIFACT")" >> "$GITHUB_OUTPUT"
 
-      # Replace this step with your own off-site destination (S3, B2, Google Drive…)
-      - name: Upload backup to S3
+      # Off-site copy: private Supabase Storage bucket "database-backups"
+      - name: Upload backup to Supabase Storage
         id: upload
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
-          aws s3 cp "${{ steps.dump.outputs.artifact }}" "s3://$BUCKET/supabase/"
-          echo "destination=s3://$BUCKET/supabase/${{ steps.dump.outputs.artifact }}" >> "$GITHUB_OUTPUT"
+          ARTIFACT="${{ steps.dump.outputs.artifact }}"
+          PATH_IN_BUCKET="database/$ARTIFACT"
+          URL="https://upqvgtuxfzsrwjahklij.supabase.co/storage/v1/object/database-backups/$PATH_IN_BUCKET"
+          CODE=$(curl -sS -o /tmp/upload.json -w '%{http_code}' -X POST "$URL" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/gzip" \
+            -H "x-upsert: true" \
+            --data-binary "@$ARTIFACT")
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Storage upload failed ($CODE): $(cat /tmp/upload.json)"
+            exit 1
+          fi
+          echo "destination=supabase://database-backups/$PATH_IN_BUCKET" >> "$GITHUB_OUTPUT"
+
+      # Also keep a 30-day copy attached to the workflow run itself
+      - name: Attach backup to workflow run
+        if: always() && steps.dump.outputs.artifact != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.dump.outputs.artifact }}
+          path: ${{ steps.dump.outputs.artifact }}
+          retention-days: 30
 
       - name: Report result to the app
         if: always()
