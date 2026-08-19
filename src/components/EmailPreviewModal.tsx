@@ -86,7 +86,6 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
   const { data: brands } = useBrands();
-  const { data: hostContact } = useTourHostContact((booking as any)?.tour_id, open);
   const { user } = useAuth();
 
   // Default the test recipient to the logged-in user's own email.
@@ -184,6 +183,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  const { data: hostContact } = useTourHostContact((booking as any)?.tour_id, open);
 
   // Auto-select blank template as default
   useEffect(() => {
