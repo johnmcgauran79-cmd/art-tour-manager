@@ -30,6 +30,7 @@ export const MERGE_FIELDS: Record<string, string[]> = {
   tour: [
     '{{tour_name}}', '{{tour_location}}', '{{tour_type}}', '{{tour_start_date}}', '{{tour_end_date}}',
     '{{tour_days}}', '{{tour_nights}}', '{{tour_pickup_point}}', '{{tour_host}}',
+    '{{host_details}}', '{{host_name}}', '{{host_phone}}',
     '{{tour_capacity}}', '{{tour_minimum_passengers}}',
     '{{tour_price_single}}', '{{tour_price_double}}', '{{tour_price_twin}}', '{{tour_deposit_required}}',
     '{{tour_final_payment_date}}', '{{tour_instalment_date}}', '{{tour_instalment_amount}}', '{{tour_instalment_details}}',
@@ -125,6 +126,8 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{^has_instalment}} ... {{/has_instalment}}',
     '{{#has_tour_host}} ... {{/has_tour_host}}',
     '{{^has_tour_host}} ... {{/has_tour_host}}',
+    '{{#has_host_details}} ... {{/has_host_details}}',
+    '{{^has_host_details}} ... {{/has_host_details}}',
     '--- Passport Conditions ---',
     '{{#has_passport_details}} ... {{/has_passport_details}}',
     '{{^has_passport_details}} ... {{/has_passport_details}}',
