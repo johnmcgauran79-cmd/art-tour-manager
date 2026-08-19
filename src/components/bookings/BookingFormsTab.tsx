@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Shield, Plane, ClipboardList, MapPin, CheckCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { WaiverStatusDisplay } from "@/components/tours/WaiverStatusDisplay";
-import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
+import { BookingTravelDocsDisplay } from "@/components/bookings/BookingTravelDocsDisplay";
 import { SendWaiverRequestButton } from "@/components/email/SendWaiverRequestButton";
 import { SendTravelDocsRequestButton } from "@/components/email/SendTravelDocsRequestButton";
 import { SendCustomFormRequestButton } from "@/components/email/SendCustomFormRequestButton";

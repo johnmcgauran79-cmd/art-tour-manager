@@ -4,8 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ContactSearch } from "@/components/booking/ContactSearch";
-import { PassengerContactSearch } from "@/components/booking/PassengerContactSearch";
+import { ContactSearch } from "@/components/bookings/ContactSearch";
+import { PassengerContactSearch } from "@/components/bookings/PassengerContactSearch";
 import { PassengerContactData } from "@/hooks/useBookingFormState";
 
 interface BookingDetailsFormProps {

@@ -34,13 +34,13 @@ import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 import { ContactAvatar } from "@/components/contacts/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/email/SendProfileUpdateButton";
 import { SendTravelDocsRequestButton } from "@/components/email/SendTravelDocsRequestButton";
-import { PassengerDetailsSection } from "@/components/booking/PassengerDetailsSection";
-import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
+import { PassengerDetailsSection } from "@/components/bookings/PassengerDetailsSection";
+import { BookingTravelDocsDisplay } from "@/components/bookings/BookingTravelDocsDisplay";
 import { PaymentReceiptsHistory } from "@/components/finance/PaymentReceiptsHistory";
 import { SendWaiverRequestButton } from "@/components/email/SendWaiverRequestButton";
 import { SendPickupRequestButton } from "@/components/email/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/tours/WaiverStatusDisplay";
-import { BookingFormsTab } from "@/components/booking/BookingFormsTab";
+import { BookingFormsTab } from "@/components/bookings/BookingFormsTab";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useBrands } from "@/hooks/useBrands";
 import {

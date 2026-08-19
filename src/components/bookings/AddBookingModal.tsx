@@ -10,12 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRecalculateBookingDates } from "@/hooks/useRecalculateBookingDates";
 import { useBookingFormState } from "@/hooks/useBookingFormState";
 
-import { ContactSearch } from "@/components/booking/ContactSearch";
-import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
-import { LeadPassengerSection } from "@/components/booking/LeadPassengerSection";
-import { HotelAllocationTab } from "@/components/booking/HotelAllocationTab";
-import { ActivityAllocationTab } from "@/components/booking/ActivityAllocationTab";
-import { MedicalDetailsTab } from "@/components/booking/MedicalDetailsTab";
+import { ContactSearch } from "@/components/bookings/ContactSearch";
+import { BookingDetailsForm } from "@/components/bookings/BookingDetailsForm";
+import { LeadPassengerSection } from "@/components/bookings/LeadPassengerSection";
+import { HotelAllocationTab } from "@/components/bookings/HotelAllocationTab";
+import { ActivityAllocationTab } from "@/components/bookings/ActivityAllocationTab";
+import { MedicalDetailsTab } from "@/components/bookings/MedicalDetailsTab";
 import { AddContactModal } from "@/components/contacts/AddContactModal";
 import { BookingConfirmationDialog } from "@/components/bookings/BookingConfirmationDialog";
 import { UserPlus } from "lucide-react";
