@@ -1065,6 +1065,9 @@ const handler = async (req: Request): Promise<Response> => {
       tour_nights: booking.tours?.nights || '',
       tour_pickup_point: booking.tours?.pickup_point || '',
       tour_host: booking.tours?.tour_host || '',
+      host_name: hostName,
+      host_phone: hostPhone,
+      host_details: hostDetails,
       tour_capacity: booking.tours?.capacity || '',
       tour_minimum_passengers: booking.tours?.minimum_passengers_required || '',
       tour_price_single: booking.tours?.price_single || '',
@@ -1235,6 +1238,7 @@ const handler = async (req: Request): Promise<Response> => {
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
       has_instalment: !!booking.tours?.instalment_required,
       has_tour_host: !!booking.tours?.tour_host && booking.tours.tour_host !== 'TBD' && booking.tours.tour_host.trim() !== '',
+      has_host_details: !!hostDetails,
       waiver_not_signed: !leadWaiverSigned,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
