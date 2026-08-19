@@ -122,7 +122,7 @@ const SETTLED_BOOKING_STATUSES = ["fully_paid", "complimentary", "host", "racing
 const HOTEL_READY_STATUSES = ["confirmed", "contracted", "paid", "finalised"];
 /** Activity is locked in with the supplier. */
 const ACTIVITY_READY_STATUSES = ["confirmed", "finalised", "booked", "fully_paid", "paid_deposit"];
-const PAYMENT_READY_STATUSES = ["fully_paid", "partially_paid", "not_required"];
+const PAYMENT_READY_STATUSES = ["fully_paid", "partially_paid", "not_required", "pay_on_the_day"];
 const TRANSPORT_READY_STATUSES = ["booked", "confirmed", "paid_deposit", "fully_paid", "not_required"];
 
 const todayIso = () => new Date().toISOString().split("T")[0];
