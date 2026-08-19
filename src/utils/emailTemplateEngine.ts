@@ -1,4 +1,6 @@
 // Email template engine with comprehensive mail merge fields
+import { buildHostDetails, formatPhoneInternational } from "@/utils/hostDetails";
+
 export interface EmailMergeData {
   // Customer fields (dynamic - changes per recipient for multi-passenger emails)
   customer_first_name?: string;
@@ -71,6 +73,9 @@ export interface EmailMergeData {
   tour_inclusions?: string;
   tour_exclusions?: string;
   tour_host?: string;
+  host_name?: string;
+  host_phone?: string;
+  host_details?: string;
   tour_capacity?: number;
   tour_minimum_passengers?: number;
   tour_price_single?: number;
