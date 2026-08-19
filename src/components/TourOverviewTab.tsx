@@ -26,6 +26,7 @@ import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { useTourHostAssignments, useHostUsers } from "@/hooks/useTourHostAssignments";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useTourInclusions } from "@/hooks/useTourInclusions";
 
 interface TourOverviewTabProps {
   tour: {
@@ -65,6 +66,7 @@ interface TourOverviewTabProps {
 
 export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabProps) => {
   const { data: tourBookings = [] } = useTourBookings(tour.id);
+  const { inclusions: inclusionItems, exclusions: exclusionItems } = useTourInclusions(tour.id);
   const { data: hotels } = useHotels(tour.id);
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
   const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);
@@ -528,24 +530,40 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
 
       {/* Tour Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tour.inclusions && (
+        {(inclusionItems.length > 0 || tour.inclusions) && (
           <Card>
             <CardHeader>
               <CardTitle>Inclusions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="whitespace-pre-wrap text-sm">{tour.inclusions}</div>
+              {inclusionItems.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  {inclusionItems.map((item) => (
+                    <li key={item.id} dangerouslySetInnerHTML={{ __html: item.content_html }} />
+                  ))}
+                </ul>
+              ) : (
+                <div className="whitespace-pre-wrap text-sm">{tour.inclusions}</div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {tour.exclusions && (
+        {(exclusionItems.length > 0 || tour.exclusions) && (
           <Card>
             <CardHeader>
               <CardTitle>Exclusions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="whitespace-pre-wrap text-sm">{tour.exclusions}</div>
+              {exclusionItems.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  {exclusionItems.map((item) => (
+                    <li key={item.id} dangerouslySetInnerHTML={{ __html: item.content_html }} />
+                  ))}
+                </ul>
+              ) : (
+                <div className="whitespace-pre-wrap text-sm">{tour.exclusions}</div>
+              )}
             </CardContent>
           </Card>
         )}
