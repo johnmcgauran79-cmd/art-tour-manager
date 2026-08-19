@@ -7,10 +7,10 @@ import { useTourBookings } from "@/hooks/useTourBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToAustralian } from "@/lib/utils";
-import { HotelRoomTypeReport } from "./HotelRoomTypeReport";
+import { HotelRoomTypeReport } from "@/components/HotelRoomTypeReport";
 import { useSendRoomingList } from "@/hooks/useRoomingListEmail";
 import { useTours } from "@/hooks/useTours";
-import { EmailRoomingListModal } from "./EmailRoomingListModal";
+import { EmailRoomingListModal } from "@/components/EmailRoomingListModal";
 import { downloadBlob } from "@/lib/fileDownload";
 
 interface Hotel {

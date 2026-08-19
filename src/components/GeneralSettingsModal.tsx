@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Clock, Palette, Globe, Bell, Mail, Link2, Save, FileText } from "lucide-react";
-import { TimezoneSettingsModal } from "./TimezoneSettingsModal";
+import { TimezoneSettingsModal } from "@/components/TimezoneSettingsModal";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
 import { Textarea } from "@/components/ui/textarea";
 import {

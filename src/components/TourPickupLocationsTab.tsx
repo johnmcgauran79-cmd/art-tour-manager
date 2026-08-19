@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { usePickupOptions, useCreatePickupOption, useUpdatePickupOption, useDeletePickupOption } from "@/hooks/usePickupOptions";
 import { useUpdateTour } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
-import { BulkPickupSendModal } from "./BulkPickupSendModal";
+import { BulkPickupSendModal } from "@/components/BulkPickupSendModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
 

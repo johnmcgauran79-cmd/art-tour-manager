@@ -3,18 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings, Database, Mail, Shield, Users, FileText, Upload, ListChecks } from "lucide-react";
-import { XeroIntegrationSettings } from "./XeroIntegrationSettings";
-import { GeneralSettingsModal } from "./GeneralSettingsModal";
-import { UserManagementModal } from "./UserManagementModal";
-import { SystemLogModal } from "./SystemLogModal";
-import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
-import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
-import { WaiverSettingsCard } from "./WaiverSettingsCard";
-import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
-import { AiRetentionSettingsCard } from "./AiRetentionSettingsCard";
-import { TeamsChannelNotifyCard } from "./TeamsChannelNotifyCard";
-import { IntegrationStatusPanel } from "./datahealth/IntegrationStatusPanel";
-import { BackupStatusCard } from "./BackupStatusCard";
+import { XeroIntegrationSettings } from "@/components/XeroIntegrationSettings";
+import { GeneralSettingsModal } from "@/components/GeneralSettingsModal";
+import { UserManagementModal } from "@/components/UserManagementModal";
+import { SystemLogModal } from "@/components/SystemLogModal";
+import { ThemeAppearanceSettings } from "@/components/ThemeAppearanceSettings";
+import { EmergencyContactImportModal } from "@/components/EmergencyContactImportModal";
+import { WaiverSettingsCard } from "@/components/WaiverSettingsCard";
+import { TaskStatusManagementModal } from "@/components/TaskStatusManagementModal";
+import { AiRetentionSettingsCard } from "@/components/AiRetentionSettingsCard";
+import { TeamsChannelNotifyCard } from "@/components/TeamsChannelNotifyCard";
+import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
+import { BackupStatusCard } from "@/components/BackupStatusCard";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally

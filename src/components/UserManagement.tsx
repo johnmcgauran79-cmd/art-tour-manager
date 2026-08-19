@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
 import { Trash2, UserX, UserPlus, KeyRound, Edit, X, Settings, MapPin } from "lucide-react";
-import { AddUserModal } from "./AddUserModal";
-import { AdminPasswordResetModal } from "./AdminPasswordResetModal";
-import { UserProfileModal } from "./UserProfileModal";
-import { UserDepartmentSelector } from "./UserDepartmentSelector";
-import { TourHostAssignmentModal } from "./TourHostAssignmentModal";
+import { AddUserModal } from "@/components/AddUserModal";
+import { AdminPasswordResetModal } from "@/components/AdminPasswordResetModal";
+import { UserProfileModal } from "@/components/UserProfileModal";
+import { UserDepartmentSelector } from "@/components/UserDepartmentSelector";
+import { TourHostAssignmentModal } from "@/components/TourHostAssignmentModal";
 import { Department } from "@/hooks/useUserDepartments";
 
 type RoleType = Database["public"]["Enums"]["app_role"];

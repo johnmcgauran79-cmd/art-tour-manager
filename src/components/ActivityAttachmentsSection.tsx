@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { useActivityAttachments, useUploadActivityAttachment, useDeleteActivityAttachment, ActivityAttachment } from "@/hooks/useActivityAttachments";
 import { Paperclip, Download, Upload, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { PDFViewer } from "./PDFViewer";
-import { ImageViewer } from "./ImageViewer";
+import { PDFViewer } from "@/components/PDFViewer";
+import { ImageViewer } from "@/components/ImageViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
-import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface ActivityAttachmentsSectionProps {
   activityId: string;

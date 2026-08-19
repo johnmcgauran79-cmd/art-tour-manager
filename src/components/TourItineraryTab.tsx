@@ -5,16 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles, Globe } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
-import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
-import { ItinerarySnapshotSection } from "./itinerary/ItinerarySnapshotSection";
-import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
-import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
-import { GuestDocumentTextModal } from "./itinerary/GuestDocumentTextModal";
-import { PublishItineraryToWebsiteDialog } from "./itinerary/PublishItineraryToWebsiteDialog";
+import { ItineraryDayCard } from "@/components/itinerary/ItineraryDayCard";
+import { ItinerarySnapshotSection } from "@/components/itinerary/ItinerarySnapshotSection";
+import { GenerateDocumentModal } from "@/components/itinerary/GenerateDocumentModal";
+import { EmailItineraryModal } from "@/components/itinerary/EmailItineraryModal";
+import { GuestDocumentTextModal } from "@/components/itinerary/GuestDocumentTextModal";
+import { PublishItineraryToWebsiteDialog } from "@/components/itinerary/PublishItineraryToWebsiteDialog";
 import { useIsWebsiteApprover } from "@/hooks/useWebsiteChanges";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PermissionErrorDialog } from "./PermissionErrorDialog";
+import { PermissionErrorDialog } from "@/components/PermissionErrorDialog";
 
 interface TourItineraryTabProps {
   tour: {

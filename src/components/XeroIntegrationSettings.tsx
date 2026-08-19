@@ -8,9 +8,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link2, Unlink, RefreshCw, Users, FileText, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { InvoiceSyncReviewModal } from "./InvoiceSyncReviewModal";
-import { InvoiceSyncProgressModal } from "./InvoiceSyncProgressModal";
-import { PhoneSyncReviewModal } from "./PhoneSyncReviewModal";
+import { InvoiceSyncReviewModal } from "@/components/InvoiceSyncReviewModal";
+import { InvoiceSyncProgressModal } from "@/components/InvoiceSyncProgressModal";
+import { PhoneSyncReviewModal } from "@/components/PhoneSyncReviewModal";
 
 interface XeroSettings {
   id: string;

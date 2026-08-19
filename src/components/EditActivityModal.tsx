@@ -12,10 +12,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Activity } from "@/hooks/useActivities";
-import { JourneysEditor, Journey } from "./JourneysEditor";
-import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
-import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
-import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
+import { JourneysEditor, Journey } from "@/components/JourneysEditor";
+import { ActivityAttachmentsSection } from "@/components/ActivityAttachmentsSection";
+import { ActivityExternalLinksSection } from "@/components/ActivityExternalLinksSection";
+import { ActivityPassengerListModal } from "@/components/ActivityPassengerListModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Download } from "lucide-react";
 import {

@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UserManagement } from "./UserManagement";
+import { UserManagement } from "@/components/UserManagement";
 
 interface UserManagementModalProps {
   open: boolean;

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCustomerAnalytics, useCustomerLifetimeStats, CustomerAnalytics } from "@/hooks/useCustomerAnalytics";
 import { useCustomerById } from "@/hooks/useCustomers";
-import { EditContactModal } from "./EditContactModal";
+import { EditContactModal } from "@/components/EditContactModal";
 import { Search, TrendingUp, Users, DollarSign, Repeat, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";

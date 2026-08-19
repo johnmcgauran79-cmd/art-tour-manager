@@ -1,6 +1,6 @@
 
 import { AlertTriangle, Clock, Flag, CheckCircle } from "lucide-react";
-import { TaskCategoryCard } from "./TaskCategoryCard";
+import { TaskCategoryCard } from "@/components/TaskCategoryCard";
 import { Task } from "@/hooks/useTasks";
 import { isTaskFinished } from "@/lib/taskStatuses";
 

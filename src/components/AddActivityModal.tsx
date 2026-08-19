@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { JourneysEditor, Journey } from "./JourneysEditor";
+import { JourneysEditor, Journey } from "@/components/JourneysEditor";
 import { useUploadActivityAttachment } from "@/hooks/useActivityAttachments";
 import { Input as FileInput } from "@/components/ui/input";
 import { Paperclip, X } from "lucide-react";

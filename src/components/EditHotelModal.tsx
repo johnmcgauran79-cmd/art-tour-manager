@@ -11,10 +11,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Hotel } from "@/hooks/useHotels";
-import { HotelAttachmentsSection } from "./HotelAttachmentsSection";
-import { HotelExternalLinksSection } from "./HotelExternalLinksSection";
-import { HotelDateCascadeModal } from "./HotelDateCascadeModal";
-import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
+import { HotelAttachmentsSection } from "@/components/HotelAttachmentsSection";
+import { HotelExternalLinksSection } from "@/components/HotelExternalLinksSection";
+import { HotelDateCascadeModal } from "@/components/HotelDateCascadeModal";
+import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import {
   BOOKING_WORKFLOW_STATUS_OPTIONS,
   PAYMENT_WORKFLOW_STATUS_OPTIONS,

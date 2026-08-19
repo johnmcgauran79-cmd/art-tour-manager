@@ -10,9 +10,9 @@ import { Paperclip, Download, Upload, Trash2, Eye, Link, Save, X, Plus, Edit2, E
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { PDFViewer } from "./PDFViewer";
+import { PDFViewer } from "@/components/PDFViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
-import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface TourAttachmentsSectionProps {
   tourId: string;

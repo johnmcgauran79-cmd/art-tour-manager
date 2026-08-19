@@ -12,7 +12,7 @@ import { useCreateCustomer, useUpdateCustomer, useAllCustomers } from "@/hooks/u
 import { useToast } from "@/hooks/use-toast";
 import { parseCSV, CSVContact } from "@/utils/csvParser";
 import { findExistingCustomer, prepareCustomerData } from "@/utils/contactProcessor";
-import { CSVTemplateDownload } from "./CSVTemplateDownload";
+import { CSVTemplateDownload } from "@/components/CSVTemplateDownload";
 import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
 
 interface ContactImportModalProps {

@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LogOut, User, KeyRound } from 'lucide-react';
-import { PasswordChangeModal } from './PasswordChangeModal';
-import { UserProfileModal } from './UserProfileModal';
+import { PasswordChangeModal } from '@/components/PasswordChangeModal';
+import { UserProfileModal } from '@/components/UserProfileModal';
 
 export const UserDropdown = () => {
   const { user, profile, userRole, signOut } = useAuth();

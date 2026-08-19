@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/input";
 import { useHotelAttachments, useUploadHotelAttachment, useDeleteHotelAttachment, HotelAttachment } from "@/hooks/useHotelAttachments";
 import { Paperclip, Download, Upload, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { PDFViewer } from "./PDFViewer";
+import { PDFViewer } from "@/components/PDFViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
-import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface HotelAttachmentsSectionProps {
   hotelId: string;

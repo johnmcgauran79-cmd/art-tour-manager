@@ -32,8 +32,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { PDFViewer } from "./PDFViewer";
-import { ConfirmDeleteFileDialog } from "./ConfirmDeleteFileDialog";
+import { PDFViewer } from "@/components/PDFViewer";
+import { ConfirmDeleteFileDialog } from "@/components/ConfirmDeleteFileDialog";
 
 interface TaskFilesSectionProps {
   taskId: string;

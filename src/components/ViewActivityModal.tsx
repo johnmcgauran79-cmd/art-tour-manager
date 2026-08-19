@@ -8,11 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
-import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
-import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
-import { JourneysEditor } from "./JourneysEditor";
-import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
-import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
+import { ActivityAttachmentsSection } from "@/components/ActivityAttachmentsSection";
+import { ActivityExternalLinksSection } from "@/components/ActivityExternalLinksSection";
+import { JourneysEditor } from "@/components/JourneysEditor";
+import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
+import { ActivityPassengerListModal } from "@/components/ActivityPassengerListModal";
 interface ActivityBookingInfo {
   id: string;
   passengers_attending: number;
