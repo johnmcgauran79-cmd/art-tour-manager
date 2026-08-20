@@ -39,6 +39,7 @@ import { TourWaiverStatusSection } from "@/components/tours/TourWaiverStatusSect
 import { Separator } from "@/components/ui/separator";
 import { TourAlertsModal } from "@/components/tours/TourAlertsModal";
 import { DuplicateTourDialog } from "@/components/tours/DuplicateTourDialog";
+import { TourWebsiteLinkPrompt } from "@/components/tours/TourWebsiteLinkPrompt";
 import { Tour, useTours } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/reports/TourOperationsReportsModal";
@@ -129,6 +130,7 @@ export default function TourDetail() {
   const [roomingListModalOpen, setEditRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [bulkConfirmationModalOpen, setBulkConfirmationModalOpen] = useState(false);
+  const [linkPromptTour, setLinkPromptTour] = useState<{ id: string; name: string } | null>(null);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -676,8 +678,18 @@ export default function TourDetail() {
         originalTour={tour}
         open={duplicateDialogOpen}
         onOpenChange={setDuplicateDialogOpen}
-        onTourCreated={() => {}}
+        onTourCreated={(newTour) => {
+          if (newTour?.id) setLinkPromptTour({ id: newTour.id, name: newTour.name ?? "New tour" });
+        }}
       />
+      {linkPromptTour && (
+        <TourWebsiteLinkPrompt
+          open={!!linkPromptTour}
+          onOpenChange={(o) => { if (!o) setLinkPromptTour(null); }}
+          tourId={linkPromptTour.id}
+          tourName={linkPromptTour.name}
+        />
+      )}
       <TourOperationsReportsModal
         tourId={tour.id}
         tourName={tour.name}

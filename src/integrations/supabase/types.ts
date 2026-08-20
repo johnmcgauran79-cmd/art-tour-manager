@@ -4617,6 +4617,7 @@ export type Database = {
           updated_at: string | null
           url_reference: string | null
           website_description: string | null
+          website_link_status: string
           welcome_drinks_message: string | null
           welcome_message_body: string | null
           welcome_message_enabled: boolean
@@ -4685,6 +4686,7 @@ export type Database = {
           updated_at?: string | null
           url_reference?: string | null
           website_description?: string | null
+          website_link_status?: string
           welcome_drinks_message?: string | null
           welcome_message_body?: string | null
           welcome_message_enabled?: boolean
@@ -4753,6 +4755,7 @@ export type Database = {
           updated_at?: string | null
           url_reference?: string | null
           website_description?: string | null
+          website_link_status?: string
           welcome_drinks_message?: string | null
           welcome_message_body?: string | null
           welcome_message_enabled?: boolean

@@ -12,6 +12,13 @@ import {
 } from "../_shared/wordpressItinerary.ts";
 import { loadArtItinerary } from "../_shared/wordpressItineraryArt.ts";
 import {
+  coerceForArt,
+  INTEGER_ART_KEYS,
+  parseItineraryHeading,
+  proseToHtml,
+  addDaysIso,
+} from "../_shared/wordpressPull.ts";
+import {
   WP_INCLUSIONS_FIELD,
   WP_EXCLUSIONS_FIELD,
   buildItemsDiff,
@@ -54,6 +61,9 @@ type Op =
   | { op: "inclusions_diff"; art_tour_id: string }
   | { op: "push_inclusions"; art_tour_id: string; sections?: Array<"inclusions" | "exclusions" | "description"> }
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
+  | { op: "pull_tour_fields"; art_tour_id: string; art_keys: string[] }
+  | { op: "pull_itinerary"; art_tour_id: string; confirm?: boolean }
+  | { op: "set_website_link_status"; art_tour_id: string; status: "unlinked" | "linked" | "no_website_tour" }
   | {
       op: "save_art_content";
       art_tour_id: string;
@@ -564,6 +574,7 @@ Deno.serve(async (req) => {
           .select()
           .maybeSingle();
         if (error) return json({ error: error.message }, 400);
+        await admin.from("tours").update({ website_link_status: "linked" }).eq("id", body.art_tour_id);
         await auditLog(userId, {
           action: "link_tour",
           wordpress_object_type: "tour",
@@ -581,6 +592,7 @@ Deno.serve(async (req) => {
           .delete()
           .eq("tour_id", body.art_tour_id);
         if (error) return json({ error: error.message }, 400);
+        await admin.from("tours").update({ website_link_status: "unlinked" }).eq("id", body.art_tour_id);
         await auditLog(userId, {
           action: "unlink_tour",
           wordpress_object_type: "tour",
@@ -1637,6 +1649,179 @@ Deno.serve(async (req) => {
           imported_exclusions: exclusions.length,
           imported_description: description.trim().length > 0,
         });
+      }
+      case "pull_tour_fields": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        if (!Array.isArray(body.art_keys) || body.art_keys.length === 0) {
+          return json({ error: "art_keys is required" }, 400);
+        }
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) {
+          return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+        }
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,modified" },
+        });
+        const wpAcf = (wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+
+        const requested = new Set(body.art_keys);
+        const updates: Record<string, unknown> = {};
+        const applied: Array<{ art_key: string; label: string; value: string }> = [];
+        const warnings: string[] = [];
+        for (const f of TOUR_FIELD_MAP) {
+          if (!requested.has(f.artKey)) continue;
+          const c = coerceForArt(f.kind, f.label, wpAcf[f.wpKey], {
+            integer: INTEGER_ART_KEYS.has(f.artKey),
+          });
+          if (c.warning) { warnings.push(c.warning); continue; }
+          updates[f.artKey] = c.value ?? null;
+          applied.push({ art_key: f.artKey, label: f.label, value: c.value === null || c.value === undefined ? "" : String(c.value) });
+        }
+        if (Object.keys(updates).length === 0) {
+          return json({ ok: true, applied: [], warnings, note: "Nothing was imported from the website." });
+        }
+        const { error: updErr } = await admin.from("tours").update(updates).eq("id", body.art_tour_id);
+        if (updErr) return json({ error: updErr.message }, 400);
+
+        await auditLog(userId, {
+          action: "pull_tour_fields",
+          wordpress_object_type: "tour",
+          wordpress_object_id: link.wp_tour_id,
+          result_status: "success",
+          response_code: 200,
+          request_summary: { art_tour_id: body.art_tour_id, imported_fields: applied.map((a) => a.art_key) },
+        });
+        return json({ ok: true, applied, warnings });
+      }
+      case "pull_itinerary": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: tour, error: tourErr } = await admin
+          .from("tours")
+          .select("id, name, start_date")
+          .eq("id", body.art_tour_id)
+          .maybeSingle();
+        if (tourErr || !tour) return json({ error: "ART tour not found" }, 404);
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) {
+          return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+        }
+
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,link" },
+        });
+        const wpAcf = (wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const wpRows = normaliseWpItineraryRows(wpAcf[WP_ITINERARY_FIELD]);
+        if (wpRows.length === 0) {
+          return json({ error: "The website itinerary is empty — refusing to wipe the ART itinerary." }, 400);
+        }
+
+        const fallbackYear = tour.start_date ? String(tour.start_date).slice(0, 4) : null;
+        const warnings: string[] = [];
+        const parsed = wpRows.map((row, i) => {
+          const { date, title } = parseItineraryHeading(row.date_event, fallbackYear);
+          let activity_date = date;
+          if (!activity_date) {
+            activity_date = tour.start_date ? addDaysIso(String(tour.start_date), i) : null;
+            warnings.push(
+              `Day ${i + 1}: couldn't read a date from "${row.date_event || "(no heading)"}" — used ${activity_date ?? "no date"} instead`,
+            );
+          }
+          return {
+            day_number: i + 1,
+            activity_date,
+            subject: title || `Day ${i + 1}`,
+            content: proseToHtml(row.details),
+          };
+        });
+        if (parsed.some((p) => !p.activity_date)) {
+          return json({ error: "Couldn't work out dates for the website itinerary and this tour has no start date. Set the tour dates first." }, 400);
+        }
+
+        if (body.confirm !== true) {
+          return json({
+            preview: true,
+            wp_tour_id: link.wp_tour_id,
+            wp_link: (wpRes.data as { link?: string })?.link ?? null,
+            days: parsed,
+            warnings,
+          });
+        }
+
+        // Reuse the current itinerary if there is one, otherwise create it.
+        const { data: existing } = await admin
+          .from("tour_itineraries")
+          .select("id")
+          .eq("tour_id", body.art_tour_id)
+          .eq("is_current", true)
+          .order("version", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        let itineraryId = existing?.id as string | undefined;
+        if (!itineraryId) {
+          const { data: created, error: createErr } = await admin
+            .from("tour_itineraries")
+            .insert({ tour_id: body.art_tour_id, created_by: userId, is_current: true, version: 1 })
+            .select("id")
+            .maybeSingle();
+          if (createErr || !created) return json({ error: createErr?.message ?? "Could not create an itinerary" }, 400);
+          itineraryId = created.id as string;
+        } else {
+          const { error: delErr } = await admin
+            .from("tour_itinerary_days")
+            .delete()
+            .eq("itinerary_id", itineraryId);
+          if (delErr) return json({ error: delErr.message }, 400);
+        }
+
+        const { data: insertedDays, error: dayErr } = await admin
+          .from("tour_itinerary_days")
+          .insert(parsed.map((p) => ({
+            itinerary_id: itineraryId,
+            day_number: p.day_number,
+            activity_date: p.activity_date,
+          })))
+          .select("id, day_number");
+        if (dayErr) return json({ error: dayErr.message }, 400);
+
+        const entryRows = (insertedDays ?? []).map((d: { id: string; day_number: number }) => {
+          const p = parsed.find((x) => x.day_number === d.day_number)!;
+          return { day_id: d.id, subject: p.subject, content: p.content, sort_order: 0 };
+        });
+        if (entryRows.length > 0) {
+          const { error: entryErr } = await admin.from("tour_itinerary_entries").insert(entryRows);
+          if (entryErr) return json({ error: entryErr.message }, 400);
+        }
+
+        await auditLog(userId, {
+          action: "pull_itinerary",
+          wordpress_object_type: "tour",
+          wordpress_object_id: link.wp_tour_id,
+          result_status: "success",
+          response_code: 200,
+          request_summary: { art_tour_id: body.art_tour_id, imported_days: parsed.length },
+        });
+        return json({ ok: true, imported_days: parsed.length, warnings });
+      }
+      case "set_website_link_status": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const allowedStatuses = ["unlinked", "linked", "no_website_tour"];
+        if (!allowedStatuses.includes(body.status)) return json({ error: "Invalid status" }, 400);
+        const { error } = await admin
+          .from("tours")
+          .update({ website_link_status: body.status })
+          .eq("id", body.art_tour_id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true, status: body.status });
       }
       default:
         return json({ error: "Unknown op" }, 400);
