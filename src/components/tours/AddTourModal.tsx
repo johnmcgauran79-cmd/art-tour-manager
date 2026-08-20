@@ -14,6 +14,7 @@ import { CalendarIcon, Mail, Hand, FlaskConical } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/tours/TourCommsSettingsInline";
 import { useAuth } from "@/hooks/useAuth";
+import { TourWebsiteLinkPrompt } from "@/components/tours/TourWebsiteLinkPrompt";
 
 interface AddTourModalProps {
   open: boolean;
@@ -95,6 +96,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   };
 
   const [commsOverrides, setCommsOverrides] = useState<CommsOverride[]>([]);
+  const [linkPromptTour, setLinkPromptTour] = useState<{ id: string; name: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,6 +189,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
 
       queryClient.invalidateQueries({ queryKey: ["tours"] });
       onOpenChange(false);
+      if (newTour) setLinkPromptTour({ id: newTour.id, name: newTour.name });
     } catch (error) {
       console.error("Error creating tour:", error);
       toast({
@@ -200,6 +203,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
