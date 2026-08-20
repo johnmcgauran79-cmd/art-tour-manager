@@ -1,0 +1,2 @@
+ALTER TABLE public.user_notifications DROP CONSTRAINT IF EXISTS user_notifications_type_check;
+ALTER TABLE public.user_notifications ADD CONSTRAINT user_notifications_type_check CHECK (type = ANY (ARRAY['task'::text,'tour'::text,'booking'::text,'system'::text,'website_change_submitted'::text]));
