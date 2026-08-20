@@ -690,5 +690,14 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {linkPromptTour && (
+      <TourWebsiteLinkPrompt
+        open={!!linkPromptTour}
+        onOpenChange={(o) => { if (!o) setLinkPromptTour(null); }}
+        tourId={linkPromptTour.id}
+        tourName={linkPromptTour.name}
+      />
+    )}
+    </>
   );
 };
