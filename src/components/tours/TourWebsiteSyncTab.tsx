@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, ExternalLink, Link2, Unlink, RefreshCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, ExternalLink, Link2, Unlink, RefreshCcw, AlertTriangle, CheckCircle2, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { TourWebsiteReconcileDialog } from "@/components/tours/TourWebsiteReconcileDialog";
 
 interface WpTourLink {
   id: string;
@@ -89,6 +90,8 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [pushing, setPushing] = useState(false);
+  const [reconcileOpen, setReconcileOpen] = useState(false);
+  const [markingNoWebsite, setMarkingNoWebsite] = useState(false);
 
   const changedRows = useMemo(() => (diff ?? []).filter((r) => r.changed), [diff]);
 
@@ -162,6 +165,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
       toast.success("Linked to WordPress tour");
       setSuggestions(null);
       await loadLink();
+      setReconcileOpen(true);
     } catch (e) {
       toast.error(`Link failed: ${(e as Error).message}`);
     }
@@ -176,6 +180,18 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
       await loadLink();
     } catch (e) {
       toast.error(`Unlink failed: ${(e as Error).message}`);
+    }
+  }
+
+  async function markNoWebsiteTour() {
+    setMarkingNoWebsite(true);
+    try {
+      await callProxy("set_website_link_status", { art_tour_id: tourId, status: "no_website_tour" });
+      toast.success("Marked as having no website tour page");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setMarkingNoWebsite(false);
     }
   }
 
@@ -257,9 +273,14 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
             This ART tour <span className="font-medium">"{tourName}"</span> is not linked to a WordPress page yet.
             Linking is a one-time step so ART can safely push field changes to the correct website page.
           </p>
-          <Button onClick={loadSuggestions} disabled={suggestLoading}>
-            {suggestLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Searching…</> : "Find matches on WordPress"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={loadSuggestions} disabled={suggestLoading}>
+              {suggestLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Searching…</> : "Find matches on WordPress"}
+            </Button>
+            <Button variant="outline" onClick={markNoWebsiteTour} disabled={markingNoWebsite}>
+              No website tour to match
+            </Button>
+          </div>
           {suggestions && (
             <div className="border rounded divide-y text-sm">
               {suggestions.length === 0 ? (
@@ -387,6 +408,13 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
           </div>
         </DialogContent>
       </Dialog>
+      <TourWebsiteReconcileDialog
+        open={reconcileOpen}
+        onOpenChange={setReconcileOpen}
+        tourId={tourId}
+        tourName={tourName}
+        onDone={loadLink}
+      />
       </>
     );
   }
@@ -416,6 +444,9 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
             <Button size="sm" variant="outline" onClick={loadDiff} disabled={diffLoading}>
               {diffLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="h-3.5 w-3.5" />}
               <span className="ml-1.5">Recheck</span>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)}>
+              <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" /> Reconcile with website
             </Button>
             <Button size="sm" variant="ghost" onClick={unlink}>
               <Unlink className="h-3.5 w-3.5 mr-1.5" /> Unlink
@@ -540,6 +571,13 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
           </div>
         </DialogContent>
       </Dialog>
+      <TourWebsiteReconcileDialog
+        open={reconcileOpen}
+        onOpenChange={setReconcileOpen}
+        tourId={tourId}
+        tourName={tourName}
+        onDone={loadDiff}
+      />
     </>
   );
 }
