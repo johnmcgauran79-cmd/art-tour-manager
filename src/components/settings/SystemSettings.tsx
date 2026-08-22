@@ -15,6 +15,7 @@ import { AiRetentionSettingsCard } from "@/components/settings/AiRetentionSettin
 import { TeamsChannelNotifyCard } from "@/components/settings/TeamsChannelNotifyCard";
 import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
+import { CrmMigrationConsole } from "@/components/settings/CrmMigrationConsole";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -245,6 +246,18 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
           </p>
         </div>
         <IntegrationStatusPanel />
+      </div>
+
+      {/* CRM (Keap -> Brevo) */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">CRM (Keap → Brevo)</h2>
+          <p className="text-sm text-muted-foreground">
+            Move contacts, tags and notes from Keap into Brevo, then keep Brevo connected for
+            marketing.
+          </p>
+        </div>
+        <CrmMigrationConsole />
       </div>
 
       {/* Microsoft Teams Notifications */}
