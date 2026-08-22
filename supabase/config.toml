@@ -161,3 +161,15 @@ verify_jwt = false
 
 [functions.backup-report]
 verify_jwt = false
+
+[functions.crm-migrate-pull]
+verify_jwt = false
+
+[functions.crm-migrate-report]
+verify_jwt = false
+
+[functions.crm-migrate-push]
+verify_jwt = false
+
+[functions.brevo-sync]
+verify_jwt = false
