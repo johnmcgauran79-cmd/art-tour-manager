@@ -43,7 +43,7 @@ import {
   type CrmTagMapping,
 } from "@/hooks/useCrmMigration";
 import { usePermissions } from "@/hooks/usePermissions";
-import { exportToCSV } from "@/lib/csvExport";
+import { downloadCsv, exportStamp } from "@/lib/csvExport";
 
 const STEPS = [
   { key: "collect", label: "1. Collect from Keap" },
@@ -65,8 +65,8 @@ const Stat = ({ label, value, tone }: { label: string; value: number | string; t
 );
 
 export const CrmMigrationConsole = () => {
-  const { isAdmin, isManager } = usePermissions();
-  const canManage = isAdmin || isManager;
+  const { userRole } = usePermissions();
+  const canManage = userRole === "admin" || userRole === "manager";
 
   const { data: run, isLoading: runLoading } = useLatestMigrationRun();
   const { data: report, isLoading: reportLoading, refetch: refetchReport } = useMigrationReport(run?.id);
@@ -111,15 +111,16 @@ export const CrmMigrationConsole = () => {
   };
 
   const exportTagDecisions = () => {
-    exportToCSV(
-      (report?.tags ?? []).map((t) => ({
-        "Keap tag": t.keap_tag_name,
-        Category: t.keap_tag_category ?? "",
-        Contacts: t.contact_count ?? 0,
-        "Goes to": t.target_type,
-        "Name in Brevo": t.target_name ?? t.keap_tag_name,
-      })),
-      "keap-tag-decisions",
+    downloadCsv(
+      `keap-tag-decisions-${exportStamp()}.csv`,
+      report?.tags ?? [],
+      [
+        { header: "Keap tag", value: (t) => t.keap_tag_name },
+        { header: "Category", value: (t) => t.keap_tag_category ?? "" },
+        { header: "Contacts", value: (t) => t.contact_count ?? 0 },
+        { header: "Goes to", value: (t) => t.target_type },
+        { header: "Name in Brevo", value: (t) => t.target_name ?? t.keap_tag_name },
+      ],
     );
   };
 
@@ -141,7 +142,11 @@ export const CrmMigrationConsole = () => {
         Detail: f.error_message ?? "",
       })),
     ];
-    exportToCSV(rows, "crm-migration-issues");
+    downloadCsv(`crm-migration-issues-${exportStamp()}.csv`, rows, [
+      { header: "Issue", value: (r) => r.Issue },
+      { header: "Contact", value: (r) => r.Contact },
+      { header: "Detail", value: (r) => r.Detail },
+    ]);
   };
 
   return (
