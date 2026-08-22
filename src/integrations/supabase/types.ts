@@ -1416,6 +1416,221 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_migration_contacts: {
+        Row: {
+          address_line1: string | null
+          brevo_contact_id: string | null
+          brevo_payload: Json | null
+          city: string | null
+          company: string | null
+          country: string | null
+          created_at: string
+          duplicate_of: string | null
+          email: string | null
+          error_message: string | null
+          first_name: string | null
+          id: string
+          is_blocklisted: boolean
+          keap_contact_id: string
+          keap_created_at: string | null
+          last_name: string | null
+          matched_customer_id: string | null
+          notes_count: number
+          notes_text: string | null
+          opt_in_status: string | null
+          phone: string | null
+          postcode: string | null
+          pushed_at: string | null
+          raw: Json | null
+          run_id: string
+          skip_reason: string | null
+          state: string | null
+          status: string
+          tags: Json
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          brevo_contact_id?: string | null
+          brevo_payload?: Json | null
+          city?: string | null
+          company?: string | null
+          country?: string | null
+          created_at?: string
+          duplicate_of?: string | null
+          email?: string | null
+          error_message?: string | null
+          first_name?: string | null
+          id?: string
+          is_blocklisted?: boolean
+          keap_contact_id: string
+          keap_created_at?: string | null
+          last_name?: string | null
+          matched_customer_id?: string | null
+          notes_count?: number
+          notes_text?: string | null
+          opt_in_status?: string | null
+          phone?: string | null
+          postcode?: string | null
+          pushed_at?: string | null
+          raw?: Json | null
+          run_id: string
+          skip_reason?: string | null
+          state?: string | null
+          status?: string
+          tags?: Json
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          brevo_contact_id?: string | null
+          brevo_payload?: Json | null
+          city?: string | null
+          company?: string | null
+          country?: string | null
+          created_at?: string
+          duplicate_of?: string | null
+          email?: string | null
+          error_message?: string | null
+          first_name?: string | null
+          id?: string
+          is_blocklisted?: boolean
+          keap_contact_id?: string
+          keap_created_at?: string | null
+          last_name?: string | null
+          matched_customer_id?: string | null
+          notes_count?: number
+          notes_text?: string | null
+          opt_in_status?: string | null
+          phone?: string | null
+          postcode?: string | null
+          pushed_at?: string | null
+          raw?: Json | null
+          run_id?: string
+          skip_reason?: string | null
+          state?: string | null
+          status?: string
+          tags?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_migration_contacts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "crm_migration_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_migration_runs: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          keap_cursor: number
+          last_error: string | null
+          notes_pulled: number
+          phase: string
+          push_cursor: number
+          started_at: string
+          started_by: string | null
+          status: string
+          tags_pulled: number
+          total_failed: number
+          total_pulled: number
+          total_pushed: number
+          total_skipped: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          keap_cursor?: number
+          last_error?: string | null
+          notes_pulled?: number
+          phase?: string
+          push_cursor?: number
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          tags_pulled?: number
+          total_failed?: number
+          total_pulled?: number
+          total_pushed?: number
+          total_skipped?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          keap_cursor?: number
+          last_error?: string | null
+          notes_pulled?: number
+          phase?: string
+          push_cursor?: number
+          started_at?: string
+          started_by?: string | null
+          status?: string
+          tags_pulled?: number
+          total_failed?: number
+          total_pulled?: number
+          total_pushed?: number
+          total_skipped?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_tag_map: {
+        Row: {
+          brevo_attribute: string | null
+          brevo_list_id: number | null
+          contact_count: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          keap_tag_category: string | null
+          keap_tag_id: string
+          keap_tag_name: string
+          target_name: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          brevo_attribute?: string | null
+          brevo_list_id?: number | null
+          contact_count?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          keap_tag_category?: string | null
+          keap_tag_id: string
+          keap_tag_name: string
+          target_name?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          brevo_attribute?: string | null
+          brevo_list_id?: number | null
+          contact_count?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          keap_tag_category?: string | null
+          keap_tag_id?: string
+          keap_tag_name?: string
+          target_name?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       custom_card_templates: {
         Row: {
           accent_color: string
@@ -1565,9 +1780,12 @@ export type Database = {
         Row: {
           accessibility_needs: string | null
           avatar_url: string | null
+          brevo_contact_id: string | null
+          brevo_synced_at: string | null
           city: string | null
           country: string | null
           created_at: string | null
+          crm_source: string | null
           date_of_birth: string | null
           dietary_requirements: string | null
           email: string | null
@@ -1595,9 +1813,12 @@ export type Database = {
         Insert: {
           accessibility_needs?: string | null
           avatar_url?: string | null
+          brevo_contact_id?: string | null
+          brevo_synced_at?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
+          crm_source?: string | null
           date_of_birth?: string | null
           dietary_requirements?: string | null
           email?: string | null
@@ -1625,9 +1846,12 @@ export type Database = {
         Update: {
           accessibility_needs?: string | null
           avatar_url?: string | null
+          brevo_contact_id?: string | null
+          brevo_synced_at?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
+          crm_source?: string | null
           date_of_birth?: string | null
           dietary_requirements?: string | null
           email?: string | null
