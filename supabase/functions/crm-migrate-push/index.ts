@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
           // Mirror the Brevo id (and notes) onto the ART contact record.
           const { data: customer } = await supabase
             .from("customers")
-            .select("id, internal_notes")
+            .select("id, notes")
             .eq("email", row.email)
             .maybeSingle();
 
@@ -228,8 +228,8 @@ Deno.serve(async (req) => {
               brevo_contact_id: brevoId,
               brevo_synced_at: new Date().toISOString(),
             };
-            if (row.notes_text && !customer.internal_notes) {
-              update.internal_notes = `Imported from Keap:\n${row.notes_text}`.slice(0, 8000);
+            if (row.notes_text && !customer.notes) {
+              update.notes = `Imported from Keap:\n${row.notes_text}`.slice(0, 8000);
             }
             await supabase.from("customers").update(update).eq("id", customer.id);
           }
