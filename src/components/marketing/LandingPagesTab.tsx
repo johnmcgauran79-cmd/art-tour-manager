@@ -98,6 +98,8 @@ export function LandingPagesTab() {
           : "Thanks — we'll be in touch with tour details soon.",
       lead_source: form_type === "booking" ? "Booking form" : "Register interest",
       notify_teams: true,
+      task_assignee_ids: [],
+      task_watcher_ids: [],
       is_active: true,
     });
     setOpen(true);
@@ -112,6 +114,18 @@ export function LandingPagesTab() {
         : [...current, tourId],
     });
   };
+
+  const toggleStaff = (key: "task_assignee_ids" | "task_watcher_ids", userId: string) => {
+    const current = (editing?.[key] as string[] | undefined) || [];
+    setEditing({
+      ...editing,
+      [key]: current.includes(userId)
+        ? current.filter((u) => u !== userId)
+        : [...current, userId],
+    });
+  };
+
+
 
   return (
     <div className="space-y-5">
@@ -375,6 +389,57 @@ export function LandingPagesTab() {
                   />
                 </div>
               </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>
+                    Assign the task to{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (each person is assigned and notified in Teams)
+                    </span>
+                  </Label>
+                  <ScrollArea className="h-36 rounded-md border p-3">
+                    <div className="space-y-2">
+                      {staff.map((u) => (
+                        <label key={u.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={(editing.task_assignee_ids || []).includes(u.id)}
+                            onCheckedChange={() => toggleStaff("task_assignee_ids", u.id)}
+                          />
+                          <span>
+                            {u.first_name} {u.last_name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Followers{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (kept in the loop, not responsible)
+                    </span>
+                  </Label>
+                  <ScrollArea className="h-36 rounded-md border p-3">
+                    <div className="space-y-2">
+                      {staff.map((u) => (
+                        <label key={u.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={(editing.task_watcher_ids || []).includes(u.id)}
+                            onCheckedChange={() => toggleStaff("task_watcher_ids", u.id)}
+                          />
+                          <span>
+                            {u.first_name} {u.last_name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+
+
 
               <div className="space-y-2">
                 <Label>

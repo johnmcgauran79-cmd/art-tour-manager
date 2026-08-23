@@ -252,11 +252,62 @@ Deno.serve(async (req) => {
     if (taskErr) console.error("Failed to create form task:", taskErr.message);
 
     if (mainTask?.id) {
-      if (page.lead_owner_id) {
-        await supabase
-          .from("task_assignments")
-          .insert({ task_id: mainTask.id, user_id: page.lead_owner_id });
+      /* Assignees + followers configured on the form, always including the
+         task owner so nothing lands unassigned. */
+      const assigneeIds = Array.from(
+        new Set(
+          [
+            ...(Array.isArray(page.task_assignee_ids) ? page.task_assignee_ids : []),
+            page.lead_owner_id,
+          ].filter(Boolean) as string[]
+        )
+      );
+      const watcherIds = Array.from(
+        new Set(
+          ((Array.isArray(page.task_watcher_ids) ? page.task_watcher_ids : []) as string[]).filter(
+            (id) => id && !assigneeIds.includes(id)
+          )
+        )
+      );
+
+      if (assigneeIds.length) {
+        const { error: aErr } = await supabase.from("task_assignments").insert(
+          assigneeIds.map((user_id) => ({ task_id: mainTask.id, user_id }))
+        );
+        if (aErr) console.error("Failed to assign form task:", aErr.message);
       }
+      if (watcherIds.length) {
+        const { error: wErr } = await supabase.from("task_watchers").insert(
+          watcherIds.map((user_id) => ({ task_id: mainTask.id, user_id }))
+        );
+        if (wErr) console.error("Failed to add form task followers:", wErr.message);
+      }
+
+      /* Teams + in-app notification, same path as manual task assignment. */
+      const recipients = [...assigneeIds, ...watcherIds];
+      if (recipients.length) {
+        const actorUserId = page.created_by || page.lead_owner_id || recipients[0];
+        try {
+          await supabase.functions.invoke("send-task-notification", {
+            body: {
+              type: "assignment",
+              taskId: mainTask.id,
+              recipientUserIds: recipients,
+              actorUserId,
+              message:
+                formType === "booking"
+                  ? `New booking request from ${fullName} via ${page.title}`
+                  : `New enquiry from ${fullName} via ${page.title}`,
+            },
+          });
+        } catch (err) {
+          console.error(
+            "Task notification failed:",
+            err instanceof Error ? err.message : String(err)
+          );
+        }
+      }
+
       // The task description carries a [[contact:uuid|Name]] token, which the
       // sync_task_description_links trigger turns into a task_entity_links row.
       if (submission?.id) {
@@ -266,6 +317,7 @@ Deno.serve(async (req) => {
           .eq("id", submission.id);
       }
     }
+
 
     /* Teams notification for the whole team when enabled on the page. */
     if (page.notify_teams !== false) {
