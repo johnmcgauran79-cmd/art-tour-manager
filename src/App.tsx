@@ -53,6 +53,8 @@ const PaymentStatus = lazy(() => import("./pages/operations/PaymentStatus"));
 const MissingPhoneNumbers = lazy(() => import("./pages/operations/MissingPhoneNumbers"));
 const WordpressContent = lazy(() => import("./pages/WordpressContent"));
 const DataHealth = lazy(() => import("./pages/DataHealth"));
+const Marketing = lazy(() => import("./pages/Marketing"));
+const PublicForm = lazy(() => import("./pages/PublicForm"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -163,6 +165,7 @@ function App() {
               <Route path="/waiver/:token" element={<SignWaiver />} />
               <Route path="/select-pickup/:token" element={<SelectPickup />} />
               <Route path="/custom-form/:token" element={<CustomForm />} />
+              <Route path="/f/:slug" element={<PublicForm />} />
               <Route path="/view-itinerary/:token" element={<ViewItinerary />} />
               <Route path="/host-report/:token" element={<HostReport />} />
               <Route path="/teams-oauth-complete" element={<TeamsOAuthComplete />} />
@@ -234,6 +237,16 @@ function App() {
                   <TaskRoute>
                     <AppLayout>
                       <TaskEdit />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/marketing"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <Marketing />
                     </AppLayout>
                   </TaskRoute>
                 }
