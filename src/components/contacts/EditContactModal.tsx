@@ -431,6 +431,14 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                 />
               </div>
 
+              {contact?.id && (
+                <div className="space-y-2">
+                  <Label>Tags &amp; Segments</Label>
+                  <TagPicker entity="contact" entityId={contact.id} />
+                </div>
+              )}
+
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   type="button"
