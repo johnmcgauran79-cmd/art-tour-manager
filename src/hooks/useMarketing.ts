@@ -67,6 +67,10 @@ export interface LandingPage {
 
   lead_source: string | null;
   lead_owner_id: string | null;
+  /** Staff assigned to the task created by each submission. */
+  task_assignee_ids: string[];
+  /** Staff added as followers (watchers) on the task. */
+  task_watcher_ids: string[];
   is_active: boolean;
   submission_count: number;
   created_at: string;
