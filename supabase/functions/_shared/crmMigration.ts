@@ -180,14 +180,14 @@ export function brevoAttributeName(input: string) {
 // ---------------------------------------------------------------------------
 
 const AU_STATES: Record<string, string> = {
-  "nsw": "NSW", "new south wales": "NSW", "sydney": "NSW", "newcastle": "NSW", "wollongong": "NSW",
-  "vic": "VIC", "victoria": "VIC", "melbourne": "VIC", "geelong": "VIC", "ballarat": "VIC", "bendigo": "VIC",
+  "nsw": "NSW", "new south wales": "NSW", "nth south wales": "NSW", "n s w": "NSW", "sydney": "NSW", "newcastle": "NSW", "wollongong": "NSW",
+  "vic": "VIC", "vict": "VIC", "victoria": "VIC", "melbourne": "VIC", "geelong": "VIC", "ballarat": "VIC", "bendigo": "VIC",
   "qld": "QLD", "queensland": "QLD", "brisbane": "QLD", "gold coast": "QLD", "cairns": "QLD", "townsville": "QLD", "sunshine coast": "QLD", "toowoomba": "QLD",
-  "wa": "WA", "western australia": "WA", "perth": "WA",
-  "sa": "SA", "south australia": "SA", "adelaide": "SA",
-  "tas": "TAS", "tasmania": "TAS", "hobart": "TAS", "launceston": "TAS",
-  "act": "ACT", "australian capital territory": "ACT", "canberra": "ACT",
-  "nt": "NT", "northern territory": "NT", "darwin": "NT", "alice springs": "NT",
+  "wa": "WA", "western australia": "WA", "west australia": "WA", "westerm australia": "WA", "perth": "WA",
+  "sa": "SA", "south australia": "SA", "sth australia": "SA", "adelaide": "SA",
+  "tas": "TAS", "tassie": "TAS", "tasmania": "TAS", "hobart": "TAS", "launceston": "TAS",
+  "act": "ACT", "australian capital territory": "ACT", "aust capital territory": "ACT", "canberra": "ACT",
+  "nt": "NT", "northern territory": "NT", "nth territory": "NT", "darwin": "NT", "alice springs": "NT",
 };
 
 const COUNTRY_HINTS: Record<string, string> = {
