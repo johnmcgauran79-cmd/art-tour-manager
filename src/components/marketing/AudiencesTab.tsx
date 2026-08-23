@@ -190,8 +190,29 @@ export function AudiencesTab() {
                       {s.label}
                     </label>
                   ))}
-                </div>
               </div>
+
+              {!!allTags?.length && (
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex flex-wrap gap-3">
+                    {allTags.map((t) => (
+                      <label key={t.id} className="flex items-center gap-1.5 text-sm">
+                        <Checkbox
+                          checked={(filters.tagIds || []).includes(t.id)}
+                          onCheckedChange={() => toggleIn("tagIds", t.id)}
+                        />
+                        {t.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Contacts must carry every selected tag.
+                  </p>
+                </div>
+              )}
+
+
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="flex items-center gap-2 text-sm">
