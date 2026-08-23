@@ -14,6 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ContactBookingsList } from "@/components/contacts/ContactBookingsList";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AU_STATE_OPTIONS, normaliseAuState } from "@/lib/auStates";
+import { TagPicker } from "@/components/tags/TagPicker";
 
 interface EditContactModalProps {
   contact: Partial<Customer> | null;
@@ -310,12 +313,21 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
-                  />
+                  <Select
+                    value={normaliseAuState(formData.state) || undefined}
+                    onValueChange={(value) => handleInputChange("state", value)}
+                  >
+                    <SelectTrigger id="state">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AU_STATE_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
                   <Input
