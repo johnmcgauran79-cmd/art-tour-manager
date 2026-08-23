@@ -202,12 +202,21 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
             </div>
             <div className="space-y-2">
               <Label htmlFor="state">State</Label>
-              <Input
-                id="state"
-                value={formData.state}
-                onChange={(e) => handleInputChange("state", e.target.value)}
-              />
+              <Select
+                value={formData.state || undefined}
+                onValueChange={(value) => handleInputChange("state", value)}
+              >
+                <SelectTrigger id="state">
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AU_STATE_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>
               <Input
