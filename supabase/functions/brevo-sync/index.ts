@@ -150,9 +150,8 @@ Deno.serve(async (req) => {
       if (customer.last_name) attributes.LASTNAME = customer.last_name;
       const phone = formatPhoneIntl(customer.phone);
       if (phone) attributes.SMS = phone;
-      const loc = normaliseLocation(customer.city ? null : null, customer.city, customer.country);
       const norm = normaliseLocation(customer.state, customer.city, customer.country);
-      void loc;
+
       if (norm.city) attributes.CITY = norm.city;
       if (norm.state) attributes.STATE = norm.state;
       if (norm.country) attributes.COUNTRY = norm.country;
