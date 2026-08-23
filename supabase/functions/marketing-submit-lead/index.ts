@@ -38,6 +38,10 @@ Deno.serve(async (req) => {
     const state = clean(body?.state, 60);
     const message = clean(body?.message, 2000);
     const consent = body?.consent === true;
+    const extra = body?.extra && typeof body.extra === "object" ? body.extra : {};
+    const selectedTourIds: string[] = Array.isArray(body?.tour_ids)
+      ? body.tour_ids.filter((t: unknown) => typeof t === "string").slice(0, 20)
+      : [];
 
     if (!slug) return json({ error: "Missing form" }, 400);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
@@ -85,7 +89,8 @@ Deno.serve(async (req) => {
         updates.marketing_consent_source = `Landing page: ${page.slug}`;
       }
       if (page.lead_source) updates.lead_source = page.lead_source;
-      if (page.tour_id) updates.interested_tour_id = page.tour_id;
+      if (page.tour_id || selectedTourIds[0])
+        updates.interested_tour_id = page.tour_id || selectedTourIds[0];
       if (page.lead_owner_id) updates.lead_owner_id = page.lead_owner_id;
       if (Object.keys(updates).length) {
         await supabase.from("customers").update(updates).eq("id", customerId);
@@ -102,7 +107,7 @@ Deno.serve(async (req) => {
           lead_stage: "new",
           lead_source: page.lead_source || `Landing page: ${page.slug}`,
           lead_owner_id: page.lead_owner_id || null,
-          interested_tour_id: page.tour_id || null,
+          interested_tour_id: page.tour_id || selectedTourIds[0] || null,
           lead_notes: message || null,
           marketing_consent: consent,
           marketing_consent_at: consent ? new Date().toISOString() : null,
@@ -120,7 +125,9 @@ Deno.serve(async (req) => {
       .insert({
         landing_page_id: page.id,
         customer_id: customerId || null,
-        payload: body?.extra && typeof body.extra === "object" ? body.extra : {},
+        payload: extra,
+        form_type: page.form_type || "interest",
+        tour_ids: selectedTourIds,
         first_name: firstName,
         last_name: lastName,
         email,
@@ -143,6 +150,131 @@ Deno.serve(async (req) => {
       await supabase
         .from("marketing_preferences")
         .upsert({ email, customer_id: customerId, subscribed: true }, { onConflict: "email" });
+    }
+
+    /* 2b. Always create a linked task so nothing is lost, and record the
+       contact entity token so it appears under the contact's history. */
+    const formType = page.form_type === "booking" ? "booking" : "interest";
+    const fullName = `${firstName} ${lastName}`.trim();
+    const contactToken = customerId ? `[[contact:${customerId}|${fullName}]]` : fullName;
+
+    const tourNames: string[] = [];
+    const tourIdsForTask = selectedTourIds.length
+      ? selectedTourIds
+      : page.tour_id
+      ? [page.tour_id]
+      : [];
+    if (tourIdsForTask.length) {
+      const { data: tourRows } = await supabase
+        .from("tours")
+        .select("id, name, start_date")
+        .in("id", tourIdsForTask);
+      for (const t of tourRows || []) {
+        tourNames.push(`[[tour:${t.id}|${t.name}]]`);
+      }
+    }
+
+    const detailLines: string[] = [
+      `Contact: ${contactToken}`,
+      `Email: ${email}`,
+      phone ? `Phone: ${phone}` : "",
+      state ? `State: ${state}` : "",
+      tourNames.length
+        ? `${formType === "booking" ? "Tour to book" : "Tours of interest"}:\n- ${tourNames.join(
+            "\n- "
+          )}`
+        : "",
+    ];
+
+    if (formType === "booking") {
+      const pax = Array.isArray((extra as any).passengers) ? (extra as any).passengers : [];
+      if (pax.length) {
+        detailLines.push(
+          `Passengers (${pax.length}):\n${pax
+            .map(
+              (p: any, i: number) =>
+                `- Pax ${i + 1}: ${clean(p?.first_name, 100)} ${clean(p?.last_name, 100)}`.trim() +
+                (clean(p?.dietary, 200) ? ` — dietary: ${clean(p.dietary, 200)}` : "")
+            )
+            .join("\n")}`
+        );
+      }
+      const roomType = clean((extra as any).room_type, 60);
+      const bedding = clean((extra as any).bedding, 60);
+      const requests = clean((extra as any).special_requests, 1000);
+      const emergency = clean((extra as any).emergency_contact, 300);
+      if (roomType) detailLines.push(`Room type: ${roomType}`);
+      if (bedding) detailLines.push(`Bedding: ${bedding}`);
+      if (emergency) detailLines.push(`Emergency contact: ${emergency}`);
+      if (requests) detailLines.push(`Requests: ${requests}`);
+    }
+
+    if (message) detailLines.push(`Message: "${message}"`);
+    detailLines.push(`Submitted via: ${page.title} (/f/${page.slug})`);
+    detailLines.push(consent ? "Marketing consent: given" : "Marketing consent: not given");
+
+    const taskTitle =
+      formType === "booking"
+        ? `Booking received - send invoice - ${fullName}`
+        : `Register interest received - ${fullName}`;
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + (formType === "booking" ? 1 : 2));
+
+    const { data: mainTask, error: taskErr } = await supabase
+      .from("tasks")
+      .insert({
+        title: taskTitle,
+        description: detailLines.filter(Boolean).join("\n"),
+        status: "not_started",
+        priority: formType === "booking" ? "high" : "medium",
+        category: formType === "booking" ? "booking" : "marketing",
+        due_date: dueDate.toISOString().slice(0, 10),
+        tour_id: tourIdsForTask.length === 1 ? tourIdsForTask[0] : null,
+        created_by: page.lead_owner_id || null,
+      })
+      .select("id")
+      .maybeSingle();
+    if (taskErr) console.error("Failed to create form task:", taskErr.message);
+
+    if (mainTask?.id) {
+      if (page.lead_owner_id) {
+        await supabase
+          .from("task_assignments")
+          .insert({ task_id: mainTask.id, user_id: page.lead_owner_id });
+      }
+      if (customerId) {
+        await supabase
+          .from("task_entity_links")
+          .upsert(
+            {
+              task_id: mainTask.id,
+              entity_type: "contact",
+              entity_id: customerId,
+              source: "description",
+            },
+            { onConflict: "task_id,entity_type,entity_id,source" }
+          );
+      }
+      if (submission?.id) {
+        await supabase
+          .from("landing_page_submissions")
+          .update({ task_id: mainTask.id })
+          .eq("id", submission.id);
+      }
+    }
+
+    /* Teams notification for the whole team when enabled on the page. */
+    if (page.notify_teams !== false) {
+      const html = `
+<p><strong>${formType === "booking" ? "New booking request" : "New register-interest enquiry"} — ${escapeHtml(
+        page.title
+      )}</strong></p>
+<p>${escapeHtml(fullName)} (${escapeHtml(email)})${phone ? ` · ${escapeHtml(phone)}` : ""}</p>
+${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
+<p><a href="${ADMIN_URL}${mainTask?.id ? `/tasks/${mainTask.id}` : "/marketing?mtab=leads"}">Open in ART</a></p>`.trim();
+      const res = await postTeamsMessage(supabase, html);
+      if (!res.success) console.log("Teams notify skipped:", res.reason);
     }
 
     /* 3. Run matching automation rules. */
@@ -253,7 +385,7 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
       await supabase.from("user_notifications").insert({
         user_id: page.lead_owner_id,
         type: "system",
-        title: "New enquiry received",
+        title: formType === "booking" ? "New booking request received" : "New enquiry received",
         message: `${firstName} ${lastName} enquired via ${page.title} — open Marketing → Leads`,
         related_id: customerId || null,
       });
