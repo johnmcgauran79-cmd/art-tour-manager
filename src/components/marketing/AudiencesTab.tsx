@@ -61,12 +61,13 @@ export function AudiencesTab() {
   const setFilters = (patch: Partial<AudienceFilters>) =>
     setEditing({ ...editing, filters: { ...filters, ...patch } });
 
-  const toggleIn = (key: "states" | "leadStages", value: string) => {
+  const toggleIn = (key: "states" | "leadStages" | "tagIds", value: string) => {
     const current = filters[key] || [];
     setFilters({
       [key]: current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
     } as Partial<AudienceFilters>);
   };
+
 
   return (
     <div className="space-y-4">
