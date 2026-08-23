@@ -252,10 +252,10 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
     if (page.lead_owner_id) {
       await supabase.from("user_notifications").insert({
         user_id: page.lead_owner_id,
-        type: "task_assigned",
+        type: "system",
         title: "New enquiry received",
-        message: `${firstName} ${lastName} enquired via ${page.title}`,
-        link: "/marketing?mtab=leads",
+        message: `${firstName} ${lastName} enquired via ${page.title} — open Marketing → Leads`,
+        related_id: customerId || null,
       });
     }
 
