@@ -18,7 +18,28 @@ export interface AudienceFilters {
   latestTourBefore?: string;
   /** free-text name/email match */
   search?: string;
+  /** contacts carrying ALL of these tags */
+  tagIds?: string[];
 }
+
+/** Resolve the customer ids that carry every one of the given tags. */
+const customerIdsForTags = async (tagIds: string[]): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from("contact_tags")
+    .select("customer_id, tag_id")
+    .in("tag_id", tagIds);
+  if (error) throw error;
+  const counts = new Map<string, Set<string>>();
+  (data || []).forEach((r: any) => {
+    const set = counts.get(r.customer_id) || new Set<string>();
+    set.add(r.tag_id);
+    counts.set(r.customer_id, set);
+  });
+  return [...counts.entries()]
+    .filter(([, set]) => set.size === new Set(tagIds).size)
+    .map(([id]) => id);
+};
+
 
 export interface AudienceContact {
   id: string;
