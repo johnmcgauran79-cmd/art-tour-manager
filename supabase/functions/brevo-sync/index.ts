@@ -175,7 +175,146 @@ Deno.serve(async (req) => {
       return json({ success: true, brevoContactId: brevoId });
     }
 
+    // -- make sure the location fields exist in Brevo, then fill them in ----
+    // Brevo has no built-in STATE / CITY / COUNTRY field, so anything we sent
+    // during the migration was dropped. This creates the fields and writes the
+    // values we hold in ART, so State/Country segments can be built in Brevo.
+    if (action === "ensure_location_fields") {
+      const wanted = ["STATE", "CITY", "COUNTRY", "LATEST_TOUR"];
+      const existing = await brevoRequest("contacts/attributes");
+      const have = new Set(
+        (existing?.attributes ?? []).map((a: any) => String(a?.name ?? "").toUpperCase()),
+      );
+      const created: string[] = [];
+      for (const name of wanted) {
+        if (have.has(name)) continue;
+        await brevoRequest(`contacts/attributes/normal/${name}`, {
+          method: "POST",
+          body: { type: "text" },
+        });
+        created.push(name);
+        await sleep(150);
+      }
+      return json({ done: true, created, alreadyPresent: wanted.filter((n) => have.has(n)) });
+    }
+
+    if (action === "backfill_locations") {
+      const limit = Math.min(Math.max(Number(body?.limit) || 100, 1), 200);
+      const offset = Math.max(Number(body?.offset) || 0, 0);
+      const source: string = body?.source === "migration" ? "migration" : "customers";
+
+      let rows: any[] = [];
+      if (source === "customers") {
+        const { data, error } = await supabase
+          .from("customers")
+          .select("email, city, state, country, latest_tour_name")
+          .not("email", "is", null)
+          .or("state.not.is.null,city.not.is.null,country.not.is.null")
+          .order("email")
+          .range(offset, offset + limit - 1);
+        if (error) throw error;
+        rows = (data ?? []).map((c: any) => ({
+          email: c.email,
+          city: c.city,
+          state: c.state,
+          country: c.country,
+          latestTour: c.latest_tour_name,
+        }));
+      } else {
+        const { data, error } = await supabase
+          .from("crm_migration_contacts")
+          .select("email, city, state, country")
+          .not("email", "is", null)
+          .or("state.not.is.null,city.not.is.null,country.not.is.null")
+          .order("email")
+          .range(offset, offset + limit - 1);
+        if (error) throw error;
+        rows = (data ?? []).map((c: any) => ({
+          email: c.email,
+          city: c.city,
+          state: c.state,
+          country: c.country,
+          latestTour: null,
+        }));
+      }
+
+      let updated = 0;
+      let failed = 0;
+      for (const row of rows) {
+        const attributes: Record<string, string> = {};
+        if (row.state) attributes.STATE = String(row.state);
+        if (row.city) attributes.CITY = String(row.city);
+        if (row.country) attributes.COUNTRY = String(row.country);
+        if (row.latestTour) attributes.LATEST_TOUR = String(row.latestTour);
+        if (Object.keys(attributes).length === 0) continue;
+        try {
+          await brevoRequest(`contacts/${encodeURIComponent(String(row.email))}`, {
+            method: "PUT",
+            body: { attributes },
+          });
+          updated += 1;
+        } catch (err: any) {
+          const message = err?.message ?? String(err);
+          // 404 simply means the contact does not exist in Brevo.
+          if (!message.includes("404")) {
+            console.error(`Location backfill failed for ${row.email}: ${message}`);
+            failed += 1;
+          }
+          if (message.includes("429")) await sleep(2000);
+        }
+        await sleep(120);
+      }
+
+      return json({
+        processed: rows.length,
+        updated,
+        failed,
+        hasMore: rows.length === limit,
+        nextOffset: offset + rows.length,
+      });
+    }
+
+    // -- delete every blocked / unsubscribed contact from Brevo -------------
+    if (action === "purge_blocklisted") {
+      const limit = Math.min(Math.max(Number(body?.limit) || 200, 1), 500);
+      const offset = Math.max(Number(body?.offset) || 0, 0);
+      const res = await brevoRequest(`contacts?limit=${limit}&offset=${offset}`);
+      const contacts = res?.contacts ?? [];
+
+      let deleted = 0;
+      let failed = 0;
+      for (const c of contacts) {
+        if (!c?.emailBlacklisted) continue;
+        const email = String(c?.email ?? "");
+        if (!email) continue;
+        try {
+          await brevoRequest(`contacts/${encodeURIComponent(email)}`, { method: "DELETE" });
+          deleted += 1;
+          await supabase
+            .from("customers")
+            .update({ brevo_contact_id: null })
+            .eq("email", email.toLowerCase());
+        } catch (err: any) {
+          const message = err?.message ?? String(err);
+          console.error(`Could not delete blocked Brevo contact ${email}: ${message}`);
+          failed += 1;
+          if (message.includes("429")) await sleep(2000);
+        }
+        await sleep(120);
+      }
+
+      return json({
+        scanned: contacts.length,
+        deleted,
+        failed,
+        hasMore: contacts.length === limit,
+        // Deleting shifts the list, so step forward by what stayed behind.
+        nextOffset: offset + Math.max(contacts.length - deleted, 0),
+      });
+    }
+
     return json({ error: `Unknown action: ${action}` }, 400);
+
   } catch (err: any) {
     const message = err?.message ?? String(err);
     console.error("brevo-sync error:", message);
