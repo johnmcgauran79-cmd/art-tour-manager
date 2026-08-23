@@ -243,19 +243,8 @@ Deno.serve(async (req) => {
           .from("task_assignments")
           .insert({ task_id: mainTask.id, user_id: page.lead_owner_id });
       }
-      if (customerId) {
-        await supabase
-          .from("task_entity_links")
-          .upsert(
-            {
-              task_id: mainTask.id,
-              entity_type: "contact",
-              entity_id: customerId,
-              source: "description",
-            },
-            { onConflict: "task_id,entity_type,entity_id,source" }
-          );
-      }
+      // The task description carries a [[contact:uuid|Name]] token, which the
+      // sync_task_description_links trigger turns into a task_entity_links row.
       if (submission?.id) {
         await supabase
           .from("landing_page_submissions")
