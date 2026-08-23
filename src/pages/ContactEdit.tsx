@@ -246,12 +246,21 @@ export default function ContactEdit() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="state">State</Label>
-              <Input
-                id="state"
-                value={editedContact.state || ''}
-                onChange={(e) => setEditedContact({ ...editedContact, state: e.target.value })}
-              />
+              <Select
+                value={normaliseAuState(editedContact.state) || undefined}
+                onValueChange={(value) => setEditedContact({ ...editedContact, state: value })}
+              >
+                <SelectTrigger id="state">
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AU_STATE_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>
               <Input
