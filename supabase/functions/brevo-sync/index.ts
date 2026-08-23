@@ -274,45 +274,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // -- delete every blocked / unsubscribed contact from Brevo -------------
-    if (action === "purge_blocklisted") {
-      const limit = Math.min(Math.max(Number(body?.limit) || 200, 1), 500);
-      const offset = Math.max(Number(body?.offset) || 0, 0);
-      const res = await brevoRequest(`contacts?limit=${limit}&offset=${offset}`);
-      const contacts = res?.contacts ?? [];
-
-      let deleted = 0;
-      let failed = 0;
-      for (const c of contacts) {
-        if (!c?.emailBlacklisted) continue;
-        const email = String(c?.email ?? "");
-        if (!email) continue;
-        try {
-          await brevoRequest(`contacts/${encodeURIComponent(email)}`, { method: "DELETE" });
-          deleted += 1;
-          await supabase
-            .from("customers")
-            .update({ brevo_contact_id: null })
-            .eq("email", email.toLowerCase());
-        } catch (err: any) {
-          const message = err?.message ?? String(err);
-          console.error(`Could not delete blocked Brevo contact ${email}: ${message}`);
-          failed += 1;
-          if (message.includes("429")) await sleep(2000);
-        }
-        await sleep(120);
-      }
-
-      return json({
-        scanned: contacts.length,
-        deleted,
-        failed,
-        hasMore: contacts.length === limit,
-        // Deleting shifts the list, so step forward by what stayed behind.
-        nextOffset: offset + Math.max(contacts.length - deleted, 0),
-      });
-    }
-
     return json({ error: `Unknown action: ${action}` }, 400);
 
   } catch (err: any) {
