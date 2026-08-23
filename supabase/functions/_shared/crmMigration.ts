@@ -174,3 +174,71 @@ export function brevoAttributeName(input: string) {
     .replace(/^_+|_+$/g, "")
     .slice(0, 40);
 }
+
+// ---------------------------------------------------------------------------
+// Location normalisation
+// ---------------------------------------------------------------------------
+
+const AU_STATES: Record<string, string> = {
+  "nsw": "NSW", "new south wales": "NSW", "sydney": "NSW", "newcastle": "NSW", "wollongong": "NSW",
+  "vic": "VIC", "victoria": "VIC", "melbourne": "VIC", "geelong": "VIC", "ballarat": "VIC", "bendigo": "VIC",
+  "qld": "QLD", "queensland": "QLD", "brisbane": "QLD", "gold coast": "QLD", "cairns": "QLD", "townsville": "QLD", "sunshine coast": "QLD", "toowoomba": "QLD",
+  "wa": "WA", "western australia": "WA", "perth": "WA",
+  "sa": "SA", "south australia": "SA", "adelaide": "SA",
+  "tas": "TAS", "tasmania": "TAS", "hobart": "TAS", "launceston": "TAS",
+  "act": "ACT", "australian capital territory": "ACT", "canberra": "ACT",
+  "nt": "NT", "northern territory": "NT", "darwin": "NT", "alice springs": "NT",
+};
+
+const COUNTRY_HINTS: Record<string, string> = {
+  "nz": "New Zealand", "new zealand": "New Zealand", "auckland": "New Zealand",
+  "waikato": "New Zealand", "wellington": "New Zealand", "christchurch": "New Zealand",
+  "canterbury": "New Zealand", "cambridge": "New Zealand", "hamilton": "New Zealand",
+  "uk": "United Kingdom", "united kingdom": "United Kingdom", "england": "United Kingdom",
+  "scotland": "United Kingdom", "ireland": "Ireland", "wales": "United Kingdom",
+  "usa": "United States", "us": "United States", "united states": "United States",
+  "hong kong": "Hong Kong", "singapore": "Singapore", "canada": "Canada",
+  "south africa": "South Africa", "japan": "Japan", "india": "India", "dubai": "United Arab Emirates",
+};
+
+/**
+ * Normalises the free-text state/city values held in ART + Keap into a single
+ * consistent value so Brevo segments (e.g. STATE = NSW) match every contact.
+ * Returns the tidied STATE plus an inferred COUNTRY where obvious.
+ */
+export function normaliseLocation(
+  state?: string | null,
+  city?: string | null,
+  country?: string | null,
+): { state: string | null; city: string | null; country: string | null } {
+  const clean = (v?: string | null) =>
+    v == null ? null : String(v).replace(/\s+/g, " ").trim() || null;
+
+  const rawState = clean(state);
+  const rawCity = clean(city);
+  let outCountry = clean(country);
+
+  const key = (v: string | null) => (v ? v.toLowerCase().replace(/\./g, "").trim() : "");
+
+  // AU state from the state field, then fall back to the city field.
+  let outState = AU_STATES[key(rawState)] ?? AU_STATES[key(rawCity)] ?? null;
+
+  if (outState) {
+    if (!outCountry || AU_STATES[key(outCountry)]) outCountry = "Australia";
+  } else {
+    // Not an Australian state — keep the original text, infer country if we can.
+    outState = rawState;
+    const hint = COUNTRY_HINTS[key(rawState)] ?? COUNTRY_HINTS[key(rawCity)] ??
+      COUNTRY_HINTS[key(outCountry)];
+    if (hint) outCountry = hint;
+    if (outState && COUNTRY_HINTS[key(outState)]) outState = null;
+  }
+
+  if (outCountry) {
+    const c = key(outCountry);
+    if (c === "au" || c === "aus" || c === "australia") outCountry = "Australia";
+    else outCountry = COUNTRY_HINTS[c] ?? outCountry;
+  }
+
+  return { state: outState, city: rawCity, country: outCountry };
+}
