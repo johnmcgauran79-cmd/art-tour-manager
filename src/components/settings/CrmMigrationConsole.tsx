@@ -32,13 +32,10 @@ import {
   RefreshCw,
   MapPin,
   Send,
-  Trash2,
   Users,
 } from "lucide-react";
-import { ConfirmDeleteFileDialog } from "@/components/shared/ConfirmDeleteFileDialog";
 import {
   useBrevoLocationBackfill,
-  useBrevoPurgeBlocklisted,
   useBrevoPullNew,
   useBrevoStatus,
   useLatestMigrationRun,
@@ -80,9 +77,7 @@ export const CrmMigrationConsole = () => {
   const updateTag = useUpdateTagMapping();
   const pullNew = useBrevoPullNew();
   const locationBackfill = useBrevoLocationBackfill();
-  const purgeBlocked = useBrevoPurgeBlocklisted();
 
-  const [confirmPurge, setConfirmPurge] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
   const [tab, setTab] = useState("collect");
 
@@ -241,42 +236,10 @@ export const CrmMigrationConsole = () => {
             </Button>
           </div>
 
-          <div className="rounded-lg border p-3 space-y-2">
-            <div className="font-medium">Delete blocked / unsubscribed contacts</div>
-            <p className="text-sm text-muted-foreground">
-              Permanently removes every contact Brevo has marked as blocked (unsubscribed, bounced
-              or complained). They cannot be emailed either way, and deleting them removes the
-              record that they opted out — so if they are ever imported again, nothing stops them
-              being contacted. Keeping them blocked is the safer option.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive"
-              onClick={() => setConfirmPurge(true)}
-              disabled={!brevo?.connected || purgeBlocked.isPending}
-            >
-              {purgeBlocked.isPending ? (
-                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-1.5" />
-              )}
-              Delete blocked contacts
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
-      <ConfirmDeleteFileDialog
-        open={confirmPurge}
-        onOpenChange={setConfirmPurge}
-        itemLabel="group of blocked contacts"
-        isPending={purgeBlocked.isPending}
-        onConfirm={() => {
-          setConfirmPurge(false);
-          purgeBlocked.mutate();
-        }}
-      />
+
 
 
       {/* Migration wizard */}

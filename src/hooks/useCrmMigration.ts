@@ -325,44 +325,6 @@ export const useBrevoLocationBackfill = () => {
   });
 };
 
-/** Permanently deletes every blocked / unsubscribed contact in Brevo. */
-export const useBrevoPurgeBlocklisted = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: async () => {
-      let offset = 0;
-      let deleted = 0;
-      let scanned = 0;
-      for (let i = 0; i < 300; i++) {
-        const res = await invokeFn("brevo-sync", {
-          action: "purge_blocklisted",
-          limit: 200,
-          offset,
-        });
-        deleted += res.deleted ?? 0;
-        scanned += res.scanned ?? 0;
-        offset = res.nextOffset ?? offset + 200;
-        if (!res.hasMore) break;
-      }
-      return { deleted, scanned };
-    },
-    onSuccess: ({ deleted, scanned }) => {
-      queryClient.invalidateQueries({ queryKey: ["brevo-status"] });
-      toast({
-        title: "Blocked contacts removed",
-        description: `${deleted} deleted out of ${scanned} contacts checked.`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Could not remove the blocked contacts",
-        description: error?.message ?? "Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-};
 
 
 /** Pulls contacts newly created in Brevo into ART (ongoing connection). */
