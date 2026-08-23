@@ -907,6 +907,15 @@ export default function BookingEdit() {
                 />
               </div>
 
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-sm font-medium">Tags &amp; Segments</Label>
+                <p className="text-xs text-muted-foreground">
+                  Label this booking (e.g. "Ladies", "Indian Derby Interest 2028") to group and report on it later. Saved instantly.
+                </p>
+                <TagPicker entity="booking" entityId={booking.id} readOnly={isViewOnly} />
+              </div>
+
+
               <div className="pt-2 border-t">
                 <BookingBrandField
                   value={formData.brand_id}
