@@ -115,6 +115,18 @@ export function LandingPagesTab() {
     });
   };
 
+  const toggleStaff = (key: "task_assignee_ids" | "task_watcher_ids", userId: string) => {
+    const current = (editing?.[key] as string[] | undefined) || [];
+    setEditing({
+      ...editing,
+      [key]: current.includes(userId)
+        ? current.filter((u) => u !== userId)
+        : [...current, userId],
+    });
+  };
+
+
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
