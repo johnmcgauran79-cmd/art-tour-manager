@@ -2790,6 +2790,7 @@ export type Database = {
           customer_id: string | null
           email: string | null
           first_name: string | null
+          form_type: string
           id: string
           ip_hash: string | null
           landing_page_id: string | null
@@ -2798,7 +2799,9 @@ export type Database = {
           payload: Json
           phone: string | null
           state: string | null
+          task_id: string | null
           tour_id: string | null
+          tour_ids: string[]
         }
         Insert: {
           consent_given?: boolean
@@ -2807,6 +2810,7 @@ export type Database = {
           customer_id?: string | null
           email?: string | null
           first_name?: string | null
+          form_type?: string
           id?: string
           ip_hash?: string | null
           landing_page_id?: string | null
@@ -2815,7 +2819,9 @@ export type Database = {
           payload?: Json
           phone?: string | null
           state?: string | null
+          task_id?: string | null
           tour_id?: string | null
+          tour_ids?: string[]
         }
         Update: {
           consent_given?: boolean
@@ -2824,6 +2830,7 @@ export type Database = {
           customer_id?: string | null
           email?: string | null
           first_name?: string | null
+          form_type?: string
           id?: string
           ip_hash?: string | null
           landing_page_id?: string | null
@@ -2832,7 +2839,9 @@ export type Database = {
           payload?: Json
           phone?: string | null
           state?: string | null
+          task_id?: string | null
           tour_id?: string | null
+          tour_ids?: string[]
         }
         Relationships: [
           {
@@ -2847,6 +2856,13 @@ export type Database = {
             columns: ["landing_page_id"]
             isOneToOne: false
             referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
           {
@@ -2866,18 +2882,22 @@ export type Database = {
           created_at: string
           created_by: string | null
           fields: Json
+          form_type: string
           headline: string | null
           hero_image_url: string | null
           id: string
           is_active: boolean
           lead_owner_id: string | null
           lead_source: string | null
+          notify_teams: boolean
           slug: string
           subheadline: string | null
           submission_count: number
+          success_redirect_url: string | null
           thank_you_message: string | null
           title: string
           tour_id: string | null
+          tour_ids: string[]
           updated_at: string
         }
         Insert: {
@@ -2887,18 +2907,22 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           fields?: Json
+          form_type?: string
           headline?: string | null
           hero_image_url?: string | null
           id?: string
           is_active?: boolean
           lead_owner_id?: string | null
           lead_source?: string | null
+          notify_teams?: boolean
           slug: string
           subheadline?: string | null
           submission_count?: number
+          success_redirect_url?: string | null
           thank_you_message?: string | null
           title: string
           tour_id?: string | null
+          tour_ids?: string[]
           updated_at?: string
         }
         Update: {
@@ -2908,18 +2932,22 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           fields?: Json
+          form_type?: string
           headline?: string | null
           hero_image_url?: string | null
           id?: string
           is_active?: boolean
           lead_owner_id?: string | null
           lead_source?: string | null
+          notify_teams?: boolean
           slug?: string
           subheadline?: string | null
           submission_count?: number
+          success_redirect_url?: string | null
           thank_you_message?: string | null
           title?: string
           tour_id?: string | null
+          tour_ids?: string[]
           updated_at?: string
         }
         Relationships: [
