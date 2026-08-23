@@ -439,6 +439,100 @@ export default function PublicForm() {
                   </>
                 )}
 
+                {customFields.length > 0 && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {customFields.map((f) => {
+                      const span = f.width === "half" ? "" : "sm:col-span-2";
+                      if (f.type === "heading") {
+                        return (
+                          <h3 key={f.key} className="sm:col-span-2 pt-2 text-base font-semibold">
+                            {f.label}
+                          </h3>
+                        );
+                      }
+                      const value = String(answers[f.key] ?? "");
+                      const set = (v: string | boolean) =>
+                        setAnswers((prev) => ({ ...prev, [f.key]: v }));
+                      return (
+                        <div key={f.key} className={`space-y-1.5 ${span}`}>
+                          {f.type !== "checkbox" && (
+                            <Label htmlFor={`cf-${f.key}`}>
+                              {f.label}
+                              {f.required ? " *" : ""}
+                            </Label>
+                          )}
+                          {f.type === "textarea" ? (
+                            <Textarea
+                              id={`cf-${f.key}`}
+                              rows={3}
+                              placeholder={f.placeholder || ""}
+                              value={value}
+                              onChange={(e) => set(e.target.value)}
+                            />
+                          ) : f.type === "select" ? (
+                            <Select value={value} onValueChange={set}>
+                              <SelectTrigger id={`cf-${f.key}`}>
+                                <SelectValue placeholder={f.placeholder || "Please choose"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(f.options || []).map((o) => (
+                                  <SelectItem key={o} value={o}>
+                                    {o}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : f.type === "radio" ? (
+                            <div className="space-y-1.5">
+                              {(f.options || []).map((o) => (
+                                <label key={o} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="radio"
+                                    name={`cf-${f.key}`}
+                                    checked={value === o}
+                                    onChange={() => set(o)}
+                                  />
+                                  <span>{o}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : f.type === "checkbox" ? (
+                            <label className="flex items-start gap-2 text-sm">
+                              <Checkbox
+                                checked={answers[f.key] === true}
+                                onCheckedChange={(v) => set(!!v)}
+                              />
+                              <span>
+                                {f.label}
+                                {f.required ? " *" : ""}
+                              </span>
+                            </label>
+                          ) : (
+                            <Input
+                              id={`cf-${f.key}`}
+                              type={
+                                f.type === "email"
+                                  ? "email"
+                                  : f.type === "number"
+                                    ? "number"
+                                    : f.type === "date"
+                                      ? "date"
+                                      : f.type === "phone"
+                                        ? "tel"
+                                        : "text"
+                              }
+                              placeholder={f.placeholder || ""}
+                              value={value}
+                              onChange={(e) => set(e.target.value)}
+                            />
+                          )}
+                          {f.help && <p className="text-xs text-muted-foreground">{f.help}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label htmlFor="message">
                     {isBooking ? "Anything else we should know?" : "Your message"}
@@ -450,6 +544,7 @@ export default function PublicForm() {
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                   />
                 </div>
+
 
                 <label className="flex items-start gap-2 text-sm">
                   <Checkbox
