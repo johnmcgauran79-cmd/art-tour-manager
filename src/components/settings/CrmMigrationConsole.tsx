@@ -32,13 +32,10 @@ import {
   RefreshCw,
   MapPin,
   Send,
-  Trash2,
   Users,
 } from "lucide-react";
-import { ConfirmDeleteFileDialog } from "@/components/shared/ConfirmDeleteFileDialog";
 import {
   useBrevoLocationBackfill,
-  useBrevoPurgeBlocklisted,
   useBrevoPullNew,
   useBrevoStatus,
   useLatestMigrationRun,
@@ -80,9 +77,7 @@ export const CrmMigrationConsole = () => {
   const updateTag = useUpdateTagMapping();
   const pullNew = useBrevoPullNew();
   const locationBackfill = useBrevoLocationBackfill();
-  const purgeBlocked = useBrevoPurgeBlocklisted();
 
-  const [confirmPurge, setConfirmPurge] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
   const [tab, setTab] = useState("collect");
 
