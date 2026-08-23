@@ -25,6 +25,8 @@ export interface EdmBlock {
   text?: string;
   /** rich text (HTML) body */
   html?: string;
+  /** second column rich text for twoColumn blocks */
+  html2?: string;
   imageUrl?: string;
   imageAlt?: string;
   linkUrl?: string;
@@ -79,6 +81,15 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         imageUrl: "",
         linkUrl: "",
       };
+    case "twoColumn":
+      return {
+        id,
+        type,
+        html: "<p>Left column copy.</p>",
+        html2: "<p>Right column copy.</p>",
+      };
+    case "quote":
+      return { id, type, html: "<p>A guest testimonial goes here.</p>", text: "Guest name" };
     case "divider":
       return { id, type };
     case "spacer":
@@ -93,6 +104,8 @@ export const blockLabel: Record<EdmBlockType, string> = {
   imageText: "Image + text",
   button: "Button",
   tourCard: "Tour card",
+  twoColumn: "Two columns",
+  quote: "Testimonial",
   divider: "Divider",
   spacer: "Spacer",
 };
@@ -179,6 +192,29 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand): string => {
           : ""
       }
     </td></tr>
+  </table></td></tr>`;
+    case "twoColumn":
+      return `<tr><td style="padding:12px 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td width="50%" valign="top" style="padding-right:12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${
+      b.html || ""
+    }</td>
+    <td width="50%" valign="top" style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${
+      b.html2 || ""
+    }</td>
+  </tr></table></td></tr>`;
+    case "quote":
+      return `<tr><td style="padding:16px 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
+    <tr><td style="padding:18px 22px;font-family:Georgia,serif;font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
+      b.html || ""
+    }${
+        b.text
+          ? `<div style="margin-top:10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-style:normal;color:#64748b;">— ${esc(
+              b.text
+            )}</div>`
+          : ""
+      }</td></tr>
   </table></td></tr>`;
     case "divider":
       return `<tr><td style="padding:16px 32px;"><div style="height:1px;background:${border};"></div></td></tr>`;
