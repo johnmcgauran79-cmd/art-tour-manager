@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FileText, Megaphone, Send, Target, Users } from "lucide-react";
+import { FileText, LayoutTemplate, Megaphone, Send, Target, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { CampaignsTab } from "@/components/marketing/CampaignsTab";
+import { TemplatesTab } from "@/components/marketing/TemplatesTab";
 import { AudiencesTab } from "@/components/marketing/AudiencesTab";
 import { LeadsTab } from "@/components/marketing/LeadsTab";
 import { LandingPagesTab } from "@/components/marketing/LandingPagesTab";
 
-const TABS = ["campaigns", "audiences", "leads", "forms"] as const;
+const TABS = ["campaigns", "templates", "audiences", "leads", "forms"] as const;
 
 export default function Marketing() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +17,7 @@ export default function Marketing() {
   const [tab, setTab] = useState<string>(
     TABS.includes(initial as any) ? (initial as string) : "campaigns"
   );
+  const [pendingCampaignId, setPendingCampaignId] = useState<string | null>(null);
 
   const onTabChange = (value: string) => {
     setTab(value);
@@ -34,7 +36,8 @@ export default function Marketing() {
           Marketing
         </h1>
         <p className="text-sm text-muted-foreground">
-          Email campaigns, audiences, public forms and your sales pipeline — all inside ART.
+          Email campaigns, templates, audiences, public forms and your sales pipeline — all inside
+          ART.
         </p>
       </div>
 
@@ -42,6 +45,9 @@ export default function Marketing() {
         <TabsList>
           <TabsTrigger value="campaigns" className="gap-1.5">
             <Send className="h-3.5 w-3.5" /> Campaigns
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="gap-1.5">
+            <LayoutTemplate className="h-3.5 w-3.5" /> Templates
           </TabsTrigger>
           <TabsTrigger value="audiences" className="gap-1.5">
             <Target className="h-3.5 w-3.5" /> Audiences
@@ -55,7 +61,18 @@ export default function Marketing() {
         </TabsList>
 
         <TabsContent value="campaigns" className="mt-4">
-          <CampaignsTab />
+          <CampaignsTab
+            openCampaignId={pendingCampaignId}
+            onOpenedCampaign={() => setPendingCampaignId(null)}
+          />
+        </TabsContent>
+        <TabsContent value="templates" className="mt-4">
+          <TemplatesTab
+            onDraftCreated={(id) => {
+              setPendingCampaignId(id);
+              onTabChange("campaigns");
+            }}
+          />
         </TabsContent>
         <TabsContent value="audiences" className="mt-4">
           <AudiencesTab />
@@ -70,3 +87,4 @@ export default function Marketing() {
     </div>
   );
 }
+

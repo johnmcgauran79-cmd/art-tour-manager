@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AU_STATES } from "@/lib/edm/audience";
+import { parseFormFields } from "@/lib/marketing/formFields";
+
 
 interface PublicTour {
   id: string;
@@ -35,6 +37,9 @@ interface PublicPage {
   hero_image_url: string | null;
   consent_text: string | null;
   thank_you_message: string | null;
+  thank_you_heading: string | null;
+  submit_button_text: string | null;
+  fields: unknown;
   form_type: "interest" | "booking";
   brand?: {
     name: string;
@@ -46,6 +51,7 @@ interface PublicPage {
     company_phone: string | null;
   } | null;
 }
+
 
 interface PaxRow {
   first_name: string;
@@ -85,6 +91,8 @@ export default function PublicForm() {
   });
   const [selectedTours, setSelectedTours] = useState<string[]>([]);
   const [pax, setPax] = useState<PaxRow[]>([{ first_name: "", last_name: "", dietary: "" }]);
+  const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
+
 
   useEffect(() => {
     if (!slug) return;
@@ -106,6 +114,7 @@ export default function PublicForm() {
   const accent = page?.brand?.color_button || page?.brand?.color_primary || undefined;
 
   const heading = useMemo(() => page?.headline || page?.title || "", [page]);
+  const customFields = useMemo(() => parseFormFields(page?.fields), [page]);
 
   const toggleTour = (id: string) =>
     setSelectedTours((prev) =>
@@ -123,6 +132,16 @@ export default function PublicForm() {
       setError("Please choose the tour you'd like to book.");
       return;
     }
+    const missing = customFields.find(
+      (f) =>
+        f.required &&
+        f.type !== "heading" &&
+        (f.type === "checkbox" ? answers[f.key] !== true : !String(answers[f.key] ?? "").trim())
+    );
+    if (missing) {
+      setError(`Please complete "${missing.label}".`);
+      return;
+    }
     setSubmitting(true);
     const { data, error: fnError } = await supabase.functions.invoke("marketing-submit-lead", {
       body: {
@@ -136,17 +155,31 @@ export default function PublicForm() {
         consent: form.consent,
         company_website_hp: form.honeypot,
         tour_ids: selectedTours,
-        extra: isBooking
-          ? {
-              passengers: pax.filter((p) => p.first_name || p.last_name),
-              room_type: form.room_type,
-              bedding: form.bedding,
-              emergency_contact: form.emergency_contact,
-              special_requests: form.special_requests,
-            }
-          : {},
+        extra: {
+          ...(isBooking
+            ? {
+                passengers: pax.filter((p) => p.first_name || p.last_name),
+                room_type: form.room_type,
+                bedding: form.bedding,
+                emergency_contact: form.emergency_contact,
+                special_requests: form.special_requests,
+              }
+            : {}),
+          answers: customFields
+            .filter((f) => f.type !== "heading")
+            .map((f) => ({
+              label: f.label,
+              value:
+                f.type === "checkbox"
+                  ? answers[f.key] === true
+                    ? "Yes"
+                    : "No"
+                  : String(answers[f.key] ?? ""),
+            })),
+        },
       },
     });
+
     setSubmitting(false);
     if (fnError || (data as any)?.error) {
       setError((data as any)?.error || "Something went wrong — please try again.");
@@ -208,6 +241,9 @@ export default function PublicForm() {
             {done ? (
               <div className="space-y-3 py-8 text-center">
                 <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+                {page.thank_you_heading && (
+                  <h2 className="text-xl font-semibold">{page.thank_you_heading}</h2>
+                )}
                 <p className="text-base font-medium">{done}</p>
               </div>
             ) : (
@@ -406,6 +442,100 @@ export default function PublicForm() {
                   </>
                 )}
 
+                {customFields.length > 0 && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {customFields.map((f) => {
+                      const span = f.width === "half" ? "" : "sm:col-span-2";
+                      if (f.type === "heading") {
+                        return (
+                          <h3 key={f.key} className="sm:col-span-2 pt-2 text-base font-semibold">
+                            {f.label}
+                          </h3>
+                        );
+                      }
+                      const value = String(answers[f.key] ?? "");
+                      const set = (v: string | boolean) =>
+                        setAnswers((prev) => ({ ...prev, [f.key]: v }));
+                      return (
+                        <div key={f.key} className={`space-y-1.5 ${span}`}>
+                          {f.type !== "checkbox" && (
+                            <Label htmlFor={`cf-${f.key}`}>
+                              {f.label}
+                              {f.required ? " *" : ""}
+                            </Label>
+                          )}
+                          {f.type === "textarea" ? (
+                            <Textarea
+                              id={`cf-${f.key}`}
+                              rows={3}
+                              placeholder={f.placeholder || ""}
+                              value={value}
+                              onChange={(e) => set(e.target.value)}
+                            />
+                          ) : f.type === "select" ? (
+                            <Select value={value} onValueChange={set}>
+                              <SelectTrigger id={`cf-${f.key}`}>
+                                <SelectValue placeholder={f.placeholder || "Please choose"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(f.options || []).map((o) => (
+                                  <SelectItem key={o} value={o}>
+                                    {o}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : f.type === "radio" ? (
+                            <div className="space-y-1.5">
+                              {(f.options || []).map((o) => (
+                                <label key={o} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="radio"
+                                    name={`cf-${f.key}`}
+                                    checked={value === o}
+                                    onChange={() => set(o)}
+                                  />
+                                  <span>{o}</span>
+                                </label>
+                              ))}
+                            </div>
+                          ) : f.type === "checkbox" ? (
+                            <label className="flex items-start gap-2 text-sm">
+                              <Checkbox
+                                checked={answers[f.key] === true}
+                                onCheckedChange={(v) => set(!!v)}
+                              />
+                              <span>
+                                {f.label}
+                                {f.required ? " *" : ""}
+                              </span>
+                            </label>
+                          ) : (
+                            <Input
+                              id={`cf-${f.key}`}
+                              type={
+                                f.type === "email"
+                                  ? "email"
+                                  : f.type === "number"
+                                    ? "number"
+                                    : f.type === "date"
+                                      ? "date"
+                                      : f.type === "phone"
+                                        ? "tel"
+                                        : "text"
+                              }
+                              placeholder={f.placeholder || ""}
+                              value={value}
+                              onChange={(e) => set(e.target.value)}
+                            />
+                          )}
+                          {f.help && <p className="text-xs text-muted-foreground">{f.help}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label htmlFor="message">
                     {isBooking ? "Anything else we should know?" : "Your message"}
@@ -417,6 +547,7 @@ export default function PublicForm() {
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                   />
                 </div>
+
 
                 <label className="flex items-start gap-2 text-sm">
                   <Checkbox
@@ -453,7 +584,8 @@ export default function PublicForm() {
                   }
                 >
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isBooking ? "Submit booking request" : "Register my interest"}
+                  {page.submit_button_text ||
+                    (isBooking ? "Submit booking request" : "Register my interest")}
                 </Button>
               </form>
             )}

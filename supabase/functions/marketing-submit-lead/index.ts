@@ -209,9 +209,23 @@ Deno.serve(async (req) => {
       if (requests) detailLines.push(`Requests: ${requests}`);
     }
 
+    // Answers to the form's own custom questions, in the order they were asked.
+    const answers = Array.isArray((extra as any).answers) ? (extra as any).answers : [];
+    const answerLines = answers
+      .map((a: any) => {
+        const label = clean(a?.label, 200);
+        const value = Array.isArray(a?.value)
+          ? a.value.map((v: any) => clean(v, 200)).filter(Boolean).join(", ")
+          : clean(a?.value, 1000);
+        return label && value ? `${label}: ${value}` : "";
+      })
+      .filter(Boolean);
+    if (answerLines.length) detailLines.push(answerLines.join("\n"));
+
     if (message) detailLines.push(`Message: "${message}"`);
     detailLines.push(`Submitted via: ${page.title} (/f/${page.slug})`);
     detailLines.push(consent ? "Marketing consent: given" : "Marketing consent: not given");
+
 
     const taskTitle =
       formType === "booking"
