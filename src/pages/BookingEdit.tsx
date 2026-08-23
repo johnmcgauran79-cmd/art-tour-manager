@@ -30,6 +30,7 @@ import { PassengerContactSearch } from "@/components/bookings/PassengerContactSe
 import { PassengerContactData } from "@/hooks/useBookingFormState";
 import { BookingAutomationOverrideField } from "@/components/bookings/BookingAutomationOverrideField";
 import { BookingBrandField } from "@/components/bookings/BookingBrandField";
+import { TagPicker } from "@/components/tags/TagPicker";
 import { BookingAutomationOverride } from "@/lib/automationOverrides";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
@@ -905,6 +906,15 @@ export default function BookingEdit() {
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, passport_not_required: checked }))}
                 />
               </div>
+
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-sm font-medium">Tags &amp; Segments</Label>
+                <p className="text-xs text-muted-foreground">
+                  Label this booking (e.g. "Ladies", "Indian Derby Interest 2028") to group and report on it later. Saved instantly.
+                </p>
+                <TagPicker entity="booking" entityId={booking.id} readOnly={isViewOnly} />
+              </div>
+
 
               <div className="pt-2 border-t">
                 <BookingBrandField

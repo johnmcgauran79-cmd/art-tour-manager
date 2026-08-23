@@ -28,12 +28,15 @@ import {
   describeFilters,
   type AudienceFilters,
 } from "@/lib/edm/audience";
+import { useTags } from "@/hooks/useTags";
 
 export function AudiencesTab() {
   const { toast } = useToast();
   const { data: audiences = [], isLoading } = useAudiences();
+  const { data: allTags = [] } = useTags();
   const save = useSaveAudience();
   const del = useDeleteAudience();
+
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<MarketingAudience> | null>(null);
@@ -61,12 +64,13 @@ export function AudiencesTab() {
   const setFilters = (patch: Partial<AudienceFilters>) =>
     setEditing({ ...editing, filters: { ...filters, ...patch } });
 
-  const toggleIn = (key: "states" | "leadStages", value: string) => {
+  const toggleIn = (key: "states" | "leadStages" | "tagIds", value: string) => {
     const current = filters[key] || [];
     setFilters({
       [key]: current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
     } as Partial<AudienceFilters>);
   };
+
 
   return (
     <div className="space-y-4">
@@ -191,6 +195,30 @@ export function AudiencesTab() {
                   ))}
                 </div>
               </div>
+
+
+
+              {!!allTags?.length && (
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex flex-wrap gap-3">
+                    {allTags.map((t) => (
+                      <label key={t.id} className="flex items-center gap-1.5 text-sm">
+                        <Checkbox
+                          checked={(filters.tagIds || []).includes(t.id)}
+                          onCheckedChange={() => toggleIn("tagIds", t.id)}
+                        />
+                        {t.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Contacts must carry every selected tag.
+                  </p>
+                </div>
+              )}
+
+
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="flex items-center gap-2 text-sm">

@@ -18,7 +18,28 @@ export interface AudienceFilters {
   latestTourBefore?: string;
   /** free-text name/email match */
   search?: string;
+  /** contacts carrying ALL of these tags */
+  tagIds?: string[];
 }
+
+/** Resolve the customer ids that carry every one of the given tags. */
+const customerIdsForTags = async (tagIds: string[]): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from("contact_tags")
+    .select("customer_id, tag_id")
+    .in("tag_id", tagIds);
+  if (error) throw error;
+  const counts = new Map<string, Set<string>>();
+  (data || []).forEach((r: any) => {
+    const set = counts.get(r.customer_id) || new Set<string>();
+    set.add(r.tag_id);
+    counts.set(r.customer_id, set);
+  });
+  return [...counts.entries()]
+    .filter(([, set]) => set.size === new Set(tagIds).size)
+    .map(([id]) => id);
+};
+
 
 export interface AudienceContact {
   id: string;
@@ -32,12 +53,13 @@ export interface AudienceContact {
 
 const PAGE = 1000;
 
-const applyFilters = (query: any, f: AudienceFilters) => {
+const applyFilters = (query: any, f: AudienceFilters, tagCustomerIds?: string[] | null) => {
   let q = query
     .not("email", "is", null)
     .neq("email", "")
     .eq("marketing_consent", true);
 
+  if (tagCustomerIds) q = q.in("id", tagCustomerIds.length ? tagCustomerIds : [""]);
   if (f.states?.length) q = q.in("state", f.states);
   if (f.leadStages?.length) q = q.in("lead_stage", f.leadStages);
   if (f.leadSources?.length) q = q.in("lead_source", f.leadSources);
@@ -56,9 +78,11 @@ const applyFilters = (query: any, f: AudienceFilters) => {
 
 /** Count matching, consented contacts without fetching them all. */
 export const countAudience = async (filters: AudienceFilters): Promise<number> => {
+  const tagIds = filters.tagIds?.length ? await customerIdsForTags(filters.tagIds) : null;
   const { count, error } = await applyFilters(
     supabase.from("customers").select("id", { count: "exact", head: true }),
-    filters
+    filters,
+    tagIds
   );
   if (error) throw error;
   return count || 0;
@@ -69,12 +93,14 @@ export const resolveAudience = async (
   filters: AudienceFilters
 ): Promise<AudienceContact[]> => {
   const out: AudienceContact[] = [];
+  const tagIds = filters.tagIds?.length ? await customerIdsForTags(filters.tagIds) : null;
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await applyFilters(
       supabase
         .from("customers")
         .select("id, first_name, last_name, email, state, lead_stage, latest_tour_name"),
-      filters
+      filters,
+      tagIds
     )
       .order("created_at", { ascending: true })
       .range(from, from + PAGE - 1);
@@ -83,6 +109,7 @@ export const resolveAudience = async (
     out.push(...rows);
     if (rows.length < PAGE) break;
   }
+
 
   // De-dupe by lowercase email — one send per address.
   const seen = new Set<string>();
@@ -103,7 +130,9 @@ export const describeFilters = (f: AudienceFilters): string => {
   if (f.neverTravelledOnly) parts.push("Never travelled");
   if (f.interestedTourId) parts.push("Interested in a specific tour");
   if (f.latestTourBefore) parts.push(`Last travelled before ${f.latestTourBefore}`);
+  if (f.tagIds?.length) parts.push(`Tags: ${f.tagIds.length} selected`);
   if (f.search) parts.push(`Matching "${f.search}"`);
+
   return parts.length ? parts.join(" · ") : "All consented contacts";
 };
 
