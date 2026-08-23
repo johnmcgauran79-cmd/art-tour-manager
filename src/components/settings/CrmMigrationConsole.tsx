@@ -30,10 +30,15 @@ import {
   Download,
   Loader2,
   RefreshCw,
+  MapPin,
   Send,
+  Trash2,
   Users,
 } from "lucide-react";
+import { ConfirmDeleteFileDialog } from "@/components/shared/ConfirmDeleteFileDialog";
 import {
+  useBrevoLocationBackfill,
+  useBrevoPurgeBlocklisted,
   useBrevoPullNew,
   useBrevoStatus,
   useLatestMigrationRun,
@@ -74,7 +79,10 @@ export const CrmMigrationConsole = () => {
   const { busy, progressLabel, startRun, runPull, runPush, retryFailed, stop } = useMigrationRunner();
   const updateTag = useUpdateTagMapping();
   const pullNew = useBrevoPullNew();
+  const locationBackfill = useBrevoLocationBackfill();
+  const purgeBlocked = useBrevoPurgeBlocklisted();
 
+  const [confirmPurge, setConfirmPurge] = useState(false);
   const [tagSearch, setTagSearch] = useState("");
   const [tab, setTab] = useState("collect");
 
@@ -200,6 +208,76 @@ export const CrmMigrationConsole = () => {
           </CardContent>
         )}
       </Card>
+
+      {/* Brevo housekeeping */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Brevo housekeeping</CardTitle>
+          <CardDescription>
+            Tidy up the Brevo database after the migration. Both actions run against Brevo only —
+            nothing in ART is changed apart from the stored Brevo id.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="font-medium">State / City / Country fields</div>
+            <p className="text-sm text-muted-foreground">
+              Brevo has no State field of its own, so those values were dropped during the import.
+              This creates STATE, CITY, COUNTRY and LATEST_TOUR in Brevo and fills them from ART, so
+              you can build segments by state.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => locationBackfill.mutate()}
+              disabled={!brevo?.connected || locationBackfill.isPending}
+            >
+              {locationBackfill.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <MapPin className="h-4 w-4 mr-1.5" />
+              )}
+              Add & fill location fields
+            </Button>
+          </div>
+
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="font-medium">Delete blocked / unsubscribed contacts</div>
+            <p className="text-sm text-muted-foreground">
+              Permanently removes every contact Brevo has marked as blocked (unsubscribed, bounced
+              or complained). They cannot be emailed either way, and deleting them removes the
+              record that they opted out — so if they are ever imported again, nothing stops them
+              being contacted. Keeping them blocked is the safer option.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive"
+              onClick={() => setConfirmPurge(true)}
+              disabled={!brevo?.connected || purgeBlocked.isPending}
+            >
+              {purgeBlocked.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-1.5" />
+              )}
+              Delete blocked contacts
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ConfirmDeleteFileDialog
+        open={confirmPurge}
+        onOpenChange={setConfirmPurge}
+        itemLabel="group of blocked contacts"
+        isPending={purgeBlocked.isPending}
+        onConfirm={() => {
+          setConfirmPurge(false);
+          purgeBlocked.mutate();
+        }}
+      />
+
 
       {/* Migration wizard */}
       <Card>

@@ -284,6 +284,86 @@ export const useMigrationRunner = () => {
 
   return { busy, progressLabel, startRun, runPull, runPush, retryFailed, stop };
 };
+/** Creates STATE/CITY/COUNTRY fields in Brevo and fills them from ART. */
+export const useBrevoLocationBackfill = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async () => {
+      await invokeFn("brevo-sync", { action: "ensure_location_fields" });
+      let updated = 0;
+      for (const source of ["customers", "migration"] as const) {
+        let offset = 0;
+        for (let i = 0; i < 200; i++) {
+          const res = await invokeFn("brevo-sync", {
+            action: "backfill_locations",
+            source,
+            limit: 100,
+            offset,
+          });
+          updated += res.updated ?? 0;
+          offset = res.nextOffset ?? offset + 100;
+          if (!res.hasMore) break;
+        }
+      }
+      return { updated };
+    },
+    onSuccess: ({ updated }) => {
+      queryClient.invalidateQueries({ queryKey: ["brevo-status"] });
+      toast({
+        title: "Location fields updated in Brevo",
+        description: `${updated} contact${updated === 1 ? "" : "s"} now carry State, City and Country.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Could not update the location fields",
+        description: error?.message ?? "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/** Permanently deletes every blocked / unsubscribed contact in Brevo. */
+export const useBrevoPurgeBlocklisted = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async () => {
+      let offset = 0;
+      let deleted = 0;
+      let scanned = 0;
+      for (let i = 0; i < 300; i++) {
+        const res = await invokeFn("brevo-sync", {
+          action: "purge_blocklisted",
+          limit: 200,
+          offset,
+        });
+        deleted += res.deleted ?? 0;
+        scanned += res.scanned ?? 0;
+        offset = res.nextOffset ?? offset + 200;
+        if (!res.hasMore) break;
+      }
+      return { deleted, scanned };
+    },
+    onSuccess: ({ deleted, scanned }) => {
+      queryClient.invalidateQueries({ queryKey: ["brevo-status"] });
+      toast({
+        title: "Blocked contacts removed",
+        description: `${deleted} deleted out of ${scanned} contacts checked.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Could not remove the blocked contacts",
+        description: error?.message ?? "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 
 /** Pulls contacts newly created in Brevo into ART (ongoing connection). */
 export const useBrevoPullNew = () => {
