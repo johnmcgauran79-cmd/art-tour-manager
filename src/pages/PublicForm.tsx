@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AU_STATES } from "@/lib/edm/audience";
+import { parseFormFields } from "@/lib/marketing/formFields";
+
 
 interface PublicTour {
   id: string;
