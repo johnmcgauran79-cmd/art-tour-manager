@@ -241,6 +241,9 @@ export default function PublicForm() {
             {done ? (
               <div className="space-y-3 py-8 text-center">
                 <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+                {page.thank_you_heading && (
+                  <h2 className="text-xl font-semibold">{page.thank_you_heading}</h2>
+                )}
                 <p className="text-base font-medium">{done}</p>
               </div>
             ) : (
@@ -581,7 +584,8 @@ export default function PublicForm() {
                   }
                 >
                   {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isBooking ? "Submit booking request" : "Register my interest"}
+                  {page.submit_button_text ||
+                    (isBooking ? "Submit booking request" : "Register my interest")}
                 </Button>
               </form>
             )}
