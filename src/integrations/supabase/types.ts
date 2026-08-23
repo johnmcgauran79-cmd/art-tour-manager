@@ -1380,6 +1380,120 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_events: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email: string | null
+          event_type: string
+          id: string
+          link_url: string | null
+          recipient_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email?: string | null
+          event_type: string
+          id?: string
+          link_url?: string | null
+          recipient_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email?: string | null
+          event_type?: string
+          id?: string
+          link_url?: string | null
+          recipient_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_recipients: {
+        Row: {
+          campaign_id: string
+          click_count: number
+          clicked_at: string | null
+          created_at: string
+          customer_id: string | null
+          email: string
+          error_message: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          open_count: number
+          opened_at: string | null
+          provider_message_id: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          click_count?: number
+          clicked_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          email: string
+          error_message?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          open_count?: number
+          opened_at?: string | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          click_count?: number
+          clicked_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          email?: string
+          error_message?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          open_count?: number
+          opened_at?: string | null
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capacity_monitoring_rules: {
         Row: {
           created_at: string
@@ -1795,11 +1909,20 @@ export type Database = {
           emergency_contact_relationship: string | null
           first_name: string
           id: string
+          interested_tour_id: string | null
           keap_contact_id: string | null
           keap_match_checked_at: string | null
           last_name: string
           latest_tour_end_date: string | null
           latest_tour_name: string | null
+          lead_next_action_date: string | null
+          lead_notes: string | null
+          lead_owner_id: string | null
+          lead_source: string | null
+          lead_stage: Database["public"]["Enums"]["lead_stage"]
+          marketing_consent: boolean
+          marketing_consent_at: string | null
+          marketing_consent_source: string | null
           medical_conditions: string | null
           notes: string | null
           phone: string | null
@@ -1828,11 +1951,20 @@ export type Database = {
           emergency_contact_relationship?: string | null
           first_name: string
           id?: string
+          interested_tour_id?: string | null
           keap_contact_id?: string | null
           keap_match_checked_at?: string | null
           last_name: string
           latest_tour_end_date?: string | null
           latest_tour_name?: string | null
+          lead_next_action_date?: string | null
+          lead_notes?: string | null
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          lead_stage?: Database["public"]["Enums"]["lead_stage"]
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
@@ -1861,11 +1993,20 @@ export type Database = {
           emergency_contact_relationship?: string | null
           first_name?: string
           id?: string
+          interested_tour_id?: string | null
           keap_contact_id?: string | null
           keap_match_checked_at?: string | null
           last_name?: string
           latest_tour_end_date?: string | null
           latest_tour_name?: string | null
+          lead_next_action_date?: string | null
+          lead_notes?: string | null
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          lead_stage?: Database["public"]["Enums"]["lead_stage"]
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
@@ -1876,7 +2017,62 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_interested_tour_id_fkey"
+            columns: ["interested_tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      edm_templates: {
+        Row: {
+          blocks: Json
+          brand_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          editor_mode: string
+          html_body: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          editor_mode?: string
+          html_body?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          editor_mode?: string
+          html_body?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edm_templates_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_attachments: {
         Row: {
@@ -2582,6 +2778,439 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_page_submissions: {
+        Row: {
+          consent_given: boolean
+          consent_text: string | null
+          created_at: string
+          customer_id: string | null
+          email: string | null
+          first_name: string | null
+          id: string
+          ip_hash: string | null
+          landing_page_id: string | null
+          last_name: string | null
+          message: string | null
+          payload: Json
+          phone: string | null
+          state: string | null
+          tour_id: string | null
+        }
+        Insert: {
+          consent_given?: boolean
+          consent_text?: string | null
+          created_at?: string
+          customer_id?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          ip_hash?: string | null
+          landing_page_id?: string | null
+          last_name?: string | null
+          message?: string | null
+          payload?: Json
+          phone?: string | null
+          state?: string | null
+          tour_id?: string | null
+        }
+        Update: {
+          consent_given?: boolean
+          consent_text?: string | null
+          created_at?: string
+          customer_id?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          ip_hash?: string | null
+          landing_page_id?: string | null
+          last_name?: string | null
+          message?: string | null
+          payload?: Json
+          phone?: string | null
+          state?: string | null
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_submissions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_pages: {
+        Row: {
+          body_html: string | null
+          brand_id: string | null
+          consent_text: string | null
+          created_at: string
+          created_by: string | null
+          fields: Json
+          headline: string | null
+          hero_image_url: string | null
+          id: string
+          is_active: boolean
+          lead_owner_id: string | null
+          lead_source: string | null
+          slug: string
+          subheadline: string | null
+          submission_count: number
+          thank_you_message: string | null
+          title: string
+          tour_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string | null
+          brand_id?: string | null
+          consent_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          headline?: string | null
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          slug: string
+          subheadline?: string | null
+          submission_count?: number
+          thank_you_message?: string | null
+          title: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string | null
+          brand_id?: string | null
+          consent_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          headline?: string | null
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          slug?: string
+          subheadline?: string | null
+          submission_count?: number
+          thank_you_message?: string | null
+          title?: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_pages_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_pages_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_audiences: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          filters: Json
+          id: string
+          last_count: number | null
+          last_counted_at: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          last_count?: number | null
+          last_counted_at?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          filters?: Json
+          id?: string
+          last_count?: number | null
+          last_counted_at?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketing_automation_log: {
+        Row: {
+          action_summary: string | null
+          created_at: string
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          rule_id: string | null
+          submission_id: string | null
+          success: boolean
+        }
+        Insert: {
+          action_summary?: string | null
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          rule_id?: string | null
+          submission_id?: string | null
+          success?: boolean
+        }
+        Update: {
+          action_summary?: string | null
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          rule_id?: string | null
+          submission_id?: string | null
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_automation_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_automation_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_automation_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_automation_rules: {
+        Row: {
+          actions: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          trigger_config: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          trigger_config?: Json
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          trigger_config?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      marketing_campaigns: {
+        Row: {
+          audience_filters: Json | null
+          audience_id: string | null
+          blocks: Json
+          bounce_count: number
+          brand_id: string | null
+          click_count: number
+          created_at: string
+          created_by: string | null
+          editor_mode: string
+          failed_count: number
+          from_email: string | null
+          from_name: string | null
+          html_body: string | null
+          id: string
+          name: string
+          open_count: number
+          preheader: string | null
+          reply_to: string | null
+          scheduled_send_at: string | null
+          send_completed_at: string | null
+          send_started_at: string | null
+          sent_count: number
+          status: string
+          subject: string
+          total_recipients: number
+          unsubscribe_count: number
+          updated_at: string
+        }
+        Insert: {
+          audience_filters?: Json | null
+          audience_id?: string | null
+          blocks?: Json
+          bounce_count?: number
+          brand_id?: string | null
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          editor_mode?: string
+          failed_count?: number
+          from_email?: string | null
+          from_name?: string | null
+          html_body?: string | null
+          id?: string
+          name: string
+          open_count?: number
+          preheader?: string | null
+          reply_to?: string | null
+          scheduled_send_at?: string | null
+          send_completed_at?: string | null
+          send_started_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string
+          total_recipients?: number
+          unsubscribe_count?: number
+          updated_at?: string
+        }
+        Update: {
+          audience_filters?: Json | null
+          audience_id?: string | null
+          blocks?: Json
+          bounce_count?: number
+          brand_id?: string | null
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          editor_mode?: string
+          failed_count?: number
+          from_email?: string | null
+          from_name?: string | null
+          html_body?: string | null
+          id?: string
+          name?: string
+          open_count?: number
+          preheader?: string | null
+          reply_to?: string | null
+          scheduled_send_at?: string | null
+          send_completed_at?: string | null
+          send_started_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string
+          total_recipients?: number
+          unsubscribe_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_audience_id_fkey"
+            columns: ["audience_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_audiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_campaigns_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_preferences: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          email: string
+          id: string
+          interests: Json
+          subscribed: boolean
+          token: string
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          email: string
+          id?: string
+          interests?: Json
+          subscribed?: boolean
+          token?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          email?: string
+          id?: string
+          interests?: Json
+          subscribed?: boolean
+          token?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_preferences_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -5993,6 +6622,14 @@ export type Database = {
         | "updated"
         | "paid"
         | "finalised"
+      lead_stage:
+        | "none"
+        | "new"
+        | "contacted"
+        | "qualified"
+        | "proposal"
+        | "won"
+        | "lost"
       payment_workflow_status:
         | "unpaid"
         | "partially_paid"
@@ -6240,6 +6877,15 @@ export const Constants = {
         "updated",
         "paid",
         "finalised",
+      ],
+      lead_stage: [
+        "none",
+        "new",
+        "contacted",
+        "qualified",
+        "proposal",
+        "won",
+        "lost",
       ],
       payment_workflow_status: [
         "unpaid",

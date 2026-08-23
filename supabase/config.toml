@@ -173,3 +173,15 @@ verify_jwt = false
 
 [functions.brevo-sync]
 verify_jwt = false
+
+[functions.marketing-send-campaign]
+verify_jwt = false
+
+[functions.marketing-submit-lead]
+verify_jwt = false
+
+[functions.marketing-preferences]
+verify_jwt = false
+
+[functions.marketing-landing-page]
+verify_jwt = false

@@ -1,0 +1,498 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { EdmBlock } from "@/lib/edm/blocks";
+import type { AudienceFilters } from "@/lib/edm/audience";
+
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  from_name: string | null;
+  from_email: string | null;
+  reply_to: string | null;
+  brand_id: string | null;
+  audience_id: string | null;
+  audience_filters: AudienceFilters | null;
+  editor_mode: "blocks" | "html";
+  blocks: EdmBlock[];
+  html_body: string | null;
+  status: "draft" | "scheduled" | "sending" | "sent" | "cancelled";
+  scheduled_send_at: string | null;
+  send_started_at: string | null;
+  send_completed_at: string | null;
+  total_recipients: number;
+  sent_count: number;
+  failed_count: number;
+  open_count: number;
+  click_count: number;
+  bounce_count: number;
+  unsubscribe_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MarketingAudience {
+  id: string;
+  name: string;
+  description: string | null;
+  filters: AudienceFilters;
+  last_count: number | null;
+  last_counted_at: string | null;
+  created_at: string;
+}
+
+export interface LandingPage {
+  id: string;
+  slug: string;
+  title: string;
+  headline: string | null;
+  subheadline: string | null;
+  body_html: string | null;
+  hero_image_url: string | null;
+  brand_id: string | null;
+  tour_id: string | null;
+  fields: { key: string; label: string; required?: boolean }[];
+  consent_text: string | null;
+  thank_you_message: string | null;
+  lead_source: string | null;
+  lead_owner_id: string | null;
+  is_active: boolean;
+  submission_count: number;
+  created_at: string;
+}
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  trigger_type: "form_submitted" | "lead_stage_changed";
+  trigger_config: { landing_page_id?: string; lead_stage?: string };
+  actions: AutomationAction[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export type AutomationAction =
+  | { type: "send_template"; template_id: string }
+  | { type: "create_task"; title: string; assignee_id?: string; due_in_days?: number }
+  | { type: "notify_teams"; message?: string }
+  | { type: "set_stage"; lead_stage: string };
+
+/* ---------------------------------- Campaigns --------------------------------- */
+
+export const useCampaigns = () =>
+  useQuery({
+    queryKey: ["marketing-campaigns"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("marketing_campaigns")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as MarketingCampaign[];
+    },
+    staleTime: 30000,
+  });
+
+export const useCampaign = (id: string | undefined) =>
+  useQuery({
+    queryKey: ["marketing-campaign", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("marketing_campaigns")
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as MarketingCampaign | null;
+    },
+  });
+
+export const useSaveCampaign = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Partial<MarketingCampaign> & { id?: string }) => {
+      const { id, ...rest } = input;
+      const payload: any = { ...rest };
+      if (id) {
+        const { data, error } = await supabase
+          .from("marketing_campaigns")
+          .update(payload)
+          .eq("id", id)
+          .select()
+          .maybeSingle();
+        if (error) throw error;
+        return data as unknown as MarketingCampaign;
+      }
+      const user = (await supabase.auth.getUser()).data.user;
+      const { data, error } = await supabase
+        .from("marketing_campaigns")
+        .insert({ ...payload, created_by: user?.id })
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as MarketingCampaign;
+    },
+    onSuccess: (c) => {
+      qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
+      if (c?.id) qc.invalidateQueries({ queryKey: ["marketing-campaign", c.id] });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useDeleteCampaign = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("marketing_campaigns").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
+      toast({ title: "Campaign deleted" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useCampaignRecipients = (campaignId: string | undefined) =>
+  useQuery({
+    queryKey: ["campaign-recipients", campaignId],
+    enabled: !!campaignId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_recipients")
+        .select("id, email, first_name, last_name, status, error_message, sent_at, open_count, click_count")
+        .eq("campaign_id", campaignId!)
+        .order("sent_at", { ascending: false, nullsFirst: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+/* ---------------------------------- Audiences --------------------------------- */
+
+export const useAudiences = () =>
+  useQuery({
+    queryKey: ["marketing-audiences"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("marketing_audiences")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      return (data || []) as unknown as MarketingAudience[];
+    },
+  });
+
+export const useSaveAudience = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Partial<MarketingAudience> & { id?: string }) => {
+      const { id, ...rest } = input;
+      if (id) {
+        const { error } = await supabase
+          .from("marketing_audiences")
+          .update(rest as any)
+          .eq("id", id);
+        if (error) throw error;
+        return;
+      }
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await supabase
+        .from("marketing_audiences")
+        .insert({ ...(rest as any), created_by: user?.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-audiences"] });
+      toast({ title: "Audience saved" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useDeleteAudience = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("marketing_audiences").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-audiences"] });
+      toast({ title: "Audience deleted" });
+    },
+  });
+};
+
+/* -------------------------------- Landing pages ------------------------------- */
+
+export const useLandingPages = () =>
+  useQuery({
+    queryKey: ["landing-pages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landing_pages")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as LandingPage[];
+    },
+  });
+
+export const useSaveLandingPage = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Partial<LandingPage> & { id?: string }) => {
+      const { id, ...rest } = input;
+      if (id) {
+        const { error } = await supabase
+          .from("landing_pages")
+          .update(rest as any)
+          .eq("id", id);
+        if (error) throw error;
+        return;
+      }
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await supabase
+        .from("landing_pages")
+        .insert({ ...(rest as any), created_by: user?.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["landing-pages"] });
+      toast({ title: "Landing page saved" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useDeleteLandingPage = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("landing_pages").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["landing-pages"] });
+      toast({ title: "Landing page deleted" });
+    },
+  });
+};
+
+export const useLandingSubmissions = () =>
+  useQuery({
+    queryKey: ["landing-submissions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("landing_page_submissions")
+        .select("*, landing_page:landing_pages(title, slug), tour:tours(id, name)")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+/* ------------------------------------ Leads ----------------------------------- */
+
+export interface LeadRow {
+  id: string;
+  first_name: string | null;
+  last_name: string | null
+  email: string | null;
+  phone: string | null;
+  state: string | null;
+  lead_stage: string;
+  lead_source: string | null;
+  lead_owner_id: string | null;
+  interested_tour_id: string | null;
+  lead_next_action_date: string | null;
+  lead_notes: string | null;
+  created_at: string;
+  interested_tour?: { id: string; name: string } | null;
+}
+
+export const useLeads = () =>
+  useQuery({
+    queryKey: ["marketing-leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select(
+          "id, first_name, last_name, email, phone, state, lead_stage, lead_source, lead_owner_id, interested_tour_id, lead_next_action_date, lead_notes, created_at, interested_tour:tours!interested_tour_id(id, name)"
+        )
+        .neq("lead_stage", "none")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return (data || []) as unknown as LeadRow[];
+    },
+    staleTime: 30000,
+  });
+
+export const useUpdateLead = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<LeadRow> & { id: string }) => {
+      const { error } = await supabase
+        .from("customers")
+        .update(updates as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-leads"] });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+/* --------------------------------- Automation --------------------------------- */
+
+export const useAutomationRules = () =>
+  useQuery({
+    queryKey: ["marketing-automation-rules"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("marketing_automation_rules")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as AutomationRule[];
+    },
+  });
+
+export const useSaveAutomationRule = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Partial<AutomationRule> & { id?: string }) => {
+      const { id, ...rest } = input;
+      if (id) {
+        const { error } = await supabase
+          .from("marketing_automation_rules")
+          .update(rest as any)
+          .eq("id", id);
+        if (error) throw error;
+        return;
+      }
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await supabase
+        .from("marketing_automation_rules")
+        .insert({ ...(rest as any), created_by: user?.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-automation-rules"] });
+      toast({ title: "Automation rule saved" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useDeleteAutomationRule = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("marketing_automation_rules")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-automation-rules"] });
+      toast({ title: "Rule deleted" });
+    },
+  });
+};
+
+/* ------------------------------- Campaign sending ----------------------------- */
+
+interface SendRecipient {
+  email: string;
+  customer_id?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+}
+
+export const useSendCampaign = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      campaignId,
+      recipients,
+      onProgress,
+    }: {
+      campaignId: string;
+      recipients: SendRecipient[];
+      onProgress?: (sent: number, total: number) => void;
+    }) => {
+      // 1. Queue every recipient server-side (chunked to keep payloads small).
+      for (let i = 0; i < recipients.length; i += 500) {
+        const { error } = await supabase.functions.invoke("marketing-send-campaign", {
+          body: { action: "prepare", campaignId, recipients: recipients.slice(i, i + 500) },
+        });
+        if (error) throw error;
+      }
+
+      // 2. Drain the queue in batches until nothing is left.
+      let guard = 0;
+      for (;;) {
+        const { data, error } = await supabase.functions.invoke("marketing-send-campaign", {
+          body: { action: "process", campaignId, batchSize: 40 },
+        });
+        if (error) throw error;
+        const res = data as { sent: number; failed: number; remaining: number; total: number };
+        onProgress?.(res.total - res.remaining, res.total);
+        if (res.remaining <= 0) break;
+        if (++guard > 500) break;
+      }
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
+      qc.invalidateQueries({ queryKey: ["campaign-recipients", v.campaignId] });
+      toast({ title: "Campaign sent", description: "All queued emails have been processed." });
+    },
+    onError: (e: any) =>
+      toast({ title: "Send failed", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useSendCampaignTest = () => {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ campaignId, email }: { campaignId: string; email: string }) => {
+      const { error } = await supabase.functions.invoke("marketing-send-campaign", {
+        body: { action: "test", campaignId, testEmail: email },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => toast({ title: "Test email sent" }),
+    onError: (e: any) =>
+      toast({ title: "Test failed", description: e.message, variant: "destructive" }),
+  });
+};
