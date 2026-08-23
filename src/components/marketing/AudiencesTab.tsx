@@ -190,7 +190,10 @@ export function AudiencesTab() {
                       {s.label}
                     </label>
                   ))}
+                </div>
               </div>
+
+
 
               {!!allTags?.length && (
                 <div className="space-y-2">
