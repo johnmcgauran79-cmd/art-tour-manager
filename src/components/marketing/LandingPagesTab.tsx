@@ -98,6 +98,8 @@ export function LandingPagesTab() {
           : "Thanks — we'll be in touch with tour details soon.",
       lead_source: form_type === "booking" ? "Booking form" : "Register interest",
       notify_teams: true,
+      task_assignee_ids: [],
+      task_watcher_ids: [],
       is_active: true,
     });
     setOpen(true);
