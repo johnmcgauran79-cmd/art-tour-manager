@@ -112,6 +112,7 @@ export default function PublicForm() {
   const accent = page?.brand?.color_button || page?.brand?.color_primary || undefined;
 
   const heading = useMemo(() => page?.headline || page?.title || "", [page]);
+  const customFields = useMemo(() => parseFormFields(page?.fields), [page]);
 
   const toggleTour = (id: string) =>
     setSelectedTours((prev) =>
@@ -129,6 +130,16 @@ export default function PublicForm() {
       setError("Please choose the tour you'd like to book.");
       return;
     }
+    const missing = customFields.find(
+      (f) =>
+        f.required &&
+        f.type !== "heading" &&
+        (f.type === "checkbox" ? answers[f.key] !== true : !String(answers[f.key] ?? "").trim())
+    );
+    if (missing) {
+      setError(`Please complete "${missing.label}".`);
+      return;
+    }
     setSubmitting(true);
     const { data, error: fnError } = await supabase.functions.invoke("marketing-submit-lead", {
       body: {
@@ -142,17 +153,31 @@ export default function PublicForm() {
         consent: form.consent,
         company_website_hp: form.honeypot,
         tour_ids: selectedTours,
-        extra: isBooking
-          ? {
-              passengers: pax.filter((p) => p.first_name || p.last_name),
-              room_type: form.room_type,
-              bedding: form.bedding,
-              emergency_contact: form.emergency_contact,
-              special_requests: form.special_requests,
-            }
-          : {},
+        extra: {
+          ...(isBooking
+            ? {
+                passengers: pax.filter((p) => p.first_name || p.last_name),
+                room_type: form.room_type,
+                bedding: form.bedding,
+                emergency_contact: form.emergency_contact,
+                special_requests: form.special_requests,
+              }
+            : {}),
+          answers: customFields
+            .filter((f) => f.type !== "heading")
+            .map((f) => ({
+              label: f.label,
+              value:
+                f.type === "checkbox"
+                  ? answers[f.key] === true
+                    ? "Yes"
+                    : "No"
+                  : String(answers[f.key] ?? ""),
+            })),
+        },
       },
     });
+
     setSubmitting(false);
     if (fnError || (data as any)?.error) {
       setError((data as any)?.error || "Something went wrong — please try again.");
