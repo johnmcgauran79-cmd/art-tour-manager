@@ -51,6 +51,7 @@ import {
   useDeleteCampaign,
   useEdmTemplates,
   useSaveCampaign,
+  useQueueCampaignRecipients,
   useSaveEdmTemplate,
   useSendCampaign,
   useSendCampaignTest,
@@ -95,6 +96,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const save = useSaveCampaign();
   const del = useDeleteCampaign();
   const send = useSendCampaign();
+  const queue = useQueueCampaignRecipients();
   const test = useSendCampaignTest();
   const saveTemplate = useSaveEdmTemplate();
 
