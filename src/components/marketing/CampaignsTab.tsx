@@ -252,14 +252,36 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       status: "scheduled",
       scheduled_send_at: when.toISOString(),
     });
-    if (saved) {
-      toast({
-        title: "Campaign scheduled",
-        description: `Sending automatically on ${format(when, "dd/MM/yyyy 'at' HH:mm")}.`,
+    if (!saved?.id) return;
+
+    // Queue the audience now so the scheduled worker only has to send.
+    try {
+      const contacts = await resolveAudience(selectedAudience!.filters);
+      if (contacts.length === 0) {
+        toast({ title: "No consented recipients in that audience", variant: "destructive" });
+        return;
+      }
+      await queue.mutateAsync({
+        campaignId: saved.id,
+        recipients: contacts.map((c) => ({
+          email: c.email,
+          customer_id: c.id,
+          first_name: c.first_name,
+          last_name: c.last_name,
+        })),
       });
-      setOpen(false);
+    } catch (e: any) {
+      toast({ title: "Could not queue recipients", description: e.message, variant: "destructive" });
+      return;
     }
+
+    toast({
+      title: "Campaign scheduled",
+      description: `Sending automatically on ${format(when, "dd/MM/yyyy 'at' HH:mm")}.`,
+    });
+    setOpen(false);
   };
+
 
   const handleUnschedule = async () => {
     const saved = await persist({ status: "draft", scheduled_send_at: null });
