@@ -13,6 +13,8 @@ export type EdmBlockType =
   | "imageText"
   | "button"
   | "tourCard"
+  | "twoColumn"
+  | "quote"
   | "divider"
   | "spacer";
 
