@@ -150,10 +150,14 @@ Deno.serve(async (req) => {
       if (customer.last_name) attributes.LASTNAME = customer.last_name;
       const phone = formatPhoneIntl(customer.phone);
       if (phone) attributes.SMS = phone;
-      if (customer.city) attributes.CITY = customer.city;
-      if (customer.state) attributes.STATE = customer.state;
-      if (customer.country) attributes.COUNTRY = customer.country;
+      const loc = normaliseLocation(customer.city ? null : null, customer.city, customer.country);
+      const norm = normaliseLocation(customer.state, customer.city, customer.country);
+      void loc;
+      if (norm.city) attributes.CITY = norm.city;
+      if (norm.state) attributes.STATE = norm.state;
+      if (norm.country) attributes.COUNTRY = norm.country;
       if (customer.latest_tour_name) attributes.LATEST_TOUR = customer.latest_tour_name;
+
 
       const res = await brevoRequest("contacts", {
         method: "POST",
@@ -241,12 +245,14 @@ Deno.serve(async (req) => {
       let updated = 0;
       let failed = 0;
       for (const row of rows) {
+        const loc = normaliseLocation(row.state, row.city, row.country);
         const attributes: Record<string, string> = {};
-        if (row.state) attributes.STATE = String(row.state);
-        if (row.city) attributes.CITY = String(row.city);
-        if (row.country) attributes.COUNTRY = String(row.country);
+        if (loc.state) attributes.STATE = loc.state;
+        if (loc.city) attributes.CITY = loc.city;
+        if (loc.country) attributes.COUNTRY = loc.country;
         if (row.latestTour) attributes.LATEST_TOUR = String(row.latestTour);
         if (Object.keys(attributes).length === 0) continue;
+
         try {
           await brevoRequest(`contacts/${encodeURIComponent(String(row.email))}`, {
             method: "PUT",
