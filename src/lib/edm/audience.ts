@@ -130,7 +130,9 @@ export const describeFilters = (f: AudienceFilters): string => {
   if (f.neverTravelledOnly) parts.push("Never travelled");
   if (f.interestedTourId) parts.push("Interested in a specific tour");
   if (f.latestTourBefore) parts.push(`Last travelled before ${f.latestTourBefore}`);
+  if (f.tagIds?.length) parts.push(`Tags: ${f.tagIds.length} selected`);
   if (f.search) parts.push(`Matching "${f.search}"`);
+
   return parts.length ? parts.join(" · ") : "All consented contacts";
 };
 
