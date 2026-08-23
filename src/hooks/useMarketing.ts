@@ -491,7 +491,28 @@ export const useSendCampaign = () => {
   });
 };
 
+/** Queue recipients without sending — used when scheduling a campaign. */
+export const useQueueCampaignRecipients = () => {
+  return useMutation({
+    mutationFn: async ({
+      campaignId,
+      recipients,
+    }: {
+      campaignId: string;
+      recipients: SendRecipient[];
+    }) => {
+      for (let i = 0; i < recipients.length; i += 500) {
+        const { error } = await supabase.functions.invoke("marketing-send-campaign", {
+          body: { action: "prepare", campaignId, recipients: recipients.slice(i, i + 500) },
+        });
+        if (error) throw error;
+      }
+    },
+  });
+};
+
 export const useSendCampaignTest = () => {
+
   const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ campaignId, email }: { campaignId: string; email: string }) => {
