@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 import { ContactAvatar } from "@/components/contacts/ContactAvatar";
+import { TagPicker } from "@/components/tags/TagPicker";
 import { SendProfileUpdateButton } from "@/components/email/SendProfileUpdateButton";
 import { ExplainWithArtAiButton } from "@/components/art-ai/ExplainWithArtAiButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
@@ -363,6 +364,17 @@ export default function ContactDetail() {
               <InfoRow label="Country" value={contact.country} />
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tags</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TagPicker entity="contact" entityId={contact.id} readOnly={isViewOnly} />
+            </CardContent>
+          </Card>
+
+
 
           <Card>
             <CardHeader>
