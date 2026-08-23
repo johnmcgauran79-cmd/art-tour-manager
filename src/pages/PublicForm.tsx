@@ -35,6 +35,9 @@ interface PublicPage {
   hero_image_url: string | null;
   consent_text: string | null;
   thank_you_message: string | null;
+  thank_you_heading: string | null;
+  submit_button_text: string | null;
+  fields: unknown;
   form_type: "interest" | "booking";
   brand?: {
     name: string;
@@ -46,6 +49,7 @@ interface PublicPage {
     company_phone: string | null;
   } | null;
 }
+
 
 interface PaxRow {
   first_name: string;
@@ -85,6 +89,8 @@ export default function PublicForm() {
   });
   const [selectedTours, setSelectedTours] = useState<string[]>([]);
   const [pax, setPax] = useState<PaxRow[]>([{ first_name: "", last_name: "", dietary: "" }]);
+  const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
+
 
   useEffect(() => {
     if (!slug) return;

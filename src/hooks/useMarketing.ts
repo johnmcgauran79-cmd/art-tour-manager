@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { EdmBlock } from "@/lib/edm/blocks";
 import type { AudienceFilters } from "@/lib/edm/audience";
+import type { FormFieldDef } from "@/lib/marketing/formFields";
+
 
 export interface MarketingCampaign {
   id: string;
@@ -57,9 +59,12 @@ export interface LandingPage {
   tour_ids: string[];
   success_redirect_url: string | null;
   notify_teams: boolean;
-  fields: { key: string; label: string; required?: boolean }[];
+  fields: FormFieldDef[];
   consent_text: string | null;
   thank_you_message: string | null;
+  thank_you_heading: string | null;
+  submit_button_text: string | null;
+
   lead_source: string | null;
   lead_owner_id: string | null;
   is_active: boolean;
@@ -507,40 +512,104 @@ export interface EdmTemplateRow {
   id: string;
   name: string;
   description: string | null;
+  category: string;
+  subject: string | null;
+  preheader: string | null;
+  version: number;
+  parent_template_id: string | null;
+  is_archived: boolean;
   editor_mode: "blocks" | "html";
   blocks: EdmBlock[];
   html_body: string | null;
   brand_id: string | null;
   created_at: string;
+  updated_at: string;
 }
 
-export const useEdmTemplates = () =>
+export const useEdmTemplates = (opts: { includeArchived?: boolean } = {}) =>
   useQuery({
-    queryKey: ["edm-templates"],
+    queryKey: ["edm-templates", opts.includeArchived === true],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("edm_templates")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let query = supabase.from("edm_templates").select("*");
+      if (!opts.includeArchived) query = query.eq("is_archived", false);
+      const { data, error } = await query
+        .order("category")
+        .order("updated_at", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as EdmTemplateRow[];
     },
   });
 
+/**
+ * Create or update a template. Pass an `id` to overwrite in place, or
+ * `saveAsNewVersion: true` to keep the original and store an incremented
+ * version copy (full template versioning for the marketing team).
+ */
 export const useSaveEdmTemplate = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: Partial<EdmTemplateRow>) => {
+    mutationFn: async (
+      input: Partial<EdmTemplateRow> & { id?: string; saveAsNewVersion?: boolean }
+    ) => {
+      const { id, saveAsNewVersion, created_at, updated_at, ...rest } = input as any;
       const user = (await supabase.auth.getUser()).data.user;
+
+      if (id && !saveAsNewVersion) {
+        const { data, error } = await supabase
+          .from("edm_templates")
+          .update({ ...rest, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .select()
+          .maybeSingle();
+        if (error) throw error;
+        return data as unknown as EdmTemplateRow;
+      }
+
+      const payload: any = { ...rest, created_by: user?.id };
+      if (id && saveAsNewVersion) {
+        const { data: original } = await supabase
+          .from("edm_templates")
+          .select("version, parent_template_id")
+          .eq("id", id)
+          .maybeSingle();
+        payload.parent_template_id = (original as any)?.parent_template_id || id;
+        payload.version = ((original as any)?.version || 1) + 1;
+      }
+
+      const { data, error } = await supabase
+        .from("edm_templates")
+        .insert(payload)
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as EdmTemplateRow;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["edm-templates"] });
+      toast({
+        title: v.id && !v.saveAsNewVersion ? "Template updated" : "Template saved",
+      });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useArchiveEdmTemplate = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
       const { error } = await supabase
         .from("edm_templates")
-        .insert({ ...(input as any), created_by: user?.id });
+        .update({ is_archived: archived })
+        .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ["edm-templates"] });
-      toast({ title: "Saved as template" });
+      toast({ title: v.archived ? "Template archived" : "Template restored" });
     },
     onError: (e: any) =>
       toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -549,14 +618,21 @@ export const useSaveEdmTemplate = () => {
 
 export const useDeleteEdmTemplate = () => {
   const qc = useQueryClient();
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("edm_templates").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["edm-templates"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["edm-templates"] });
+      toast({ title: "Template deleted" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 };
+
 
 /* --------------------------- Contact lead / task history ---------------------- */
 

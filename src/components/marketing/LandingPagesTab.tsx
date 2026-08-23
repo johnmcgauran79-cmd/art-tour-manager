@@ -45,6 +45,9 @@ import {
   useSaveLandingPage,
   type LandingPage,
 } from "@/hooks/useMarketing";
+import { parseFormFields } from "@/lib/marketing/formFields";
+import { FormFieldsEditor } from "./FormFieldsEditor";
+
 
 const slugify = (s: string) =>
   s
@@ -400,6 +403,11 @@ export function LandingPagesTab() {
                 </ScrollArea>
               </div>
 
+              <FormFieldsEditor
+                fields={parseFormFields(editing.fields)}
+                onChange={(fields) => setEditing({ ...editing, fields })}
+              />
+
               <div className="space-y-1.5">
                 <Label>Consent wording</Label>
                 <Textarea
@@ -407,6 +415,29 @@ export function LandingPagesTab() {
                   value={editing.consent_text || ""}
                   onChange={(e) => setEditing({ ...editing, consent_text: e.target.value })}
                 />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Submit button text</Label>
+                  <Input
+                    value={editing.submit_button_text || ""}
+                    placeholder="Submit"
+                    onChange={(e) =>
+                      setEditing({ ...editing, submit_button_text: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Thank-you heading</Label>
+                  <Input
+                    value={editing.thank_you_heading || ""}
+                    placeholder="Thank you"
+                    onChange={(e) =>
+                      setEditing({ ...editing, thank_you_heading: e.target.value })
+                    }
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -417,6 +448,7 @@ export function LandingPagesTab() {
                   onChange={(e) => setEditing({ ...editing, thank_you_message: e.target.value })}
                 />
               </div>
+
 
               <div className="flex flex-wrap gap-6">
                 <label className="flex items-center gap-2 text-sm">

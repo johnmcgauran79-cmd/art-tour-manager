@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase
       .from("landing_pages")
       .select(
-        "id, slug, title, headline, subheadline, body_html, hero_image_url, fields, consent_text, thank_you_message, is_active, tour_id, form_type, tour_ids, success_redirect_url, brand:brands(name, logo_url, color_primary, color_button, color_button_text, company_website, company_phone)"
+        "id, slug, title, headline, subheadline, body_html, hero_image_url, fields, consent_text, thank_you_message, thank_you_heading, submit_button_text, is_active, tour_id, form_type, tour_ids, success_redirect_url, brand:brands(name, logo_url, color_primary, color_button, color_button_text, company_website, company_phone)"
       )
       .eq("slug", slug)
       .maybeSingle();

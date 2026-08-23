@@ -2109,38 +2109,56 @@ export type Database = {
         Row: {
           blocks: Json
           brand_id: string | null
+          category: string
           created_at: string
           created_by: string | null
           description: string | null
           editor_mode: string
           html_body: string | null
           id: string
+          is_archived: boolean
           name: string
+          parent_template_id: string | null
+          preheader: string | null
+          subject: string | null
           updated_at: string
+          version: number
         }
         Insert: {
           blocks?: Json
           brand_id?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           editor_mode?: string
           html_body?: string | null
           id?: string
+          is_archived?: boolean
           name: string
+          parent_template_id?: string | null
+          preheader?: string | null
+          subject?: string | null
           updated_at?: string
+          version?: number
         }
         Update: {
           blocks?: Json
           brand_id?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           editor_mode?: string
           html_body?: string | null
           id?: string
+          is_archived?: boolean
           name?: string
+          parent_template_id?: string | null
+          preheader?: string | null
+          subject?: string | null
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -2148,6 +2166,13 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edm_templates_parent_template_id_fkey"
+            columns: ["parent_template_id"]
+            isOneToOne: false
+            referencedRelation: "edm_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -2971,7 +2996,9 @@ export type Database = {
           slug: string
           subheadline: string | null
           submission_count: number
+          submit_button_text: string | null
           success_redirect_url: string | null
+          thank_you_heading: string | null
           thank_you_message: string | null
           title: string
           tour_id: string | null
@@ -2996,7 +3023,9 @@ export type Database = {
           slug: string
           subheadline?: string | null
           submission_count?: number
+          submit_button_text?: string | null
           success_redirect_url?: string | null
+          thank_you_heading?: string | null
           thank_you_message?: string | null
           title: string
           tour_id?: string | null
@@ -3021,7 +3050,9 @@ export type Database = {
           slug?: string
           subheadline?: string | null
           submission_count?: number
+          submit_button_text?: string | null
           success_redirect_url?: string | null
+          thank_you_heading?: string | null
           thank_you_message?: string | null
           title?: string
           tour_id?: string | null
