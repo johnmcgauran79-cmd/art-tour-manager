@@ -3,7 +3,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContactLeadHistory } from "@/components/marketing/ContactLeadHistory";
 import { ArrowLeft, Edit, Trash2, Mail, User } from "lucide-react";
 import { useCustomerById } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
@@ -331,6 +333,10 @@ export default function ContactDetail() {
             <MessageSquare className="h-4 w-4 mr-2" />
             Communications
           </TabsTrigger>
+          <TabsTrigger value="leads">
+            <CheckSquare className="h-4 w-4 mr-2" />
+            Leads &amp; Tasks
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4 mt-6">
@@ -410,6 +416,10 @@ export default function ContactDetail() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="leads" className="space-y-4 mt-6">
+          {id && <ContactLeadHistory customerId={id} />}
         </TabsContent>
       </Tabs>
     </div>
