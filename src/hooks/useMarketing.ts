@@ -53,6 +53,10 @@ export interface LandingPage {
   hero_image_url: string | null;
   brand_id: string | null;
   tour_id: string | null;
+  form_type: "interest" | "booking";
+  tour_ids: string[];
+  success_redirect_url: string | null;
+  notify_teams: boolean;
   fields: { key: string; label: string; required?: boolean }[];
   consent_text: string | null;
   thank_you_message: string | null;
@@ -496,3 +500,122 @@ export const useSendCampaignTest = () => {
       toast({ title: "Test failed", description: e.message, variant: "destructive" }),
   });
 };
+
+/* ------------------------------- EDM templates -------------------------------- */
+
+export interface EdmTemplateRow {
+  id: string;
+  name: string;
+  description: string | null;
+  editor_mode: "blocks" | "html";
+  blocks: EdmBlock[];
+  html_body: string | null;
+  brand_id: string | null;
+  created_at: string;
+}
+
+export const useEdmTemplates = () =>
+  useQuery({
+    queryKey: ["edm-templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("edm_templates")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as EdmTemplateRow[];
+    },
+  });
+
+export const useSaveEdmTemplate = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Partial<EdmTemplateRow>) => {
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await supabase
+        .from("edm_templates")
+        .insert({ ...(input as any), created_by: user?.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["edm-templates"] });
+      toast({ title: "Saved as template" });
+    },
+    onError: (e: any) =>
+      toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+};
+
+export const useDeleteEdmTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("edm_templates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["edm-templates"] }),
+  });
+};
+
+/* --------------------------- Contact lead / task history ---------------------- */
+
+export interface ContactHistoryTask {
+  id: string;
+  title: string;
+  status: string;
+  category: string | null;
+  priority: string | null;
+  due_date: string | null;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+/**
+ * Full lead/booking history for a contact: every form submission plus every
+ * task linked to them (including completed and archived ones) so staff always
+ * have the paper trail on the contact profile.
+ */
+export const useContactLeadHistory = (customerId: string | undefined) =>
+  useQuery({
+    queryKey: ["contact-lead-history", customerId],
+    enabled: !!customerId,
+    queryFn: async () => {
+      const [subs, links] = await Promise.all([
+        supabase
+          .from("landing_page_submissions")
+          .select(
+            "id, form_type, created_at, message, payload, task_id, consent_given, tour_ids, landing_page:landing_pages(title, slug, form_type)"
+          )
+          .eq("customer_id", customerId!)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("task_entity_links")
+          .select("task_id")
+          .eq("entity_type", "contact")
+          .eq("entity_id", customerId!),
+      ]);
+      if (subs.error) throw subs.error;
+      if (links.error) throw links.error;
+
+      const taskIds = Array.from(
+        new Set([
+          ...(links.data || []).map((l: any) => l.task_id),
+          ...(subs.data || []).map((s: any) => s.task_id).filter(Boolean),
+        ])
+      );
+
+      let tasks: ContactHistoryTask[] = [];
+      if (taskIds.length) {
+        const { data, error } = await supabase
+          .from("tasks")
+          .select("id, title, status, category, priority, due_date, created_at")
+          .in("id", taskIds)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        tasks = (data || []) as ContactHistoryTask[];
+      }
+
+      return { submissions: subs.data || [], tasks };
+    },
+  });
