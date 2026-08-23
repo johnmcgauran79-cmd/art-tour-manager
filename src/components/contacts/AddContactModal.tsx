@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CONTACT_TITLE_OPTIONS } from "@/lib/contactTitles";
+import { AU_STATE_OPTIONS } from "@/lib/auStates";
 import { useCreateCustomer } from "@/hooks/useCustomers";
 
 interface AddContactModalProps {
