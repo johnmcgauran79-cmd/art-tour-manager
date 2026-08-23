@@ -28,12 +28,15 @@ import {
   describeFilters,
   type AudienceFilters,
 } from "@/lib/edm/audience";
+import { useTags } from "@/hooks/useTags";
 
 export function AudiencesTab() {
   const { toast } = useToast();
   const { data: audiences = [], isLoading } = useAudiences();
+  const { data: allTags = [] } = useTags();
   const save = useSaveAudience();
   const del = useDeleteAudience();
+
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<MarketingAudience> | null>(null);
