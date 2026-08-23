@@ -2998,6 +2998,8 @@ export type Database = {
           submission_count: number
           submit_button_text: string | null
           success_redirect_url: string | null
+          task_assignee_ids: string[]
+          task_watcher_ids: string[]
           thank_you_heading: string | null
           thank_you_message: string | null
           title: string
@@ -3025,6 +3027,8 @@ export type Database = {
           submission_count?: number
           submit_button_text?: string | null
           success_redirect_url?: string | null
+          task_assignee_ids?: string[]
+          task_watcher_ids?: string[]
           thank_you_heading?: string | null
           thank_you_message?: string | null
           title: string
@@ -3052,6 +3056,8 @@ export type Database = {
           submission_count?: number
           submit_button_text?: string | null
           success_redirect_url?: string | null
+          task_assignee_ids?: string[]
+          task_watcher_ids?: string[]
           thank_you_heading?: string | null
           thank_you_message?: string | null
           title?: string
