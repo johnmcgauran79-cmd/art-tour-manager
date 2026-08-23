@@ -30,6 +30,7 @@ import { PassengerContactSearch } from "@/components/bookings/PassengerContactSe
 import { PassengerContactData } from "@/hooks/useBookingFormState";
 import { BookingAutomationOverrideField } from "@/components/bookings/BookingAutomationOverrideField";
 import { BookingBrandField } from "@/components/bookings/BookingBrandField";
+import { TagPicker } from "@/components/tags/TagPicker";
 import { BookingAutomationOverride } from "@/lib/automationOverrides";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
