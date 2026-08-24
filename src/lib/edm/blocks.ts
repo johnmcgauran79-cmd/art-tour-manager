@@ -529,12 +529,16 @@ export const renderEdmHtml = (
   const contentBg = design?.contentBg || "#ffffff";
   const maxWidth = design?.maxWidth || 800;
   const headerMode = design?.headerMode || "brand";
+  const headerBg = design?.headerBg || contentBg;
+  const headerWidthPct = Math.min(100, Math.max(20, design?.headerWidthPct ?? 55));
+  const headerPadding = Math.max(0, design?.headerPadding ?? 20);
   const headerImage =
     headerMode === "none"
       ? ""
       : headerMode === "custom"
         ? design?.imageUrl || ""
         : brand.emailHeaderImageUrl || "";
+
   const body = renderRows(contentBlocks, brand, { padX: 32 });
 
   return `<!DOCTYPE html>
