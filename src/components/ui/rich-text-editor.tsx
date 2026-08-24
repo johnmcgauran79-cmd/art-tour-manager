@@ -22,6 +22,9 @@ SizeStyle.whitelist = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "
 Quill.register(SizeStyle, true);
 
 const modules = {
+  // matchVisual:false stops Quill from adding extra empty paragraphs / inline
+  // spacing styles when pasting from Word, Docs or websites.
+  clipboard: { matchVisual: false },
   toolbar: [
     [{ header: [1, 2, 3, false] }, { size: SizeStyle.whitelist }],
     ["bold", "italic", "underline", "strike"],
