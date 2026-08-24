@@ -16,9 +16,8 @@ import {
   Mail,
   ShieldCheck,
   Megaphone,
-},
   UserPlus,
-from "lucide-react";
+} from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   Tooltip,
