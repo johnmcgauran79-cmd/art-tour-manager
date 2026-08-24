@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, LayoutTemplate, Megaphone, Send, Target } from "lucide-react";
+import { FileText, LayoutTemplate, Megaphone, Send, Tag, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { CampaignsTab } from "@/components/marketing/CampaignsTab";
 import { TemplatesTab } from "@/components/marketing/TemplatesTab";
 import { AudiencesTab } from "@/components/marketing/AudiencesTab";
 import { LandingPagesTab } from "@/components/marketing/LandingPagesTab";
+import { TagsTab } from "@/components/marketing/TagsTab";
 
-const TABS = ["campaigns", "templates", "audiences", "forms"] as const;
+const TABS = ["campaigns", "templates", "audiences", "tags", "forms"] as const;
 
 export default function Marketing() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,6 +58,9 @@ export default function Marketing() {
           <TabsTrigger value="audiences" className="gap-1.5">
             <Target className="h-3.5 w-3.5" /> Audiences
           </TabsTrigger>
+          <TabsTrigger value="tags" className="gap-1.5">
+            <Tag className="h-3.5 w-3.5" /> Tags
+          </TabsTrigger>
           <TabsTrigger value="forms" className="gap-1.5">
             <FileText className="h-3.5 w-3.5" /> Forms &amp; landing pages
           </TabsTrigger>
@@ -78,6 +82,9 @@ export default function Marketing() {
         </TabsContent>
         <TabsContent value="audiences" className="mt-4">
           <AudiencesTab />
+        </TabsContent>
+        <TabsContent value="tags" className="mt-4">
+          <TagsTab />
         </TabsContent>
         <TabsContent value="forms" className="mt-4">
           <LandingPagesTab />

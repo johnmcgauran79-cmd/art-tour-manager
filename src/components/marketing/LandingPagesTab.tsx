@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useTags } from "@/hooks/useTags";
+import { TagBadge } from "@/components/tags/TagBadge";
 import { format } from "date-fns";
 import { Copy, ExternalLink, FileText, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,7 @@ export function LandingPagesTab() {
   const del = useDeleteLandingPage();
 
   const [open, setOpen] = useState(false);
+  const { data: allTags } = useTags();
   const [editing, setEditing] = useState<Partial<LandingPage> | null>(null);
 
   const publicUrl = (slug?: string) => `${window.location.origin}/f/${slug || ""}`;
@@ -97,6 +100,7 @@ export function LandingPagesTab() {
           ? "Thanks — we've received your booking request and will send your invoice shortly."
           : "Thanks — we'll be in touch with tour details soon.",
       lead_source: form_type === "booking" ? "Booking form" : "Register interest",
+      auto_tag_ids: [],
       notify_teams: true,
       task_assignee_ids: [],
       task_watcher_ids: [],
@@ -387,6 +391,42 @@ export function LandingPagesTab() {
                     value={editing.lead_source || ""}
                     onChange={(e) => setEditing({ ...editing, lead_source: e.target.value })}
                   />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>
+                  Tags applied automatically{" "}
+                  <span className="text-xs text-muted-foreground">
+                    (every lead who submits this form gets these tags)
+                  </span>
+                </Label>
+                <div className="flex flex-wrap gap-2 rounded-md border p-3">
+                  {(allTags || []).length === 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      No tags yet — create them in Marketing → Tags.
+                    </span>
+                  )}
+                  {(allTags || []).map((tag) => {
+                    const on = (editing.auto_tag_ids || []).includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() =>
+                          setEditing({
+                            ...editing,
+                            auto_tag_ids: on
+                              ? (editing.auto_tag_ids || []).filter((id: string) => id !== tag.id)
+                              : [...(editing.auto_tag_ids || []), tag.id],
+                          })
+                        }
+                        className={on ? "opacity-100" : "opacity-40 hover:opacity-80"}
+                      >
+                        <TagBadge tag={tag} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
