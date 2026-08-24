@@ -4,6 +4,8 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { getBrandForBooking, brandMergeFields } from "../_shared/brand.ts";
 import { recolorCustomCards } from "../_shared/customCards.ts";
 import { formatPhoneInternational } from "../_shared/hostDetails.ts";
+import { emailAttachmentUrl } from "../_shared/emailFileUrl.ts";
+
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
