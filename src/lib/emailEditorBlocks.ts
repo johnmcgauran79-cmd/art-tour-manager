@@ -334,8 +334,7 @@ const liftStructuredBlocksToTopLevel = (doc: Document) => {
       sibling = next;
     }
 
-    parent.insertAdjacentElement?.("afterend", nested as HTMLElement) ??
-      parent.parentNode?.insertBefore(nested, parent.nextSibling);
+    parent.parentNode?.insertBefore(nested, parent.nextSibling);
 
     if (normalizeText(trailing.textContent).length > 0 || trailing.children.length > 0) {
       nested.parentNode?.insertBefore(trailing, nested.nextSibling);
