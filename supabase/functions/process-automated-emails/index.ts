@@ -377,7 +377,7 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
       // Get eligible bookings
       let bookingsQuery = supabase
         .from('bookings')
-        .select(`id, customers!bookings_lead_passenger_id_fkey(email)`)
+        .select(`id, customers!bookings_lead_passenger_id_fkey(email), secondary_contact:customers!secondary_contact_id(email)`)
         .eq('tour_id', tour.id)
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
@@ -389,7 +389,9 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
       }
 
       const { data: bookings } = await bookingsQuery;
-      const eligibleBookings = bookings?.filter((b: any) => b.customers?.email) || [];
+      // A booking is reachable if the lead passenger has an email OR the booking has a
+      // secondary contact with one (send-booking-confirmation falls back to them).
+      const eligibleBookings = bookings?.filter((b: any) => b.customers?.email || b.secondary_contact?.email) || [];
 
       if (eligibleBookings.length === 0) {
         continue;
