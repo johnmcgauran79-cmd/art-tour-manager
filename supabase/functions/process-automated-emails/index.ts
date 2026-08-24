@@ -140,7 +140,8 @@ serve(async (req) => {
           .select(`
             id,
             accommodation_required,
-            lead_passenger:customers!bookings_lead_passenger_id_fkey(email)
+            lead_passenger:customers!bookings_lead_passenger_id_fkey(email),
+            secondary_contact:customers!secondary_contact_id(email)
           `)
           .eq('tour_id', tour.id)
           .neq('status', 'cancelled')
@@ -162,7 +163,7 @@ serve(async (req) => {
         }
 
         // Filter bookings with valid email
-        const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email) || [];
+        const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email || b.secondary_contact?.email) || [];
         const bookingCount = eligibleBookings.length;
 
         if (bookingCount === 0) {
@@ -377,7 +378,7 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
       // Get eligible bookings
       let bookingsQuery = supabase
         .from('bookings')
-        .select(`id, customers!bookings_lead_passenger_id_fkey(email)`)
+        .select(`id, customers!bookings_lead_passenger_id_fkey(email), secondary_contact:customers!secondary_contact_id(email)`)
         .eq('tour_id', tour.id)
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
@@ -389,7 +390,9 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
       }
 
       const { data: bookings } = await bookingsQuery;
-      const eligibleBookings = bookings?.filter((b: any) => b.customers?.email) || [];
+      // A booking is reachable if the lead passenger has an email OR the booking has a
+      // secondary contact with one (send-booking-confirmation falls back to them).
+      const eligibleBookings = bookings?.filter((b: any) => b.customers?.email || b.secondary_contact?.email) || [];
 
       if (eligibleBookings.length === 0) {
         continue;
@@ -443,7 +446,8 @@ async function processBatchEmails(
       id,
       passenger_count,
       accommodation_required,
-      lead_passenger:customers!bookings_lead_passenger_id_fkey(first_name, last_name, email)
+      lead_passenger:customers!bookings_lead_passenger_id_fkey(first_name, last_name, email),
+      secondary_contact:customers!secondary_contact_id(email)
     `)
     .eq('tour_id', tour.id)
     .neq('status', 'cancelled')
@@ -475,7 +479,7 @@ async function processBatchEmails(
     return 0;
   }
 
-  const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email) || [];
+  const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email || b.secondary_contact?.email) || [];
   console.log(`Found ${eligibleBookings.length} eligible bookings with valid email addresses`);
   
   if (eligibleBookings.length === 0) {
