@@ -1605,7 +1605,10 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Process content template (use custom if provided, otherwise use default template)
       // Always process the template to replace merge fields
-      const contentToProcess = normalizeConditionalTemplateHtml(customContent || template.content_template);
+      const contentToProcess = resolveAttachmentTokens(
+        normalizeConditionalTemplateHtml(customContent || template.content_template),
+      );
+
       emailHtml = processTemplate(contentToProcess, mergeData);
       console.log('Processed content template');
 
