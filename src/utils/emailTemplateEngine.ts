@@ -417,14 +417,22 @@ export class EmailTemplateEngine {
     
     // Handle inverted conditional sections {{^variable}}...{{/variable}}
     processed = processed.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
-      const value = this.getNestedValue(data, key.trim());
+      const trimmedCondKey = key.trim();
+      // Unknown condition (server-evaluated) — hand the whole block to the server.
+      if (this.isUnknownKey(data, trimmedCondKey)) return match;
+      const value = this.getNestedValue(data, trimmedCondKey);
       return !value ? content : '';
     });
     
     // Handle simple variable replacements {{variable}} AFTER loops
     processed = processed.replace(/\{\{([^}#^/]+)\}\}/g, (match, key) => {
       const trimmedKey = key.trim();
+      // Server-resolved placeholders the client knows nothing about
+      // ({{attachment:slug}}, {{custom_form_button}}, request-email fields, …)
+      // must survive pre-processing untouched.
+      if (this.isUnknownKey(data, trimmedKey)) return match;
       const value = this.getNestedValue(data, trimmedKey);
+
 
       // Empty field handling: show N/A for specific field types when empty
       if (value === undefined || value === null || value === '') {
