@@ -15,11 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -37,21 +38,31 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
+  appendBlockToCell,
   blockLabel,
+  duplicateBlockById,
+  findBlockById,
+  insertBlockAfter,
+  isContainer,
+  moveBlockById,
   newBlock,
+  removeBlockById,
   renderEdmHtml,
+  resizeCells,
+  updateBlockById,
   type EdmBlock,
   type EdmBlockType,
   type EdmBrand,
 } from "@/lib/edm/blocks";
 import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
+import { EdmImageField } from "./EdmImageField";
 
-const ADD_ORDER: EdmBlockType[] = [
+const LAYOUT_BLOCKS: EdmBlockType[] = ["columns", "table"];
+const CONTENT_BLOCKS: EdmBlockType[] = [
   "heading",
   "text",
   "image",
   "imageText",
-  "twoColumn",
   "button",
   "tourCard",
   "quote",
@@ -71,9 +82,48 @@ interface EdmBuilderProps {
   preheader?: string;
 }
 
+function AddBlockMenu({
+  onPick,
+  trigger,
+  includeLayout = true,
+}: {
+  onPick: (t: EdmBlockType) => void;
+  trigger: React.ReactNode;
+  includeLayout?: boolean;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        {includeLayout && (
+          <>
+            <div className="px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
+              Layout
+            </div>
+            {LAYOUT_BLOCKS.map((t) => (
+              <DropdownMenuItem key={t} onClick={() => onPick(t)}>
+                {blockLabel[t]}
+              </DropdownMenuItem>
+            ))}
+          </>
+        )}
+        <div className="px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
+          Content
+        </div>
+        {CONTENT_BLOCKS.map((t) => (
+          <DropdownMenuItem key={t} onClick={() => onPick(t)}>
+            {blockLabel[t]}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 /**
  * Block-based EDM builder: pick a starter layout, then add, reorder and edit
- * content blocks with a live branded preview beside them.
+ * content blocks — including nested column and table layouts — with a live
+ * branded preview beside them.
  */
 export function EdmBuilder({
   mode,
@@ -90,7 +140,7 @@ export function EdmBuilder({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
 
-  const selected = blocks.find((b) => b.id === selectedId) || null;
+  const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
   const previewHtml = useMemo(
     () =>
@@ -101,38 +151,30 @@ export function EdmBuilder({
   );
 
   const update = (id: string, patch: Partial<EdmBlock>) =>
-    onBlocksChange(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+    onBlocksChange(updateBlockById(blocks, id, patch));
 
   const add = (type: EdmBlockType) => {
     const block = newBlock(type);
-    const index = selectedId ? blocks.findIndex((b) => b.id === selectedId) + 1 : blocks.length;
-    const next = [...blocks];
-    next.splice(index, 0, block);
-    onBlocksChange(next);
+    onBlocksChange(insertBlockAfter(blocks, block, selectedId));
     setSelectedId(block.id);
   };
 
-  const move = (id: string, dir: -1 | 1) => {
-    const i = blocks.findIndex((b) => b.id === id);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= blocks.length) return;
-    const next = [...blocks];
-    [next[i], next[j]] = [next[j], next[i]];
-    onBlocksChange(next);
+  const addToCell = (cellId: string, type: EdmBlockType) => {
+    const block = newBlock(type);
+    onBlocksChange(appendBlockToCell(blocks, cellId, block));
+    setSelectedId(block.id);
   };
 
+  const move = (id: string, dir: -1 | 1) => onBlocksChange(moveBlockById(blocks, id, dir));
+
   const duplicate = (id: string) => {
-    const i = blocks.findIndex((b) => b.id === id);
-    if (i < 0) return;
-    const copy = { ...blocks[i], id: crypto.randomUUID() };
-    const next = [...blocks];
-    next.splice(i + 1, 0, copy);
-    onBlocksChange(next);
-    setSelectedId(copy.id);
+    const res = duplicateBlockById(blocks, id);
+    onBlocksChange(res.blocks);
+    if (res.newId) setSelectedId(res.newId);
   };
 
   const remove = (id: string) => {
-    onBlocksChange(blocks.filter((b) => b.id !== id));
+    onBlocksChange(removeBlockById(blocks, id));
     if (selectedId === id) setSelectedId(null);
   };
 
@@ -238,101 +280,39 @@ export function EdmBuilder({
           <PreviewPane html={previewHtml} device={device} />
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[260px_1fr_1fr]">
-          {/* Block list */}
+        <div className="grid gap-4 lg:grid-cols-[300px_1fr_1fr]">
+          {/* Block tree */}
           <Card className="h-fit">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Content blocks</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <AddBlockMenu
+                onPick={add}
+                trigger={
                   <Button size="sm" className="w-full gap-1.5">
                     <Plus className="h-3.5 w-3.5" /> Add block
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52">
-                  {ADD_ORDER.map((t) => (
-                    <DropdownMenuItem key={t} onClick={() => add(t)}>
-                      {blockLabel[t]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                }
+              />
 
-              <ScrollArea className="max-h-[440px] pr-1">
-                <div className="space-y-1.5">
-                  {blocks.length === 0 && (
-                    <p className="py-6 text-center text-xs text-muted-foreground">
-                      Pick a layout or add your first block.
-                    </p>
-                  )}
-                  {blocks.map((b, i) => (
-                    <div
-                      key={b.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedId(b.id)}
-                      onKeyDown={(e) => e.key === "Enter" && setSelectedId(b.id)}
-                      className={cn(
-                        "flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs",
-                        selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted"
-                      )}
-                    >
-                      <span className="flex-1 truncate font-medium">
-                        {i + 1}. {blockLabel[b.type]}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          move(b.id, -1);
-                        }}
-                        aria-label="Move up"
-                      >
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          move(b.id, 1);
-                        }}
-                        aria-label="Move down"
-                      >
-                        <ArrowDown className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          duplicate(b.id);
-                        }}
-                        aria-label="Duplicate"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          remove(b.id);
-                        }}
-                        aria-label="Delete"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+              <ScrollArea className="max-h-[520px] pr-1">
+                {blocks.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">
+                    Pick a layout or add your first block.
+                  </p>
+                ) : (
+                  <BlockTree
+                    blocks={blocks}
+                    depth={0}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    onMove={move}
+                    onDuplicate={duplicate}
+                    onRemove={remove}
+                    onAddToCell={addToCell}
+                  />
+                )}
               </ScrollArea>
             </CardContent>
           </Card>
@@ -358,6 +338,146 @@ export function EdmBuilder({
           <PreviewPane html={previewHtml} device={device} />
         </div>
       )}
+    </div>
+  );
+}
+
+function BlockTree({
+  blocks,
+  depth,
+  selectedId,
+  onSelect,
+  onMove,
+  onDuplicate,
+  onRemove,
+  onAddToCell,
+}: {
+  blocks: EdmBlock[];
+  depth: number;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+  onDuplicate: (id: string) => void;
+  onRemove: (id: string) => void;
+  onAddToCell: (cellId: string, type: EdmBlockType) => void;
+}) {
+  return (
+    <div className="space-y-1.5" style={{ paddingLeft: depth ? 10 : 0 }}>
+      {blocks.map((b, i) => {
+        const cols = Math.max(1, b.cols || 1);
+        return (
+          <div key={b.id} className="space-y-1">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelect(b.id)}
+              onKeyDown={(e) => e.key === "Enter" && onSelect(b.id)}
+              className={cn(
+                "flex items-center gap-0.5 rounded-md border px-2 py-1.5 text-xs",
+                selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted"
+              )}
+            >
+              <span className="flex-1 truncate font-medium">
+                {i + 1}. {blockLabel[b.type]}
+                {isContainer(b) && (
+                  <span className="ml-1 text-muted-foreground">
+                    ({cols}
+                    {b.type === "table" ? `×${Math.max(1, b.rowCount || 1)}` : ""})
+                  </span>
+                )}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(b.id, -1);
+                }}
+                aria-label="Move up"
+              >
+                <ArrowUp className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(b.id, 1);
+                }}
+                aria-label="Move down"
+              >
+                <ArrowDown className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(b.id);
+                }}
+                aria-label="Duplicate"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(b.id);
+                }}
+                aria-label="Delete"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+
+            {isContainer(b) &&
+              (b.cells || []).map((cell, idx) => {
+                const r = Math.floor(idx / cols) + 1;
+                const c = (idx % cols) + 1;
+                const label =
+                  b.type === "table" ? `Row ${r} · Col ${c}` : `Column ${c}`;
+                return (
+                  <div key={cell.id} className="ml-3 rounded-md border border-dashed p-1.5">
+                    <div className="flex items-center gap-1">
+                      <span className="flex-1 text-[10px] font-semibold uppercase text-muted-foreground">
+                        {label}
+                      </span>
+                      <AddBlockMenu
+                        includeLayout={false}
+                        onPick={(t) => onAddToCell(cell.id, t)}
+                        trigger={
+                          <Button variant="ghost" size="icon" className="h-5 w-5" aria-label={`Add block to ${label}`}>
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        }
+                      />
+                    </div>
+                    {cell.blocks.length === 0 ? (
+                      <p className="py-1 text-center text-[10px] text-muted-foreground">Empty</p>
+                    ) : (
+                      <BlockTree
+                        blocks={cell.blocks}
+                        depth={depth + 1}
+                        selectedId={selectedId}
+                        onSelect={onSelect}
+                        onMove={onMove}
+                        onDuplicate={onDuplicate}
+                        onRemove={onRemove}
+                        onAddToCell={onAddToCell}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -394,6 +514,113 @@ function BlockInspector({
   onChange: (patch: Partial<EdmBlock>) => void;
 }) {
   const t = block.type;
+
+  if (t === "columns" || t === "table") {
+    const cols = Math.max(1, block.cols || 1);
+    const rows = Math.max(1, block.rowCount || 1);
+    const resize = (nextCols: number, nextRows: number) =>
+      onChange(resizeCells(block, nextCols, t === "table" ? nextRows : 1));
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5">
+            <Label>Columns</Label>
+            <Select value={String(cols)} onValueChange={(v) => resize(Number(v), rows)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {t === "table" && (
+            <div className="space-y-1.5">
+              <Label>Rows</Label>
+              <Select value={String(rows)} onValueChange={(v) => resize(cols, Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Cell padding (px)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={40}
+            value={block.cellPadding ?? 8}
+            onChange={(e) => onChange({ cellPadding: Number(e.target.value) || 0 })}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Vertical alignment</Label>
+          <Select
+            value={block.valign || "top"}
+            onValueChange={(valign) => onChange({ valign: valign as any })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="top">Top</SelectItem>
+              <SelectItem value="middle">Middle</SelectItem>
+              <SelectItem value="bottom">Bottom</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Cell background</Label>
+          <div className="flex gap-2">
+            <Input
+              type="color"
+              className="h-9 w-14 p-1"
+              value={block.bgColor || "#ffffff"}
+              onChange={(e) => onChange({ bgColor: e.target.value })}
+            />
+            <Input
+              value={block.bgColor || ""}
+              onChange={(e) => onChange({ bgColor: e.target.value })}
+              placeholder="Leave blank for none"
+            />
+          </div>
+        </div>
+
+        {t === "table" && (
+          <div className="flex items-center justify-between rounded-md border p-2">
+            <Label className="text-sm">Show cell borders</Label>
+            <Switch
+              checked={block.bordered !== false}
+              onCheckedChange={(bordered) => onChange({ bordered })}
+            />
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground">
+          Add images, buttons, text or cards into any cell using the + button beside each
+          cell in the block list. Cells stack vertically on mobile.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {(t === "heading" || t === "button" || t === "tourCard" || t === "quote") && (
@@ -434,16 +661,13 @@ function BlockInspector({
         </div>
       )}
 
-      {(t === "image" || t === "imageText") && (
+      {(t === "image" || t === "imageText" || t === "tourCard") && (
         <>
-          <div className="space-y-1.5">
-            <Label>Image URL</Label>
-            <Input
-              value={block.imageUrl || ""}
-              onChange={(e) => onChange({ imageUrl: e.target.value })}
-              placeholder="https://…"
-            />
-          </div>
+          <EdmImageField
+            value={block.imageUrl}
+            onChange={(imageUrl) => onChange({ imageUrl })}
+            label={t === "tourCard" ? "Card image" : "Image"}
+          />
           <div className="space-y-1.5">
             <Label>Alt text</Label>
             <Input
@@ -452,6 +676,21 @@ function BlockInspector({
             />
           </div>
         </>
+      )}
+
+      {t === "image" && (
+        <div className="space-y-1.5">
+          <Label>Max width (px, blank = full width)</Label>
+          <Input
+            type="number"
+            min={40}
+            max={800}
+            value={block.imageWidth ?? ""}
+            onChange={(e) =>
+              onChange({ imageWidth: e.target.value ? Number(e.target.value) : undefined })
+            }
+          />
+        </div>
       )}
 
       {(t === "button" || t === "image" || t === "tourCard") && (
