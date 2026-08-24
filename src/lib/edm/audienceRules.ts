@@ -362,7 +362,7 @@ const ruleLabel = (
   if (rule.operator === "never") return `${not}${meta.label}: never`;
   if (rule.operator === "is_true") return `${not}${meta.label}: yes`;
   if (rule.operator === "is_false") return `${not}${meta.label}: no`;
-  return `${not}${meta.label} ${OPERATOR_LABELS[rule.operator]} ${values || rule.value ?? ""}`.trim();
+  return `${not}${meta.label} ${OPERATOR_LABELS[rule.operator]} ${values || (rule.value ?? "")}`.trim();
 };
 
 export const describeNode = (
