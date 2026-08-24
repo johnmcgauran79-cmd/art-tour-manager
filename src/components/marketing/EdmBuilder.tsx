@@ -579,20 +579,6 @@ function BlockInspector({
           />
         )}
 
-        {t === "text" && (
-        <div className="space-y-1.5">
-          <Label>Line spacing</Label>
-          <Input
-            type="number"
-            step="0.1"
-            min={1}
-            max={3}
-            value={block.lineHeight ?? 1.6}
-            onChange={(e) => onChange({ lineHeight: Number(e.target.value) || 1.6 })}
-          />
-        </div>
-      )}
-
       <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Header background</Label>
@@ -934,6 +920,20 @@ function BlockInspector({
             max={120}
             value={block.height ?? 24}
             onChange={(e) => onChange({ height: Number(e.target.value) || 24 })}
+          />
+        </div>
+      )}
+
+      {t === "text" && (
+        <div className="space-y-1.5">
+          <Label>Line spacing</Label>
+          <Input
+            type="number"
+            step="0.1"
+            min={1}
+            max={3}
+            value={block.lineHeight ?? 1.6}
+            onChange={(e) => onChange({ lineHeight: Number(e.target.value) || 1.6 })}
           />
         </div>
       )}
