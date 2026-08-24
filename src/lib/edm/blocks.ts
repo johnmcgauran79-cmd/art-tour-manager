@@ -66,6 +66,12 @@ export interface EdmBlock {
   valign?: "top" | "middle" | "bottom";
   /** design block: which header image to use */
   headerMode?: "brand" | "custom" | "none";
+  /** design block: header band background colour */
+  headerBg?: string;
+  /** design block: header image width as % of the email width (20-100) */
+  headerWidthPct?: number;
+  /** design block: vertical padding around the header image in px */
+  headerPadding?: number;
   /** design block: outer page background colour */
   pageBg?: string;
   /** design block: email content background colour */
@@ -74,6 +80,7 @@ export interface EdmBlock {
   borderColor?: string;
   /** design block: content max width in px */
   maxWidth?: number;
+
 }
 
 export interface EdmBrand {
