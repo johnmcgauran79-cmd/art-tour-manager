@@ -435,7 +435,7 @@ thead tr th {
   line-height: var(--rte-lh, 1.6) !important;
 }
 
-/* Paragraph gaps scale with the chosen line spacing so tightening actually shows */
+/* Quill stores each pasted line as a paragraph; keep it flush like email output. */
 .rich-text-editor .ql-editor p {
-  margin-bottom: calc(var(--rte-lh, 1.6) * 4px) !important;
+  margin: 0 !important;
 }
