@@ -84,6 +84,8 @@ export interface EdmBlock {
   padX?: number;
   /** per-block vertical padding override in px */
   padY?: number;
+  /** text block line height multiplier */
+  lineHeight?: number;
   /** image corner radius in px */
   radius?: number;
   /** render edge-to-edge (no horizontal padding, square corners) */
@@ -422,7 +424,9 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:${
+        b.lineHeight ?? 1.6
+      };color:#333333;">${
         b.html || ""
       }</td></tr>`;
     case "image": {
