@@ -1991,7 +1991,10 @@ const handler = async (req: Request): Promise<Response> => {
       // Use the same normalisation as the lead-passenger path so conditional
       // blocks and table layouts survive, and only convert plain-text newlines.
       const rawPassengerContent = customContent || template?.content_template || '';
-      const contentToProcess = normalizeConditionalTemplateHtml(rawPassengerContent);
+      const contentToProcess = resolveAttachmentTokens(
+        normalizeConditionalTemplateHtml(rawPassengerContent),
+      );
+
       let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
       if (!/<\/?[a-z][\s\S]*>/i.test(contentToProcess)) {
         passengerEmailHtml = passengerEmailHtml.replace(/\n/g, '<br>');
