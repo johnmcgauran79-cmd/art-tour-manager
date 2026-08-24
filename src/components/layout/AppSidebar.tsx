@@ -100,6 +100,7 @@ export const AppSidebar = () => {
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "communications", label: "Communications", icon: Mail, path: "/communications", badge: pendingApprovalCount });
   if (isAdminOrManager) mainItems.push({ key: "marketing", label: "Marketing", icon: Megaphone, path: "/marketing" });
+  if (isAdminOrManager) mainItems.push({ key: "leads", label: "Leads", icon: UserPlus, path: "/leads" });
   if (isAdminOrManager) mainItems.push({ key: "data-health", label: "Tour Health", icon: ShieldCheck, path: "/data-health" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
   if (isAdminOrManager) mainItems.push({ key: "wordpress-content", label: "Website (WP)", icon: Globe, path: "/wordpress-content" });

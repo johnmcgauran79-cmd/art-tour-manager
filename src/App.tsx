@@ -54,6 +54,7 @@ const MissingPhoneNumbers = lazy(() => import("./pages/operations/MissingPhoneNu
 const WordpressContent = lazy(() => import("./pages/WordpressContent"));
 const DataHealth = lazy(() => import("./pages/DataHealth"));
 const Marketing = lazy(() => import("./pages/Marketing"));
+const Leads = lazy(() => import("./pages/Leads"));
 const PublicForm = lazy(() => import("./pages/PublicForm"));
 
 const queryClient = new QueryClient({
@@ -247,6 +248,16 @@ function App() {
                   <TaskRoute>
                     <AppLayout>
                       <Marketing />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/leads"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <Leads />
                     </AppLayout>
                   </TaskRoute>
                 }
