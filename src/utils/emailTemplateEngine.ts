@@ -399,14 +399,17 @@ export class EmailTemplateEngine {
           // Then replace simple variables
           itemContent = itemContent.replace(/\{\{([^}#^/]+)\}\}/g, (innerMatch, innerKey) => {
             const trimmedKey = innerKey.trim();
+            if (this.isUnknownKey(item, trimmedKey) && this.isUnknownKey(data, trimmedKey)) {
+              return innerMatch; // server-resolved placeholder
+            }
             let itemValue = this.getNestedValue(item, trimmedKey);
             if (itemValue === undefined) itemValue = this.getNestedValue(data, trimmedKey);
-            console.log(`  Replacing {{${trimmedKey}}} with:`, itemValue);
 
             // Keep empty values blank in loops
             if (itemValue === undefined || itemValue === null || itemValue === '') return '';
             return String(itemValue);
           });
+
           return itemContent;
         }).join('');
       }
