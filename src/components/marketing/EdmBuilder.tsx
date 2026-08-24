@@ -793,7 +793,11 @@ function BlockInspector({
       {(t === "text" || t === "imageText" || t === "quote" || t === "twoColumn") && (
         <div className="space-y-1.5">
           <Label>{t === "twoColumn" ? "Left column" : "Content"}</Label>
-          <RichTextEditor value={block.html || ""} onChange={(html) => onChange({ html })} />
+          <RichTextEditor
+            value={block.html || ""}
+            onChange={(html) => onChange({ html })}
+            lineHeight={t === "text" ? (block.lineHeight ?? 1.6) : undefined}
+          />
         </div>
       )}
 

@@ -425,3 +425,9 @@ thead tr th {
 .rich-text-editor .ql-snow .ql-picker.ql-size {
   width: 74px;
 }
+
+/* Live line-spacing preview inside the rich text editor */
+.rich-text-editor .ql-editor p,
+.rich-text-editor .ql-editor li {
+  line-height: var(--rte-lh, 1.6);
+}
