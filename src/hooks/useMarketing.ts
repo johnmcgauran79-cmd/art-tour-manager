@@ -533,6 +533,32 @@ export const useSendCampaignTest = () => {
   });
 };
 
+/** Send a one-off test of arbitrary template HTML (no campaign required). */
+export const useSendTemplateTest = () => {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({
+      email,
+      html,
+      subject,
+      brandId,
+    }: {
+      email: string;
+      html: string;
+      subject?: string | null;
+      brandId?: string | null;
+    }) => {
+      const { error } = await supabase.functions.invoke("marketing-send-campaign", {
+        body: { action: "test", testEmail: email, html, subject, brandId },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => toast({ title: "Test email sent" }),
+    onError: (e: any) =>
+      toast({ title: "Test failed", description: e.message, variant: "destructive" }),
+  });
+};
+
 /* ------------------------------- EDM templates -------------------------------- */
 
 export interface EdmTemplateRow {

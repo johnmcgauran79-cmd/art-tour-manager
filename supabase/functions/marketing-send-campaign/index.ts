@@ -76,15 +76,43 @@ function serve_handler() {
       const action = body?.action as string;
       const campaignId = body?.campaignId as string;
 
-      if (!action || !campaignId) return json({ error: "action and campaignId required" }, 400);
+      // Ad-hoc template test: no campaign needed, html + subject supplied directly.
+      const adHocHtml = typeof body?.html === "string" ? body.html : "";
+      const isAdHocTest = action === "test" && !campaignId && !!adHocHtml;
 
-      const { data: campaign, error: cErr } = await supabase
-        .from("marketing_campaigns")
-        .select("*, brand:brands(*)")
-        .eq("id", campaignId)
-        .maybeSingle();
-      if (cErr) throw cErr;
-      if (!campaign) return json({ error: "Campaign not found" }, 404);
+      if (!action) return json({ error: "action required" }, 400);
+      if (!campaignId && !isAdHocTest)
+        return json({ error: "action and campaignId required" }, 400);
+
+      let campaign: any = null;
+      if (campaignId) {
+        const { data, error: cErr } = await supabase
+          .from("marketing_campaigns")
+          .select("*, brand:brands(*)")
+          .eq("id", campaignId)
+          .maybeSingle();
+        if (cErr) throw cErr;
+        if (!data) return json({ error: "Campaign not found" }, 404);
+        campaign = data;
+      } else {
+        let adHocBrand: any = null;
+        if (body?.brandId) {
+          const { data } = await supabase
+            .from("brands")
+            .select("*")
+            .eq("id", body.brandId)
+            .maybeSingle();
+          adHocBrand = data;
+        }
+        campaign = {
+          subject: String(body?.subject || "Template test"),
+          html_body: adHocHtml,
+          reply_to: null,
+          from_name: null,
+          from_email: null,
+          brand: adHocBrand,
+        };
+      }
 
       const brand = (campaign as any).brand || {};
       const fromName = campaign.from_name || brand.sender_name || "Australian Racing Tours";
