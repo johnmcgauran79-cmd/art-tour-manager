@@ -426,9 +426,9 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
     case "text":
       return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:${
         b.lineHeight ?? 1.6
-      };color:#333333;">${
+      };color:#333333;"><div style="line-height:${b.lineHeight ?? 1.6};">${
         b.html || ""
-      }</td></tr>`;
+      }</div></td></tr>`;
     case "image": {
       if (!b.imageUrl) return "";
       const full = !!b.fullBleed;

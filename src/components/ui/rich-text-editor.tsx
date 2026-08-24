@@ -7,6 +7,8 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** live line-height preview inside the editor */
+  lineHeight?: number;
 }
 
 // Use inline styles for alignment so email clients (which ignore <style> blocks)
@@ -31,9 +33,18 @@ const modules = {
   ],
 };
 
-export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
+export function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  className,
+  lineHeight,
+}: RichTextEditorProps) {
   return (
-    <div className={cn("rich-text-editor", className)}>
+    <div
+      className={cn("rich-text-editor", className)}
+      style={lineHeight ? ({ "--rte-lh": String(lineHeight) } as React.CSSProperties) : undefined}
+    >
       <ReactQuill
         theme="snow"
         value={value}
