@@ -330,6 +330,9 @@ export interface EmailMergeData {
   
   // Additional info blocks - rendered server-side
   additional_info_blocks?: string;
+  tour_details_card?: string;
+  passenger_info_card?: string;
+  hotel_details?: string;
 }
 
 export interface EmailTemplate {
