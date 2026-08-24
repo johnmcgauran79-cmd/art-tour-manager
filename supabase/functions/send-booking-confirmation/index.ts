@@ -1958,10 +1958,16 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // Process template for this passenger
-      const contentToProcess = customContent || template?.content_template || '';
+      // Process template for this passenger.
+      // Use the same normalisation as the lead-passenger path so conditional
+      // blocks and table layouts survive, and only convert plain-text newlines.
+      const rawPassengerContent = customContent || template?.content_template || '';
+      const contentToProcess = normalizeConditionalTemplateHtml(rawPassengerContent);
       let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
-      passengerEmailHtml = passengerEmailHtml.replace(/\n/g, '<br>');
+      if (!/<\/?[a-z][\s\S]*>/i.test(contentToProcess)) {
+        passengerEmailHtml = passengerEmailHtml.replace(/\n/g, '<br>');
+      }
+
       
       if (passengerProfileLink) {
         passengerEmailHtml = injectProfileUpdateLink(passengerEmailHtml, passengerProfileLink);
