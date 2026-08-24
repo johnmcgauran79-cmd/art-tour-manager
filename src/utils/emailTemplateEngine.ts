@@ -414,8 +414,11 @@ export class EmailTemplateEngine {
         }).join('');
       }
       
-      // For boolean/truthy values, include the content if truthy
-      return value ? content : '';
+      // For boolean/truthy values, include the content if truthy.
+      // Recurse so nested loops/conditionals inside the block are processed too
+      // (matches the server-side engine).
+      return value ? this.processTemplate(content, data) : '';
+
     });
     
     // Handle inverted conditional sections {{^variable}}...{{/variable}}
