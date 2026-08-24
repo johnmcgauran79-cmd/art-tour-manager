@@ -1714,7 +1714,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     const emailResponse = await resend.emails.send({
       from: fromField,
-      to: [testRecipient || booking.customers.email],
+      to: [testRecipient || primaryRecipient],
       cc: isTestSend ? undefined : (ccRecipients.length > 0 ? ccRecipients : undefined),
       bcc: isTestSend ? undefined : (bccRecipients.length > 0 ? bccRecipients : undefined),
       subject: isTestSend ? `[TEST] ${emailSubject}` : emailSubject,
@@ -1744,8 +1744,8 @@ const handler = async (req: Request): Promise<Response> => {
     // - Otherwise we generate a per-booking batch id used only when sending to additional
     //   passengers on the same booking.
     const batchId = externalBatchId || crypto.randomUUID();
-    const willSendToAdditional = (booking.passenger_2?.email && booking.passenger_2.email !== booking.customers.email) ||
-                                 (booking.passenger_3?.email && booking.passenger_3.email !== booking.customers.email);
+    const willSendToAdditional = (booking.passenger_2?.email && booking.passenger_2.email !== primaryRecipient) ||
+                                 (booking.passenger_3?.email && booking.passenger_3.email !== primaryRecipient);
 
     // Log email to database for tracking (skipped for test/preview sends)
     if (emailResponse.data?.id && !isTestSend) {
@@ -1755,7 +1755,7 @@ const handler = async (req: Request): Promise<Response> => {
           message_id: emailResponse.data.id,
           booking_id: bookingId,
           tour_id: booking.tour_id,
-          recipient_email: booking.customers.email,
+          recipient_email: primaryRecipient,
           recipient_name: `${booking.customers.first_name} ${booking.customers.last_name}`,
           subject: emailSubject,
           template_name: template?.name || 'Custom',
@@ -1779,7 +1779,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (!passenger?.email) return;
       
       // Skip if this email is the same as the lead passenger
-      if (passenger.email === booking.customers.email) return;
+      if (passenger.email === primaryRecipient) return;
       
       console.log(`Sending email to ${passengerLabel}: ${passenger.email}`);
 
@@ -2051,7 +2051,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
-      sentTo: testRecipient || booking.customers.email,
+      sentTo: testRecipient || primaryRecipient,
       isTest: isTestSend,
       ccTo: ccRecipients.length > 0 ? ccRecipients : undefined,
       additionalPassengers: additionalPassengerEmails.length > 0 ? additionalPassengerEmails : undefined
