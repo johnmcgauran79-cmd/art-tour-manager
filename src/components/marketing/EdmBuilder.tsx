@@ -310,7 +310,7 @@ export function EdmBuilder({
                 }
               />
 
-              <ScrollArea className="max-h-[640px] pr-1">
+              <div className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
                 {blocks.length === 0 ? (
                   <p className="py-6 text-center text-xs text-muted-foreground">
                     Pick a layout or add your first block.
@@ -327,7 +327,7 @@ export function EdmBuilder({
                     onAddToCell={addToCell}
                   />
                 )}
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
 
