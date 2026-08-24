@@ -1635,11 +1635,30 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email - use provided fromEmail, fallback to template from_email, then default
     const finalFromEmail = fromEmail || template?.from_email || `${defaultSenderName} <${defaultFromEmailClient}>`;
     
-    // Prepare recipients - merge provided CC emails with secondary contact if they exist
-    const ccRecipients = [...(ccEmails || [])];
-    if (booking.secondary_contact?.email && !ccRecipients.includes(booking.secondary_contact.email)) {
-      ccRecipients.push(booking.secondary_contact.email);
+    // Resolve the primary recipient. Normally the lead passenger, but some bookings
+    // (e.g. a son travelling with his parents) have no email of their own. In that case
+    // the booking's secondary contact becomes the direct addressee instead of a CC,
+    // so tour comms are never silently dropped or rejected by Resend.
+    const leadEmail = (booking.customers?.email || '').trim();
+    const secondaryEmail = (booking.secondary_contact?.email || '').trim();
+    const primaryRecipient = leadEmail || secondaryEmail;
+
+    if (!testRecipient && !primaryRecipient) {
+      const leadName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim() || 'the lead passenger';
+      return new Response(
+        JSON.stringify({
+          error: `No email address available for this booking. ${leadName} has no email and no secondary contact with an email is set. Add an email to the contact record or set a secondary contact.`,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
+
+    // Prepare recipients - merge provided CC emails with secondary contact if they exist
+    const ccRecipients = [...(ccEmails || [])].filter((e) => e && e !== primaryRecipient);
+    if (secondaryEmail && secondaryEmail !== primaryRecipient && !ccRecipients.includes(secondaryEmail)) {
+      ccRecipients.push(secondaryEmail);
+    }
+
     
     // Prepare BCC recipients
     const bccRecipients = bccEmails || [];
