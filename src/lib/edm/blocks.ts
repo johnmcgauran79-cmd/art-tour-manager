@@ -621,6 +621,13 @@ export const renderEdmHtml = (
   const headerPadding = Math.max(0, design?.headerPadding ?? 20);
   const gapTop = Math.max(0, design?.contentGapTop ?? 16);
   const gapBottom = Math.max(0, design?.contentGapBottom ?? 16);
+  const footerMode = design?.footerMode || "brand";
+  const footerBg = design?.footerBg || contentBg;
+  const footerColor = design?.footerColor || "#667085";
+  const footerLinkColor = design?.footerLinkColor || footerColor;
+  const footerPadding = Math.max(0, design?.footerPadding ?? 20);
+  const footerBorder = design?.footerBorderColor ?? border;
+  const showUnsub = design?.footerShowUnsubscribe !== false;
   const headerImage =
     headerMode === "none"
       ? ""
