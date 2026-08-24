@@ -41,8 +41,10 @@ import {
   useEdmTemplates,
   useSaveCampaign,
   useSaveEdmTemplate,
+  useSendTemplateTest,
   type EdmTemplateRow,
 } from "@/hooks/useMarketing";
+import { useAuth } from "@/hooks/useAuth";
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmBuilder } from "./EdmBuilder";
@@ -61,6 +63,11 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
   const archive = useArchiveEdmTemplate();
   const del = useDeleteEdmTemplate();
   const saveCampaign = useSaveCampaign();
+  const sendTest = useSendTemplateTest();
+  const { user } = useAuth();
+
+  const [testOpen, setTestOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
 
   const [editing, setEditing] = useState<Partial<EdmTemplateRow> | null>(null);
   const [open, setOpen] = useState(false);
@@ -396,6 +403,16 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => {
+                setTestEmail(user?.email || "");
+                setTestOpen(true);
+              }}
+            >
+              <Send className="h-4 w-4" /> Send test
+            </Button>
             {editing?.id && (
               <Button
                 variant="secondary"
@@ -408,6 +425,60 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
             <Button disabled={saveTemplate.isPending} onClick={() => commit(false)}>
               {saveTemplate.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               {editing?.id ? "Update template" : "Save template"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send test email */}
+      <Dialog open={testOpen} onOpenChange={setTestOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send test email</DialogTitle>
+            <DialogDescription>
+              Defaults to your own address — change it to send the test anywhere else.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>Send to</Label>
+            <Input
+              type="email"
+              value={testEmail}
+              placeholder="you@example.com"
+              onChange={(e) => setTestEmail(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTestOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={sendTest.isPending || !testEmail.trim()}
+              onClick={async () => {
+                if (!editing) return;
+                const mode = (editing.editor_mode as "blocks" | "html") || "blocks";
+                const html =
+                  mode === "blocks"
+                    ? renderEdmHtml((editing.blocks as EdmBlock[]) || [], brand, {
+                        subject: editing.subject || undefined,
+                        preheader: editing.preheader || undefined,
+                      })
+                    : editing.html_body || "";
+                if (!html.trim()) {
+                  toast({ title: "Nothing to send yet", variant: "destructive" });
+                  return;
+                }
+                await sendTest.mutateAsync({
+                  email: testEmail.trim(),
+                  html,
+                  subject: editing.subject || editing.name || "Template test",
+                  brandId: (editing.brand_id as string) || null,
+                });
+                setTestOpen(false);
+              }}
+            >
+              {sendTest.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Send test
             </Button>
           </DialogFooter>
         </DialogContent>
