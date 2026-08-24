@@ -427,7 +427,9 @@ export class EmailTemplateEngine {
       // Unknown condition (server-evaluated) — hand the whole block to the server.
       if (this.isUnknownKey(data, trimmedCondKey)) return match;
       const value = this.getNestedValue(data, trimmedCondKey);
-      return !value ? content : '';
+      const isEmpty = !value || (Array.isArray(value) && value.length === 0);
+      return isEmpty ? this.processTemplate(content, data) : '';
+
     });
     
     // Handle simple variable replacements {{variable}} AFTER loops
