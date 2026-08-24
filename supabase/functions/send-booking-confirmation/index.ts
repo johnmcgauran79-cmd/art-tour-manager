@@ -491,12 +491,20 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    if (!booking.customers?.email) {
+    const hasAnyRecipient = !!(
+      booking.customers?.email ||
+      (booking as any).secondary_contact?.email ||
+      (booking as any).passenger_2?.email ||
+      (booking as any).passenger_3?.email ||
+      testEmailTo
+    );
+    if (!hasAnyRecipient) {
       return new Response(
         JSON.stringify({ error: 'No email address found for this booking' }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
 
     // Resolve the booking's brand (partner co-brand if set, otherwise the tour's
     // brand) and override branding defaults so this email uses the correct logo,
