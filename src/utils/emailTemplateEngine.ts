@@ -347,6 +347,19 @@ export interface EmailTemplate {
 }
 
 export class EmailTemplateEngine {
+  /**
+   * True when the merge data has no knowledge of this key at all.
+   * Such placeholders/conditions are resolved server-side (tokens, attachments,
+   * custom form buttons, per-recipient waiver/passport state), so the client
+   * must PRESERVE them rather than blanking them out.
+   */
+  private static isUnknownKey(data: any, path: string): boolean {
+    if (!data || typeof data !== 'object') return true;
+    const [root] = path.split('.');
+    if (!root) return true;
+    return !(root in data);
+  }
+
   // Process template with merge data using Mustache-like syntax
   static processTemplate(template: string, data: EmailMergeData): string {
     let processed = template;
@@ -356,7 +369,12 @@ export class EmailTemplateEngine {
     
     // Handle conditional sections {{#variable}}...{{/variable}}
     processed = processed.replace(/\{\{#([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
-      const value = this.getNestedValue(data, key.trim());
+      const trimmedCondKey = key.trim();
+      // Unknown condition (server-evaluated) — hand the whole block to the server.
+      if (this.isUnknownKey(data, trimmedCondKey)) return match;
+      const value = this.getNestedValue(data, trimmedCondKey);
+      
+
       
       // For arrays (like hotel_bookings), repeat the content for each item
       if (Array.isArray(value)) {
