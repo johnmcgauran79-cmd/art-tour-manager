@@ -294,7 +294,60 @@ const createPlaceholderElement = (doc: Document, value: EmailHtmlBlockValue) => 
   return node;
 };
 
+const hasStructuredAncestor = (element: Element) => {
+  let parent = element.parentElement;
+  while (parent && parent.tagName.toLowerCase() !== "body") {
+    if (isStructuredBlockElement(parent)) return true;
+    parent = parent.parentElement;
+  }
+  return false;
+};
+
+/**
+ * Conditional merge blocks such as `{{#has_instalment}}</p>` can leave
+ * paragraphs unclosed once the condition renders false, which makes the HTML
+ * parser nest the following card table *inside* a `<p>`. Those nested tables
+ * never reached the protection pass and Quill flattened them into plain text,
+ * so lift every structured block back out to the top level first.
+ */
+const liftStructuredBlocksToTopLevel = (doc: Document) => {
+  let guard = 0;
+
+  while (guard++ < 100) {
+    const nested = Array.from(doc.body.querySelectorAll("table, hr, div, p")).find(
+      (element) =>
+        isStructuredBlockElement(element) &&
+        element.parentElement &&
+        element.parentElement !== doc.body &&
+        !hasStructuredAncestor(element)
+    );
+
+    if (!nested) return;
+
+    const parent = nested.parentElement!;
+    const trailing = parent.cloneNode(false) as Element;
+
+    let sibling = nested.nextSibling;
+    while (sibling) {
+      const next = sibling.nextSibling;
+      trailing.appendChild(sibling);
+      sibling = next;
+    }
+
+    parent.parentNode?.insertBefore(nested, parent.nextSibling);
+
+    if (normalizeText(trailing.textContent).length > 0 || trailing.children.length > 0) {
+      nested.parentNode?.insertBefore(trailing, nested.nextSibling);
+    }
+
+    if (normalizeText(parent.textContent).length === 0 && parent.children.length === 0) {
+      parent.remove();
+    }
+  }
+};
+
 const unwrapSingleStructuredChildWrappers = (doc: Document) => {
+
   let didChange = true;
 
   while (didChange) {
@@ -336,6 +389,7 @@ export const protectComplexEmailBlocksForEditor = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
 
+  liftStructuredBlocksToTopLevel(doc);
   unwrapSingleStructuredChildWrappers(doc);
 
   Array.from(doc.body.children).forEach((child) => {
@@ -376,6 +430,7 @@ export const resolveComplexEmailBlocksFromEditor = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
 
+  liftStructuredBlocksToTopLevel(doc);
   unwrapSingleStructuredChildWrappers(doc);
 
   Array.from(doc.body.querySelectorAll(`[${BLOCK_HTML_ATTRIBUTE}], [data-card-html]`)).forEach((node) => {
