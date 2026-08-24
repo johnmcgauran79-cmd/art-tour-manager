@@ -581,6 +581,37 @@ function BlockInspector({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
+            <Label>Header background</Label>
+            <Input
+              type="color"
+              value={block.headerBg || "#ffffff"}
+              onChange={(e) => onChange({ headerBg: e.target.value })}
+              className="h-9 p-1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Logo width (% of email)</Label>
+            <Input
+              type="number"
+              min={20}
+              max={100}
+              value={block.headerWidthPct ?? 55}
+              onChange={(e) =>
+                onChange({ headerWidthPct: Math.min(100, Math.max(20, Number(e.target.value) || 55)) })
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Header padding (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={64}
+              value={block.headerPadding ?? 20}
+              onChange={(e) => onChange({ headerPadding: Math.max(0, Number(e.target.value) || 0) })}
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label>Page background</Label>
             <Input
               type="color"
@@ -618,6 +649,7 @@ function BlockInspector({
             />
           </div>
         </div>
+
         <p className="text-xs text-muted-foreground">
           These settings are saved with the template, so each design can have its own header
           and colours.

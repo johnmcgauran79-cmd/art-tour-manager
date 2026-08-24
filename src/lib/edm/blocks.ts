@@ -66,6 +66,12 @@ export interface EdmBlock {
   valign?: "top" | "middle" | "bottom";
   /** design block: which header image to use */
   headerMode?: "brand" | "custom" | "none";
+  /** design block: header band background colour */
+  headerBg?: string;
+  /** design block: header image width as % of the email width (20-100) */
+  headerWidthPct?: number;
+  /** design block: vertical padding around the header image in px */
+  headerPadding?: number;
   /** design block: outer page background colour */
   pageBg?: string;
   /** design block: email content background colour */
@@ -74,6 +80,7 @@ export interface EdmBlock {
   borderColor?: string;
   /** design block: content max width in px */
   maxWidth?: number;
+
 }
 
 export interface EdmBrand {
@@ -103,10 +110,14 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         type,
         headerMode: "brand",
         imageUrl: "",
+        headerBg: "#ffffff",
+        headerWidthPct: 55,
+        headerPadding: 20,
         pageBg: "#f4f5f7",
         contentBg: "#ffffff",
         maxWidth: 800,
       };
+
     case "heading":
       return { id, type, text: "Your headline here", align: "left", size: "lg" };
     case "text":
@@ -518,12 +529,16 @@ export const renderEdmHtml = (
   const contentBg = design?.contentBg || "#ffffff";
   const maxWidth = design?.maxWidth || 800;
   const headerMode = design?.headerMode || "brand";
+  const headerBg = design?.headerBg || contentBg;
+  const headerWidthPct = Math.min(100, Math.max(20, design?.headerWidthPct ?? 55));
+  const headerPadding = Math.max(0, design?.headerPadding ?? 20);
   const headerImage =
     headerMode === "none"
       ? ""
       : headerMode === "custom"
         ? design?.imageUrl || ""
         : brand.emailHeaderImageUrl || "";
+
   const body = renderRows(contentBlocks, brand, { padX: 32 });
 
   return `<!DOCTYPE html>
@@ -550,11 +565,16 @@ ${
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
       headerImage
-        ? `<tr><td><img src="${esc(headerImage)}" alt="${esc(
-            brand.name
-          )}" style="display:block;width:100%;height:auto;border:0;" /></td></tr>`
+        ? `<tr><td align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
+             <img src="${esc(headerImage)}" alt="${esc(brand.name)}" width="${Math.round(
+               (maxWidth * headerWidthPct) / 100
+             )}" style="display:block;width:${headerWidthPct}%;max-width:${Math.round(
+               (maxWidth * headerWidthPct) / 100
+             )}px;height:auto;border:0;margin:0 auto;" />
+           </td></tr>`
         : ""
     }
+
     <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
     ${body}
     <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
