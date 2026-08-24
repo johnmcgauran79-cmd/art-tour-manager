@@ -67,7 +67,7 @@ import {
   type Tag,
 } from "@/hooks/useTags";
 import { usePermissions } from "@/hooks/usePermissions";
-import { exportToCSV } from "@/lib/csvExport";
+import { downloadCsv, exportStamp } from "@/lib/csvExport";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_COLOR = "#0f766e";
@@ -80,8 +80,8 @@ const contactName = (c: { first_name: string; last_name: string }) =>
  * bulk apply/remove tags across contacts.
  */
 export const TagsTab = () => {
-  const { canManageSettings } = usePermissions();
-  const readOnly = !canManageSettings;
+  const { isViewOnly } = usePermissions();
+  const readOnly = isViewOnly;
 
   const { data: tags, isLoading } = useTags();
   const { data: usage } = useTagUsage();
@@ -170,18 +170,19 @@ export const TagsTab = () => {
 
   const exportTagged = () => {
     if (!selectedTag || !tagged?.length) return;
-    exportToCSV(
-      tagged.map((c) => ({
-        "First name": c.first_name,
-        "Last name": c.last_name,
-        Email: c.email || "",
-        Phone: c.phone || "",
-        State: c.state || "",
-        City: c.city || "",
-        "Lead stage": c.lead_stage || "",
-        "Latest tour": c.latest_tour_name || "",
-      })),
-      `tag-${selectedTag.name.toLowerCase().replace(/\s+/g, "-")}`
+    downloadCsv(
+      `tag-${selectedTag.name.toLowerCase().replace(/\s+/g, "-")}-${exportStamp()}.csv`,
+      tagged,
+      [
+        { header: "First name", value: (c) => c.first_name || "" },
+        { header: "Last name", value: (c) => c.last_name || "" },
+        { header: "Email", value: (c) => c.email || "" },
+        { header: "Phone", value: (c) => c.phone || "" },
+        { header: "State", value: (c) => c.state || "" },
+        { header: "City", value: (c) => c.city || "" },
+        { header: "Lead stage", value: (c) => c.lead_stage || "" },
+        { header: "Latest tour", value: (c) => c.latest_tour_name || "" },
+      ]
     );
   };
 
