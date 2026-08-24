@@ -80,6 +80,14 @@ export interface EdmBlock {
   borderColor?: string;
   /** design block: content max width in px */
   maxWidth?: number;
+  /** per-block horizontal padding override in px */
+  padX?: number;
+  /** per-block vertical padding override in px */
+  padY?: number;
+  /** image corner radius in px */
+  radius?: number;
+  /** render edge-to-edge (no horizontal padding, square corners) */
+  fullBleed?: boolean;
 
 }
 
@@ -335,8 +343,11 @@ interface RenderCtx {
   padX: number;
 }
 
-const pad = (ctx: RenderCtx, y: string) =>
-  ctx.padX ? `${y} ${ctx.padX}px` : `${y} 0`;
+const pad = (ctx: RenderCtx, y: string, b?: EdmBlock) => {
+  const yVal = b?.padY != null ? `${Math.max(0, b.padY)}px` : y;
+  const xVal = b?.fullBleed ? 0 : (b?.padX != null ? Math.max(0, b.padX) : ctx.padX);
+  return xVal ? `${yVal} ${xVal}px` : `${yVal} 0`;
+};
 
 /**
  * Apply a per-block background colour by injecting it into the outer row cell.
@@ -389,7 +400,7 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
     return `<tr>${tds}</tr>`;
   }).join("\n");
 
-  return `<tr><td style="padding:${pad(ctx, "12px")};">
+  return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
     b.type === "table" ? `border-collapse:collapse;` : ""
   }">${body}</table></td></tr>`;
@@ -405,35 +416,31 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
 
   switch (b.type) {
     case "heading":
-      return `<tr><td style="padding:${pad(
-        ctx,
-        "8px"
-      )};font-family:Arial,Helvetica,sans-serif;font-size:${headingSize(
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:${headingSize(
         b.size
       )};line-height:1.25;font-weight:700;color:${primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(
-        ctx,
-        "8px"
-      )};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">${
         b.html || ""
       }</td></tr>`;
     case "image": {
       if (!b.imageUrl) return "";
-      const w = b.imageWidth ? `${b.imageWidth}` : "736";
-      const maxW = b.imageWidth ? `${b.imageWidth}px` : "736px";
-      return `<tr><td style="padding:${pad(ctx, "12px")};text-align:${align};"><a href="${esc(
+      const full = !!b.fullBleed;
+      const w = b.imageWidth ? `${b.imageWidth}` : "800";
+      const maxW = full && !b.imageWidth ? "100%" : b.imageWidth ? `${b.imageWidth}px` : "736px";
+      const radius = b.radius != null ? b.radius : full ? 0 : 6;
+      return `<tr><td style="padding:${pad(ctx, full ? "0px" : "12px", b)};text-align:${align};font-size:0;line-height:0;"><a href="${esc(
         b.linkUrl || "#"
       )}" style="text-decoration:none;"><img src="${esc(b.imageUrl)}" alt="${esc(
         b.imageAlt || ""
-      )}" width="${w}" style="display:block;width:100%;max-width:${maxW};height:auto;border:0;border-radius:6px;margin:${
+      )}" width="${w}" style="display:block;width:100%;max-width:${maxW};height:auto;border:0;border-radius:${radius}px;margin:${
         align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"
       };" /></a></td></tr>`;
     }
     case "imageText":
-      return `<tr><td style="padding:${pad(ctx, "12px")};">
+      return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
     ${
       b.imageUrl
@@ -449,12 +456,12 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
     }</td>
   </tr></table></td></tr>`;
     case "button":
-      return `<tr><td style="padding:${pad(ctx, "16px")};text-align:${b.align || "center"};">
+      return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
   <a href="${esc(b.linkUrl || "#")}" style="display:inline-block;background:${button};color:${buttonText};font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:6px;">${esc(
         b.text || "Click here"
       )}</a></td></tr>`;
     case "tourCard":
-      return `<tr><td style="padding:${pad(ctx, "12px")};">
+      return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${border};border-radius:8px;overflow:hidden;">
     ${
       b.imageUrl
@@ -490,7 +497,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
     case "table":
       return renderContainer(b, brand, ctx);
     case "twoColumn":
-      return `<tr><td style="padding:${pad(ctx, "12px")};">
+      return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
     <td class="edm-col" width="50%" valign="top" style="padding-right:12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${
       b.html || ""
@@ -500,7 +507,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
     }</td>
   </tr></table></td></tr>`;
     case "quote":
-      return `<tr><td style="padding:${pad(ctx, "16px")};">
+      return `<tr><td style="padding:${pad(ctx, "16px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
     <tr><td style="padding:18px 22px;font-family:Georgia,serif;font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
       b.html || ""
@@ -513,10 +520,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
       }</td></tr>
   </table></td></tr>`;
     case "divider":
-      return `<tr><td style="padding:${pad(
-        ctx,
-        "16px"
-      )};"><div style="height:1px;background:${border};"></div></td></tr>`;
+      return `<tr><td style="padding:${pad(ctx, "16px", b)};"><div style="height:1px;background:${border};"></div></td></tr>`;
     case "spacer":
       return `<tr><td style="height:${b.height || 24}px;line-height:${
         b.height || 24
