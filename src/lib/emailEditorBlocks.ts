@@ -390,6 +390,7 @@ export const protectComplexEmailBlocksForEditor = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
 
+  liftStructuredBlocksToTopLevel(doc);
   unwrapSingleStructuredChildWrappers(doc);
 
   Array.from(doc.body.children).forEach((child) => {
@@ -430,6 +431,7 @@ export const resolveComplexEmailBlocksFromEditor = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
 
+  liftStructuredBlocksToTopLevel(doc);
   unwrapSingleStructuredChildWrappers(doc);
 
   Array.from(doc.body.querySelectorAll(`[${BLOCK_HTML_ATTRIBUTE}], [data-card-html]`)).forEach((node) => {
