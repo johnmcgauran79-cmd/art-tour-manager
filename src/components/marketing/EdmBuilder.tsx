@@ -924,8 +924,7 @@ function BlockInspector({
         </div>
       )}
 
-      {t !== "design" && (
-        <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Side margin (px)</Label>
             <Input
@@ -951,9 +950,8 @@ function BlockInspector({
                 onChange({ padY: e.target.value === "" ? undefined : Number(e.target.value) })
               }
             />
-          </div>
         </div>
-      )}
+      </div>
 
       <div className="space-y-1.5">
         <Label>Block background</Label>
