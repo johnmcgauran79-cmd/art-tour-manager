@@ -565,11 +565,16 @@ ${
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
       headerImage
-        ? `<tr><td><img src="${esc(headerImage)}" alt="${esc(
-            brand.name
-          )}" style="display:block;width:100%;height:auto;border:0;" /></td></tr>`
+        ? `<tr><td align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
+             <img src="${esc(headerImage)}" alt="${esc(brand.name)}" width="${Math.round(
+               (maxWidth * headerWidthPct) / 100
+             )}" style="display:block;width:${headerWidthPct}%;max-width:${Math.round(
+               (maxWidth * headerWidthPct) / 100
+             )}px;height:auto;border:0;margin:0 auto;" />
+           </td></tr>`
         : ""
     }
+
     <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
     ${body}
     <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
