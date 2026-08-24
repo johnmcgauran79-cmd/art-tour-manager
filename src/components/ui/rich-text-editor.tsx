@@ -14,9 +14,14 @@ interface RichTextEditorProps {
 const AlignStyle = Quill.import("attributors/style/align");
 Quill.register(AlignStyle, true);
 
+// Font sizes as inline px styles (email-safe).
+const SizeStyle: any = Quill.import("attributors/style/size");
+SizeStyle.whitelist = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"];
+Quill.register(SizeStyle, true);
+
 const modules = {
   toolbar: [
-    [{ header: [1, 2, 3, false] }],
+    [{ header: [1, 2, 3, false] }, { size: SizeStyle.whitelist }],
     ["bold", "italic", "underline", "strike"],
     [{ list: "ordered" }, { list: "bullet" }],
     [{ align: [] }],
