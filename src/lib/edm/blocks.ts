@@ -338,8 +338,20 @@ interface RenderCtx {
 const pad = (ctx: RenderCtx, y: string) =>
   ctx.padX ? `${y} ${ctx.padX}px` : `${y} 0`;
 
+/**
+ * Apply a per-block background colour by injecting it into the outer row cell.
+ * Container blocks (columns/table) use `bgColor` for their own cells, so they
+ * are left untouched.
+ */
+const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX: 32 }): string => {
+  const html = renderBlockInner(b, brand, ctx);
+  if (!b.bgColor || isContainer(b) || !html) return html;
+  return html.replace('<td style="', `<td bgcolor="${b.bgColor}" style="background-color:${b.bgColor};`);
+};
+
 const renderRows = (blocks: EdmBlock[], brand: EdmBrand, ctx: RenderCtx): string =>
   blocks.map((b) => renderBlock(b, brand, ctx)).join("\n");
+
 
 /** Render a list of blocks as a self-contained table (used inside cells). */
 const renderNested = (blocks: EdmBlock[], brand: EdmBrand): string => {
