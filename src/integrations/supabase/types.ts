@@ -2979,6 +2979,7 @@ export type Database = {
       }
       landing_pages: {
         Row: {
+          auto_tag_ids: string[]
           body_html: string | null
           brand_id: string | null
           consent_text: string | null
@@ -3008,6 +3009,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_tag_ids?: string[]
           body_html?: string | null
           brand_id?: string | null
           consent_text?: string | null
@@ -3037,6 +3039,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_tag_ids?: string[]
           body_html?: string | null
           brand_id?: string | null
           consent_text?: string | null
