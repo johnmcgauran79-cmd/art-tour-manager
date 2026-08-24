@@ -84,6 +84,22 @@ export interface EdmBlock {
   contentGapTop?: number;
   /** design block: gap in px between last block and footer */
   contentGapBottom?: number;
+  /** design block: footer content mode */
+  footerMode?: "brand" | "custom" | "none";
+  /** design block: footer band background colour */
+  footerBg?: string;
+  /** design block: footer text colour */
+  footerColor?: string;
+  /** design block: footer link colour */
+  footerLinkColor?: string;
+  /** design block: footer vertical padding in px */
+  footerPadding?: number;
+  /** design block: footer top border colour ("transparent" to hide) */
+  footerBorderColor?: string;
+  /** design block: custom footer HTML (footerMode === "custom") */
+  footerHtml?: string;
+  /** design block: show the compliance/unsubscribe line */
+  footerShowUnsubscribe?: boolean;
   /** per-block horizontal padding override in px */
   padX?: number;
   /** per-block vertical padding override in px */
