@@ -670,9 +670,111 @@ function BlockInspector({
           </div>
         </div>
 
+        <div className="space-y-3 rounded-md border p-3">
+          <Label className="text-sm font-semibold">Footer</Label>
+          <div className="space-y-1.5">
+            <Label>Footer content</Label>
+            <Select
+              value={block.footerMode || "brand"}
+              onValueChange={(v) => onChange({ footerMode: v as EdmBlock["footerMode"] })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="brand">Brand details (name, address, phone)</SelectItem>
+                <SelectItem value="custom">Custom footer text</SelectItem>
+                <SelectItem value="none">No footer content</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(block.footerMode || "brand") === "custom" && (
+            <div className="space-y-1.5">
+              <Label>Custom footer text</Label>
+              <RichTextEditor
+                value={block.footerHtml || ""}
+                onChange={(footerHtml) => onChange({ footerHtml })}
+              />
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={block.footerShowUnsubscribe !== false}
+              onCheckedChange={(footerShowUnsubscribe) => onChange({ footerShowUnsubscribe })}
+            />
+            Show unsubscribe / email preferences line
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Footer background</Label>
+              <Input
+                type="color"
+                value={block.footerBg || block.contentBg || "#ffffff"}
+                onChange={(e) => onChange({ footerBg: e.target.value })}
+                className="h-9 p-1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Footer text colour</Label>
+              <Input
+                type="color"
+                value={block.footerColor || "#667085"}
+                onChange={(e) => onChange({ footerColor: e.target.value })}
+                className="h-9 p-1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Footer link colour</Label>
+              <Input
+                type="color"
+                value={block.footerLinkColor || block.footerColor || "#667085"}
+                onChange={(e) => onChange({ footerLinkColor: e.target.value })}
+                className="h-9 p-1"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Footer padding (px)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={64}
+                value={block.footerPadding ?? 20}
+                onChange={(e) => onChange({ footerPadding: Math.max(0, Number(e.target.value) || 0) })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Footer top border</Label>
+              <Input
+                type="color"
+                value={
+                  block.footerBorderColor && block.footerBorderColor !== "transparent"
+                    ? block.footerBorderColor
+                    : block.borderColor || "#e2e8f0"
+                }
+                onChange={(e) => onChange({ footerBorderColor: e.target.value })}
+                className="h-9 p-1"
+              />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm">
+                <Switch
+                  checked={block.footerBorderColor !== "transparent"}
+                  onCheckedChange={(on) =>
+                    onChange({ footerBorderColor: on ? block.borderColor || "#e2e8f0" : "transparent" })
+                  }
+                />
+                Show divider line
+              </label>
+            </div>
+          </div>
+        </div>
+
         <p className="text-xs text-muted-foreground">
-          These settings are saved with the template, so each design can have its own header
-          and colours.
+          These settings are saved with the template, so each design can have its own header,
+          footer and colours.
         </p>
       </div>
     );

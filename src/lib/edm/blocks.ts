@@ -84,6 +84,22 @@ export interface EdmBlock {
   contentGapTop?: number;
   /** design block: gap in px between last block and footer */
   contentGapBottom?: number;
+  /** design block: footer content mode */
+  footerMode?: "brand" | "custom" | "none";
+  /** design block: footer band background colour */
+  footerBg?: string;
+  /** design block: footer text colour */
+  footerColor?: string;
+  /** design block: footer link colour */
+  footerLinkColor?: string;
+  /** design block: footer vertical padding in px */
+  footerPadding?: number;
+  /** design block: footer top border colour ("transparent" to hide) */
+  footerBorderColor?: string;
+  /** design block: custom footer HTML (footerMode === "custom") */
+  footerHtml?: string;
+  /** design block: show the compliance/unsubscribe line */
+  footerShowUnsubscribe?: boolean;
   /** per-block horizontal padding override in px */
   padX?: number;
   /** per-block vertical padding override in px */
@@ -132,6 +148,14 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         maxWidth: 800,
         contentGapTop: 16,
         contentGapBottom: 16,
+        footerMode: "brand",
+        footerBg: "#ffffff",
+        footerColor: "#667085",
+        footerLinkColor: "#667085",
+        footerPadding: 20,
+        footerBorderColor: "#e2e8f0",
+        footerHtml: "",
+        footerShowUnsubscribe: true,
       };
 
     case "heading":
@@ -597,6 +621,13 @@ export const renderEdmHtml = (
   const headerPadding = Math.max(0, design?.headerPadding ?? 20);
   const gapTop = Math.max(0, design?.contentGapTop ?? 16);
   const gapBottom = Math.max(0, design?.contentGapBottom ?? 16);
+  const footerMode = design?.footerMode || "brand";
+  const footerBg = design?.footerBg || contentBg;
+  const footerColor = design?.footerColor || "#667085";
+  const footerLinkColor = design?.footerLinkColor || footerColor;
+  const footerPadding = Math.max(0, design?.footerPadding ?? 20);
+  const footerBorder = design?.footerBorderColor ?? border;
+  const showUnsub = design?.footerShowUnsubscribe !== false;
   const headerImage =
     headerMode === "none"
       ? ""
@@ -643,24 +674,40 @@ ${
     ${gapTop ? `<tr><td style="height:${gapTop}px;line-height:${gapTop}px;font-size:0;">&nbsp;</td></tr>` : ""}
     ${body}
     ${gapBottom ? `<tr><td style="height:${gapBottom}px;line-height:${gapBottom}px;font-size:0;">&nbsp;</td></tr>` : ""}
-    <tr><td style="padding:20px 32px;border-top:1px solid ${border};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#667085;">
-      <div style="font-weight:700;color:#475467;">${esc(brand.name)}</div>
+    ${(() => {
+      if (footerMode === "none" && !showUnsub) return "";
+      const brandBody =
+        footerMode === "custom"
+          ? design?.footerHtml || ""
+          : footerMode === "none"
+            ? ""
+            : `<div style="font-weight:700;color:${footerColor};">${esc(brand.name)}</div>
       ${brand.companyAddress ? `<div>${esc(brand.companyAddress)}</div>` : ""}
       ${brand.companyPhone ? `<div>${esc(brand.companyPhone)}</div>` : ""}
       ${
         brand.companyWebsite
-          ? `<div><a href="${esc(brand.companyWebsite)}" style="color:#667085;">${esc(
+          ? `<div><a href="${esc(brand.companyWebsite)}" style="color:${footerLinkColor};">${esc(
               brand.companyWebsite
             )}</a></div>`
           : ""
       }
-      ${brand.footerText ? `<div style="margin-top:8px;">${brand.footerText}</div>` : ""}
-      <div style="margin-top:12px;">
+      ${brand.footerText ? `<div style="margin-top:8px;">${brand.footerText}</div>` : ""}`;
+      const unsub = showUnsub
+        ? `<div style="margin-top:12px;">
         You are receiving this because you enquired about or travelled with ${esc(brand.name)}.
-        <a href="{{preferences_url}}" style="color:#667085;text-decoration:underline;">Email preferences</a> ·
-        <a href="{{unsubscribe_url}}" style="color:#667085;text-decoration:underline;">Unsubscribe</a>
-      </div>
-    </td></tr>
+        <a href="{{preferences_url}}" style="color:${footerLinkColor};text-decoration:underline;">Email preferences</a> ·
+        <a href="{{unsubscribe_url}}" style="color:${footerLinkColor};text-decoration:underline;">Unsubscribe</a>
+      </div>`
+        : "";
+      return `<tr><td style="padding:${footerPadding}px 32px;background:${footerBg};${
+        footerBorder && footerBorder !== "transparent"
+          ? `border-top:1px solid ${footerBorder};`
+          : ""
+      }font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${footerColor};">
+      ${brandBody}
+      ${unsub}
+    </td></tr>`;
+    })()}
   </table>
 </td></tr></table>
 </body></html>`;
