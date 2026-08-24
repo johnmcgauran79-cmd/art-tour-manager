@@ -146,6 +146,19 @@ Deno.serve(async (req) => {
       .update({ submission_count: (page.submission_count || 0) + 1 })
       .eq("id", page.id);
 
+    /* 2a. Apply the form's automatic tags to the contact (e.g. "Registered
+       interest", "Facebook lead"). Duplicates are ignored. */
+    const autoTagIds: string[] = Array.isArray(page.auto_tag_ids) ? page.auto_tag_ids : [];
+    if (customerId && autoTagIds.length) {
+      const { error: tagErr } = await supabase
+        .from("contact_tags")
+        .upsert(
+          autoTagIds.map((tag_id: string) => ({ customer_id: customerId, tag_id })),
+          { onConflict: "customer_id,tag_id", ignoreDuplicates: true }
+        );
+      if (tagErr) console.error(`Auto-tagging failed: ${tagErr.message}`);
+    }
+
     if (consent && customerId) {
       await supabase
         .from("marketing_preferences")
@@ -405,6 +418,18 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
 <p><a href="${ADMIN_URL}/marketing?mtab=leads">Open the leads pipeline</a></p>`.trim();
             const res = await postTeamsMessage(supabase, html);
             summary = res.success ? "Posted Teams notification" : `Teams skipped: ${res.reason}`;
+          } else if (action.type === "add_tag" && customerId) {
+            const ids: string[] = action.tag_ids || (action.tag_id ? [action.tag_id] : []);
+            if (ids.length) {
+              const { error: tErr } = await supabase
+                .from("contact_tags")
+                .upsert(
+                  ids.map((tag_id: string) => ({ customer_id: customerId, tag_id })),
+                  { onConflict: "customer_id,tag_id", ignoreDuplicates: true }
+                );
+              if (tErr) throw tErr;
+            }
+            summary = `Applied ${ids.length} tag${ids.length === 1 ? "" : "s"}`;
           } else if (action.type === "set_stage" && action.lead_stage && customerId) {
             await supabase
               .from("customers")
