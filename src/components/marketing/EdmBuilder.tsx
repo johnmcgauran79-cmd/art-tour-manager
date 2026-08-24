@@ -793,7 +793,11 @@ function BlockInspector({
       {(t === "text" || t === "imageText" || t === "quote" || t === "twoColumn") && (
         <div className="space-y-1.5">
           <Label>{t === "twoColumn" ? "Left column" : "Content"}</Label>
-          <RichTextEditor value={block.html || ""} onChange={(html) => onChange({ html })} />
+          <RichTextEditor
+            value={block.html || ""}
+            onChange={(html) => onChange({ html })}
+            lineHeight={t === "text" ? (block.lineHeight ?? 1.6) : undefined}
+          />
         </div>
       )}
 
@@ -926,7 +930,7 @@ function BlockInspector({
 
       {t === "text" && (
         <div className="space-y-1.5">
-          <Label>Line spacing</Label>
+          <Label>Line spacing (whole text block)</Label>
           <Input
             type="number"
             step="0.1"
@@ -935,6 +939,10 @@ function BlockInspector({
             value={block.lineHeight ?? 1.6}
             onChange={(e) => onChange({ lineHeight: Number(e.target.value) || 1.6 })}
           />
+          <p className="text-xs text-muted-foreground">
+            Multiplier applied to every line in this block (1 = tight, 1.6 = default). Blank lines
+            you press Enter for are separate paragraphs and stay as gaps.
+          </p>
         </div>
       )}
 
