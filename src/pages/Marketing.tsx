@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, LayoutTemplate, Megaphone, Send, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
@@ -17,6 +17,12 @@ export default function Marketing() {
     TABS.includes(initial as any) ? (initial as string) : "campaigns"
   );
   const [pendingCampaignId, setPendingCampaignId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Leads moved to their own top-level tab; keep old links working.
+  useEffect(() => {
+    if (initial === "leads") navigate("/leads", { replace: true });
+  }, [initial, navigate]);
 
   const onTabChange = (value: string) => {
     setTab(value);
