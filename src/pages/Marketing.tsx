@@ -1,15 +1,14 @@
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { FileText, LayoutTemplate, Megaphone, Send, Target, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { FileText, LayoutTemplate, Megaphone, Send, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { CampaignsTab } from "@/components/marketing/CampaignsTab";
 import { TemplatesTab } from "@/components/marketing/TemplatesTab";
 import { AudiencesTab } from "@/components/marketing/AudiencesTab";
-import { LeadsTab } from "@/components/marketing/LeadsTab";
 import { LandingPagesTab } from "@/components/marketing/LandingPagesTab";
 
-const TABS = ["campaigns", "templates", "audiences", "leads", "forms"] as const;
+const TABS = ["campaigns", "templates", "audiences", "forms"] as const;
 
 export default function Marketing() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,6 +17,12 @@ export default function Marketing() {
     TABS.includes(initial as any) ? (initial as string) : "campaigns"
   );
   const [pendingCampaignId, setPendingCampaignId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Leads moved to their own top-level tab; keep old links working.
+  useEffect(() => {
+    if (initial === "leads") navigate("/leads", { replace: true });
+  }, [initial, navigate]);
 
   const onTabChange = (value: string) => {
     setTab(value);
@@ -36,8 +41,8 @@ export default function Marketing() {
           Marketing
         </h1>
         <p className="text-sm text-muted-foreground">
-          Email campaigns, templates, audiences, public forms and your sales pipeline — all inside
-          ART.
+          Email campaigns, templates, audiences and public forms — all inside ART. Leads now live
+          in their own Leads tab.
         </p>
       </div>
 
@@ -51,9 +56,6 @@ export default function Marketing() {
           </TabsTrigger>
           <TabsTrigger value="audiences" className="gap-1.5">
             <Target className="h-3.5 w-3.5" /> Audiences
-          </TabsTrigger>
-          <TabsTrigger value="leads" className="gap-1.5">
-            <Users className="h-3.5 w-3.5" /> Leads
           </TabsTrigger>
           <TabsTrigger value="forms" className="gap-1.5">
             <FileText className="h-3.5 w-3.5" /> Forms &amp; landing pages
@@ -76,9 +78,6 @@ export default function Marketing() {
         </TabsContent>
         <TabsContent value="audiences" className="mt-4">
           <AudiencesTab />
-        </TabsContent>
-        <TabsContent value="leads" className="mt-4">
-          <LeadsTab />
         </TabsContent>
         <TabsContent value="forms" className="mt-4">
           <LandingPagesTab />
