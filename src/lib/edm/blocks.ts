@@ -548,12 +548,37 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
  * Pasted HTML (Word/Docs/websites) often carries its own line-height and
  * paragraph margins which override the block's Line spacing setting.
  */
-export const stripPastedSpacing = (html: string): string =>
-  html
-    .replace(/line-height\s*:\s*[^;"']+;?/gi, "")
-    .replace(/margin(-top|-bottom)?\s*:\s*[^;"']+;?/gi, "")
-    .replace(/<p(\s|>)/gi, '<p style="margin:0 0 8px 0;"$1')
-    .replace(/<p style="margin:0 0 8px 0;"\s+style=/gi, '<p style=');
+export const stripPastedSpacing = (html: string): string => {
+  const withoutPastedSpacing = html.replace(
+    /style=(['"])(.*?)\1/gi,
+    (_match, quote: string, styles: string) => {
+      const cleaned = styles
+        .split(";")
+        .map((rule) => rule.trim())
+        .filter(
+          (rule) =>
+            rule &&
+            !/^line-height\s*:/i.test(rule) &&
+            !/^margin(?:-(?:top|right|bottom|left))?\s*:/i.test(rule)
+        )
+        .join(";");
+
+      return cleaned ? `style=${quote}${cleaned};${quote}` : "";
+    }
+  );
+
+  // Quill represents each pasted line as a paragraph. Keep those paragraphs
+  // flush in the email, exactly as they appear in the editor. An intentional
+  // blank paragraph still occupies one line because it contains a <br>.
+  return withoutPastedSpacing.replace(/<p\b([^>]*)>/gi, (_match, attrs: string) => {
+    const styleMatch = attrs.match(/style=(['"])(.*?)\1/i);
+    if (styleMatch) {
+      const nextStyle = `margin:0;line-height:inherit;${styleMatch[2]}`;
+      return `<p${attrs.replace(styleMatch[0], `style=${styleMatch[1]}${nextStyle}${styleMatch[1]}`)}>`;
+    }
+    return `<p${attrs} style="margin:0;line-height:inherit;">`;
+  });
+};
 
 export const renderEdmHtml = (
   blocks: EdmBlock[],
