@@ -80,6 +80,10 @@ export interface EdmBlock {
   borderColor?: string;
   /** design block: content max width in px */
   maxWidth?: number;
+  /** design block: gap in px between header and first block */
+  contentGapTop?: number;
+  /** design block: gap in px between last block and footer */
+  contentGapBottom?: number;
   /** per-block horizontal padding override in px */
   padX?: number;
   /** per-block vertical padding override in px */
