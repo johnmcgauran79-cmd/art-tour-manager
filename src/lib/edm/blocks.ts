@@ -395,7 +395,8 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
   }">${body}</table></td></tr>`;
 };
 
-const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX: 32 }): string => {
+const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX: 32 }): string => {
+
   const primary = brand.colorPrimary || "#0f172a";
   const button = brand.colorButton || primary;
   const buttonText = brand.colorButtonText || "#ffffff";
