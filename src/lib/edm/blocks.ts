@@ -170,6 +170,7 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
 };
 
 export const blockLabel: Record<EdmBlockType, string> = {
+  design: "Email design (header & background)",
   heading: "Heading",
   text: "Text",
   image: "Image",
