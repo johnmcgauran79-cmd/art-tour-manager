@@ -1551,7 +1551,31 @@ const handler = async (req: Request): Promise<Response> => {
       mergeData.additional_info_blocks = '';
     }
 
+    // ===== Resolve {{attachment:slug}} tokens to permanent email-file URLs =====
+    const ATTACHMENT_TOKEN_RE = /\{\{\s*attachment:([a-zA-Z0-9_-]+)\s*\}\}/g;
+    const attachmentSourceContent = stripZeroWidth(
+      `${customContent || template?.content_template || ''} ${customSubject || template?.subject_template || ''}`,
+    );
+    const attachmentUrlBySlug = new Map<string, string>();
+    const attachmentSlugs = Array.from(
+      attachmentSourceContent.matchAll(ATTACHMENT_TOKEN_RE),
+    ).map((m) => m[1]);
+    if (attachmentSlugs.length > 0) {
+      const { data: attachmentRows } = await supabase
+        .from('email_attachments')
+        .select('id, slug')
+        .in('slug', Array.from(new Set(attachmentSlugs)));
+      for (const row of attachmentRows || []) {
+        attachmentUrlBySlug.set(row.slug, emailAttachmentUrl(row.id));
+      }
+    }
+    const resolveAttachmentTokens = (html: string): string =>
+      attachmentSlugs.length === 0
+        ? html
+        : html.replace(ATTACHMENT_TOKEN_RE, (_m, slug) => attachmentUrlBySlug.get(slug) || '');
+
     if (template) {
+
       console.log('=== TEMPLATE PROCESSING DEBUG ===');
       console.log('Custom subject provided:', !!customSubject);
       console.log('Custom content provided:', !!customContent);
