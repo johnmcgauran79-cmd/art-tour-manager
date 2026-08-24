@@ -412,3 +412,16 @@ thead tr th {
   border-bottom-color: hsl(var(--muted-foreground));
 }
 
+
+/* Quill font-size dropdown labels (px values) */
+.rich-text-editor .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.rich-text-editor .ql-snow .ql-picker.ql-size .ql-picker-item::before {
+  content: attr(data-value);
+}
+.rich-text-editor .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
+.rich-text-editor .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before {
+  content: "Normal";
+}
+.rich-text-editor .ql-snow .ql-picker.ql-size {
+  width: 74px;
+}
