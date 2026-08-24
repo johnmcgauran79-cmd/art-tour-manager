@@ -11,6 +11,7 @@
  */
 
 export type EdmBlockType =
+  | "design"
   | "heading"
   | "text"
   | "image"
@@ -63,6 +64,16 @@ export interface EdmBlock {
   /** cell padding in px */
   cellPadding?: number;
   valign?: "top" | "middle" | "bottom";
+  /** design block: which header image to use */
+  headerMode?: "brand" | "custom" | "none";
+  /** design block: outer page background colour */
+  pageBg?: string;
+  /** design block: email content background colour */
+  contentBg?: string;
+  /** design block: content border colour */
+  borderColor?: string;
+  /** design block: content max width in px */
+  maxWidth?: number;
 }
 
 export interface EdmBrand {
@@ -86,6 +97,16 @@ export const newCell = (blocks: EdmBlock[] = []): EdmCell => ({
 export const newBlock = (type: EdmBlockType): EdmBlock => {
   const id = crypto.randomUUID();
   switch (type) {
+    case "design":
+      return {
+        id,
+        type,
+        headerMode: "brand",
+        imageUrl: "",
+        pageBg: "#f4f5f7",
+        contentBg: "#ffffff",
+        maxWidth: 800,
+      };
     case "heading":
       return { id, type, text: "Your headline here", align: "left", size: "lg" };
     case "text":
@@ -149,6 +170,7 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
 };
 
 export const blockLabel: Record<EdmBlockType, string> = {
+  design: "Email design (header & background)",
   heading: "Heading",
   text: "Text",
   image: "Image",
@@ -489,8 +511,20 @@ export const renderEdmHtml = (
   brand: EdmBrand,
   opts: { subject?: string; preheader?: string } = {}
 ): string => {
-  const border = brand.colorBorder || "#e2e8f0";
-  const body = renderRows(blocks, brand, { padX: 32 });
+  const design = blocks.find((b) => b.type === "design");
+  const contentBlocks = blocks.filter((b) => b.type !== "design");
+  const border = design?.borderColor || brand.colorBorder || "#e2e8f0";
+  const pageBg = design?.pageBg || "#f4f5f7";
+  const contentBg = design?.contentBg || "#ffffff";
+  const maxWidth = design?.maxWidth || 800;
+  const headerMode = design?.headerMode || "brand";
+  const headerImage =
+    headerMode === "none"
+      ? ""
+      : headerMode === "custom"
+        ? design?.imageUrl || ""
+        : brand.emailHeaderImageUrl || "";
+  const body = renderRows(contentBlocks, brand, { padX: 32 });
 
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -503,20 +537,20 @@ export const renderEdmHtml = (
 }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#f4f5f7;">
+<body style="margin:0;padding:0;background:${pageBg};">
 ${
   opts.preheader
-    ? `<div style="display:none;font-size:1px;color:#f4f5f7;max-height:0;overflow:hidden;">${esc(
+    ? `<div style="display:none;font-size:1px;color:${pageBg};max-height:0;overflow:hidden;">${esc(
         opts.preheader
       )}</div>`
     : ""
 }
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f5f7;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${pageBg};">
 <tr><td align="center" style="padding:24px 12px;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:800px;background:#ffffff;border:1px solid ${border};border-radius:10px;overflow:hidden;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
-      brand.emailHeaderImageUrl
-        ? `<tr><td><img src="${esc(brand.emailHeaderImageUrl)}" alt="${esc(
+      headerImage
+        ? `<tr><td><img src="${esc(headerImage)}" alt="${esc(
             brand.name
           )}" style="display:block;width:100%;height:auto;border:0;" /></td></tr>`
         : ""

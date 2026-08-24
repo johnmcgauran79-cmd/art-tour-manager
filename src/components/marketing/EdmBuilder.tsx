@@ -9,6 +9,7 @@ import {
   Monitor,
   Plus,
   Smartphone,
+  Palette,
   Trash2,
   Type,
 } from "lucide-react";
@@ -18,7 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -139,6 +145,7 @@ export function EdmBuilder({
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
@@ -176,6 +183,18 @@ export function EdmBuilder({
   const remove = (id: string) => {
     onBlocksChange(removeBlockById(blocks, id));
     if (selectedId === id) setSelectedId(null);
+  };
+
+  /** Open (creating if needed) the template-level design settings block. */
+  const openDesign = () => {
+    const existing = blocks.find((b) => b.type === "design");
+    if (existing) {
+      setSelectedId(existing.id);
+      return;
+    }
+    const block = newBlock("design");
+    onBlocksChange([block, ...blocks]);
+    setSelectedId(block.id);
   };
 
   const applyTemplate = (key: string) => {
@@ -242,28 +261,24 @@ export function EdmBuilder({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant={device === "desktop" ? "secondary" : "ghost"}
-            size="icon"
-            onClick={() => setDevice("desktop")}
-            aria-label="Desktop preview"
-          >
-            <Monitor className="h-4 w-4" />
+        {mode === "blocks" && (
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={openDesign}>
+            <Palette className="h-3.5 w-3.5" /> Header &amp; background
           </Button>
-          <Button
-            variant={device === "mobile" ? "secondary" : "ghost"}
-            size="icon"
-            onClick={() => setDevice("mobile")}
-            aria-label="Mobile preview"
-          >
-            <Smartphone className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
+
+        <Button
+          size="sm"
+          variant="secondary"
+          className="ml-auto gap-1.5"
+          onClick={() => setPreviewOpen(true)}
+        >
+          <Eye className="h-3.5 w-3.5" /> Preview
+        </Button>
       </div>
 
       {mode === "html" ? (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-2">
           <div className="space-y-2">
             <Label>HTML source</Label>
             <Textarea
@@ -277,10 +292,9 @@ export function EdmBuilder({
               Include <code>{"{{unsubscribe_url}}"}</code> so the email stays compliant.
             </p>
           </div>
-          <PreviewPane html={previewHtml} device={device} />
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[300px_1fr_1fr]">
+        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
           {/* Block tree */}
           <Card className="h-fit">
             <CardHeader className="pb-3">
@@ -296,7 +310,7 @@ export function EdmBuilder({
                 }
               />
 
-              <ScrollArea className="max-h-[520px] pr-1">
+              <ScrollArea className="max-h-[640px] pr-1">
                 {blocks.length === 0 ? (
                   <p className="py-6 text-center text-xs text-muted-foreground">
                     Pick a layout or add your first block.
@@ -334,10 +348,37 @@ export function EdmBuilder({
               )}
             </CardContent>
           </Card>
-
-          <PreviewPane html={previewHtml} device={device} />
         </div>
       )}
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-4 w-4" /> Email preview
+              <div className="ml-2 flex items-center gap-1">
+                <Button
+                  variant={device === "desktop" ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => setDevice("desktop")}
+                  aria-label="Desktop preview"
+                >
+                  <Monitor className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={device === "mobile" ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => setDevice("mobile")}
+                  aria-label="Mobile preview"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <PreviewPane html={previewHtml} device={device} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -485,19 +526,13 @@ function BlockTree({
 function PreviewPane({ html, device }: { html: string; device: "desktop" | "mobile" }) {
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-1.5">
-        <Eye className="h-3.5 w-3.5" /> Live preview
-        <Badge variant="secondary" className="ml-1 text-[10px]">
-          {device === "desktop" ? "Desktop" : "Mobile"}
-        </Badge>
-      </Label>
       <div className="flex justify-center rounded-lg border bg-muted/40 p-2">
         <iframe
           title="EDM preview"
           srcDoc={html}
           sandbox=""
           className={cn(
-            "h-[620px] rounded bg-background",
+            "h-[70vh] rounded bg-background",
             device === "mobile" ? "w-[390px]" : "w-full"
           )}
         />
@@ -514,6 +549,82 @@ function BlockInspector({
   onChange: (patch: Partial<EdmBlock>) => void;
 }) {
   const t = block.type;
+
+  if (t === "design") {
+    const headerMode = block.headerMode || "brand";
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Label>Header image</Label>
+          <Select
+            value={headerMode}
+            onValueChange={(v) => onChange({ headerMode: v as EdmBlock["headerMode"] })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="brand">Brand default header</SelectItem>
+              <SelectItem value="custom">Custom header image</SelectItem>
+              <SelectItem value="none">No header</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {headerMode === "custom" && (
+          <EdmImageField
+            label="Custom header"
+            value={block.imageUrl || ""}
+            onChange={(url) => onChange({ imageUrl: url })}
+          />
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Page background</Label>
+            <Input
+              type="color"
+              value={block.pageBg || "#f4f5f7"}
+              onChange={(e) => onChange({ pageBg: e.target.value })}
+              className="h-9 p-1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Email background</Label>
+            <Input
+              type="color"
+              value={block.contentBg || "#ffffff"}
+              onChange={(e) => onChange({ contentBg: e.target.value })}
+              className="h-9 p-1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Border colour</Label>
+            <Input
+              type="color"
+              value={block.borderColor || "#e2e8f0"}
+              onChange={(e) => onChange({ borderColor: e.target.value })}
+              className="h-9 p-1"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Content width (px)</Label>
+            <Input
+              type="number"
+              min={480}
+              max={900}
+              value={block.maxWidth ?? 800}
+              onChange={(e) => onChange({ maxWidth: Number(e.target.value) || 800 })}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          These settings are saved with the template, so each design can have its own header
+          and colours.
+        </p>
+      </div>
+    );
+  }
 
   if (t === "columns" || t === "table") {
     const cols = Math.max(1, block.cols || 1);
