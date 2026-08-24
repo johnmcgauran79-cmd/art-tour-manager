@@ -754,6 +754,45 @@ export class EmailTemplateEngine {
       
       // Additional info blocks - rendered server-side with tour data
       additional_info_blocks: '{{additional_info_blocks}}',
+
+      // Server-rendered smart cards. When bulk-email flows pre-process the
+      // template on the client we MUST NOT erase these placeholders.
+      tour_details_card: '{{tour_details_card}}',
+      passenger_info_card: '{{passenger_info_card}}',
+
+      // Hotel detail cards — rendered here so previews and pre-processed sends
+      // both show the real accommodation data instead of an empty block.
+      hotel_details: this.renderHotelDetailsCards(hotelBookings),
     };
+  }
+
+  /** Styled hotel cards used by the {{hotel_details}} merge field. */
+  private static renderHotelDetailsCards(hotelBookings: any[]): string {
+    if (!hotelBookings || hotelBookings.length === 0) return '';
+
+    const labelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:100px;';
+    const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
+
+    return hotelBookings
+      .slice()
+      .sort((a: any, b: any) => String(a?.check_in_date || '').localeCompare(String(b?.check_in_date || '')))
+      .map((hb: any) => {
+        const rows: string[] = [];
+        rows.push(`<tr><td style="${labelStyle}">Check In</td><td style="${valueStyle}">${this.formatDate(hb.check_in_date) || ''}</td></tr>`);
+        rows.push(`<tr><td style="${labelStyle}">Check Out</td><td style="${valueStyle}">${this.formatDate(hb.check_out_date) || ''}</td></tr>`);
+        rows.push(`<tr><td style="${labelStyle}">Nights</td><td style="${valueStyle}">${hb.nights ?? ''}</td></tr>`);
+        if (hb.bedding) {
+          rows.push(`<tr><td style="${labelStyle}">Bedding</td><td style="${valueStyle}">${hb.bedding}</td></tr>`);
+        }
+        if (hb.room_type) {
+          rows.push(`<tr><td style="${labelStyle}">Room Type</td><td style="${valueStyle}">${hb.room_type}</td></tr>`);
+        }
+        const extra = hb.hotels?.extra_night_price;
+        if (extra && Number(extra) > 0) {
+          rows.push(`<tr><td style="${labelStyle}">Extra Nights</td><td style="${valueStyle}">Available for $${extra}</td></tr>`);
+        }
+        return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">🏨 ${hb.hotels?.name || ''}</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
+      })
+      .join('');
   }
 }
