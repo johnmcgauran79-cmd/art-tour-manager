@@ -148,6 +148,14 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         maxWidth: 800,
         contentGapTop: 16,
         contentGapBottom: 16,
+        footerMode: "brand",
+        footerBg: "#ffffff",
+        footerColor: "#667085",
+        footerLinkColor: "#667085",
+        footerPadding: 20,
+        footerBorderColor: "#e2e8f0",
+        footerHtml: "",
+        footerShowUnsubscribe: true,
       };
 
     case "heading":
