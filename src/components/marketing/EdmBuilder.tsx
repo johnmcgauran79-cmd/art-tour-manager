@@ -894,6 +894,29 @@ function BlockInspector({
           />
         </div>
       )}
+
+      <div className="space-y-1.5">
+        <Label>Block background</Label>
+        <div className="flex gap-2">
+          <Input
+            type="color"
+            className="h-9 w-14 p-1"
+            value={block.bgColor || "#ffffff"}
+            onChange={(e) => onChange({ bgColor: e.target.value })}
+          />
+          <Input
+            value={block.bgColor || ""}
+            onChange={(e) => onChange({ bgColor: e.target.value || undefined })}
+            placeholder="Leave blank for none"
+          />
+          {block.bgColor && (
+            <Button variant="outline" size="sm" onClick={() => onChange({ bgColor: undefined })}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
