@@ -612,6 +612,27 @@ function BlockInspector({
             />
           </div>
           <div className="space-y-1.5">
+            <Label>Gap below header (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={64}
+              value={block.contentGapTop ?? 16}
+              onChange={(e) => onChange({ contentGapTop: Math.max(0, Number(e.target.value) || 0) })}
+            />
+            <p className="text-xs text-muted-foreground">Set to 0 for an image flush against the header.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Gap above footer (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={64}
+              value={block.contentGapBottom ?? 16}
+              onChange={(e) => onChange({ contentGapBottom: Math.max(0, Number(e.target.value) || 0) })}
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label>Page background</Label>
             <Input
               type="color"

@@ -80,6 +80,10 @@ export interface EdmBlock {
   borderColor?: string;
   /** design block: content max width in px */
   maxWidth?: number;
+  /** design block: gap in px between header and first block */
+  contentGapTop?: number;
+  /** design block: gap in px between last block and footer */
+  contentGapBottom?: number;
   /** per-block horizontal padding override in px */
   padX?: number;
   /** per-block vertical padding override in px */
@@ -126,6 +130,8 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         pageBg: "#f4f5f7",
         contentBg: "#ffffff",
         maxWidth: 800,
+        contentGapTop: 16,
+        contentGapBottom: 16,
       };
 
     case "heading":
@@ -553,6 +559,8 @@ export const renderEdmHtml = (
   const headerBg = design?.headerBg || contentBg;
   const headerWidthPct = Math.min(100, Math.max(20, design?.headerWidthPct ?? 55));
   const headerPadding = Math.max(0, design?.headerPadding ?? 20);
+  const gapTop = Math.max(0, design?.contentGapTop ?? 16);
+  const gapBottom = Math.max(0, design?.contentGapBottom ?? 16);
   const headerImage =
     headerMode === "none"
       ? ""
@@ -596,9 +604,9 @@ ${
         : ""
     }
 
-    <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
+    ${gapTop ? `<tr><td style="height:${gapTop}px;line-height:${gapTop}px;font-size:0;">&nbsp;</td></tr>` : ""}
     ${body}
-    <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
+    ${gapBottom ? `<tr><td style="height:${gapBottom}px;line-height:${gapBottom}px;font-size:0;">&nbsp;</td></tr>` : ""}
     <tr><td style="padding:20px 32px;border-top:1px solid ${border};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#667085;">
       <div style="font-weight:700;color:#475467;">${esc(brand.name)}</div>
       ${brand.companyAddress ? `<div>${esc(brand.companyAddress)}</div>` : ""}
