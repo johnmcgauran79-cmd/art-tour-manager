@@ -121,7 +121,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         .from('bookings')
         .select(`
           tour_id,
-          customers:lead_passenger_id (first_name, last_name, email)
+          customers:lead_passenger_id (first_name, last_name, email),
+          secondary_contact:customers!secondary_contact_id (first_name, last_name, email)
         `)
         .eq('id', bookingId)
         .maybeSingle();
@@ -129,13 +130,17 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
       if (error) throw error;
 
       const leadPassenger = (data as any)?.customers;
-      if (!leadPassenger?.email) return null;
+      const secondary = (data as any)?.secondary_contact;
+      const source = leadPassenger?.email ? leadPassenger : (secondary?.email ? secondary : null);
+      if (!source) return null;
 
+      const name = `${source.first_name ?? ''} ${source.last_name ?? ''}`.trim();
       return {
-        recipientEmail: leadPassenger.email as string,
-        recipientName: `${leadPassenger.first_name ?? ''} ${leadPassenger.last_name ?? ''}`.trim(),
+        recipientEmail: source.email as string,
+        recipientName: source === secondary ? `${name} (secondary contact)` : name,
         tourId: (data as any)?.tour_id as string | null,
       };
+
     },
     enabled: !!bookingId && open,
     staleTime: 5 * 60 * 1000,
