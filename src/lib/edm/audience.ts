@@ -1,4 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  countRules,
+  describeNode,
+  resolveRuleTree,
+  type AudienceGroup,
+} from "./audienceRules";
 
 /**
  * Audience filters are stored as JSON on `marketing_audiences` / campaigns and
@@ -18,12 +24,23 @@ export interface AudienceFilters {
   latestTourBefore?: string;
   /** free-text name/email match */
   search?: string;
-  /** contacts carrying ALL of these tags */
+  /** contacts carrying ALL of these tags (or ANY when tagMatchAny is set) */
   tagIds?: string[];
+  /** match contacts carrying ANY of the selected tags instead of all of them */
+  tagMatchAny?: boolean;
+  /**
+   * Advanced rule tree (nested AND/OR/NOT). When present it takes precedence
+   * over the simple filters above and is evaluated client-side.
+   */
+  rules?: AudienceGroup;
 }
 
-/** Resolve the customer ids that carry every one of the given tags. */
-const customerIdsForTags = async (tagIds: string[]): Promise<string[]> => {
+/** True when the audience uses the advanced rule tree. */
+export const hasRules = (f: AudienceFilters): boolean =>
+  !!f.rules && countRules(f.rules) > 0;
+
+/** Resolve the customer ids that carry the given tags (all by default). */
+const customerIdsForTags = async (tagIds: string[], any = false): Promise<string[]> => {
   const { data, error } = await supabase
     .from("contact_tags")
     .select("customer_id, tag_id")
@@ -36,7 +53,7 @@ const customerIdsForTags = async (tagIds: string[]): Promise<string[]> => {
     counts.set(r.customer_id, set);
   });
   return [...counts.entries()]
-    .filter(([, set]) => set.size === new Set(tagIds).size)
+    .filter(([, set]) => any || set.size === new Set(tagIds).size)
     .map(([id]) => id);
 };
 
@@ -78,7 +95,10 @@ const applyFilters = (query: any, f: AudienceFilters, tagCustomerIds?: string[] 
 
 /** Count matching, consented contacts without fetching them all. */
 export const countAudience = async (filters: AudienceFilters): Promise<number> => {
-  const tagIds = filters.tagIds?.length ? await customerIdsForTags(filters.tagIds) : null;
+  if (hasRules(filters)) return (await resolveRuleTree(filters.rules as AudienceGroup)).length;
+  const tagIds = filters.tagIds?.length
+    ? await customerIdsForTags(filters.tagIds, filters.tagMatchAny)
+    : null;
   const { count, error } = await applyFilters(
     supabase.from("customers").select("id", { count: "exact", head: true }),
     filters,
@@ -93,7 +113,21 @@ export const resolveAudience = async (
   filters: AudienceFilters
 ): Promise<AudienceContact[]> => {
   const out: AudienceContact[] = [];
-  const tagIds = filters.tagIds?.length ? await customerIdsForTags(filters.tagIds) : null;
+  if (hasRules(filters)) {
+    const rows = await resolveRuleTree(filters.rules as AudienceGroup);
+    return rows.map((r) => ({
+      id: r.id,
+      first_name: r.first_name,
+      last_name: r.last_name,
+      email: r.email,
+      state: r.state,
+      lead_stage: r.lead_stage,
+      latest_tour_name: r.latest_tour_name,
+    }));
+  }
+  const tagIds = filters.tagIds?.length
+    ? await customerIdsForTags(filters.tagIds, filters.tagMatchAny)
+    : null;
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await applyFilters(
       supabase
@@ -121,7 +155,11 @@ export const resolveAudience = async (
   });
 };
 
-export const describeFilters = (f: AudienceFilters): string => {
+export const describeFilters = (
+  f: AudienceFilters,
+  lookup: { tags?: Record<string, string>; tours?: Record<string, string> } = {}
+): string => {
+  if (hasRules(f)) return describeNode(f.rules as AudienceGroup, lookup) || "All consented contacts";
   const parts: string[] = [];
   if (f.states?.length) parts.push(`State: ${f.states.join(", ")}`);
   if (f.leadStages?.length) parts.push(`Lead stage: ${f.leadStages.join(", ")}`);
@@ -130,7 +168,12 @@ export const describeFilters = (f: AudienceFilters): string => {
   if (f.neverTravelledOnly) parts.push("Never travelled");
   if (f.interestedTourId) parts.push("Interested in a specific tour");
   if (f.latestTourBefore) parts.push(`Last travelled before ${f.latestTourBefore}`);
-  if (f.tagIds?.length) parts.push(`Tags: ${f.tagIds.length} selected`);
+  if (f.tagIds?.length)
+    parts.push(
+      `Tags (${f.tagMatchAny ? "any" : "all"}): ${f.tagIds
+        .map((id) => lookup.tags?.[id] || "tag")
+        .join(", ")}`
+    );
   if (f.search) parts.push(`Matching "${f.search}"`);
 
   return parts.length ? parts.join(" · ") : "All consented contacts";

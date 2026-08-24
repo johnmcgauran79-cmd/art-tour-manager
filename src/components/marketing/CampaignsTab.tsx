@@ -58,7 +58,15 @@ import {
   type EdmTemplateRow,
   type MarketingCampaign,
 } from "@/hooks/useMarketing";
-import { countAudience, describeFilters, resolveAudience } from "@/lib/edm/audience";
+import {
+  countAudience,
+  describeFilters,
+  resolveAudience,
+  type AudienceFilters,
+} from "@/lib/edm/audience";
+import { useTags } from "@/hooks/useTags";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmBuilder } from "./EdmBuilder";
@@ -91,6 +99,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const { toast } = useToast();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: audiences = [] } = useAudiences();
+  const { data: allTags = [] } = useTags();
   const { data: brands = [] } = useBrands();
   const { data: templates = [] } = useEdmTemplates();
   const save = useSaveCampaign();
@@ -136,19 +145,64 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
 
   const selectedAudience = audiences.find((a) => a.id === editing?.audience_id);
 
+  /** Ad-hoc filters saved on the campaign when no saved audience is used. */
+  const adHocFilters: AudienceFilters = (editing?.audience_filters as AudienceFilters) || {};
+  const recipientSource: string = editing?.audience_id
+    ? editing.audience_id
+    : adHocFilters.tagIds?.length
+      ? "__tags__"
+      : "__all__";
+  /** Filters actually used to resolve recipients for this campaign. */
+  const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
+  const tagLookup = useMemo(
+    () => ({ tags: Object.fromEntries(allTags.map((t) => [t.id, t.name])) }),
+    [allTags]
+  );
+
+  const setRecipientSource = (value: string) => {
+    if (!editing) return;
+    if (value === "__all__") setEditing({ ...editing, audience_id: null, audience_filters: {} });
+    else if (value === "__tags__")
+      setEditing({
+        ...editing,
+        audience_id: null,
+        audience_filters: { tagIds: adHocFilters.tagIds || [], tagMatchAny: true },
+      });
+    else setEditing({ ...editing, audience_id: value, audience_filters: null });
+  };
+
+  const toggleCampaignTag = (tagId: string) => {
+    if (!editing) return;
+    const current = adHocFilters.tagIds || [];
+    setEditing({
+      ...editing,
+      audience_id: null,
+      audience_filters: {
+        ...adHocFilters,
+        tagMatchAny: true,
+        tagIds: current.includes(tagId) ? current.filter((t) => t !== tagId) : [...current, tagId],
+      },
+    });
+  };
+
   useEffect(() => {
-    if (!open || !selectedAudience) {
+    if (!open) {
       setAudienceCount(null);
       return;
     }
     let cancelled = false;
-    countAudience(selectedAudience.filters)
-      .then((n) => !cancelled && setAudienceCount(n))
-      .catch(() => !cancelled && setAudienceCount(null));
+    setAudienceCount(null);
+    const timer = setTimeout(() => {
+      countAudience(effectiveFilters)
+        .then((n) => !cancelled && setAudienceCount(n))
+        .catch(() => !cancelled && setAudienceCount(null));
+    }, 350);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, [open, selectedAudience]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, JSON.stringify(effectiveFilters)]);
 
   // Opened from the Templates tab: load and edit that freshly created draft.
   useEffect(() => {
@@ -241,8 +295,8 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       toast({ title: "Choose a send date and time", variant: "destructive" });
       return;
     }
-    if (!editing?.audience_id) {
-      toast({ title: "Choose an audience before scheduling", variant: "destructive" });
+    if (recipientSource === "__tags__" && !adHocFilters.tagIds?.length) {
+      toast({ title: "Choose at least one tag before scheduling", variant: "destructive" });
       return;
     }
     const when = new Date(scheduleAt);
@@ -258,7 +312,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
 
     // Queue the audience now so the scheduled worker only has to send.
     try {
-      const contacts = await resolveAudience(selectedAudience!.filters);
+      const contacts = await resolveAudience(effectiveFilters);
       if (contacts.length === 0) {
         toast({ title: "No consented recipients in that audience", variant: "destructive" });
         return;
@@ -297,11 +351,11 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     const saved = await persist();
     const campaignId = saved?.id || editing?.id;
     if (!campaignId) return;
-    if (!selectedAudience) {
-      toast({ title: "Choose an audience first", variant: "destructive" });
+    if (recipientSource === "__tags__" && !adHocFilters.tagIds?.length) {
+      toast({ title: "Choose at least one tag first", variant: "destructive" });
       return;
     }
-    const contacts = await resolveAudience(selectedAudience.filters);
+    const contacts = await resolveAudience(effectiveFilters);
     if (!contacts.length) {
       toast({ title: "No consented recipients in that audience", variant: "destructive" });
       return;
@@ -612,28 +666,58 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
               <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                 <div className="space-y-1.5">
                   <Label className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5" /> Audience
+                    <Users className="h-3.5 w-3.5" /> Recipients
                   </Label>
-                  <Select
-                    value={editing.audience_id || ""}
-                    onValueChange={(audience_id) => setEditing({ ...editing, audience_id })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a saved audience" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {audiences.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedAudience && (
-                    <p className="text-xs text-muted-foreground">
-                      {describeFilters(selectedAudience.filters)}
-                    </p>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={recipientSource} onValueChange={setRecipientSource}>
+                      <SelectTrigger className="min-w-[16rem] flex-1">
+                        <SelectValue placeholder="Choose recipients" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Whole database (all consented)</SelectItem>
+                        <SelectItem value="__tags__">Contacts with tags…</SelectItem>
+                        {audiences.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            Audience: {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {recipientSource === "__tags__" && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="font-normal">
+                            {adHocFilters.tagIds?.length
+                              ? `${adHocFilters.tagIds.length} tag(s) selected`
+                              : "Select tags…"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="max-h-72 w-64 overflow-y-auto">
+                          <div className="space-y-2">
+                            {allTags.length === 0 && (
+                              <p className="text-sm text-muted-foreground">No tags yet.</p>
+                            )}
+                            {allTags.map((t) => (
+                              <label key={t.id} className="flex items-center gap-2 text-sm">
+                                <Checkbox
+                                  checked={(adHocFilters.tagIds || []).includes(t.id)}
+                                  onCheckedChange={() => toggleCampaignTag(t.id)}
+                                />
+                                {t.name}
+                              </label>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Contacts carrying ANY selected tag are included.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {describeFilters(effectiveFilters, tagLookup)}
+                  </p>
                 </div>
                 <Badge variant="secondary" className="h-9 justify-center gap-1.5 px-3">
                   <BarChart3 className="h-3.5 w-3.5" />
