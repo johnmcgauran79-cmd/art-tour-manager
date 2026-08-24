@@ -347,6 +347,19 @@ export interface EmailTemplate {
 }
 
 export class EmailTemplateEngine {
+  /**
+   * True when the merge data has no knowledge of this key at all.
+   * Such placeholders/conditions are resolved server-side (tokens, attachments,
+   * custom form buttons, per-recipient waiver/passport state), so the client
+   * must PRESERVE them rather than blanking them out.
+   */
+  private static isUnknownKey(data: any, path: string): boolean {
+    if (!data || typeof data !== 'object') return true;
+    const [root] = path.split('.');
+    if (!root) return true;
+    return !(root in data);
+  }
+
   // Process template with merge data using Mustache-like syntax
   static processTemplate(template: string, data: EmailMergeData): string {
     let processed = template;
@@ -356,7 +369,12 @@ export class EmailTemplateEngine {
     
     // Handle conditional sections {{#variable}}...{{/variable}}
     processed = processed.replace(/\{\{#([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
-      const value = this.getNestedValue(data, key.trim());
+      const trimmedCondKey = key.trim();
+      // Unknown condition (server-evaluated) — hand the whole block to the server.
+      if (this.isUnknownKey(data, trimmedCondKey)) return match;
+      const value = this.getNestedValue(data, trimmedCondKey);
+      
+
       
       // For arrays (like hotel_bookings), repeat the content for each item
       if (Array.isArray(value)) {
@@ -381,32 +399,48 @@ export class EmailTemplateEngine {
           // Then replace simple variables
           itemContent = itemContent.replace(/\{\{([^}#^/]+)\}\}/g, (innerMatch, innerKey) => {
             const trimmedKey = innerKey.trim();
+            if (this.isUnknownKey(item, trimmedKey) && this.isUnknownKey(data, trimmedKey)) {
+              return innerMatch; // server-resolved placeholder
+            }
             let itemValue = this.getNestedValue(item, trimmedKey);
             if (itemValue === undefined) itemValue = this.getNestedValue(data, trimmedKey);
-            console.log(`  Replacing {{${trimmedKey}}} with:`, itemValue);
 
             // Keep empty values blank in loops
             if (itemValue === undefined || itemValue === null || itemValue === '') return '';
             return String(itemValue);
           });
+
           return itemContent;
         }).join('');
       }
       
-      // For boolean/truthy values, include the content if truthy
-      return value ? content : '';
+      // For boolean/truthy values, include the content if truthy.
+      // Recurse so nested loops/conditionals inside the block are processed too
+      // (matches the server-side engine).
+      return value ? this.processTemplate(content, data) : '';
+
     });
     
     // Handle inverted conditional sections {{^variable}}...{{/variable}}
     processed = processed.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
-      const value = this.getNestedValue(data, key.trim());
-      return !value ? content : '';
+      const trimmedCondKey = key.trim();
+      // Unknown condition (server-evaluated) — hand the whole block to the server.
+      if (this.isUnknownKey(data, trimmedCondKey)) return match;
+      const value = this.getNestedValue(data, trimmedCondKey);
+      const isEmpty = !value || (Array.isArray(value) && value.length === 0);
+      return isEmpty ? this.processTemplate(content, data) : '';
+
     });
     
     // Handle simple variable replacements {{variable}} AFTER loops
     processed = processed.replace(/\{\{([^}#^/]+)\}\}/g, (match, key) => {
       const trimmedKey = key.trim();
+      // Server-resolved placeholders the client knows nothing about
+      // ({{attachment:slug}}, {{custom_form_button}}, request-email fields, …)
+      // must survive pre-processing untouched.
+      if (this.isUnknownKey(data, trimmedKey)) return match;
       const value = this.getNestedValue(data, trimmedKey);
+
 
       // Empty field handling: show N/A for specific field types when empty
       if (value === undefined || value === null || value === '') {

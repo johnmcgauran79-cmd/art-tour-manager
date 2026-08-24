@@ -4,6 +4,8 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { getBrandForBooking, brandMergeFields } from "../_shared/brand.ts";
 import { recolorCustomCards } from "../_shared/customCards.ts";
 import { formatPhoneInternational } from "../_shared/hostDetails.ts";
+import { emailAttachmentUrl } from "../_shared/emailFileUrl.ts";
+
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -1551,7 +1553,31 @@ const handler = async (req: Request): Promise<Response> => {
       mergeData.additional_info_blocks = '';
     }
 
+    // ===== Resolve {{attachment:slug}} tokens to permanent email-file URLs =====
+    const ATTACHMENT_TOKEN_RE = /\{\{\s*attachment:([a-zA-Z0-9_-]+)\s*\}\}/g;
+    const attachmentSourceContent = stripZeroWidth(
+      `${customContent || template?.content_template || ''} ${customSubject || template?.subject_template || ''}`,
+    );
+    const attachmentUrlBySlug = new Map<string, string>();
+    const attachmentSlugs = Array.from(
+      attachmentSourceContent.matchAll(ATTACHMENT_TOKEN_RE),
+    ).map((m) => m[1]);
+    if (attachmentSlugs.length > 0) {
+      const { data: attachmentRows } = await supabase
+        .from('email_attachments')
+        .select('id, slug')
+        .in('slug', Array.from(new Set(attachmentSlugs)));
+      for (const row of attachmentRows || []) {
+        attachmentUrlBySlug.set(row.slug, emailAttachmentUrl(row.id));
+      }
+    }
+    const resolveAttachmentTokens = (html: string): string =>
+      attachmentSlugs.length === 0
+        ? html
+        : html.replace(ATTACHMENT_TOKEN_RE, (_m, slug) => attachmentUrlBySlug.get(slug) || '');
+
     if (template) {
+
       console.log('=== TEMPLATE PROCESSING DEBUG ===');
       console.log('Custom subject provided:', !!customSubject);
       console.log('Custom content provided:', !!customContent);
@@ -1579,7 +1605,10 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Process content template (use custom if provided, otherwise use default template)
       // Always process the template to replace merge fields
-      const contentToProcess = normalizeConditionalTemplateHtml(customContent || template.content_template);
+      const contentToProcess = resolveAttachmentTokens(
+        normalizeConditionalTemplateHtml(customContent || template.content_template),
+      );
+
       emailHtml = processTemplate(contentToProcess, mergeData);
       console.log('Processed content template');
 
@@ -1958,10 +1987,19 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // Process template for this passenger
-      const contentToProcess = customContent || template?.content_template || '';
+      // Process template for this passenger.
+      // Use the same normalisation as the lead-passenger path so conditional
+      // blocks and table layouts survive, and only convert plain-text newlines.
+      const rawPassengerContent = customContent || template?.content_template || '';
+      const contentToProcess = resolveAttachmentTokens(
+        normalizeConditionalTemplateHtml(rawPassengerContent),
+      );
+
       let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
-      passengerEmailHtml = passengerEmailHtml.replace(/\n/g, '<br>');
+      if (!/<\/?[a-z][\s\S]*>/i.test(contentToProcess)) {
+        passengerEmailHtml = passengerEmailHtml.replace(/\n/g, '<br>');
+      }
+
       
       if (passengerProfileLink) {
         passengerEmailHtml = injectProfileUpdateLink(passengerEmailHtml, passengerProfileLink);
