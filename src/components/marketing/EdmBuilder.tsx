@@ -924,6 +924,37 @@ function BlockInspector({
         </div>
       )}
 
+      {t !== "design" && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Side margin (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={80}
+              placeholder="default"
+              value={block.padX ?? ""}
+              onChange={(e) =>
+                onChange({ padX: e.target.value === "" ? undefined : Number(e.target.value) })
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Top/bottom margin (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={80}
+              placeholder="default"
+              value={block.padY ?? ""}
+              onChange={(e) =>
+                onChange({ padY: e.target.value === "" ? undefined : Number(e.target.value) })
+              }
+            />
+          </div>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <Label>Block background</Label>
         <div className="flex gap-2">
