@@ -822,19 +822,48 @@ function BlockInspector({
       )}
 
       {t === "image" && (
-        <div className="space-y-1.5">
-          <Label>Max width (px, blank = full width)</Label>
-          <Input
-            type="number"
-            min={40}
-            max={800}
-            value={block.imageWidth ?? ""}
-            onChange={(e) =>
-              onChange({ imageWidth: e.target.value ? Number(e.target.value) : undefined })
-            }
-          />
-        </div>
+        <>
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div>
+              <Label className="text-sm">Full width (edge to edge)</Label>
+              <p className="text-xs text-muted-foreground">
+                Removes side padding and corners so the image fills the email width.
+              </p>
+            </div>
+            <Switch
+              checked={!!block.fullBleed}
+              onCheckedChange={(fullBleed) =>
+                onChange({ fullBleed, imageWidth: fullBleed ? undefined : block.imageWidth })
+              }
+            />
+          </div>
+          {!block.fullBleed && (
+            <div className="space-y-1.5">
+              <Label>Max width (px, blank = full width)</Label>
+              <Input
+                type="number"
+                min={40}
+                max={800}
+                value={block.imageWidth ?? ""}
+                onChange={(e) =>
+                  onChange({ imageWidth: e.target.value ? Number(e.target.value) : undefined })
+                }
+              />
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label>Corner radius (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={40}
+              value={block.radius ?? (block.fullBleed ? 0 : 6)}
+              onChange={(e) => onChange({ radius: Number(e.target.value) || 0 })}
+            />
+          </div>
+        </>
       )}
+
 
       {(t === "button" || t === "image" || t === "tourCard") && (
         <div className="space-y-1.5">
