@@ -110,10 +110,14 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         type,
         headerMode: "brand",
         imageUrl: "",
+        headerBg: "#ffffff",
+        headerWidthPct: 55,
+        headerPadding: 20,
         pageBg: "#f4f5f7",
         contentBg: "#ffffff",
         maxWidth: 800,
       };
+
     case "heading":
       return { id, type, text: "Your headline here", align: "left", size: "lg" };
     case "text":
