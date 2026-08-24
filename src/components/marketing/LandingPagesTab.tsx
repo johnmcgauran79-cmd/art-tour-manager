@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useTags } from "@/hooks/useTags";
+import { TagBadge } from "@/components/tags/TagBadge";
 import { format } from "date-fns";
 import { Copy, ExternalLink, FileText, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
