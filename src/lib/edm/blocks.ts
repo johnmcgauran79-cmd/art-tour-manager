@@ -433,7 +433,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
       return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:${
         b.lineHeight ?? 1.6
       };color:#333333;"><div style="line-height:${b.lineHeight ?? 1.6};">${
-        b.html || ""
+        stripPastedSpacing(b.html || "")
       }</div></td></tr>`;
     case "image": {
       if (!b.imageUrl) return "";
@@ -544,6 +544,17 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
  * Wrap campaign content in the branded, fluid 800px shell used across ART
  * emails, including the Spam Act sender block and unsubscribe links.
  */
+/**
+ * Pasted HTML (Word/Docs/websites) often carries its own line-height and
+ * paragraph margins which override the block's Line spacing setting.
+ */
+export const stripPastedSpacing = (html: string): string =>
+  html
+    .replace(/line-height\s*:\s*[^;"']+;?/gi, "")
+    .replace(/margin(-top|-bottom)?\s*:\s*[^;"']+;?/gi, "")
+    .replace(/<p(\s|>)/gi, '<p style="margin:0 0 8px 0;"$1')
+    .replace(/<p style="margin:0 0 8px 0;"\s+style=/gi, '<p style=');
+
 export const renderEdmHtml = (
   blocks: EdmBlock[],
   brand: EdmBrand,

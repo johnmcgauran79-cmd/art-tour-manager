@@ -427,7 +427,15 @@ thead tr th {
 }
 
 /* Live line-spacing preview inside the rich text editor */
+.rich-text-editor .ql-editor,
 .rich-text-editor .ql-editor p,
-.rich-text-editor .ql-editor li {
-  line-height: var(--rte-lh, 1.6);
+.rich-text-editor .ql-editor li,
+.rich-text-editor .ql-editor div,
+.rich-text-editor .ql-editor span {
+  line-height: var(--rte-lh, 1.6) !important;
+}
+
+/* Paragraph gaps scale with the chosen line spacing so tightening actually shows */
+.rich-text-editor .ql-editor p {
+  margin-bottom: calc(var(--rte-lh, 1.6) * 4px) !important;
 }
