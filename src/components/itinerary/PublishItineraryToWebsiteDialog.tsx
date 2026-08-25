@@ -64,6 +64,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diff, setDiff] = useState<DiffResult | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -72,14 +73,34 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
     setLoading(true);
     setError(null);
     setDiff(null);
+    setSelected(new Set());
     callProxy<DiffResult>("itinerary_diff", { art_tour_id: tourId })
-      .then((res) => { if (!cancelled) setDiff(res); })
+      .then((res) => {
+        if (cancelled) return;
+        setDiff(res);
+        setSelected(new Set(res.rows.filter((r) => r.changed).map((r) => r.index)));
+      })
       .catch((err: Error) => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [open, tourId]);
 
+  const toggleRow = (index: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const handlePublish = async () => {
+    if (!diff) return;
+    // Unchanged days are always included (they match the website already);
+    // changed days are only published when ticked.
+    const rowIndexes = diff.rows
+      .filter((r) => !r.changed || selected.has(r.index))
+      .map((r) => r.index);
     setPublishing(true);
     try {
       const res = await callProxy<{
@@ -87,7 +108,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
         verified: boolean;
         photos_uploaded: number;
         photo_errors: string[];
-      }>("push_itinerary", { art_tour_id: tourId });
+      }>("push_itinerary", { art_tour_id: tourId, row_indexes: rowIndexes });
       toast.success(
         `Published ${res.rows_published} itinerary day${res.rows_published === 1 ? "" : "s"} to the website` +
           (res.photos_uploaded ? ` and uploaded ${res.photos_uploaded} photo${res.photos_uploaded === 1 ? "" : "s"}` : ""),
