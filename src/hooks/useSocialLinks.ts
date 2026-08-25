@@ -21,7 +21,7 @@ export const useSocialLinks = () =>
 
       if (error) throw error;
       const value = data?.setting_value;
-      return Array.isArray(value) ? (value as EdmSocial[]) : [];
+      return Array.isArray(value) ? (value as unknown as EdmSocial[]) : [];
     },
     staleTime: 5 * 60 * 1000,
   });
