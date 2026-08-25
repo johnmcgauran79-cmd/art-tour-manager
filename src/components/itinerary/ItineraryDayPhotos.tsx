@@ -144,15 +144,36 @@ export const ItineraryDayPhotos = ({ dayId, readOnly }: ItineraryDayPhotosProps)
                     {photo.wpMediaId ? `Website ID ${photo.wpMediaId}` : "Not on website yet"}
                   </span>
                   {!readOnly && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setPendingDelete(photo)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs gap-1"
+                        title="Crop / resize this photo"
+                        disabled={!photo.imageUrl || replaceImage.isPending}
+                        onClick={() =>
+                          photo.imageUrl &&
+                          setEditing({
+                            src: photo.imageUrl,
+                            fileName: photo.fileName || "photo.jpg",
+                            existing: photo,
+                          })
+                        }
+                      >
+                        <Crop className="h-3 w-3" />
+                        Size
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setPendingDelete(photo)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
+
                 </div>
               </div>
             </div>
