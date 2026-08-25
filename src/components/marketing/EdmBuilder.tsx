@@ -274,10 +274,31 @@ export function EdmBuilder({
           </Button>
         )}
 
+        {mode === "blocks" && (
+          <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
+            <Button
+              variant={device === "desktop" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setDevice("desktop")}
+            >
+              <Monitor className="h-3.5 w-3.5" /> Desktop
+            </Button>
+            <Button
+              variant={device === "mobile" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setDevice("mobile")}
+            >
+              <Smartphone className="h-3.5 w-3.5" /> Mobile
+            </Button>
+          </div>
+        )}
+
         <Button
           size="sm"
           variant="secondary"
-          className="ml-auto gap-1.5"
+          className={cn("gap-1.5", mode === "html" && "ml-auto")}
           onClick={() => setPreviewOpen(true)}
         >
           <Eye className="h-3.5 w-3.5" /> Preview
@@ -341,8 +362,13 @@ export function EdmBuilder({
           {/* Inspector */}
           <Card className="h-fit">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">
+              <CardTitle className="flex items-center gap-2 text-sm">
                 {selected ? blockLabel[selected.type] : "Block settings"}
+                {device === "mobile" && (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                    Mobile overrides
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
