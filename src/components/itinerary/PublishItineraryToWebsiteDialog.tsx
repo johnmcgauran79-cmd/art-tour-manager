@@ -206,7 +206,8 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
 
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
