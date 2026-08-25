@@ -178,5 +178,5 @@ export const useItineraryDayImages = (dayId: string) => {
     },
   });
 
-  return { ...query, uploadImage, updateCaption, removeImage };
+  return { ...query, uploadImage, replaceImage, updateCaption, removeImage };
 };
