@@ -63,6 +63,7 @@ type Op =
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
   | { op: "pull_tour_fields"; art_tour_id: string; art_keys: string[] }
   | { op: "pull_itinerary"; art_tour_id: string; confirm?: boolean }
+  | { op: "pull_itinerary_photos"; art_tour_id: string; confirm?: boolean; day_ids?: string[] }
   | { op: "set_website_link_status"; art_tour_id: string; status: "unlinked" | "linked" | "no_website_tour" }
   | {
       op: "save_art_content";
