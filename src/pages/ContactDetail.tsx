@@ -132,10 +132,40 @@ export default function ContactDetail() {
     }
   };
 
-  if (isLoading) {
+  if (isError) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-lg">Loading...</div>
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Couldn't load this contact</h1>
+          <p className="text-sm text-muted-foreground">
+            {(error as { message?: string } | null)?.message || "The request failed. Please try again."}
+          </p>
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={() => goBack("/?tab=contacts")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Contacts
+            </Button>
+            <Button onClick={() => refetch()}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || (!contact && fetchStatus === "fetching")) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center space-y-3">
+          <div className="text-lg">Loading...</div>
+          {fetchStatus === "paused" && (
+            <p className="text-sm text-muted-foreground">
+              Waiting for a network connection…
+            </p>
+          )}
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -153,6 +183,7 @@ export default function ContactDetail() {
       </div>
     );
   }
+
 
   const fullName = `${contact.first_name} ${contact.last_name}`;
 
