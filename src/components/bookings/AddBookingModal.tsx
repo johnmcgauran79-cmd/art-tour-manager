@@ -360,7 +360,7 @@ export const AddBookingModal = ({
       console.log('Booking created:', newBooking);
 
       // Integration trigger logic:
-      // - Host / Complimentary / Waitlist: skip Xero
+      // - Host / Complimentary / Waitlist / RB Invoice: skip Xero
       // - Non-full-tour (no whatsapp or no accommodation): skip Xero
       // - All other statuses: create the Xero invoice unless an invoice_reference was provided
       const status = formData.status;
@@ -368,11 +368,12 @@ export const AddBookingModal = ({
       const isHost = status === 'host';
       const isComplimentary = status === 'complimentary';
       const isWaitlisted = status === 'waitlisted';
+      const isRacingBreaksInvoice = status === 'racing_breaks_invoice';
       const tourForBooking = tours?.find(t => t.id === formData.tour_id);
       const isTestTour = !!(tourForBooking as any)?.is_test_tour;
       const tourManualBilling = !!(tourForBooking as any)?.manual_billing;
 
-      const shouldTriggerXero = !isTestTour && !tourManualBilling && !isWaitlisted && !isHost && !isComplimentary && isFullTourBooking;
+      const shouldTriggerXero = !isTestTour && !tourManualBilling && !isWaitlisted && !isHost && !isComplimentary && !isRacingBreaksInvoice && isFullTourBooking;
 
       if (isTestTour) {
         console.log('Test Tour: Skipping Xero integration for booking', newBooking.id);
@@ -382,6 +383,9 @@ export const AddBookingModal = ({
       }
       if (isWaitlisted) {
         console.log('Waitlist booking: Skipping Xero integration for booking', newBooking.id);
+      }
+      if (isRacingBreaksInvoice) {
+        console.log('RB Invoice booking: Skipping Xero integration for booking', newBooking.id);
       }
 
       // Track integration failures so we can warn the user without losing the booking.

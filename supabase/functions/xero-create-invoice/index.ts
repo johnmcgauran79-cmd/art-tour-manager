@@ -470,8 +470,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Server-side guard: skip Xero invoice for host, complimentary, or non-full-tour bookings
-    const skipStatuses = ['host', 'complimentary'];
+    // Server-side guard: skip Xero invoice for statuses that are billed externally/manual, or non-full-tour bookings
+    const skipStatuses = ['host', 'complimentary', 'waitlisted', 'racing_breaks_invoice'];
     const tourForGuard = booking.tours as any;
     if (tourForGuard?.is_test_tour) {
       console.log(`Skipping Xero invoice — tour ${tourForGuard.id} (${tourForGuard.name}) is marked as a TEST tour`);
