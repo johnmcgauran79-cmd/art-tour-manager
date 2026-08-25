@@ -42,10 +42,25 @@ interface PreviewResult {
 
 async function callProxy<T>(op: string, payload: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("wp-content-proxy", { body: { op, ...payload } });
-  if (error) throw new Error(error.message);
+  if (error) {
+    // invoke() only reports "non-2xx status code" — read the real message off the response body.
+    let detail = error.message;
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.text === "function") {
+      try {
+        const raw = await ctx.text();
+        const parsed = raw ? (JSON.parse(raw) as { error?: string }) : null;
+        detail = parsed?.error || raw || detail;
+      } catch {
+        // keep the generic message
+      }
+    }
+    throw new Error(detail);
+  }
   if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
   return data as T;
 }
+
 
 interface Props {
   open: boolean;
