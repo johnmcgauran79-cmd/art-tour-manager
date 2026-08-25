@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -125,6 +126,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
   };
 
   const changedRows = diff?.rows.filter((r) => r.changed) ?? [];
+  const selectedChangedCount = changedRows.filter((r) => selected.has(r.index)).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -209,7 +211,16 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
                     (row.wp?.date_event ?? "").trim().toLowerCase();
                   return (
                   <div key={row.index} className="rounded-md border p-3 text-sm">
-                    <p className="font-medium">{row.art?.date_event ?? row.wp?.date_event ?? `Row ${row.index + 1}`}</p>
+                    <label className="flex items-start gap-2">
+                      <Checkbox
+                        checked={selected.has(row.index)}
+                        onCheckedChange={() => toggleRow(row.index)}
+                        className="mt-0.5"
+                      />
+                      <span className="font-medium">
+                        {row.art?.date_event ?? row.wp?.date_event ?? `Row ${row.index + 1}`}
+                      </span>
+                    </label>
                     {headlineChanged && (
                       <div className="mt-2 rounded-md bg-muted/50 p-2 text-xs">
                         <p className="mb-1 font-medium uppercase text-muted-foreground">Day headline</p>
@@ -256,9 +267,12 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={publishing}>
             Cancel
           </Button>
-          <Button onClick={handlePublish} disabled={publishing || loading || !diff}>
+          <Button
+            onClick={handlePublish}
+            disabled={publishing || loading || !diff || (changedRows.length > 0 && selectedChangedCount === 0)}
+          >
             {publishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Publish to website
+            {changedRows.length > 0 ? `Publish ${selectedChangedCount} day${selectedChangedCount === 1 ? "" : "s"}` : "Publish to website"}
           </Button>
         </DialogFooter>
       </DialogContent>
