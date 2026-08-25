@@ -8,6 +8,11 @@
  * Layout blocks (`columns`, `table`) are containers: each cell holds its own
  * ordered list of blocks, so images, buttons, cards etc. can be nested inside
  * any column or table cell (Keap-style layout control).
+ *
+ * Every block supports:
+ *  - independent per-side margin and padding,
+ *  - mobile overrides (`block.mobile`) emitted as a `max-width:600px` media
+ *    query so one design works on desktop and phones.
  */
 
 export type EdmBlockType =
@@ -17,6 +22,7 @@ export type EdmBlockType =
   | "image"
   | "imageText"
   | "button"
+  | "social"
   | "tourCard"
   | "columns"
   | "table"
@@ -25,9 +31,53 @@ export type EdmBlockType =
   | "divider"
   | "spacer";
 
+export type EdmAlign = "left" | "center" | "right";
+
 export interface EdmCell {
   id: string;
   blocks: EdmBlock[];
+}
+
+/** Per-side spacing. Undefined sides fall back to the block default. */
+export interface EdmSpacing {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
+export type SocialPlatform =
+  | "facebook"
+  | "instagram"
+  | "youtube"
+  | "linkedin"
+  | "x"
+  | "tiktok";
+
+export interface EdmSocial {
+  platform: SocialPlatform;
+  url: string;
+}
+
+/** Settings that can be overridden just for phones (max-width 600px). */
+export interface EdmMobileOverride {
+  /** hide this block on mobile */
+  hidden?: boolean;
+  align?: EdmAlign;
+  fontSize?: number;
+  lineHeight?: number;
+  margin?: EdmSpacing;
+  padding?: EdmSpacing;
+  /** button */
+  btnFullWidth?: boolean;
+  btnWidth?: number;
+  btnFontSize?: number;
+  /** image */
+  imageWidthPct?: number;
+  imageMaxWidth?: number;
+  /** columns: stack (default) or keep side by side; optionally reverse order */
+  stack?: boolean;
+  stackReverse?: boolean;
 }
 
 export interface EdmBlock {
@@ -43,8 +93,16 @@ export interface EdmBlock {
   imageAlt?: string;
   /** image display width in px (defaults to full width of its container) */
   imageWidth?: number;
+  /** image width expressed as a percentage of the container */
+  imageWidthPct?: number;
+  /** which unit the image width uses */
+  imageWidthUnit?: "px" | "pct";
+  /** image max width in px */
+  imageMaxWidth?: number;
+  /** crop ratio, e.g. "16/9" — height is derived, image is cropped to fill */
+  aspectRatio?: string;
   linkUrl?: string;
-  align?: "left" | "center" | "right";
+  align?: EdmAlign;
   size?: "sm" | "md" | "lg";
   /** spacer height in px */
   height?: number;
@@ -64,53 +122,84 @@ export interface EdmBlock {
   /** cell padding in px */
   cellPadding?: number;
   valign?: "top" | "middle" | "bottom";
-  /** design block: which header image to use */
+
+  /* ---- design block ---- */
   headerMode?: "brand" | "custom" | "none";
-  /** design block: header band background colour */
   headerBg?: string;
-  /** design block: header image width as % of the email width (20-100) */
   headerWidthPct?: number;
-  /** design block: vertical padding around the header image in px */
   headerPadding?: number;
-  /** design block: outer page background colour */
   pageBg?: string;
-  /** design block: email content background colour */
   contentBg?: string;
-  /** design block: content border colour */
   borderColor?: string;
-  /** design block: content max width in px */
   maxWidth?: number;
-  /** design block: gap in px between header and first block */
   contentGapTop?: number;
-  /** design block: gap in px between last block and footer */
   contentGapBottom?: number;
-  /** design block: footer content mode */
   footerMode?: "brand" | "custom" | "none";
-  /** design block: footer band background colour */
   footerBg?: string;
-  /** design block: footer text colour */
   footerColor?: string;
-  /** design block: footer link colour */
   footerLinkColor?: string;
-  /** design block: footer vertical padding in px */
   footerPadding?: number;
-  /** design block: footer top border colour ("transparent" to hide) */
   footerBorderColor?: string;
-  /** design block: custom footer HTML (footerMode === "custom") */
   footerHtml?: string;
-  /** design block: show the compliance/unsubscribe line */
   footerShowUnsubscribe?: boolean;
-  /** per-block horizontal padding override in px */
+  /** design block: alignment for all footer content (incl. social icons) */
+  footerAlign?: EdmAlign;
+  /** design block: show social icons in the footer */
+  footerShowSocial?: boolean;
+
+  /* ---- spacing (legacy combined + new per-side) ---- */
+  /** legacy horizontal padding override in px */
   padX?: number;
-  /** per-block vertical padding override in px */
+  /** legacy vertical padding override in px */
   padY?: number;
+  /** per-side outer spacing */
+  margin?: EdmSpacing;
+  /** per-side inner spacing */
+  padding?: EdmSpacing;
+  /** UI only: keep all margin sides in sync */
+  marginLinked?: boolean;
+  /** UI only: keep all padding sides in sync */
+  paddingLinked?: boolean;
+
+  /* ---- typography ---- */
+  /** text/heading font size in px */
+  fontSize?: number;
   /** text block line height multiplier */
   lineHeight?: number;
+
+  /* ---- button ---- */
+  btnBg?: string;
+  btnColor?: string;
+  btnFontSize?: number;
+  btnFontWeight?: number;
+  btnPadX?: number;
+  btnPadY?: number;
+  btnRadius?: number;
+  btnWidth?: number;
+  btnFullWidth?: boolean;
+
+  /* ---- divider ---- */
+  lineColor?: string;
+  lineThickness?: number;
+  lineWidthPct?: number;
+  lineStyle?: "solid" | "dashed" | "dotted";
+
+  /* ---- social icons ---- */
+  socials?: EdmSocial[];
+  iconSize?: number;
+  iconColor?: string;
+  iconBg?: string;
+  iconStyle?: "plain" | "circle" | "rounded";
+  iconGap?: number;
+
   /** image corner radius in px */
   radius?: number;
   /** render edge-to-edge (no horizontal padding, square corners) */
   fullBleed?: boolean;
-
+  /** hide this block on desktop */
+  hidden?: boolean;
+  /** phone-only overrides */
+  mobile?: EdmMobileOverride;
 }
 
 export interface EdmBrand {
@@ -125,6 +214,15 @@ export interface EdmBrand {
   companyWebsite?: string | null;
   footerText?: string | null;
 }
+
+export const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; slug: string }[] = [
+  { value: "facebook", label: "Facebook", slug: "facebook" },
+  { value: "instagram", label: "Instagram", slug: "instagram" },
+  { value: "youtube", label: "YouTube", slug: "youtube" },
+  { value: "linkedin", label: "LinkedIn", slug: "linkedin" },
+  { value: "x", label: "X (Twitter)", slug: "x" },
+  { value: "tiktok", label: "TikTok", slug: "tiktok" },
+];
 
 export const newCell = (blocks: EdmBlock[] = []): EdmCell => ({
   id: crypto.randomUUID(),
@@ -156,6 +254,13 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         footerBorderColor: "#e2e8f0",
         footerHtml: "",
         footerShowUnsubscribe: true,
+        footerAlign: "center",
+        footerShowSocial: false,
+        socials: [],
+        iconSize: 24,
+        iconColor: "#667085",
+        iconStyle: "plain",
+        iconGap: 10,
       };
 
     case "heading":
@@ -174,6 +279,20 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
       };
     case "button":
       return { id, type, text: "Register your interest", linkUrl: "", align: "center" };
+    case "social":
+      return {
+        id,
+        type,
+        align: "center",
+        iconSize: 28,
+        iconColor: "#0f172a",
+        iconStyle: "plain",
+        iconGap: 10,
+        socials: [
+          { platform: "facebook", url: "" },
+          { platform: "instagram", url: "" },
+        ],
+      };
     case "tourCard":
       return {
         id,
@@ -214,7 +333,7 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
     case "quote":
       return { id, type, html: "<p>A guest testimonial goes here.</p>", text: "Guest name" };
     case "divider":
-      return { id, type };
+      return { id, type, align: "center", lineWidthPct: 100, lineThickness: 1, lineStyle: "solid" };
     case "spacer":
       return { id, type, height: 24 };
   }
@@ -227,6 +346,7 @@ export const blockLabel: Record<EdmBlockType, string> = {
   image: "Image",
   imageText: "Image + text",
   button: "Button",
+  social: "Social icons",
   tourCard: "Tour card",
   columns: "Columns",
   table: "Table",
@@ -368,46 +488,161 @@ const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const headingSize = (size?: string) =>
-  size === "sm" ? "20px" : size === "md" ? "26px" : "32px";
+  size === "sm" ? 20 : size === "md" ? 26 : 32;
 
 interface RenderCtx {
   /** horizontal padding applied to top-level rows; 0 inside cells */
   padX: number;
+  /** collected @media (max-width:600px) rules */
+  css: string[];
 }
 
+const px = (n: number) => `${Math.max(0, Math.round(n))}px`;
+
+/** Resolve the padding for a block, honouring legacy padX/padY. */
+const resolvePadding = (b: EdmBlock, ctx: RenderCtx, defY: number): EdmSpacing => {
+  const legacyY = b.padY != null ? Math.max(0, b.padY) : defY;
+  const legacyX = b.fullBleed ? 0 : b.padX != null ? Math.max(0, b.padX) : ctx.padX;
+  const p = b.padding || {};
+  return {
+    top: p.top ?? legacyY,
+    right: p.right ?? legacyX,
+    bottom: p.bottom ?? legacyY,
+    left: p.left ?? legacyX,
+  };
+};
+
+const spacingCss = (s: EdmSpacing, fallback = 0) =>
+  `${px(s.top ?? fallback)} ${px(s.right ?? fallback)} ${px(s.bottom ?? fallback)} ${px(
+    s.left ?? fallback
+  )}`;
+
+const hasSpacing = (s?: EdmSpacing) =>
+  !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null && v !== 0);
+
+/** Short, stable class prefix derived from the block id. */
+const blockClass = (b: EdmBlock) => `eb${b.id.replace(/-/g, "").slice(0, 8)}`;
+
 const pad = (ctx: RenderCtx, y: string, b?: EdmBlock) => {
-  const yVal = b?.padY != null ? `${Math.max(0, b.padY)}px` : y;
-  const xVal = b?.fullBleed ? 0 : (b?.padX != null ? Math.max(0, b.padX) : ctx.padX);
-  return xVal ? `${yVal} ${xVal}px` : `${yVal} 0`;
+  if (!b) return `${y} ${ctx.padX ? `${ctx.padX}px` : "0"}`;
+  const defY = parseInt(y, 10) || 0;
+  return spacingCss(resolvePadding(b, ctx, defY));
 };
 
 /**
- * Apply a per-block background colour by injecting it into the outer row cell.
- * Container blocks (columns/table) use `bgColor` for their own cells, so they
- * are left untouched.
+ * Build the mobile media-query rules for a block and push them onto the
+ * render context, so one design can behave differently on phones.
  */
-const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX: 32 }): string => {
-  const html = renderBlockInner(b, brand, ctx);
-  if (!b.bgColor || isContainer(b) || !html) return html;
-  return html.replace('<td style="', `<td bgcolor="${b.bgColor}" style="background-color:${b.bgColor};`);
+const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
+  const cls = blockClass(b);
+  const m = b.mobile || {};
+  const rules: string[] = [];
+
+  if (b.hidden) {
+    // Hidden on desktop, shown on mobile (unless also hidden there).
+    if (!m.hidden) rules.push(`tr.${cls}{display:table-row!important;}`);
+  }
+  if (m.hidden) rules.push(`tr.${cls}{display:none!important;max-height:0!important;overflow:hidden!important;}`);
+
+  const tdRules: string[] = [];
+  if (hasSpacing(m.padding)) tdRules.push(`padding:${spacingCss(m.padding!)}!important`);
+  if (m.align) tdRules.push(`text-align:${m.align}!important`);
+  if (m.fontSize) tdRules.push(`font-size:${m.fontSize}px!important`);
+  if (m.lineHeight) tdRules.push(`line-height:${m.lineHeight}!important`);
+  if (tdRules.length) rules.push(`tr.${cls}>td{${tdRules.join(";")};}`);
+
+  if (hasSpacing(m.margin)) {
+    rules.push(`tr.${cls}-m>td{padding:${spacingCss(m.margin!)}!important;}`);
+  }
+
+  if (b.type === "text" && m.lineHeight) {
+    rules.push(`tr.${cls}>td div{line-height:${m.lineHeight}!important;}`);
+  }
+
+  if (b.type === "button") {
+    const aRules: string[] = [];
+    if (m.btnFontSize) aRules.push(`font-size:${m.btnFontSize}px!important`);
+    if (m.btnFullWidth) aRules.push(`display:block!important;width:auto!important`);
+    else if (m.btnWidth) aRules.push(`display:inline-block!important;width:${m.btnWidth}px!important`);
+    if (aRules.length) rules.push(`tr.${cls}>td a{${aRules.join(";")};}`);
+  }
+
+  if (b.type === "image") {
+    const imgRules: string[] = [];
+    if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
+    if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    if (imgRules.length) rules.push(`tr.${cls}>td img{${imgRules.join(";")};}`);
+  }
+
+  if (isContainer(b) || b.type === "twoColumn" || b.type === "imageText") {
+    if (m.stack === false) {
+      rules.push(
+        `tr.${cls} td.edm-col{display:table-cell!important;width:auto!important;}`
+      );
+    } else if (m.stackReverse) {
+      rules.push(
+        `tr.${cls} table.edm-grid{display:flex!important;flex-direction:column-reverse!important;}`,
+        `tr.${cls} table.edm-grid tr{display:flex!important;flex-direction:column-reverse!important;width:100%!important;}`
+      );
+    }
+  }
+
+  if (rules.length) ctx.css.push(...rules);
+};
+
+/**
+ * Apply a per-block background colour by injecting it into the outer row cell,
+ * attach the block's class (for mobile rules) and wrap it in a margin row when
+ * per-side margins are set.
+ */
+const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
+  let html = renderBlockInner(b, brand, ctx);
+  if (!html) return "";
+
+  const cls = blockClass(b);
+  collectMobileCss(b, ctx);
+
+  if (b.bgColor && !isContainer(b)) {
+    html = html.replace(
+      '<td style="',
+      `<td bgcolor="${b.bgColor}" style="background-color:${b.bgColor};`
+    );
+  }
+
+  const hiddenStyle = b.hidden ? "display:none;" : "";
+  const margin = b.margin;
+
+  if (hasSpacing(margin)) {
+    // Outer, transparent row carries the margin; inner row keeps the padding
+    // (and any background colour) so backgrounds don't bleed into margins.
+    html = html.replace("<tr", `<tr class="${cls}"`);
+    return `<tr class="${cls}-m"${
+      hiddenStyle ? ` style="${hiddenStyle}"` : ""
+    }><td style="padding:${spacingCss(margin!)};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${html}</table>
+</td></tr>`;
+  }
+
+  return html.replace(
+    "<tr",
+    `<tr class="${cls} ${cls}-m"${hiddenStyle ? ` style="${hiddenStyle}"` : ""}`
+  );
 };
 
 const renderRows = (blocks: EdmBlock[], brand: EdmBrand, ctx: RenderCtx): string =>
   blocks.map((b) => renderBlock(b, brand, ctx)).join("\n");
 
-
 /** Render a list of blocks as a self-contained table (used inside cells). */
-const renderNested = (blocks: EdmBlock[], brand: EdmBrand): string => {
+const renderNested = (blocks: EdmBlock[], brand: EdmBrand, ctx: RenderCtx): string => {
   if (!blocks.length) return "&nbsp;";
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${renderRows(
     blocks,
     brand,
-    { padX: 0 }
+    { padX: 0, css: ctx.css }
   )}</table>`;
 };
 
 const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
-  const border = b.bgColor && b.type === "table" ? b.bgColor : brand.colorBorder || "#e2e8f0";
   const cols = Math.max(1, b.cols || 1);
   const rows = b.type === "table" ? Math.max(1, b.rowCount || 1) : 1;
   const cells = b.cells || [];
@@ -426,20 +661,49 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
         b.bgColor ? `background:${b.bgColor};` : ""
       }font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${renderNested(
         cell?.blocks || [],
-        brand
+        brand,
+        ctx
       )}</td>`;
     }).join("");
     return `<tr>${tds}</tr>`;
   }).join("\n");
 
   return `<tr><td style="padding:${pad(ctx, "12px", b)};">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
+  <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
     b.type === "table" ? `border-collapse:collapse;` : ""
   }">${body}</table></td></tr>`;
 };
 
-const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX: 32 }): string => {
+const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
+  const items = (b.socials || []).filter((s) => s.url?.trim());
+  if (!items.length) return "";
+  const size = Math.max(12, b.iconSize ?? 24);
+  const gap = Math.max(0, b.iconGap ?? 10);
+  const color = (b.iconColor || fallbackColor || "#667085").replace("#", "");
+  const style = b.iconStyle || "plain";
+  const bg = b.iconBg || "#0f172a";
+  const boxPad = style === "plain" ? 0 : Math.round(size * 0.35);
+  const radius = style === "circle" ? "50%" : style === "rounded" ? "6px" : "0";
 
+  const cells = items
+    .map((s, i) => {
+      const meta = SOCIAL_PLATFORMS.find((p) => p.value === s.platform);
+      const src = `https://cdn.simpleicons.org/${meta?.slug || s.platform}/${color}`;
+      const inner = `<img src="${src}" alt="${esc(meta?.label || s.platform)}" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;border:0;" />`;
+      const boxed =
+        style === "plain"
+          ? inner
+          : `<span style="display:inline-block;background:${bg};border-radius:${radius};padding:${boxPad}px;line-height:0;">${inner}</span>`;
+      return `<td style="padding:0 ${i === items.length - 1 ? 0 : gap}px 0 0;font-size:0;line-height:0;"><a href="${esc(
+        s.url
+      )}" style="text-decoration:none;">${boxed}</a></td>`;
+    })
+    .join("");
+
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;"><tr>${cells}</tr></table>`;
+};
+
+const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
   const primary = brand.colorPrimary || "#0f172a";
   const button = brand.colorButton || primary;
   const buttonText = brand.colorButtonText || "#ffffff";
@@ -448,34 +712,48 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
 
   switch (b.type) {
     case "heading":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:${headingSize(
-        b.size
-      )};line-height:1.25;font-weight:700;color:${primary};text-align:${align};">${esc(
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:${
+        b.fontSize || headingSize(b.size)
+      }px;line-height:1.25;font-weight:700;color:${primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:${
-        b.lineHeight ?? 1.6
-      };color:#333333;"><div style="line-height:${b.lineHeight ?? 1.6};">${
-        stripPastedSpacing(b.html || "")
-      }</div></td></tr>`;
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:${
+        b.fontSize || 16
+      }px;line-height:${b.lineHeight ?? 1.6};color:#333333;${
+        b.align ? `text-align:${b.align};` : ""
+      }"><div style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
+        b.html || ""
+      )}</div></td></tr>`;
     case "image": {
       if (!b.imageUrl) return "";
       const full = !!b.fullBleed;
-      const w = b.imageWidth ? `${b.imageWidth}` : "800";
-      const maxW = full && !b.imageWidth ? "100%" : b.imageWidth ? `${b.imageWidth}px` : "736px";
+      const unit = b.imageWidthUnit || (b.imageWidth ? "px" : "pct");
+      const widthCss =
+        unit === "px" && b.imageWidth ? `${b.imageWidth}px` : `${b.imageWidthPct ?? 100}%`;
+      const maxW = b.imageMaxWidth
+        ? `${b.imageMaxWidth}px`
+        : unit === "px" && b.imageWidth
+          ? `${b.imageWidth}px`
+          : full
+            ? "100%"
+            : "100%";
+      const attrW = b.imageWidth ? `${b.imageWidth}` : "800";
       const radius = b.radius != null ? b.radius : full ? 0 : 6;
+      const crop = b.aspectRatio
+        ? `aspect-ratio:${b.aspectRatio};object-fit:cover;height:auto;`
+        : "height:auto;";
       return `<tr><td style="padding:${pad(ctx, full ? "0px" : "12px", b)};text-align:${align};font-size:0;line-height:0;"><a href="${esc(
         b.linkUrl || "#"
       )}" style="text-decoration:none;"><img src="${esc(b.imageUrl)}" alt="${esc(
         b.imageAlt || ""
-      )}" width="${w}" style="display:block;width:100%;max-width:${maxW};height:auto;border:0;border-radius:${radius}px;margin:${
+      )}" width="${attrW}" style="display:block;width:${widthCss};max-width:${maxW};${crop}border:0;border-radius:${radius}px;margin:${
         align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"
       };" /></a></td></tr>`;
     }
     case "imageText":
       return `<tr><td style="padding:${pad(ctx, "12px", b)};">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+  <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
     ${
       b.imageUrl
         ? `<td class="edm-col" width="45%" valign="top" style="padding-right:16px;"><img src="${esc(
@@ -489,11 +767,31 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
       b.html || ""
     }</td>
   </tr></table></td></tr>`;
-    case "button":
+    case "button": {
+      const bg = b.btnBg || button;
+      const fg = b.btnColor || buttonText;
+      const fs = b.btnFontSize ?? 16;
+      const fw = b.btnFontWeight ?? 700;
+      const px_ = b.btnPadX ?? 28;
+      const py = b.btnPadY ?? 14;
+      const radius = b.btnRadius ?? 6;
+      const widthCss = b.btnFullWidth
+        ? "display:block;width:auto;text-align:center;"
+        : b.btnWidth
+          ? `display:inline-block;width:${b.btnWidth}px;text-align:center;`
+          : "display:inline-block;";
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
-  <a href="${esc(b.linkUrl || "#")}" style="display:inline-block;background:${button};color:${buttonText};font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:6px;">${esc(
-        b.text || "Click here"
-      )}</a></td></tr>`;
+  <a href="${esc(
+    b.linkUrl || "#"
+  )}" style="${widthCss}background:${bg};color:${fg};font-family:Arial,Helvetica,sans-serif;font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
+    b.text || "Click here"
+  )}</a></td></tr>`;
+    }
+    case "social": {
+      const icons = socialIconsHtml(b, "#0f172a");
+      if (!icons) return "";
+      return `<tr><td style="padding:${pad(ctx, "12px", b)};text-align:${b.align || "center"};">${icons}</td></tr>`;
+    }
     case "tourCard":
       return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${border};border-radius:8px;overflow:hidden;">
@@ -532,7 +830,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
       return renderContainer(b, brand, ctx);
     case "twoColumn":
       return `<tr><td style="padding:${pad(ctx, "12px", b)};">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+  <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
     <td class="edm-col" width="50%" valign="top" style="padding-right:12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${
       b.html || ""
     }</td>
@@ -546,15 +844,26 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
     <tr><td style="padding:18px 22px;font-family:Georgia,serif;font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
       b.html || ""
     }${
-        b.text
-          ? `<div style="margin-top:10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-style:normal;color:#64748b;">— ${esc(
-              b.text
-            )}</div>`
-          : ""
-      }</td></tr>
+      b.text
+        ? `<div style="margin-top:10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-style:normal;color:#64748b;">— ${esc(
+            b.text
+          )}</div>`
+        : ""
+    }</td></tr>
   </table></td></tr>`;
-    case "divider":
-      return `<tr><td style="padding:${pad(ctx, "16px", b)};"><div style="height:1px;background:${border};"></div></td></tr>`;
+    case "divider": {
+      const color = b.lineColor || border;
+      const thickness = Math.max(1, b.lineThickness ?? 1);
+      const widthPct = Math.min(100, Math.max(1, b.lineWidthPct ?? 100));
+      const style = b.lineStyle || "solid";
+      const marginX =
+        (b.align || "center") === "center"
+          ? "0 auto"
+          : (b.align || "center") === "right"
+            ? "0 0 0 auto"
+            : "0";
+      return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};"><div style="width:${widthPct}%;margin:${marginX};border-top:${thickness}px ${style} ${color};font-size:0;line-height:0;">&nbsp;</div></td></tr>`;
+    }
     case "spacer":
       return `<tr><td style="height:${b.height || 24}px;line-height:${
         b.height || 24
@@ -564,10 +873,6 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx = { padX:
   }
 };
 
-/**
- * Wrap campaign content in the branded, fluid 800px shell used across ART
- * emails, including the Spam Act sender block and unsubscribe links.
- */
 /**
  * Pasted HTML (Word/Docs/websites) often carries its own line-height and
  * paragraph margins which override the block's Line spacing setting.
@@ -604,6 +909,10 @@ export const stripPastedSpacing = (html: string): string => {
   });
 };
 
+/**
+ * Wrap campaign content in the branded, fluid 800px shell used across ART
+ * emails, including the Spam Act sender block and unsubscribe links.
+ */
 export const renderEdmHtml = (
   blocks: EdmBlock[],
   brand: EdmBrand,
@@ -628,6 +937,7 @@ export const renderEdmHtml = (
   const footerPadding = Math.max(0, design?.footerPadding ?? 20);
   const footerBorder = design?.footerBorderColor ?? border;
   const showUnsub = design?.footerShowUnsubscribe !== false;
+  const footerAlign = design?.footerAlign || "center";
   const headerImage =
     headerMode === "none"
       ? ""
@@ -635,7 +945,14 @@ export const renderEdmHtml = (
         ? design?.imageUrl || ""
         : brand.emailHeaderImageUrl || "";
 
-  const body = renderRows(contentBlocks, brand, { padX: 32 });
+  const ctx: RenderCtx = { padX: 32, css: [] };
+  const body = renderRows(contentBlocks, brand, ctx);
+  const mobileCss = ctx.css.join("\n  ");
+
+  const footerSocial =
+    design?.footerShowSocial && design.socials?.length
+      ? `<div style="margin-bottom:12px;">${socialIconsHtml(design, footerColor)}</div>`
+      : "";
 
   return `<!DOCTYPE html>
 <html lang="en"><head>
@@ -645,6 +962,7 @@ export const renderEdmHtml = (
 <style>
 @media only screen and (max-width:600px){
   td.edm-col{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;}
+  ${mobileCss}
 }
 </style>
 </head>
@@ -675,7 +993,7 @@ ${
     ${body}
     ${gapBottom ? `<tr><td style="height:${gapBottom}px;line-height:${gapBottom}px;font-size:0;">&nbsp;</td></tr>` : ""}
     ${(() => {
-      if (footerMode === "none" && !showUnsub) return "";
+      if (footerMode === "none" && !showUnsub && !footerSocial) return "";
       const brandBody =
         footerMode === "custom"
           ? design?.footerHtml || ""
@@ -699,11 +1017,12 @@ ${
         <a href="{{unsubscribe_url}}" style="color:${footerLinkColor};text-decoration:underline;">Unsubscribe</a>
       </div>`
         : "";
-      return `<tr><td style="padding:${footerPadding}px 32px;background:${footerBg};${
+      return `<tr><td align="${footerAlign}" style="padding:${footerPadding}px 32px;background:${footerBg};${
         footerBorder && footerBorder !== "transparent"
           ? `border-top:1px solid ${footerBorder};`
           : ""
-      }font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${footerColor};">
+      }font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${footerColor};text-align:${footerAlign};">
+      ${footerSocial}
       ${brandBody}
       ${unsub}
     </td></tr>`;
