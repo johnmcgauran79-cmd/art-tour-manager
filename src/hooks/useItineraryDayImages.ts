@@ -97,7 +97,51 @@ export const useItineraryDayImages = (dayId: string) => {
     },
   });
 
+  /** Swap the stored file for a resized/cropped version, keeping caption and order. */
+  const replaceImage = useMutation({
+    mutationFn: async ({ image, file }: { image: ItineraryDayImage; file: File }) => {
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Please choose an image file (JPEG, PNG, WEBP or GIF).");
+      }
+      const ext = file.name.split(".").pop() || "jpg";
+      const filePath = `itinerary-day-photos/${dayId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("attachments")
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { error } = await supabase
+        .from("tour_itinerary_day_images")
+        .update({
+          file_path: filePath,
+          file_name: file.name,
+          // reset website linkage so the next sync publishes the resized version
+          wp_media_id: null,
+          wp_source_url: null,
+        } as any)
+        .eq("id", image.id);
+      if (error) {
+        await supabase.storage.from("attachments").remove([filePath]);
+        throw error;
+      }
+      if (image.filePath) {
+        await supabase.storage.from("attachments").remove([image.filePath]);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      toast({
+        title: "Photo updated",
+        description: "The resized photo will publish on the next itinerary photo sync.",
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const updateCaption = useMutation({
+
     mutationFn: async ({ id, caption }: { id: string; caption: string }) => {
       const { error } = await supabase
         .from("tour_itinerary_day_images")
@@ -134,5 +178,5 @@ export const useItineraryDayImages = (dayId: string) => {
     },
   });
 
-  return { ...query, uploadImage, updateCaption, removeImage };
+  return { ...query, uploadImage, replaceImage, updateCaption, removeImage };
 };

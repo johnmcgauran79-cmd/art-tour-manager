@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ImagePlus, Trash2, Globe } from "lucide-react";
+import { ImagePlus, Trash2, Globe, Crop } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ImageResizeDialog } from "@/components/shared/ImageResizeDialog";
 import {
   MAX_DAY_PHOTOS,
   useItineraryDayImages,
@@ -26,19 +27,44 @@ interface ItineraryDayPhotosProps {
 
 /** Up to 3 photos per itinerary day; these feed the day gallery on the website. */
 export const ItineraryDayPhotos = ({ dayId, readOnly }: ItineraryDayPhotosProps) => {
-  const { data: photos = [], uploadImage, updateCaption, removeImage } = useItineraryDayImages(dayId);
+  const { data: photos = [], uploadImage, replaceImage, updateCaption, removeImage } =
+    useItineraryDayImages(dayId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingDelete, setPendingDelete] = useState<ItineraryDayImage | null>(null);
+  /** image awaiting crop/resize: either a new upload or an existing photo being edited */
+  const [editing, setEditing] = useState<
+    { src: string; fileName: string; existing: ItineraryDayImage | null } | null
+  >(null);
 
   const atLimit = photos.length >= MAX_DAY_PHOTOS;
 
+  useEffect(() => {
+    return () => {
+      if (editing?.src.startsWith("blob:")) URL.revokeObjectURL(editing.src);
+    };
+  }, [editing]);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadImage.mutate(file);
+    if (file) {
+      setEditing({ src: URL.createObjectURL(file), fileName: file.name, existing: null });
+    }
     e.target.value = "";
   };
 
+  const handleResized = (file: File) => {
+    const target = editing;
+    setEditing(null);
+    if (!target) return;
+    if (target.existing) {
+      replaceImage.mutate({ image: target.existing, file });
+    } else {
+      uploadImage.mutate(file);
+    }
+  };
+
   if (readOnly && photos.length === 0) return null;
+
 
   return (
     <div className="pt-2 border-t">
@@ -118,15 +144,36 @@ export const ItineraryDayPhotos = ({ dayId, readOnly }: ItineraryDayPhotosProps)
                     {photo.wpMediaId ? `Website ID ${photo.wpMediaId}` : "Not on website yet"}
                   </span>
                   {!readOnly && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setPendingDelete(photo)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs gap-1"
+                        title="Crop / resize this photo"
+                        disabled={!photo.imageUrl || replaceImage.isPending}
+                        onClick={() =>
+                          photo.imageUrl &&
+                          setEditing({
+                            src: photo.imageUrl,
+                            fileName: photo.fileName || "photo.jpg",
+                            existing: photo,
+                          })
+                        }
+                      >
+                        <Crop className="h-3 w-3" />
+                        Size
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setPendingDelete(photo)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
+
                 </div>
               </div>
             </div>
@@ -134,7 +181,18 @@ export const ItineraryDayPhotos = ({ dayId, readOnly }: ItineraryDayPhotosProps)
         </div>
       )}
 
+      {editing && (
+        <ImageResizeDialog
+          open={!!editing}
+          imageSrc={editing.src}
+          fileName={editing.fileName}
+          onClose={() => setEditing(null)}
+          onConfirm={handleResized}
+        />
+      )}
+
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this photo?</AlertDialogTitle>
