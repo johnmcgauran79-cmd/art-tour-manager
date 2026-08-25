@@ -171,15 +171,30 @@ export const ContactsTable = () => {
                   <span className="sm:hidden">{selectedIds.size}</span>
                 </Button>
               )}
-              {isAdmin && duplicateGroups.length > 0 && (
-                <Button 
-                  onClick={() => setShowMergeDuplicates(true)} 
-                  variant="outline" 
+              {isAdmin && (
+                <Button
+                  onClick={() => {
+                    if (!scanDuplicates) {
+                      setScanDuplicates(true);
+                    } else if (duplicateGroups.length > 0) {
+                      setShowMergeDuplicates(true);
+                    }
+                  }}
+                  variant="outline"
                   size="sm"
+                  disabled={isScanningDuplicates}
                 >
                   <Merge className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Merge Duplicates ({duplicateGroups.length})</span>
-                  <span className="sm:hidden">{duplicateGroups.length}</span>
+                  <span className="hidden sm:inline">
+                    {isScanningDuplicates
+                      ? 'Scanning duplicates...'
+                      : !scanDuplicates
+                        ? 'Find Duplicates'
+                        : duplicateGroups.length > 0
+                          ? `Merge Duplicates (${duplicateGroups.length})`
+                          : 'No Duplicates Found'}
+                  </span>
+                  <span className="sm:hidden">{scanDuplicates ? duplicateGroups.length : ''}</span>
                 </Button>
               )}
               <Button onClick={() => setShowExport(true)} variant="outline" size="sm">
