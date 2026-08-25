@@ -130,6 +130,14 @@ export default function BookingEdit() {
 
   useEffect(() => {
     if (booking) {
+      const bookingWithPassengers = booking as any;
+      const passenger2LinkedName = bookingWithPassengers.passenger_2
+        ? `${bookingWithPassengers.passenger_2.first_name || ''} ${bookingWithPassengers.passenger_2.last_name || ''}`.trim()
+        : '';
+      const passenger3LinkedName = bookingWithPassengers.passenger_3
+        ? `${bookingWithPassengers.passenger_3.first_name || ''} ${bookingWithPassengers.passenger_3.last_name || ''}`.trim()
+        : '';
+
       setFormData({
         lead_passenger_first_name: booking.customers?.first_name || '',
         lead_passenger_last_name: booking.customers?.last_name || '',
@@ -143,8 +151,8 @@ export default function BookingEdit() {
         lead_passenger_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
         lead_passenger_emergency_contact_email: booking.customers?.emergency_contact_email || '',
         passenger_count: booking.passenger_count,
-        passenger_2_name: booking.passenger_2_name || '',
-        passenger_3_name: booking.passenger_3_name || '',
+        passenger_2_name: passenger2LinkedName || booking.passenger_2_name || '',
+        passenger_3_name: passenger3LinkedName || booking.passenger_3_name || '',
         group_name: booking.group_name || '',
         booking_agent: booking.booking_agent || '',
         status: booking.status,
@@ -169,7 +177,6 @@ export default function BookingEdit() {
       }
       
       // Set passenger 2 and 3 contacts if they exist (from updated query)
-      const bookingWithPassengers = booking as any;
       if (bookingWithPassengers.passenger_2) {
         setSelectedPassenger2(bookingWithPassengers.passenger_2 as PassengerContactData);
       }
@@ -311,8 +318,8 @@ export default function BookingEdit() {
     updateBooking.mutate({
       id: booking.id,
       passenger_count: formData.passenger_count,
-      passenger_2_name: formData.passenger_2_name,
-      passenger_3_name: formData.passenger_3_name,
+      passenger_2_name: selectedPassenger2 ? `${selectedPassenger2.first_name || ''} ${selectedPassenger2.last_name || ''}`.trim() : formData.passenger_2_name,
+      passenger_3_name: selectedPassenger3 ? `${selectedPassenger3.first_name || ''} ${selectedPassenger3.last_name || ''}`.trim() : formData.passenger_3_name,
       passenger_2_id: selectedPassenger2?.id || null,
       passenger_3_id: selectedPassenger3?.id || null,
       group_name: formData.group_name,
