@@ -57,7 +57,7 @@ type Op =
   | { op: "bulk_tour_diffs"; include_archived?: boolean }
   | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> }
   | { op: "itinerary_diff"; art_tour_id: string }
-  | { op: "push_itinerary"; art_tour_id: string }
+  | { op: "push_itinerary"; art_tour_id: string; row_indexes?: number[] }
   | { op: "inclusions_diff"; art_tour_id: string }
   | { op: "push_inclusions"; art_tour_id: string; sections?: Array<"inclusions" | "exclusions" | "description"> }
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
