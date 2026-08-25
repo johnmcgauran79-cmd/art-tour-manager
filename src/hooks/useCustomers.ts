@@ -255,6 +255,9 @@ export const useAllCustomers = (enabled: boolean = true) => {
       console.log(`Total customers fetched: ${allCustomers.length}`);
       return allCustomers as Customer[];
     },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
