@@ -61,6 +61,13 @@ import {
 } from "@/lib/edm/blocks";
 import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmImageField } from "./EdmImageField";
+import {
+  AlignField,
+  ColorField,
+  NumField,
+  SocialLinksEditor,
+  SpacingEditor,
+} from "./EdmStyleControls";
 
 const LAYOUT_BLOCKS: EdmBlockType[] = ["columns", "table"];
 const CONTENT_BLOCKS: EdmBlockType[] = [
@@ -69,6 +76,7 @@ const CONTENT_BLOCKS: EdmBlockType[] = [
   "image",
   "imageText",
   "button",
+  "social",
   "tourCard",
   "quote",
   "divider",
@@ -343,7 +351,11 @@ export function EdmBuilder({
                   Select a block on the left to edit it.
                 </p>
               ) : (
-                <BlockInspector block={selected} onChange={(p) => update(selected.id, p)} />
+                <BlockInspector
+                  block={selected}
+                  device={device}
+                  onChange={(p) => update(selected.id, p)}
+                />
               )}
             </CardContent>
           </Card>
@@ -543,11 +555,150 @@ function PreviewPane({ html, device }: { html: string; device: "desktop" | "mobi
 function BlockInspector({
   block,
   onChange,
+  device,
 }: {
   block: EdmBlock;
   onChange: (patch: Partial<EdmBlock>) => void;
+  device: "desktop" | "mobile";
 }) {
   const t = block.type;
+
+  /* ---------------- Mobile override mode ---------------- */
+  if (device === "mobile" && t !== "design") {
+    const m = block.mobile || {};
+    const setM = (patch: Partial<typeof m>) => onChange({ mobile: { ...m, ...patch } });
+
+    return (
+      <div className="space-y-4">
+        <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+          These settings only apply on phones (screens up to 600px wide). Anything left blank
+          uses the desktop value.
+        </p>
+
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <Label className="text-sm">Hide this block on mobile</Label>
+          <Switch checked={!!m.hidden} onCheckedChange={(hidden) => setM({ hidden })} />
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <Label className="text-sm">Hide this block on desktop</Label>
+          <Switch checked={!!block.hidden} onCheckedChange={(hidden) => onChange({ hidden })} />
+        </div>
+
+        <AlignField label="Alignment" value={m.align} onChange={(align) => setM({ align })} allowInherit />
+
+        <div className="grid grid-cols-2 gap-3">
+          <NumField
+            label="Font size"
+            suffix="px"
+            min={8}
+            max={72}
+            value={m.fontSize}
+            onChange={(fontSize) => setM({ fontSize })}
+          />
+          <NumField
+            label="Line spacing"
+            min={1}
+            max={3}
+            step={0.1}
+            value={m.lineHeight}
+            onChange={(lineHeight) => setM({ lineHeight })}
+          />
+        </div>
+
+        <SpacingEditor
+          label="Mobile margin (px)"
+          value={m.margin}
+          linked={block.marginLinked}
+          onChange={(margin) => setM({ margin })}
+          onLinkedChange={(marginLinked) => onChange({ marginLinked })}
+        />
+        <SpacingEditor
+          label="Mobile padding (px)"
+          value={m.padding}
+          linked={block.paddingLinked}
+          onChange={(padding) => setM({ padding })}
+          onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
+        />
+
+        {t === "button" && (
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Full width on mobile</Label>
+              <Switch
+                checked={!!m.btnFullWidth}
+                onCheckedChange={(btnFullWidth) => setM({ btnFullWidth })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <NumField
+                label="Button width"
+                suffix="px"
+                min={40}
+                max={600}
+                value={m.btnWidth}
+                onChange={(btnWidth) => setM({ btnWidth })}
+              />
+              <NumField
+                label="Button font size"
+                suffix="px"
+                min={8}
+                max={40}
+                value={m.btnFontSize}
+                onChange={(btnFontSize) => setM({ btnFontSize })}
+              />
+            </div>
+          </div>
+        )}
+
+        {t === "image" && (
+          <div className="grid grid-cols-2 gap-3">
+            <NumField
+              label="Image width"
+              suffix="%"
+              min={5}
+              max={100}
+              value={m.imageWidthPct}
+              onChange={(imageWidthPct) => setM({ imageWidthPct })}
+            />
+            <NumField
+              label="Max width"
+              suffix="px"
+              min={40}
+              max={900}
+              value={m.imageMaxWidth}
+              onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
+            />
+          </div>
+        )}
+
+        {(t === "columns" || t === "table" || t === "twoColumn" || t === "imageText") && (
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Stack columns vertically</Label>
+              <Switch
+                checked={m.stack !== false}
+                onCheckedChange={(on) => setM({ stack: on ? undefined : false })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Reverse stacking order</Label>
+              <Switch
+                checked={!!m.stackReverse}
+                onCheckedChange={(stackReverse) => setM({ stackReverse })}
+              />
+            </div>
+          </div>
+        )}
+
+        {block.mobile && (
+          <Button variant="outline" size="sm" onClick={() => onChange({ mobile: undefined })}>
+            Clear all mobile overrides
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   if (t === "design") {
     const headerMode = block.headerMode || "brand";
@@ -882,143 +1033,6 @@ function BlockInspector({
           Add images, buttons, text or cards into any cell using the + button beside each
           cell in the block list. Cells stack vertically on mobile.
         </p>
-      </div>
-    );
-  }
-
-  /* ---------------- Mobile override mode ---------------- */
-  if (device === "mobile") {
-    const m = block.mobile || {};
-    const setM = (patch: Partial<typeof m>) => onChange({ mobile: { ...m, ...patch } });
-
-    return (
-      <div className="space-y-4">
-        <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
-          These settings only apply on phones (screens up to 600px wide). Anything left blank
-          uses the desktop value.
-        </p>
-
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label className="text-sm">Hide this block on mobile</Label>
-          <Switch checked={!!m.hidden} onCheckedChange={(hidden) => setM({ hidden })} />
-        </div>
-
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label className="text-sm">Hide this block on desktop</Label>
-          <Switch checked={!!block.hidden} onCheckedChange={(hidden) => onChange({ hidden })} />
-        </div>
-
-        <AlignField label="Alignment" value={m.align} onChange={(align) => setM({ align })} allowInherit />
-
-        <div className="grid grid-cols-2 gap-3">
-          <NumField
-            label="Font size"
-            suffix="px"
-            min={8}
-            max={72}
-            value={m.fontSize}
-            onChange={(fontSize) => setM({ fontSize })}
-          />
-          <NumField
-            label="Line spacing"
-            min={1}
-            max={3}
-            step={0.1}
-            value={m.lineHeight}
-            onChange={(lineHeight) => setM({ lineHeight })}
-          />
-        </div>
-
-        <SpacingEditor
-          label="Mobile margin (px)"
-          value={m.margin}
-          linked={block.marginLinked}
-          onChange={(margin) => setM({ margin })}
-          onLinkedChange={(marginLinked) => onChange({ marginLinked })}
-        />
-        <SpacingEditor
-          label="Mobile padding (px)"
-          value={m.padding}
-          linked={block.paddingLinked}
-          onChange={(padding) => setM({ padding })}
-          onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
-        />
-
-        {t === "button" && (
-          <div className="space-y-3 rounded-md border p-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Full width on mobile</Label>
-              <Switch
-                checked={!!m.btnFullWidth}
-                onCheckedChange={(btnFullWidth) => setM({ btnFullWidth })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <NumField
-                label="Button width"
-                suffix="px"
-                min={40}
-                max={600}
-                value={m.btnWidth}
-                onChange={(btnWidth) => setM({ btnWidth })}
-              />
-              <NumField
-                label="Button font size"
-                suffix="px"
-                min={8}
-                max={40}
-                value={m.btnFontSize}
-                onChange={(btnFontSize) => setM({ btnFontSize })}
-              />
-            </div>
-          </div>
-        )}
-
-        {t === "image" && (
-          <div className="grid grid-cols-2 gap-3">
-            <NumField
-              label="Image width"
-              suffix="%"
-              min={5}
-              max={100}
-              value={m.imageWidthPct}
-              onChange={(imageWidthPct) => setM({ imageWidthPct })}
-            />
-            <NumField
-              label="Max width"
-              suffix="px"
-              min={40}
-              max={900}
-              value={m.imageMaxWidth}
-              onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
-            />
-          </div>
-        )}
-
-        {(t === "columns" || t === "table" || t === "twoColumn" || t === "imageText") && (
-          <div className="space-y-3 rounded-md border p-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Stack columns vertically</Label>
-              <Switch
-                checked={m.stack !== false}
-                onCheckedChange={(on) => setM({ stack: on ? undefined : false })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Reverse stacking order</Label>
-              <Switch
-                checked={!!m.stackReverse}
-                onCheckedChange={(stackReverse) => setM({ stackReverse })}
-              />
-            </div>
-          </div>
-        )}
-
-        {block.mobile && (
-          <Button variant="outline" size="sm" onClick={() => onChange({ mobile: undefined })}>
-            Clear all mobile overrides
-          </Button>
-        )}
       </div>
     );
   }
