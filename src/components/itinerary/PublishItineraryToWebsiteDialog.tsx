@@ -182,8 +182,26 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm font-medium">
-                  {changedRows.length} day{changedRows.length === 1 ? "" : "s"} will change:
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    {changedRows.length} day{changedRows.length === 1 ? "" : "s"} changed · {selectedChangedCount}{" "}
+                    selected to publish
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelected(new Set(changedRows.map((r) => r.index)))}
+                    >
+                      Select all
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                      Clear all
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Unticked days are skipped — the website keeps its current content for those days.
                 </p>
                 {changedRows.map((row) => {
                   const headlineChanged =
