@@ -137,14 +137,24 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
           {!isAgent && (
             <>
               {isWebsiteApprover && (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowPublishModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Globe className="h-4 w-4" />
-                  Publish to Website
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowImportPhotosModal(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <ImageDown className="h-4 w-4" />
+                    Import Photos from Website
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPublishModal(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Globe className="h-4 w-4" />
+                    Publish to Website
+                  </Button>
+                </>
               )}
               <Button
                 variant="outline"
