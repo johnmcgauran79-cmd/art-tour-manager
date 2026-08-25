@@ -14,6 +14,19 @@ import {
 import { Loader2, ExternalLink, AlertTriangle, CheckCircle2, Globe } from "lucide-react";
 import { toast } from "sonner";
 
+/** Escape everything, then re-allow the inline formatting the website itself uses. */
+function sanitiseInline(html: string): string {
+  const escaped = html
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped
+    .replace(/&lt;(\/?)(strong|em|u)&gt;/gi, "<$1$2>")
+    .replace(/&lt;a href="([^"]+)"&gt;/gi, '<a href="$1" target="_blank" rel="noreferrer">')
+    .replace(/&lt;\/a&gt;/gi, "</a>");
+}
+
+
 interface DiffRow {
   index: number;
   art: { date_event: string; details: string } | null;
