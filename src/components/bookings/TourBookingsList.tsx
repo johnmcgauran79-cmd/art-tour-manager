@@ -46,6 +46,14 @@ const getStatusOrder = (status: string) => {
   }
 };
 
+const getLinkedPassengerName = (
+  passenger: { first_name?: string | null; last_name?: string | null } | null | undefined,
+  fallbackName?: string | null,
+) => {
+  const linkedName = `${passenger?.first_name || ''} ${passenger?.last_name || ''}`.trim();
+  return linkedName || fallbackName || '';
+};
+
 interface TourBookingsListProps {
   tourId: string;
   tourName: string;
@@ -128,8 +136,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
       if (searchQuery.trim()) {
         const searchTerm = searchQuery.toLowerCase();
         const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
-        const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
-        const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+        const passenger2Name = getLinkedPassengerName((booking as any).passenger_2, booking.passenger_2_name).toLowerCase();
+        const passenger3Name = getLinkedPassengerName((booking as any).passenger_3, booking.passenger_3_name).toLowerCase();
         const groupName = (booking.group_name || '').toLowerCase();
         
         const matchesSearch = leadPassengerName.includes(searchTerm) ||
@@ -251,8 +259,13 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
             <>
               {/* Mobile Card View */}
               <div className="md:hidden space-y-3">
-                {filteredBookings.map((booking) => (
-                  <Card 
+                {filteredBookings.map((booking) => {
+                  const passenger2Name = getLinkedPassengerName((booking as any).passenger_2, booking.passenger_2_name);
+                  const passenger3Name = getLinkedPassengerName((booking as any).passenger_3, booking.passenger_3_name);
+                  const additionalPassengers = [passenger2Name, passenger3Name].filter(Boolean);
+
+                  return (
+                  <Card
                     key={booking.id}
                     className="cursor-pointer hover:bg-accent/50 transition-colors"
                     onClick={() => handleViewBooking(booking)}
@@ -276,9 +289,9 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                             <p className="font-medium truncate">
                               {booking.customers?.first_name} {booking.customers?.last_name}
                             </p>
-                            {(booking.passenger_2_name || booking.passenger_3_name) && (
+                            {additionalPassengers.length > 0 && (
                               <p className="text-xs text-muted-foreground truncate">
-                                +{[booking.passenger_2_name, booking.passenger_3_name].filter(Boolean).join(', ')}
+                                +{additionalPassengers.join(', ')}
                               </p>
                             )}
                             {booking.group_name && (
@@ -359,7 +372,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                       )}
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Desktop Table View */}
@@ -379,7 +393,11 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBookings.map((booking) => (
+                    {filteredBookings.map((booking) => {
+                      const passenger2Name = getLinkedPassengerName((booking as any).passenger_2, booking.passenger_2_name);
+                      const passenger3Name = getLinkedPassengerName((booking as any).passenger_3, booking.passenger_3_name);
+
+                      return (
                       <tr 
                         key={booking.id} 
                         className="border-b hover:bg-accent cursor-pointer transition-colors"
@@ -408,8 +426,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                         </td>
                         <td className="p-3">
                           <div className="space-y-1">
-                            {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
-                            {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
+                            {passenger2Name && <div>{passenger2Name}</div>}
+                            {passenger3Name && <div>{passenger3Name}</div>}
                             {booking.group_name && <div className="text-sm text-gray-500">Group: {booking.group_name}</div>}
                           </div>
                         </td>
@@ -474,7 +492,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                           </td>
                         )}
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
