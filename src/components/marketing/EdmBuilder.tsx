@@ -884,6 +884,81 @@ function BlockInspector({
             Show unsubscribe / email preferences line
           </label>
 
+          <AlignField
+            label="Footer alignment (all footer content)"
+            value={block.footerAlign || "center"}
+            onChange={(footerAlign) => onChange({ footerAlign })}
+          />
+
+          <div className="space-y-3 rounded-md border p-3">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch
+                checked={!!block.footerShowSocial}
+                onCheckedChange={(footerShowSocial) => onChange({ footerShowSocial })}
+              />
+              Show social icons in the footer
+            </label>
+
+            {block.footerShowSocial && (
+              <>
+                <SocialLinksEditor
+                  socials={block.socials || []}
+                  onChange={(socials) => onChange({ socials })}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <NumField
+                    label="Icon size"
+                    suffix="px"
+                    min={12}
+                    max={64}
+                    placeholder="24"
+                    value={block.iconSize}
+                    onChange={(iconSize) => onChange({ iconSize })}
+                  />
+                  <NumField
+                    label="Spacing between icons"
+                    suffix="px"
+                    min={0}
+                    max={40}
+                    placeholder="10"
+                    value={block.iconGap}
+                    onChange={(iconGap) => onChange({ iconGap })}
+                  />
+                  <ColorField
+                    label="Icon colour"
+                    value={block.iconColor}
+                    fallback={block.footerColor || "#667085"}
+                    onChange={(iconColor) => onChange({ iconColor })}
+                  />
+                  <div className="space-y-1.5">
+                    <Label>Icon style</Label>
+                    <Select
+                      value={block.iconStyle || "plain"}
+                      onValueChange={(v) => onChange({ iconStyle: v as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="plain">Plain icon</SelectItem>
+                        <SelectItem value="circle">Circle background</SelectItem>
+                        <SelectItem value="rounded">Rounded square</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(block.iconStyle || "plain") !== "plain" && (
+                    <ColorField
+                      label="Icon background"
+                      value={block.iconBg}
+                      fallback="#0f172a"
+                      onChange={(iconBg) => onChange({ iconBg })}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Footer background</Label>
