@@ -181,7 +181,18 @@ export const ItineraryDayPhotos = ({ dayId, readOnly }: ItineraryDayPhotosProps)
         </div>
       )}
 
+      {editing && (
+        <ImageResizeDialog
+          open={!!editing}
+          imageSrc={editing.src}
+          fileName={editing.fileName}
+          onClose={() => setEditing(null)}
+          onConfirm={handleResized}
+        />
+      )}
+
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this photo?</AlertDialogTitle>
