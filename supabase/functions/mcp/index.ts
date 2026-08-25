@@ -5692,12 +5692,28 @@ function formatItineraryDate(isoDate, includeYear = true) {
   return includeYear ? `${base} ${d.getUTCFullYear()}` : base;
 }
 function decodeEntities(s) {
-  return s.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'");
+  return s.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'");
+}
+var ALLOWED_INLINE = /* @__PURE__ */ new Set(["strong", "em", "u", "a"]);
+function canonicaliseInlineTags(html) {
+  return html.replace(/<\s*b(\s[^>]*)?>/gi, "<strong>").replace(/<\s*\/\s*b\s*>/gi, "</strong>").replace(/<\s*i(\s[^>]*)?>/gi, "<em>").replace(/<\s*\/\s*i\s*>/gi, "</em>");
+}
+function keepInlineTags(html) {
+  return html.replace(/<(\/?)([a-zA-Z0-9]+)([^>]*)>/g, (_m, slash, rawTag, attrs) => {
+    const tag = rawTag.toLowerCase();
+    if (!ALLOWED_INLINE.has(tag)) return "";
+    if (slash) return `</${tag}>`;
+    if (tag === "a") {
+      const href = /href\s*=\s*["']([^"']+)["']/i.exec(attrs ?? "")?.[1];
+      return href ? `<a href="${href}">` : "<a>";
+    }
+    return `<${tag}>`;
+  });
 }
 function htmlToPlainParagraphs(content) {
   if (!content) return "";
-  const withBreaks = String(content).replace(/\r\n/g, "\n").replace(/<\s*br\s*\/?\s*>/gi, "\n").replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n").replace(/<\s*li[^>]*>/gi, "").replace(/<[^>]+>/g, "");
-  return decodeEntities(withBreaks).split(/\n{2,}/).map((p) => p.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim()).filter(Boolean).join("\r\n\r\n");
+  const withBreaks = canonicaliseInlineTags(String(content).replace(/\r\n/g, "\n")).replace(/<\s*br\s*\/?\s*>/gi, "\n").replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n").replace(/<\s*li[^>]*>/gi, "");
+  return decodeEntities(keepInlineTags(withBreaks)).split(/\n{2,}/).map((p) => p.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim()).filter(Boolean).join("\r\n\r\n");
 }
 function sortedEntries(day) {
   return [...day.entries ?? []].sort(
@@ -5758,7 +5774,7 @@ function normaliseWpItineraryRows(value) {
   });
 }
 function normaliseProse(v) {
-  return v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+  return keepInlineTags(canonicaliseInlineTags(v)).replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 function normaliseText(v) {
   return v.replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
@@ -6814,12 +6830,12 @@ import { z as z105 } from "npm:zod@^3.25.76";
 // src/lib/mcp/wordpress/inclusions.ts
 var WP_INCLUSIONS_FIELD = "inclusions";
 var WP_EXCLUSIONS_FIELD = "exclusions_details";
-var ALLOWED_INLINE = /^(b|strong|i|em|u|a|br)$/i;
+var ALLOWED_INLINE2 = /^(b|strong|i|em|u|a|br)$/i;
 function sanitiseInlineHtml(input) {
   if (!input) return "";
   let s = String(input).replace(/\r\n/g, "\n").replace(/<\s*(script|style)[^>]*>[\s\S]*?<\/\s*\1\s*>/gi, "").replace(/<\s*\/?\s*(p|div|li|ul|ol|h[1-6]|span|table|tr|td|tbody|thead)[^>]*>/gi, " ");
   s = s.replace(/<\s*(\/?)([a-zA-Z0-9]+)([^>]*)>/g, (_m, slash, tag, attrs) => {
-    if (!ALLOWED_INLINE.test(tag)) return "";
+    if (!ALLOWED_INLINE2.test(tag)) return "";
     const t = tag.toLowerCase();
     if (slash) return `</${t}>`;
     if (t === "br") return "<br>";

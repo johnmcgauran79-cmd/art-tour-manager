@@ -63,22 +63,47 @@ function decodeEntities(s: string): string {
   return s
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'");
 }
 
-/** Rich-text HTML -> plain-text paragraphs separated by a blank line (wpautop friendly). */
+const ALLOWED_INLINE = new Set(["strong", "em", "u", "a"]);
+
+/** Normalise <b>/<i> to <strong>/<em> so both sides of a diff use the same tags. */
+function canonicaliseInlineTags(html: string): string {
+  return html
+    .replace(/<\s*b(\s[^>]*)?>/gi, "<strong>")
+    .replace(/<\s*\/\s*b\s*>/gi, "</strong>")
+    .replace(/<\s*i(\s[^>]*)?>/gi, "<em>")
+    .replace(/<\s*\/\s*i\s*>/gi, "</em>");
+}
+
+/** Keep only the inline formatting the website renders; drop every other tag. */
+function keepInlineTags(html: string): string {
+  return html.replace(/<(\/?)([a-zA-Z0-9]+)([^>]*)>/g, (_m, slash: string, rawTag: string, attrs: string) => {
+    const tag = rawTag.toLowerCase();
+    if (!ALLOWED_INLINE.has(tag)) return "";
+    if (slash) return `</${tag}>`;
+    if (tag === "a") {
+      const href = /href\s*=\s*["']([^"']+)["']/i.exec(attrs ?? "")?.[1];
+      return href ? `<a href="${href}">` : "<a>";
+    }
+    return `<${tag}>`;
+  });
+}
+
+/**
+ * Rich-text HTML -> paragraphs separated by a blank line (wpautop friendly),
+ * preserving the inline formatting (bold, italic, underline, links) that the
+ * live WordPress itinerary uses. Block-level markup is flattened to paragraphs.
+ */
 export function htmlToPlainParagraphs(content: string | null | undefined): string {
   if (!content) return "";
-  const withBreaks = String(content)
-    .replace(/\r\n/g, "\n")
+  const withBreaks = canonicaliseInlineTags(String(content).replace(/\r\n/g, "\n"))
     .replace(/<\s*br\s*\/?\s*>/gi, "\n")
     .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, "\n\n")
-    .replace(/<\s*li[^>]*>/gi, "")
-    .replace(/<[^>]+>/g, "");
-  return decodeEntities(withBreaks)
+    .replace(/<\s*li[^>]*>/gi, "");
+  return decodeEntities(keepInlineTags(withBreaks))
     .split(/\n{2,}/)
     .map((p) => p.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim())
     .filter(Boolean)
@@ -168,8 +193,7 @@ export function normaliseWpItineraryRows(value: unknown): WpItineraryRow[] {
 }
 
 function normaliseProse(v: string): string {
-  return v
-    .replace(/<[^>]+>/g, " ")
+  return keepInlineTags(canonicaliseInlineTags(v))
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/[\u2018\u2019]/g, "'")
