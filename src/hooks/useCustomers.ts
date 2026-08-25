@@ -128,6 +128,21 @@ export const findDuplicateContacts = (customers: Customer[], customerIdsWithBook
 };
 
 export const useCustomerById = (id: string | null) => {
+  const queryClient = useQueryClient();
+
+  // Seed the detail view from any already-loaded contact list page so the page
+  // renders immediately instead of sitting on "Loading..." while the network
+  // request (or a token refresh) is in flight.
+  const seeded = (() => {
+    if (!id) return undefined;
+    const cached = queryClient.getQueriesData<{ customers?: Customer[] }>({ queryKey: ['customers'] });
+    for (const [, value] of cached) {
+      const match = value?.customers?.find(c => c.id === id);
+      if (match) return match as Customer;
+    }
+    return undefined;
+  })();
+
   return useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
@@ -137,7 +152,7 @@ export const useCustomerById = (id: string | null) => {
         .from('customers')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching customer:', error);
@@ -147,8 +162,11 @@ export const useCustomerById = (id: string | null) => {
       return data as Customer;
     },
     enabled: !!id,
+    retry: 1,
+    placeholderData: seeded,
   });
 };
+
 
 export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuery?: string) => {
   return useQuery({
