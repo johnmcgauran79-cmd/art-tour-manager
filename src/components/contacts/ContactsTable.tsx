@@ -82,10 +82,11 @@ export const ContactsTable = () => {
       });
       return ids;
     },
-    enabled: !!allCustomers,
+    enabled: scanDuplicates && !!allCustomers,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const duplicateGroups = allCustomers ? findDuplicateContacts(allCustomers, customerIdsWithBookings) : [];
+  const duplicateGroups = scanDuplicates && allCustomers ? findDuplicateContacts(allCustomers, customerIdsWithBookings) : [];
 
   const customers = customersData?.customers || [];
   const totalCount = customersData?.totalCount || 0;
