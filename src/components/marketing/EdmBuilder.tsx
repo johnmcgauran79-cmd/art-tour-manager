@@ -886,6 +886,144 @@ function BlockInspector({
     );
   }
 
+  /* ---------------- Mobile override mode ---------------- */
+  if (device === "mobile") {
+    const m = block.mobile || {};
+    const setM = (patch: Partial<typeof m>) => onChange({ mobile: { ...m, ...patch } });
+
+    return (
+      <div className="space-y-4">
+        <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+          These settings only apply on phones (screens up to 600px wide). Anything left blank
+          uses the desktop value.
+        </p>
+
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <Label className="text-sm">Hide this block on mobile</Label>
+          <Switch checked={!!m.hidden} onCheckedChange={(hidden) => setM({ hidden })} />
+        </div>
+
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <Label className="text-sm">Hide this block on desktop</Label>
+          <Switch checked={!!block.hidden} onCheckedChange={(hidden) => onChange({ hidden })} />
+        </div>
+
+        <AlignField label="Alignment" value={m.align} onChange={(align) => setM({ align })} allowInherit />
+
+        <div className="grid grid-cols-2 gap-3">
+          <NumField
+            label="Font size"
+            suffix="px"
+            min={8}
+            max={72}
+            value={m.fontSize}
+            onChange={(fontSize) => setM({ fontSize })}
+          />
+          <NumField
+            label="Line spacing"
+            min={1}
+            max={3}
+            step={0.1}
+            value={m.lineHeight}
+            onChange={(lineHeight) => setM({ lineHeight })}
+          />
+        </div>
+
+        <SpacingEditor
+          label="Mobile margin (px)"
+          value={m.margin}
+          linked={block.marginLinked}
+          onChange={(margin) => setM({ margin })}
+          onLinkedChange={(marginLinked) => onChange({ marginLinked })}
+        />
+        <SpacingEditor
+          label="Mobile padding (px)"
+          value={m.padding}
+          linked={block.paddingLinked}
+          onChange={(padding) => setM({ padding })}
+          onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
+        />
+
+        {t === "button" && (
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Full width on mobile</Label>
+              <Switch
+                checked={!!m.btnFullWidth}
+                onCheckedChange={(btnFullWidth) => setM({ btnFullWidth })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <NumField
+                label="Button width"
+                suffix="px"
+                min={40}
+                max={600}
+                value={m.btnWidth}
+                onChange={(btnWidth) => setM({ btnWidth })}
+              />
+              <NumField
+                label="Button font size"
+                suffix="px"
+                min={8}
+                max={40}
+                value={m.btnFontSize}
+                onChange={(btnFontSize) => setM({ btnFontSize })}
+              />
+            </div>
+          </div>
+        )}
+
+        {t === "image" && (
+          <div className="grid grid-cols-2 gap-3">
+            <NumField
+              label="Image width"
+              suffix="%"
+              min={5}
+              max={100}
+              value={m.imageWidthPct}
+              onChange={(imageWidthPct) => setM({ imageWidthPct })}
+            />
+            <NumField
+              label="Max width"
+              suffix="px"
+              min={40}
+              max={900}
+              value={m.imageMaxWidth}
+              onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
+            />
+          </div>
+        )}
+
+        {(t === "columns" || t === "table" || t === "twoColumn" || t === "imageText") && (
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Stack columns vertically</Label>
+              <Switch
+                checked={m.stack !== false}
+                onCheckedChange={(on) => setM({ stack: on ? undefined : false })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Reverse stacking order</Label>
+              <Switch
+                checked={!!m.stackReverse}
+                onCheckedChange={(stackReverse) => setM({ stackReverse })}
+              />
+            </div>
+          </div>
+        )}
+
+        {block.mobile && (
+          <Button variant="outline" size="sm" onClick={() => onChange({ mobile: undefined })}>
+            Clear all mobile overrides
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  /* ---------------- Desktop mode ---------------- */
   return (
     <div className="space-y-4">
       {(t === "heading" || t === "button" || t === "tourCard" || t === "quote") && (
@@ -963,33 +1101,282 @@ function BlockInspector({
               }
             />
           </div>
-          {!block.fullBleed && (
+
+          <div className="space-y-3 rounded-md border p-3">
             <div className="space-y-1.5">
-              <Label>Max width (px, blank = full width)</Label>
-              <Input
-                type="number"
+              <Label>Width unit</Label>
+              <Select
+                value={block.imageWidthUnit || (block.imageWidth ? "px" : "pct")}
+                onValueChange={(v) => onChange({ imageWidthUnit: v as "px" | "pct" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pct">Percentage of email width</SelectItem>
+                  <SelectItem value="px">Fixed pixels</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {(block.imageWidthUnit || (block.imageWidth ? "px" : "pct")) === "px" ? (
+                <NumField
+                  label="Width"
+                  suffix="px"
+                  min={40}
+                  max={900}
+                  value={block.imageWidth}
+                  onChange={(imageWidth) => onChange({ imageWidth })}
+                />
+              ) : (
+                <NumField
+                  label="Width"
+                  suffix="%"
+                  min={5}
+                  max={100}
+                  placeholder="100"
+                  value={block.imageWidthPct}
+                  onChange={(imageWidthPct) => onChange({ imageWidthPct })}
+                />
+              )}
+              <NumField
+                label="Max width"
+                suffix="px"
                 min={40}
-                max={800}
-                value={block.imageWidth ?? ""}
-                onChange={(e) =>
-                  onChange({ imageWidth: e.target.value ? Number(e.target.value) : undefined })
-                }
+                max={900}
+                value={block.imageMaxWidth}
+                onChange={(imageMaxWidth) => onChange({ imageMaxWidth })}
               />
             </div>
-          )}
-          <div className="space-y-1.5">
-            <Label>Corner radius (px)</Label>
-            <Input
-              type="number"
+            <div className="space-y-1.5">
+              <Label>Crop / aspect ratio</Label>
+              <Select
+                value={block.aspectRatio || "auto"}
+                onValueChange={(v) => onChange({ aspectRatio: v === "auto" ? undefined : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Automatic height (keep proportions)</SelectItem>
+                  <SelectItem value="16/9">Wide 16:9</SelectItem>
+                  <SelectItem value="3/2">Landscape 3:2</SelectItem>
+                  <SelectItem value="4/3">Landscape 4:3</SelectItem>
+                  <SelectItem value="1/1">Square 1:1</SelectItem>
+                  <SelectItem value="4/5">Portrait 4:5</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Anything other than automatic crops the image to fill the shape.
+              </p>
+            </div>
+            <NumField
+              label="Corner radius"
+              suffix="px"
               min={0}
-              max={40}
-              value={block.radius ?? (block.fullBleed ? 0 : 6)}
-              onChange={(e) => onChange({ radius: Number(e.target.value) || 0 })}
+              max={60}
+              placeholder={block.fullBleed ? "0" : "6"}
+              value={block.radius}
+              onChange={(radius) => onChange({ radius })}
             />
           </div>
         </>
       )}
 
+      {t === "button" && (
+        <div className="space-y-3 rounded-md border p-3">
+          <div className="grid grid-cols-2 gap-3">
+            <ColorField
+              label="Button colour"
+              value={block.btnBg}
+              fallback="#0f172a"
+              onChange={(btnBg) => onChange({ btnBg })}
+              clearable
+            />
+            <ColorField
+              label="Text colour"
+              value={block.btnColor}
+              fallback="#ffffff"
+              onChange={(btnColor) => onChange({ btnColor })}
+              clearable
+            />
+            <NumField
+              label="Font size"
+              suffix="px"
+              min={8}
+              max={40}
+              placeholder="16"
+              value={block.btnFontSize}
+              onChange={(btnFontSize) => onChange({ btnFontSize })}
+            />
+            <div className="space-y-1.5">
+              <Label>Font weight</Label>
+              <Select
+                value={String(block.btnFontWeight ?? 700)}
+                onValueChange={(v) => onChange({ btnFontWeight: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="400">Regular</SelectItem>
+                  <SelectItem value="600">Semi-bold</SelectItem>
+                  <SelectItem value="700">Bold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <NumField
+              label="Horizontal padding"
+              suffix="px"
+              min={0}
+              max={80}
+              placeholder="28"
+              value={block.btnPadX}
+              onChange={(btnPadX) => onChange({ btnPadX })}
+            />
+            <NumField
+              label="Vertical padding"
+              suffix="px"
+              min={0}
+              max={60}
+              placeholder="14"
+              value={block.btnPadY}
+              onChange={(btnPadY) => onChange({ btnPadY })}
+            />
+            <NumField
+              label="Corner radius"
+              suffix="px"
+              min={0}
+              max={60}
+              placeholder="6"
+              value={block.btnRadius}
+              onChange={(btnRadius) => onChange({ btnRadius })}
+            />
+            <NumField
+              label="Button width"
+              suffix="px"
+              min={40}
+              max={700}
+              placeholder="auto"
+              value={block.btnWidth}
+              onChange={(btnWidth) => onChange({ btnWidth })}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">Full width button</Label>
+            <Switch
+              checked={!!block.btnFullWidth}
+              onCheckedChange={(btnFullWidth) => onChange({ btnFullWidth })}
+            />
+          </div>
+        </div>
+      )}
+
+      {t === "divider" && (
+        <div className="grid grid-cols-2 gap-3 rounded-md border p-3">
+          <ColorField
+            label="Line colour"
+            value={block.lineColor}
+            fallback="#e2e8f0"
+            onChange={(lineColor) => onChange({ lineColor })}
+            clearable
+          />
+          <NumField
+            label="Thickness"
+            suffix="px"
+            min={1}
+            max={20}
+            placeholder="1"
+            value={block.lineThickness}
+            onChange={(lineThickness) => onChange({ lineThickness })}
+          />
+          <NumField
+            label="Width"
+            suffix="%"
+            min={5}
+            max={100}
+            placeholder="100"
+            value={block.lineWidthPct}
+            onChange={(lineWidthPct) => onChange({ lineWidthPct })}
+          />
+          <div className="space-y-1.5">
+            <Label>Line style</Label>
+            <Select
+              value={block.lineStyle || "solid"}
+              onValueChange={(v) => onChange({ lineStyle: v as any })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solid">Solid</SelectItem>
+                <SelectItem value="dashed">Dashed</SelectItem>
+                <SelectItem value="dotted">Dotted</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {t === "social" && (
+        <div className="space-y-3 rounded-md border p-3">
+          <Label className="text-sm font-semibold">Platforms</Label>
+          <SocialLinksEditor
+            socials={block.socials || []}
+            onChange={(socials) => onChange({ socials })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <NumField
+              label="Icon size"
+              suffix="px"
+              min={12}
+              max={64}
+              placeholder="28"
+              value={block.iconSize}
+              onChange={(iconSize) => onChange({ iconSize })}
+            />
+            <NumField
+              label="Spacing between icons"
+              suffix="px"
+              min={0}
+              max={40}
+              placeholder="10"
+              value={block.iconGap}
+              onChange={(iconGap) => onChange({ iconGap })}
+            />
+            <ColorField
+              label="Icon colour"
+              value={block.iconColor}
+              fallback="#0f172a"
+              onChange={(iconColor) => onChange({ iconColor })}
+            />
+            <div className="space-y-1.5">
+              <Label>Icon style</Label>
+              <Select
+                value={block.iconStyle || "plain"}
+                onValueChange={(v) => onChange({ iconStyle: v as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="plain">Plain icon</SelectItem>
+                  <SelectItem value="circle">Circle background</SelectItem>
+                  <SelectItem value="rounded">Rounded square</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(block.iconStyle || "plain") !== "plain" && (
+              <ColorField
+                label="Icon background"
+                value={block.iconBg}
+                fallback="#0f172a"
+                onChange={(iconBg) => onChange({ iconBg })}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {(t === "button" || t === "image" || t === "tourCard") && (
         <div className="space-y-1.5">
@@ -1003,38 +1390,37 @@ function BlockInspector({
       )}
 
       {t === "heading" && (
-        <div className="space-y-1.5">
-          <Label>Size</Label>
-          <Select value={block.size || "lg"} onValueChange={(size) => onChange({ size: size as any })}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="lg">Large</SelectItem>
-              <SelectItem value="md">Medium</SelectItem>
-              <SelectItem value="sm">Small</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div className="space-y-1.5">
+            <Label>Size</Label>
+            <Select value={block.size || "lg"} onValueChange={(size) => onChange({ size: size as any })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lg">Large</SelectItem>
+                <SelectItem value="md">Medium</SelectItem>
+                <SelectItem value="sm">Small</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <NumField
+            label="Custom font size"
+            suffix="px"
+            min={10}
+            max={72}
+            value={block.fontSize}
+            onChange={(fontSize) => onChange({ fontSize })}
+          />
+        </>
       )}
 
-      {(t === "heading" || t === "button" || t === "image") && (
-        <div className="space-y-1.5">
-          <Label>Alignment</Label>
-          <Select
-            value={block.align || "left"}
-            onValueChange={(align) => onChange({ align: align as any })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="left">Left</SelectItem>
-              <SelectItem value="center">Centre</SelectItem>
-              <SelectItem value="right">Right</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {(t === "heading" || t === "button" || t === "image" || t === "divider" || t === "social" || t === "text") && (
+        <AlignField
+          value={block.align || (t === "text" ? undefined : "left")}
+          onChange={(align) => onChange({ align })}
+          allowInherit={t === "text"}
+        />
       )}
 
       {t === "spacer" && (
@@ -1051,74 +1437,61 @@ function BlockInspector({
       )}
 
       {t === "text" && (
-        <div className="space-y-1.5">
-          <Label>Line spacing (whole text block)</Label>
-          <Input
-            type="number"
-            step="0.1"
-            min={1}
-            max={3}
-            value={block.lineHeight ?? 1.6}
-            onChange={(e) => onChange({ lineHeight: Number(e.target.value) || 1.6 })}
+        <div className="grid grid-cols-2 gap-3">
+          <NumField
+            label="Font size"
+            suffix="px"
+            min={8}
+            max={48}
+            placeholder="16"
+            value={block.fontSize}
+            onChange={(fontSize) => onChange({ fontSize })}
           />
-          <p className="text-xs text-muted-foreground">
-            Multiplier applied to every line in this block (1 = tight, 1.6 = default). Blank lines
-            you press Enter for are separate paragraphs and stay as gaps.
+          <div className="space-y-1.5">
+            <Label>Line spacing</Label>
+            <Input
+              type="number"
+              step="0.1"
+              min={1}
+              max={3}
+              value={block.lineHeight ?? 1.6}
+              onChange={(e) => onChange({ lineHeight: Number(e.target.value) || 1.6 })}
+            />
+          </div>
+          <p className="col-span-2 text-xs text-muted-foreground">
+            Line spacing is a multiplier applied to every line in this block (1 = tight, 1.6 =
+            default).
           </p>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Side margin (px)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={80}
-              placeholder="default"
-              value={block.padX ?? ""}
-              onChange={(e) =>
-                onChange({ padX: e.target.value === "" ? undefined : Number(e.target.value) })
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Top/bottom margin (px)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={80}
-              placeholder="default"
-              value={block.padY ?? ""}
-              onChange={(e) =>
-                onChange({ padY: e.target.value === "" ? undefined : Number(e.target.value) })
-              }
-            />
-        </div>
-      </div>
+      <SpacingEditor
+        label="Margin (px)"
+        value={block.margin}
+        linked={block.marginLinked}
+        onChange={(margin) => onChange({ margin })}
+        onLinkedChange={(marginLinked) => onChange({ marginLinked })}
+        hint="Space outside the block. Background colours don't extend into the margin."
+      />
 
-      <div className="space-y-1.5">
-        <Label>Block background</Label>
-        <div className="flex gap-2">
-          <Input
-            type="color"
-            className="h-9 w-14 p-1"
-            value={block.bgColor || "#ffffff"}
-            onChange={(e) => onChange({ bgColor: e.target.value })}
-          />
-          <Input
-            value={block.bgColor || ""}
-            onChange={(e) => onChange({ bgColor: e.target.value || undefined })}
-            placeholder="Leave blank for none"
-          />
-          {block.bgColor && (
-            <Button variant="outline" size="sm" onClick={() => onChange({ bgColor: undefined })}>
-              Clear
-            </Button>
-          )}
-        </div>
-      </div>
+      <SpacingEditor
+        label="Padding (px)"
+        value={block.padding}
+        linked={block.paddingLinked}
+        onChange={(padding) => onChange({ padding })}
+        onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
+        hint="Space inside the block. Blank sides use the template default."
+      />
+
+      <ColorField
+        label="Block background"
+        value={block.bgColor}
+        fallback="#ffffff"
+        onChange={(bgColor) => onChange({ bgColor })}
+        clearable
+      />
     </div>
   );
 }
+
 
