@@ -157,16 +157,27 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
                     <div className="mt-2 grid gap-3 md:grid-cols-2">
                       <div>
                         <p className="mb-1 text-xs uppercase text-muted-foreground">Currently live</p>
-                        <p className="whitespace-pre-wrap text-muted-foreground">
-                          {row.wp?.details?.trim() ? row.wp.details : "— not on the website —"}
-                        </p>
+                        {row.wp?.details?.trim() ? (
+                          <div
+                            className="whitespace-pre-wrap text-muted-foreground [&_a]:underline"
+                            dangerouslySetInnerHTML={{ __html: sanitiseInline(row.wp.details) }}
+                          />
+                        ) : (
+                          <p className="text-muted-foreground">— not on the website —</p>
+                        )}
                       </div>
                       <div>
                         <p className="mb-1 text-xs uppercase text-muted-foreground">Will become</p>
-                        <p className="whitespace-pre-wrap">
-                          {row.art?.details?.trim() ? row.art.details : "— removed —"}
-                        </p>
+                        {row.art?.details?.trim() ? (
+                          <div
+                            className="whitespace-pre-wrap [&_a]:underline"
+                            dangerouslySetInnerHTML={{ __html: sanitiseInline(row.art.details) }}
+                          />
+                        ) : (
+                          <p>— removed —</p>
+                        )}
                       </div>
+
                     </div>
                   </div>
                 ))}
