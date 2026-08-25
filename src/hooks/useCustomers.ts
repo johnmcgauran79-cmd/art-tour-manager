@@ -209,11 +209,14 @@ export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuer
         totalPages: Math.ceil((count || 0) / pageSize)
       };
     },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
-// Keep the old hook for components that need all customers (like CSV upload)
-export const useAllCustomers = () => {
+// Keep the old hook for components that need all customers (like CSV upload).
+// This pulls every row, so it must only run on demand (pass enabled=false to defer).
+export const useAllCustomers = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['all-customers'],
     queryFn: async () => {
@@ -254,6 +257,9 @@ export const useAllCustomers = () => {
       console.log(`Total customers fetched: ${allCustomers.length}`);
       return allCustomers as Customer[];
     },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
