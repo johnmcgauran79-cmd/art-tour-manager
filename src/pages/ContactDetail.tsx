@@ -42,7 +42,7 @@ export default function ContactDetail() {
   const { navigateWithContext, goBack } = useNavigationContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: contactData, isLoading } = useCustomerById(id || null);
+  const { data: contactData, isLoading, isError, error, refetch, fetchStatus } = useCustomerById(id || null);
   const { isViewOnly } = usePermissions();
   const contact = contactData;
   const [deleteError, setDeleteError] = useState<string | null>(null);
