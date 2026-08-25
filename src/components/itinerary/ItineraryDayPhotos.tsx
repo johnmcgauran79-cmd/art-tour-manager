@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ImagePlus, Trash2, Globe } from "lucide-react";
+import { ImagePlus, Trash2, Globe, Crop } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ImageResizeDialog } from "@/components/shared/ImageResizeDialog";
 import {
   MAX_DAY_PHOTOS,
   useItineraryDayImages,
@@ -26,19 +27,44 @@ interface ItineraryDayPhotosProps {
 
 /** Up to 3 photos per itinerary day; these feed the day gallery on the website. */
 export const ItineraryDayPhotos = ({ dayId, readOnly }: ItineraryDayPhotosProps) => {
-  const { data: photos = [], uploadImage, updateCaption, removeImage } = useItineraryDayImages(dayId);
+  const { data: photos = [], uploadImage, replaceImage, updateCaption, removeImage } =
+    useItineraryDayImages(dayId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingDelete, setPendingDelete] = useState<ItineraryDayImage | null>(null);
+  /** image awaiting crop/resize: either a new upload or an existing photo being edited */
+  const [editing, setEditing] = useState<
+    { src: string; fileName: string; existing: ItineraryDayImage | null } | null
+  >(null);
 
   const atLimit = photos.length >= MAX_DAY_PHOTOS;
 
+  useEffect(() => {
+    return () => {
+      if (editing?.src.startsWith("blob:")) URL.revokeObjectURL(editing.src);
+    };
+  }, [editing]);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadImage.mutate(file);
+    if (file) {
+      setEditing({ src: URL.createObjectURL(file), fileName: file.name, existing: null });
+    }
     e.target.value = "";
   };
 
+  const handleResized = (file: File) => {
+    const target = editing;
+    setEditing(null);
+    if (!target) return;
+    if (target.existing) {
+      replaceImage.mutate({ image: target.existing, file });
+    } else {
+      uploadImage.mutate(file);
+    }
+  };
+
   if (readOnly && photos.length === 0) return null;
+
 
   return (
     <div className="pt-2 border-t">
