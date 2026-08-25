@@ -164,9 +164,22 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
                 <p className="text-sm font-medium">
                   {changedRows.length} day{changedRows.length === 1 ? "" : "s"} will change:
                 </p>
-                {changedRows.map((row) => (
+                {changedRows.map((row) => {
+                  const headlineChanged =
+                    (row.art?.date_event ?? "").trim().toLowerCase() !==
+                    (row.wp?.date_event ?? "").trim().toLowerCase();
+                  return (
                   <div key={row.index} className="rounded-md border p-3 text-sm">
                     <p className="font-medium">{row.art?.date_event ?? row.wp?.date_event ?? `Row ${row.index + 1}`}</p>
+                    {headlineChanged && (
+                      <div className="mt-2 rounded-md bg-muted/50 p-2 text-xs">
+                        <p className="mb-1 font-medium uppercase text-muted-foreground">Day headline</p>
+                        <p className="text-muted-foreground line-through">
+                          {row.wp?.date_event?.trim() || "— not on the website —"}
+                        </p>
+                        <p>{row.art?.date_event?.trim() || "— removed —"}</p>
+                      </div>
+                    )}
                     <div className="mt-2 grid gap-3 md:grid-cols-2">
                       <div>
                         <p className="mb-1 text-xs uppercase text-muted-foreground">Currently live</p>
@@ -193,7 +206,8 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
 
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
