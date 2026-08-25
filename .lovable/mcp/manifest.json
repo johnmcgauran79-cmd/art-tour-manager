@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.5.0",
+      "version": "2.6.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -4184,6 +4184,48 @@
             "confirm": {
               "type": "boolean",
               "description": "true to write the imported content into ART. Omit to preview."
+            },
+            "wordpress_tour_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Override the WordPress tour post id."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "wordpress_pull_itinerary_day_photos",
+        "title": "Import itinerary day photos from the website",
+        "description": "Backfill: copies the photos already published in each WordPress itinerary day gallery into the matching ART itinerary day (max 3 per day, matched day by day in order). Days that already hold ART photos are skipped — ART stays the source of truth and nothing on the website changes. Call without confirm to preview; call with confirm=true to write. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The ART tour id (uuid)."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "true to import the photos into ART. Omit to preview."
+            },
+            "day_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Optional: only import these ART itinerary day ids. Defaults to every importable day."
             },
             "wordpress_tour_id": {
               "type": "integer",
