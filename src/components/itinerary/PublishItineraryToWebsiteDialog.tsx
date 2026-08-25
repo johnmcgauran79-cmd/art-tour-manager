@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diff, setDiff] = useState<DiffResult | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -72,14 +74,34 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
     setLoading(true);
     setError(null);
     setDiff(null);
+    setSelected(new Set());
     callProxy<DiffResult>("itinerary_diff", { art_tour_id: tourId })
-      .then((res) => { if (!cancelled) setDiff(res); })
+      .then((res) => {
+        if (cancelled) return;
+        setDiff(res);
+        setSelected(new Set(res.rows.filter((r) => r.changed).map((r) => r.index)));
+      })
       .catch((err: Error) => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [open, tourId]);
 
+  const toggleRow = (index: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const handlePublish = async () => {
+    if (!diff) return;
+    // Unchanged days are always included (they match the website already);
+    // changed days are only published when ticked.
+    const rowIndexes = diff.rows
+      .filter((r) => !r.changed || selected.has(r.index))
+      .map((r) => r.index);
     setPublishing(true);
     try {
       const res = await callProxy<{
@@ -87,7 +109,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
         verified: boolean;
         photos_uploaded: number;
         photo_errors: string[];
-      }>("push_itinerary", { art_tour_id: tourId });
+      }>("push_itinerary", { art_tour_id: tourId, row_indexes: rowIndexes });
       toast.success(
         `Published ${res.rows_published} itinerary day${res.rows_published === 1 ? "" : "s"} to the website` +
           (res.photos_uploaded ? ` and uploaded ${res.photos_uploaded} photo${res.photos_uploaded === 1 ? "" : "s"}` : ""),
@@ -104,6 +126,7 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
   };
 
   const changedRows = diff?.rows.filter((r) => r.changed) ?? [];
+  const selectedChangedCount = changedRows.filter((r) => selected.has(r.index)).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,8 +184,26 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm font-medium">
-                  {changedRows.length} day{changedRows.length === 1 ? "" : "s"} will change:
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    {changedRows.length} day{changedRows.length === 1 ? "" : "s"} changed · {selectedChangedCount}{" "}
+                    selected to publish
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelected(new Set(changedRows.map((r) => r.index)))}
+                    >
+                      Select all
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                      Clear all
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Unticked days are skipped — the website keeps its current content for those days.
                 </p>
                 {changedRows.map((row) => {
                   const headlineChanged =
@@ -170,7 +211,16 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
                     (row.wp?.date_event ?? "").trim().toLowerCase();
                   return (
                   <div key={row.index} className="rounded-md border p-3 text-sm">
-                    <p className="font-medium">{row.art?.date_event ?? row.wp?.date_event ?? `Row ${row.index + 1}`}</p>
+                    <label className="flex items-start gap-2">
+                      <Checkbox
+                        checked={selected.has(row.index)}
+                        onCheckedChange={() => toggleRow(row.index)}
+                        className="mt-0.5"
+                      />
+                      <span className="font-medium">
+                        {row.art?.date_event ?? row.wp?.date_event ?? `Row ${row.index + 1}`}
+                      </span>
+                    </label>
                     {headlineChanged && (
                       <div className="mt-2 rounded-md bg-muted/50 p-2 text-xs">
                         <p className="mb-1 font-medium uppercase text-muted-foreground">Day headline</p>
@@ -217,9 +267,12 @@ export function PublishItineraryToWebsiteDialog({ open, onOpenChange, tourId }: 
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={publishing}>
             Cancel
           </Button>
-          <Button onClick={handlePublish} disabled={publishing || loading || !diff}>
+          <Button
+            onClick={handlePublish}
+            disabled={publishing || loading || !diff || (changedRows.length > 0 && selectedChangedCount === 0)}
+          >
             {publishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Publish to website
+            {changedRows.length > 0 ? `Publish ${selectedChangedCount} day${selectedChangedCount === 1 ? "" : "s"}` : "Publish to website"}
           </Button>
         </DialogFooter>
       </DialogContent>

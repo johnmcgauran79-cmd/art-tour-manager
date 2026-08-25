@@ -57,7 +57,7 @@ type Op =
   | { op: "bulk_tour_diffs"; include_archived?: boolean }
   | { op: "bulk_push_diffs"; changes: Array<{ art_tour_id: string; art_keys: string[] }> }
   | { op: "itinerary_diff"; art_tour_id: string }
-  | { op: "push_itinerary"; art_tour_id: string }
+  | { op: "push_itinerary"; art_tour_id: string; row_indexes?: number[] }
   | { op: "inclusions_diff"; art_tour_id: string }
   | { op: "push_inclusions"; art_tour_id: string; sections?: Array<"inclusions" | "exclusions" | "description"> }
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
@@ -1292,7 +1292,18 @@ Deno.serve(async (req) => {
         } catch { /* best effort */ }
 
         const beforeRows = normaliseWpItineraryRows(before?.[WP_ITINERARY_FIELD]);
-        const rowsToPush = preserveGalleries(rowsSource, beforeRows);
+        const rendered = preserveGalleries(rowsSource, beforeRows);
+        // Optional per-day selection: unselected days keep whatever is live on the
+        // website (and are dropped entirely when the website has no such row yet).
+        const selection = Array.isArray(body.row_indexes) ? new Set(body.row_indexes) : null;
+        const rowsToPush = selection
+          ? rendered
+              .map((row, i) => (selection.has(i) ? row : (beforeRows[i] ?? null)))
+              .filter((row): row is NonNullable<typeof row> => row !== null)
+          : rendered;
+        if (rowsToPush.length === 0) {
+          return json({ error: "No itinerary days selected to publish." }, 400);
+        }
         const res = await wordpressRequest<Record<string, unknown>>({
           endpoint: `tour/${link.wp_tour_id}`,
           method: "POST",
