@@ -115,13 +115,19 @@ function serve_handler() {
       }
 
       const brand = (campaign as any).brand || {};
-      const fromName = campaign.from_name || brand.sender_name || "Australian Racing Tours";
+      const fromName =
+        (campaign.from_name || "").trim() ||
+        (Deno.env.get("MARKETING_FROM_NAME") || "").trim() ||
+        (brand.sender_name || "").trim() ||
+        "Australian Racing Tours";
       const fromEmail =
         campaign.from_email ||
         Deno.env.get("MARKETING_FROM_EMAIL") ||
         brand.from_email_client ||
         "info@australianracingtours.com.au";
-      const from = `${fromName} <${fromEmail}>`;
+      // Quote the display name so inboxes always render it (never the mailbox name)
+      const from = `"${fromName.replace(/"/g, "")}" <${fromEmail}>`;
+
       const html = campaign.html_body || "";
       if (!html) return json({ error: "Campaign has no content to send" }, 400);
 
