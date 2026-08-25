@@ -63,6 +63,7 @@ type Op =
   | { op: "pull_inclusions"; art_tour_id: string; confirm?: boolean }
   | { op: "pull_tour_fields"; art_tour_id: string; art_keys: string[] }
   | { op: "pull_itinerary"; art_tour_id: string; confirm?: boolean }
+  | { op: "pull_itinerary_photos"; art_tour_id: string; confirm?: boolean; day_ids?: string[] }
   | { op: "set_website_link_status"; art_tour_id: string; status: "unlinked" | "linked" | "no_website_tour" }
   | {
       op: "save_art_content";
@@ -1822,6 +1823,186 @@ Deno.serve(async (req) => {
           request_summary: { art_tour_id: body.art_tour_id, imported_days: parsed.length },
         });
         return json({ ok: true, imported_days: parsed.length, warnings });
+      }
+      case "pull_itinerary_photos": {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: tour, error: tourErr } = await admin
+          .from("tours")
+          .select("id, name")
+          .eq("id", body.art_tour_id)
+          .maybeSingle();
+        if (tourErr || !tour) return json({ error: "ART tour not found" }, 404);
+        const { data: link } = await admin
+          .from("wordpress_tour_links")
+          .select("*")
+          .eq("tour_id", body.art_tour_id)
+          .maybeSingle();
+        if (!link) {
+          return json({ error: "This tour is not linked to a WordPress tour page yet. Link it on the Website tab first." }, 400);
+        }
+
+        // Live website itinerary rows (galleries live on each row).
+        const wpRes = await wordpressRequest<Record<string, unknown>>({
+          endpoint: `tour/${link.wp_tour_id}`,
+          query: { context: "edit", _fields: "id,acf,link" },
+        });
+        const wpAcf = (wpRes.data as { acf?: Record<string, unknown> })?.acf ?? {};
+        const rawRows = Array.isArray(wpAcf[WP_ITINERARY_FIELD]) ? (wpAcf[WP_ITINERARY_FIELD] as unknown[]) : [];
+        const galleryIdsByRow: number[][] = rawRows.map((row) => {
+          const g = (row as { gallery?: unknown })?.gallery;
+          const list = Array.isArray(g) ? g : g === null || g === undefined || g === "" ? [] : [g];
+          return list
+            .map((item) => {
+              if (typeof item === "number") return item;
+              if (typeof item === "string" && /^\d+$/.test(item)) return Number(item);
+              const id = (item as { ID?: number; id?: number })?.id ?? (item as { ID?: number })?.ID;
+              return typeof id === "number" ? id : null;
+            })
+            .filter((id): id is number => typeof id === "number" && Number.isFinite(id));
+        });
+
+        // ART itinerary days in order + the photos they already have.
+        const { data: itin } = await admin
+          .from("tour_itineraries")
+          .select("id")
+          .eq("tour_id", body.art_tour_id)
+          .eq("is_current", true)
+          .order("version", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!itin) return json({ error: "This tour has no itinerary in ART yet — import or create the itinerary first." }, 400);
+        const { data: artDayRows, error: dayErr } = await admin
+          .from("tour_itinerary_days")
+          .select("id, day_number, activity_date")
+          .eq("itinerary_id", itin.id)
+          .order("day_number");
+        if (dayErr) return json({ error: dayErr.message }, 400);
+        const artDayList = (artDayRows ?? []) as Array<{ id: string; day_number: number; activity_date: string }>;
+        if (artDayList.length === 0) return json({ error: "This tour's itinerary has no days yet." }, 400);
+        const { data: existingImages } = await admin
+          .from("tour_itinerary_day_images")
+          .select("id, day_id, wp_media_id")
+          .in("day_id", artDayList.map((d) => d.id));
+        const existing = (existingImages ?? []) as Array<{ id: string; day_id: string; wp_media_id: number | null }>;
+
+        const warnings: string[] = [];
+        if (rawRows.length !== artDayList.length) {
+          warnings.push(
+            `The website has ${rawRows.length} itinerary day(s) and ART has ${artDayList.length} — photos are matched day by day in order, so check the days below before importing.`,
+          );
+        }
+
+        // Resolve media details for every gallery id we intend to import.
+        const wantedIds = [...new Set(galleryIdsByRow.flat())];
+        const mediaById = new Map<number, { id: number; source_url: string | null; caption: string | null; mime_type: string | null; file_name: string | null }>();
+        for (const id of wantedIds) {
+          try {
+            const m = await wordpressRequest<Record<string, unknown>>({
+              endpoint: `media/${id}`,
+              query: { _fields: "id,source_url,alt_text,title,mime_type,media_details" },
+            });
+            const d = m.data as {
+              id?: number;
+              source_url?: string;
+              alt_text?: string;
+              title?: { rendered?: string };
+              mime_type?: string;
+              media_details?: { file?: string };
+            };
+            const file = d.media_details?.file ? String(d.media_details.file).split("/").pop() ?? null : null;
+            mediaById.set(id, {
+              id,
+              source_url: d.source_url ?? null,
+              caption: (d.alt_text || d.title?.rendered || "").trim() || null,
+              mime_type: d.mime_type ?? null,
+              file_name: file ?? (d.source_url ? String(d.source_url).split("/").pop() ?? null : null),
+            });
+          } catch (err) {
+            warnings.push(`Website image ${id}: ${(err as Error).message}`);
+          }
+        }
+
+        const MAX_PHOTOS = 3;
+        const days = artDayList.map((day, i) => {
+          const artCount = existing.filter((img) => img.day_id === day.id).length;
+          const media = (galleryIdsByRow[i] ?? [])
+            .slice(0, MAX_PHOTOS)
+            .map((id) => mediaById.get(id))
+            .filter((m): m is NonNullable<typeof m> => !!m && !!m.source_url);
+          return {
+            day_id: day.id,
+            day_number: day.day_number,
+            activity_date: day.activity_date,
+            art_photo_count: artCount,
+            website_photos: media,
+            /** Days that already hold ART photos are never overwritten. */
+            importable: artCount === 0 && media.length > 0,
+          };
+        });
+
+        if (body.confirm !== true) {
+          return json({
+            preview: true,
+            tour_name: tour.name,
+            wp_tour_id: link.wp_tour_id,
+            wp_link: (wpRes.data as { link?: string })?.link ?? null,
+            days,
+            website_photo_total: galleryIdsByRow.flat().length,
+            importable_total: days.reduce((n, d) => n + (d.importable ? d.website_photos.length : 0), 0),
+            warnings,
+          });
+        }
+
+        const onlyDays = Array.isArray(body.day_ids) && body.day_ids.length > 0 ? new Set(body.day_ids) : null;
+        let imported = 0;
+        const errors: string[] = [];
+        for (const day of days) {
+          if (!day.importable) continue;
+          if (onlyDays && !onlyDays.has(day.day_id)) continue;
+          let sort = 0;
+          for (const m of day.website_photos) {
+            try {
+              const res = await fetch(m.source_url!);
+              if (!res.ok) throw new Error(`download failed (${res.status})`);
+              const bytes = new Uint8Array(await res.arrayBuffer());
+              const contentType = m.mime_type ?? res.headers.get("content-type") ?? "image/jpeg";
+              const safeName = (m.file_name ?? `website-${m.id}.jpg`).replace(/[^\w.\-]+/g, "_").slice(0, 180);
+              const path = `itinerary-day-photos/${day.day_id}/${Date.now()}-${safeName}`;
+              const up = await admin.storage.from("attachments").upload(path, bytes, { contentType, upsert: true });
+              if (up.error) throw new Error(up.error.message);
+              const { error: insErr } = await admin.from("tour_itinerary_day_images").insert({
+                day_id: day.day_id,
+                file_path: path,
+                file_name: safeName,
+                caption: m.caption,
+                sort_order: sort,
+                wp_media_id: m.id,
+                wp_source_url: m.source_url,
+                uploaded_by: userId,
+              });
+              if (insErr) {
+                await admin.storage.from("attachments").remove([path]);
+                throw new Error(insErr.message);
+              }
+              sort++;
+              imported++;
+            } catch (err) {
+              errors.push(`Day ${day.day_number} image ${m.id}: ${(err as Error).message}`);
+            }
+          }
+        }
+
+        await auditLog(userId, {
+          action: "pull_itinerary_photos",
+          wordpress_object_type: "tour",
+          wordpress_object_id: link.wp_tour_id,
+          result_status: errors.length ? "error" : "success",
+          response_code: 200,
+          error_message: errors.length ? errors.join(" | ") : undefined,
+          request_summary: { art_tour_id: body.art_tour_id, imported_photos: imported },
+        });
+
+        return json({ ok: true, imported_photos: imported, warnings, errors });
       }
       case "set_website_link_status": {
         const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
