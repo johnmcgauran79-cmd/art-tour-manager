@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles, Globe } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles, Globe, ImageDown } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "@/components/itinerary/ItineraryDayCard";
@@ -11,6 +11,7 @@ import { GenerateDocumentModal } from "@/components/itinerary/GenerateDocumentMo
 import { EmailItineraryModal } from "@/components/itinerary/EmailItineraryModal";
 import { GuestDocumentTextModal } from "@/components/itinerary/GuestDocumentTextModal";
 import { PublishItineraryToWebsiteDialog } from "@/components/itinerary/PublishItineraryToWebsiteDialog";
+import { ImportItineraryPhotosDialog } from "@/components/itinerary/ImportItineraryPhotosDialog";
 import { useIsWebsiteApprover } from "@/hooks/useWebsiteChanges";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -33,6 +34,7 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showGuestTextModal, setShowGuestTextModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showImportPhotosModal, setShowImportPhotosModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
   const addDay = useAddItineraryDay();
@@ -270,6 +272,14 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         <PublishItineraryToWebsiteDialog
           open={showPublishModal}
           onOpenChange={setShowPublishModal}
+          tourId={tour.id}
+        />
+      )}
+
+      {showImportPhotosModal && (
+        <ImportItineraryPhotosDialog
+          open={showImportPhotosModal}
+          onOpenChange={setShowImportPhotosModal}
           tourId={tour.id}
         />
       )}
