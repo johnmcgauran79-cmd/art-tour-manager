@@ -63,7 +63,9 @@ export const ContactsTable = () => {
   const handleProgress = useCallback((p: BulkDeleteProgress) => setDeleteProgress(p), []);
   const bulkDeleteMutation = useBulkDeleteCustomers(handleProgress);
 
-  const { data: allCustomers } = useAllCustomers();
+  // Duplicate scanning pulls every contact row, so it only runs when an admin asks for it.
+  const [scanDuplicates, setScanDuplicates] = useState(false);
+  const { data: allCustomers, isFetching: isScanningDuplicates } = useAllCustomers(scanDuplicates);
 
   // Fetch customer IDs that have bookings to prioritize them as primary in duplicate groups
   const { data: customerIdsWithBookings } = useQuery({
