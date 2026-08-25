@@ -209,6 +209,8 @@ export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuer
         totalPages: Math.ceil((count || 0) / pageSize)
       };
     },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
