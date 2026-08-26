@@ -163,7 +163,6 @@ export const ThemeAppearanceSettings = () => {
             </button>
             <div
 
-            <div
               className="w-20 h-10 rounded-md flex items-center justify-center text-xs"
               style={{
                 backgroundColor: localColors.theme_sidebar_bg || DEFAULTS.theme_sidebar_bg,
