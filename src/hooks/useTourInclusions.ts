@@ -111,9 +111,11 @@ export function useTourWebsiteDescription(tourId: string | undefined) {
 
   const save = useMutation({
     mutationFn: async (html: string) => {
-      const { error } = await supabase.from("tours").update({ website_description: html }).eq("id", tourId!);
+      const cleaned = normalizeWebsiteHtml(html);
+      const { error } = await supabase.from("tours").update({ website_description: cleaned }).eq("id", tourId!);
       if (error) throw error;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key });
       toast.success("Website description saved");
