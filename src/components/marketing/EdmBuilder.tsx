@@ -521,6 +521,13 @@ function BlockTree({
   onDuplicate,
   onRemove,
   onAddToCell,
+  onCopy,
+  onPasteAfter,
+  onCopyCell,
+  onPasteIntoCell,
+  onDuplicateCell,
+  clipLabel,
+
 }: {
   blocks: EdmBlock[];
   depth: number;
