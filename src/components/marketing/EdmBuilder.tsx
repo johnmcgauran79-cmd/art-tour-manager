@@ -276,17 +276,17 @@ export function EdmBuilder({
 
   const add = (type: EdmBlockType) => {
     const block = newBlock(type);
-    onBlocksChange(insertBlockAfter(blocks, block, selectedId));
+    commit(insertBlockAfter(blocks, block, selectedId));
     setSelectedId(block.id);
   };
 
   const addToCell = (cellId: string, type: EdmBlockType) => {
     const block = newBlock(type);
-    onBlocksChange(appendBlockToCell(blocks, cellId, block));
+    commit(appendBlockToCell(blocks, cellId, block));
     setSelectedId(block.id);
   };
 
-  const move = (id: string, dir: -1 | 1) => onBlocksChange(moveBlockById(blocks, id, dir));
+  const move = (id: string, dir: -1 | 1) => commit(moveBlockById(blocks, id, dir));
 
   const [clip, setClip] = useState<
     { kind: "block"; blocks: EdmBlock[]; label: string } | null
@@ -320,29 +320,47 @@ export function EdmBuilder({
       afterId = copy.id;
       lastId = copy.id;
     }
-    onBlocksChange(next);
+    commit(next);
     setSelectedId(lastId);
   };
 
   const pasteIntoCell = (cellId: string) => {
     if (!clip) return;
-    onBlocksChange(appendBlocksToCell(blocks, cellId, cloneBlocks(clip.blocks)));
+    commit(appendBlocksToCell(blocks, cellId, cloneBlocks(clip.blocks)));
   };
 
   const duplicateCell = (cellId: string) => {
     const res = duplicateCellById(blocks, cellId);
-    onBlocksChange(res.blocks);
+    commit(res.blocks);
+  };
+
+  /** Delete a whole column (and, in tables, that column in every row). */
+  const removeCell = (cellId: string) => {
+    commit(removeCellById(blocks, cellId));
+    setSelectedId(null);
+    toast({ title: "Column deleted", description: "Use Undo if that wasn't intended." });
+  };
+
+  /** Empty a column but keep the column itself. */
+  const clearCell = (cellId: string) => {
+    commit(clearCellById(blocks, cellId));
+    setSelectedId(null);
   };
 
   const duplicate = (id: string) => {
     const res = duplicateBlockById(blocks, id);
-    onBlocksChange(res.blocks);
+    commit(res.blocks);
     if (res.newId) setSelectedId(res.newId);
   };
 
   const remove = (id: string) => {
-    onBlocksChange(removeBlockById(blocks, id));
+    const b = findBlockById(blocks, id);
+    commit(removeBlockById(blocks, id));
     if (selectedId === id) setSelectedId(null);
+    toast({
+      title: `${b ? blockLabel[b.type] : "Block"} deleted`,
+      description: "Use Undo if that wasn't intended.",
+    });
   };
 
   /** Open (creating if needed) the template-level design settings block. */
@@ -353,14 +371,15 @@ export function EdmBuilder({
       return;
     }
     const block = newBlock("design");
-    onBlocksChange([block, ...blocks]);
+    commit([block, ...blocks]);
     setSelectedId(block.id);
   };
 
   const applyTemplate = (key: string) => {
     const tpl = edmStarterTemplates.find((t) => t.key === key);
     if (!tpl) return;
-    onBlocksChange(tpl.build());
+    commit(tpl.build());
+
     onModeChange("blocks");
     setSelectedId(null);
     toast({ title: `${tpl.name} layout applied` });
