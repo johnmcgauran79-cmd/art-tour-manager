@@ -92,8 +92,9 @@ scores. The score for each category appears when you expand the row.
   3. At least one contract file uploaded against the hotel.
   4. `rooms_reserved` > 0, and `rooms_booked` must not exceed it (oversold flags).
   5. `contact_name` and `contact_phone` both present.
-- Plus 1 checkpoint per booking: a hotel room is allocated (`hotel_bookings` row with a
-  hotel, ignoring cancelled allocations and rows marked not required).
+- Plus 1 checkpoint per booking that needs accommodation: a hotel room is allocated
+  (`hotel_bookings` row with a hotel, ignoring cancelled allocations and rows marked not
+  required). Bookings with `accommodation_required` off are skipped entirely.
 - A tour with no hotels at all is a single failed checkpoint.
 
 **Activities** — from `activities` and the `get_activity_allocation_discrepancies` RPC
@@ -103,9 +104,8 @@ scores. The score for each category appears when you expand the row.
   3. `spots_available` > 0 and `spots_booked` not exceeding it (oversold flags).
   4. Core details present: date, start time, location, supplier contact name + phone.
   5. `transport_status` in `booked`, `confirmed`, `paid_deposit`, `fully_paid`, `not_required`.
-- Plus one checkpoint per allocation discrepancy (passenger counts vs activity
-  allocations). Discrepancies already acknowledged in
-  `activity_discrepancy_acknowledgments` are listed as **Acknowledged** and don't score.
+- Passenger-level allocation gaps (who is or isn't attending each activity) are **not**
+  scored here — they are managed in the Activity Bookings review screen.
 
 **Tour setup** — 4 checkpoints from `tours`, `tour_itineraries`, `tour_attachments`
 1. `tour_host` assigned.
