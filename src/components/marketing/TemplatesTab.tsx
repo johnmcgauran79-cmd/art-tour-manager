@@ -297,6 +297,21 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
                   </Button>
                   <Button
                     size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() =>
+                      setPreview({
+                        name: t.name,
+                        subject: t.subject || t.name,
+                        html: htmlFor(t),
+                      })
+                    }
+                  >
+                    <Eye className="h-3.5 w-3.5" /> Preview
+                  </Button>
+
+                  <Button
+                    size="sm"
                     variant="ghost"
                     aria-label="Duplicate template"
                     onClick={() => duplicate(t)}
