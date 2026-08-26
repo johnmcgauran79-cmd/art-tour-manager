@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -6,17 +6,23 @@ import {
   Copy,
   CopyPlus,
   ClipboardPaste,
+  Eraser,
   Eye,
   EyeOff,
+  GripVertical,
   Maximize2,
   LayoutTemplate,
   Monitor,
+  MoreHorizontal,
   Plus,
+  Redo2,
   Smartphone,
   Palette,
   Trash2,
   Type,
+  Undo2,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
