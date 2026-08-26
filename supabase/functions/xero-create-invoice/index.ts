@@ -74,9 +74,14 @@ function buildPassengerDescription(booking: any, customer: any): string {
   return names.join(' & ');
 }
 
+function firstBedding(hotelBookings: any[]): string | null {
+  if (!hotelBookings || hotelBookings.length === 0) return null;
+  const row = hotelBookings.find((hb: any) => hb?.bedding);
+  return row?.bedding ? String(row.bedding) : null;
+}
+
 function getRoomType(hotelBookings: any[]): string {
-  if (!hotelBookings || hotelBookings.length === 0) return 'Standard';
-  const bedding = hotelBookings[0]?.bedding;
+  const bedding = firstBedding(hotelBookings);
   switch (bedding) {
     case 'single': return 'Single Room';
     case 'double': return 'Double Room';
@@ -88,10 +93,11 @@ function getRoomType(hotelBookings: any[]): string {
 
 // Bare bedding word for invoice descriptions: "Twin", "Single", "Double"...
 function getBeddingType(hotelBookings: any[]): string {
-  const bedding = hotelBookings?.[0]?.bedding;
+  const bedding = firstBedding(hotelBookings);
   if (!bedding) return 'Standard';
-  return String(bedding).charAt(0).toUpperCase() + String(bedding).slice(1);
+  return bedding.charAt(0).toUpperCase() + bedding.slice(1);
 }
+
 
 
 async function resolveXeroContact(
