@@ -546,6 +546,53 @@ export const duplicateCellById = (
   return { blocks: walk(blocks), newCellId };
 };
 
+/**
+ * Delete a whole column: removes the column from the container (cols - 1) and,
+ * for tables, removes the matching column of every row so the grid stays
+ * rectangular. Containers with a single column are removed entirely.
+ */
+export const removeCellById = (blocks: EdmBlock[], cellId: string): EdmBlock[] => {
+  const walk = (list: EdmBlock[]): EdmBlock[] =>
+    list.flatMap((b) => {
+      const cells = b.cells;
+      if (!cells) return [b];
+
+      const idx = cells.findIndex((c) => c.id === cellId);
+      if (idx >= 0) {
+        const cols = Math.max(1, b.cols || 1);
+        if (cols <= 1) return [];
+        const rows = Math.max(1, Math.ceil(cells.length / cols));
+        const colIndex = idx % cols;
+        const next: EdmCell[] = [];
+        for (let r = 0; r < rows; r++) {
+          cells.slice(r * cols, r * cols + cols).forEach((c, ci) => {
+            if (ci !== colIndex) next.push(c);
+          });
+        }
+        return [{ ...b, cols: cols - 1, cells: next }];
+      }
+
+      return [{ ...b, cells: cells.map((c) => ({ ...c, blocks: walk(c.blocks) })) }];
+    });
+
+  return walk(blocks);
+};
+
+/** Remove every block inside a column, keeping the column itself. */
+export const clearCellById = (blocks: EdmBlock[], cellId: string): EdmBlock[] => {
+  const walk = (list: EdmBlock[]): EdmBlock[] =>
+    list.map((b) => {
+      if (!b.cells) return b;
+      return {
+        ...b,
+        cells: b.cells.map((c) =>
+          c.id === cellId ? { ...c, blocks: [] } : { ...c, blocks: walk(c.blocks) }
+        ),
+      };
+    });
+  return walk(blocks);
+};
+
 /** Resize a container's cell grid, preserving existing cell content. */
 export const resizeCells = (b: EdmBlock, cols: number, rows: number): EdmBlock => {
   const oldCols = b.cols || 1;
