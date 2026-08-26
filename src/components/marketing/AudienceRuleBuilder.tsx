@@ -34,7 +34,10 @@ export interface RuleBuilderOptions {
   tags: { id: string; name: string }[];
   tours: { id: string; name: string }[];
   leadSources: string[];
+  /** live consented-contact counts per state code, shown beside each option */
+  stateCounts?: Record<string, number>;
 }
+
 
 interface Props {
   value: AudienceGroup;
