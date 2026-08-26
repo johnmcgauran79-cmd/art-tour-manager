@@ -22,7 +22,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { TourCommsSettingsInline, CommsOverride } from "@/components/tours/TourCommsSettingsInline";
 import { useTourEmailOverrides, useUpsertTourEmailOverride, useDeleteTourEmailOverride } from "@/hooks/useTourEmailOverrides";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
-import { renderInstalmentDetails, DEFAULT_INSTALMENT_TEMPLATE } from "@/lib/instalmentDetailsTemplate";
+import { resolveInstalmentDetails, DEFAULT_INSTALMENT_TEMPLATE, DEFAULT_NO_INSTALMENT_TEMPLATE } from "@/lib/instalmentDetailsTemplate";
 import { TourEditWordpressSyncPrompt } from "@/components/tours/TourEditWordpressSyncPrompt";
 
 export default function TourEdit() {
