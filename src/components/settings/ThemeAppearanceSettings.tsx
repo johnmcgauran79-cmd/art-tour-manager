@@ -140,33 +140,8 @@ export const ThemeAppearanceSettings = () => {
           </div>
         </div>
 
-        {/* Email Colors */}
-        <div className="space-y-4 border-t pt-4">
-          <h4 className="text-sm font-semibold text-foreground">Email Branding</h4>
-          <div className="space-y-4">
-            <ColorField
-              label="Email Button Color"
-              description="CTA button background in outgoing emails"
-              settingKey="theme_email_button_color"
-              value={localColors.theme_email_button_color || DEFAULTS.theme_email_button_color}
-              onChange={handleColorChange}
-            />
-            <ColorField
-              label="Email Button Text"
-              description="CTA button text colour in outgoing emails"
-              settingKey="theme_email_button_text"
-              value={localColors.theme_email_button_text || DEFAULTS.theme_email_button_text}
-              onChange={handleColorChange}
-            />
-            <ColorField
-              label="Email Accent"
-              description="Highlight/accent colour used in email templates"
-              settingKey="theme_email_accent_color"
-              value={localColors.theme_email_accent_color || DEFAULTS.theme_email_accent_color}
-              onChange={handleColorChange}
-            />
-          </div>
-        </div>
+
+
 
         {/* Preview */}
         <div className="border rounded-lg p-4 space-y-3">
