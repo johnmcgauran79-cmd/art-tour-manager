@@ -101,6 +101,8 @@ export interface TourHealth {
   byCheck: Record<string, number>;
   /** 0-100 readiness per category (only categories that applied). */
   categoryScores: Partial<Record<DataHealthCheckId, number>>;
+  /** Tour is run by an outside DMC — supplier-level checks are relaxed. */
+  dmcManaged?: boolean;
 }
 
 export interface DataHealthResult {
@@ -165,7 +167,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       let tourQuery = supabase
         .from("tours")
         .select(
-          "id, name, start_date, end_date, status, capacity, tour_host, travel_documents_required, pickup_location_required, is_test_tour"
+          "id, name, start_date, end_date, status, capacity, tour_host, travel_documents_required, pickup_location_required, is_test_tour, managed_by_dmc"
         )
         .gte("start_date", today)
         .order("start_date", { ascending: true });
@@ -387,11 +389,24 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           items.push(item);
         };
 
+        // Tours run by an outside DMC: supplier relationships (contracts, payment,
+        // supplier contacts, transport) are handled by the DMC, so readiness only
+        // scores the details we actually hold — booking/guest data plus capacity.
+        const dmcManaged = !!tour.managed_by_dmc;
+
         // ================= OPS: HOTELS =====================================
         const hotels = hotelsByTour.get(tour.id) || [];
         if (hotels.length === 0) {
           track("hotel", 1);
           flag("hotel", tour.name, "No hotels set up for this tour");
+        } else if (dmcManaged) {
+          // Only the room block sanity check applies — the DMC owns the contract.
+          track("hotel", hotels.length);
+          hotels.forEach((h: any) => {
+            if (h.rooms_reserved && (h.rooms_booked || 0) > h.rooms_reserved) {
+              flag("hotel", h.name, `Oversold: ${h.rooms_booked} rooms booked against ${h.rooms_reserved} reserved`);
+            }
+          });
         } else {
           // 5 checkpoints per hotel: status, terms, contract file, room block, contact
           track("hotel", hotels.length * 5);
@@ -418,7 +433,18 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
 
         // ================= OPS: ACTIVITIES =================================
         const activities = activitiesByTour.get(tour.id) || [];
-        if (activities.length > 0) {
+        if (activities.length > 0 && dmcManaged) {
+          // Guest-facing detail only: the DMC handles supplier booking, payment and transport.
+          track("activities", activities.length);
+          activities.forEach((a: any) => {
+            const missing: string[] = [];
+            if (blank(a.activity_date)) missing.push("date");
+            if (blank(a.location)) missing.push("location");
+            if (missing.length) {
+              flag("activities", a.name, `Missing ${missing.join(", ")}`);
+            }
+          });
+        } else if (activities.length > 0) {
           // 5 checkpoints per activity: booking status, payment, capacity, core details, transport
           track("activities", activities.length * 5);
           activities.forEach((a: any) => {
@@ -446,6 +472,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
             }
           });
         }
+
 
         // Passenger-level activity allocation gaps are tracked in the Activity Bookings
         // review screen, not in tour readiness.
@@ -587,6 +614,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           acknowledged,
           byCheck,
           categoryScores,
+          dmcManaged,
         };
       });
 

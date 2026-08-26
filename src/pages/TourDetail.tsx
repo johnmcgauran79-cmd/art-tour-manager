@@ -300,6 +300,11 @@ export default function TourDetail() {
                   Dates Not Confirmed
                 </span>
               )}
+              {(tour as any).managed_by_dmc && (
+                <span className="inline-flex items-center rounded-md bg-muted text-muted-foreground border px-2 py-0.5 text-xs font-medium">
+                  DMC{(tour as any).dmc_name ? `: ${(tour as any).dmc_name}` : " managed"}
+                </span>
+              )}
             </div>
           </div>
           

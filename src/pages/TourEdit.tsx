@@ -56,6 +56,11 @@ export default function TourEdit() {
     end_date: "",
     location: "",
     dates_not_confirmed: false,
+    managed_by_dmc: false,
+    dmc_name: "",
+    dmc_contact_name: "",
+    dmc_contact_email: "",
+    dmc_contact_phone: "",
     pickup_point: "",
     status: "pending",
     notes: "",
@@ -127,7 +132,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed, managed_by_dmc, dmc_name, dmc_contact_name, dmc_contact_email, dmc_contact_phone')
           .eq('id', id)
           .single();
         
@@ -140,6 +145,11 @@ export default function TourEdit() {
             location: tour.location,
             pickup_point: tour.pickup_point,
             dates_not_confirmed: (data as any).dates_not_confirmed || false,
+            managed_by_dmc: (data as any).managed_by_dmc || false,
+            dmc_name: (data as any).dmc_name || "",
+            dmc_contact_name: (data as any).dmc_contact_name || "",
+            dmc_contact_email: (data as any).dmc_contact_email || "",
+            dmc_contact_phone: (data as any).dmc_contact_phone || "",
             status: tour.status,
             notes: tour.notes,
             inclusions: tour.inclusions,
@@ -211,6 +221,11 @@ export default function TourEdit() {
       location: formData.location || null,
       pickup_point: formData.pickup_point || null,
       dates_not_confirmed: formData.dates_not_confirmed,
+      managed_by_dmc: formData.managed_by_dmc,
+      dmc_name: formData.managed_by_dmc ? formData.dmc_name || null : null,
+      dmc_contact_name: formData.managed_by_dmc ? formData.dmc_contact_name || null : null,
+      dmc_contact_email: formData.managed_by_dmc ? formData.dmc_contact_email || null : null,
+      dmc_contact_phone: formData.managed_by_dmc ? formData.dmc_contact_phone || null : null,
       status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past' | 'cancelled',
       notes: formData.notes || null,
       inclusions: formData.inclusions || null,
@@ -636,6 +651,68 @@ export default function TourEdit() {
               }
             />
           </div>
+
+          <div className="md:col-span-2 space-y-4 rounded-lg border border-dashed p-4 bg-muted/30">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="managed_by_dmc" className="text-base font-medium cursor-pointer">
+                  Managed by DMC
+                </Label>
+                <p className="text-xs text-muted-foreground max-w-2xl">
+                  Turn on when a destination management company handles suppliers (hotels, activities and
+                  transport). Tour Readiness will then skip supplier-level details and score booking data only.
+                </p>
+              </div>
+              <Switch
+                id="managed_by_dmc"
+                checked={formData.managed_by_dmc}
+                onCheckedChange={(checked) =>
+                  setFormData(prev => ({ ...prev, managed_by_dmc: checked }))
+                }
+              />
+            </div>
+
+            {formData.managed_by_dmc && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_name">DMC Name</Label>
+                  <Input
+                    id="dmc_name"
+                    value={formData.dmc_name}
+                    onChange={(e) => handleInputChange("dmc_name", e.target.value)}
+                    placeholder="e.g., Adventure Korea"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_contact_name">DMC Contact Name</Label>
+                  <Input
+                    id="dmc_contact_name"
+                    value={formData.dmc_contact_name}
+                    onChange={(e) => handleInputChange("dmc_contact_name", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_contact_email">DMC Contact Email</Label>
+                  <Input
+                    id="dmc_contact_email"
+                    type="email"
+                    value={formData.dmc_contact_email}
+                    onChange={(e) => handleInputChange("dmc_contact_email", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_contact_phone">DMC Contact Phone</Label>
+                  <Input
+                    id="dmc_contact_phone"
+                    value={formData.dmc_contact_phone}
+                    onChange={(e) => handleInputChange("dmc_contact_phone", e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+
 
           <div className="space-y-2">
             <Label htmlFor="capacity">Max Capacity</Label>
