@@ -354,8 +354,11 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
                     className="gap-1.5"
                     onClick={() => {
                       setEditing(t);
+                      lastSavedRef.current = JSON.stringify(payloadFor(t));
+                      setSavedAt(null);
                       setOpen(true);
                     }}
+
                   >
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </Button>
