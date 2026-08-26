@@ -36,6 +36,8 @@ import {
   type AudienceNode,
 } from "@/lib/edm/audienceRules";
 import { AudienceRuleBuilder } from "./AudienceRuleBuilder";
+import { useContactStateCounts } from "@/hooks/useBrevoAudienceSync";
+
 import { useTags } from "@/hooks/useTags";
 import { useTours } from "@/hooks/useTours";
 
@@ -103,9 +105,11 @@ export function AudiencesTab() {
       tags: allTags.map((t) => ({ id: t.id, name: t.name })),
       tours: (tours as any[]).map((t) => ({ id: t.id, name: t.name })),
       leadSources,
+      stateCounts,
     }),
-    [allTags, tours, leadSources]
+    [allTags, tours, leadSources, stateCounts]
   );
+
 
   useEffect(() => {
     if (!open) return;
