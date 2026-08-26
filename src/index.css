@@ -334,6 +334,18 @@
   }
 }
 
+/* ART brand rules: Larken headings are never uppercase and rarely bold */
+h1, h2, h3, h4, h5, h6, .font-display {
+  text-transform: none !important;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+thead tr th {
+  font-weight: 500;
+}
+
+
+
 /* Protect email template section headers and hotel cards from prose/global overrides */
 .prose .email-section-header td,
 .prose .email-section-header strong {
