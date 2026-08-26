@@ -29,6 +29,11 @@ export interface Tour {
   final_payment_date: string | null;
   travel_documents_required: boolean;
   dates_not_confirmed: boolean;
+  managed_by_dmc: boolean;
+  dmc_name: string | null;
+  dmc_contact_name: string | null;
+  dmc_contact_email: string | null;
+  dmc_contact_phone: string | null;
   capacity: number | null;
   minimum_passengers_required: number | null;
   tour_host: string;
