@@ -281,7 +281,179 @@ Deno.serve(async (req) => {
       });
     }
 
+    // -- Audience alignment: Brevo lists -> ART tags, states, consent -------
+    // `audience_lists` returns every Brevo list plus the ART tag it maps to.
+    if (action === "audience_lists") {
+      const lists: any[] = [];
+      for (let offset = 0; ; offset += 50) {
+        const res = await brevoRequest(`contacts/lists?limit=50&offset=${offset}`);
+        const page = res?.lists ?? [];
+        lists.push(...page);
+        if (page.length < 50) break;
+        await sleep(120);
+      }
+
+      const { data: tags } = await supabase
+        .from("tags")
+        .select("id, name, brevo_list_id")
+        .not("brevo_list_id", "is", null);
+      const byList = new Map<number, any>((tags ?? []).map((t: any) => [t.brevo_list_id, t]));
+
+      return json({
+        lists: lists
+          .map((l: any) => ({
+            id: l.id,
+            name: l.name,
+            folderId: l.folderId,
+            subscribers: l.uniqueSubscribers ?? 0,
+            tagId: byList.get(l.id)?.id ?? null,
+            tagName: byList.get(l.id)?.name ?? null,
+          }))
+          .sort((a, b) => b.subscribers - a.subscribers),
+      });
+    }
+
+    // Sync one page of one Brevo list. Preview mode writes nothing.
+    if (action === "audience_sync_list") {
+      const listId = Number(body?.listId);
+      if (!listId) return json({ error: "listId is required" }, 400);
+      const listName = String(body?.listName ?? `Brevo list ${listId}`).trim();
+      const limit = Math.min(Math.max(Number(body?.limit) || 250, 1), 500);
+      const offset = Math.max(Number(body?.offset) || 0, 0);
+      const apply = body?.apply === true;
+
+      const res = await brevoRequest(
+        `contacts/lists/${listId}/contacts?limit=${limit}&offset=${offset}`,
+      );
+      const contacts: any[] = res?.contacts ?? [];
+
+      // Resolve (or create) the ART tag for this list.
+      let tagId: string | null = null;
+      const { data: existingTag } = await supabase
+        .from("tags")
+        .select("id")
+        .eq("brevo_list_id", listId)
+        .maybeSingle();
+      if (existingTag) {
+        tagId = existingTag.id;
+      } else if (apply) {
+        const { data: byName } = await supabase
+          .from("tags")
+          .select("id")
+          .ilike("name", listName)
+          .maybeSingle();
+        if (byName) {
+          await supabase.from("tags").update({ brevo_list_id: listId }).eq("id", byName.id);
+          tagId = byName.id;
+        } else {
+          const { data: created, error: tagErr } = await supabase
+            .from("tags")
+            .insert({
+              name: listName,
+              slug: listName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+              category: "Audience",
+              brevo_list_id: listId,
+            })
+            .select("id")
+            .single();
+          if (tagErr) throw tagErr;
+          tagId = created.id;
+        }
+      }
+
+      const emails = contacts
+        .map((c: any) => String(c?.email ?? "").trim().toLowerCase())
+        .filter(Boolean);
+
+      const { data: matches, error: matchErr } = await supabase
+        .from("customers")
+        .select("id, email, state, brevo_contact_id, marketing_consent")
+        .in("email", emails);
+      if (matchErr) throw matchErr;
+      const byEmail = new Map<string, any>(
+        (matches ?? []).map((m: any) => [String(m.email).trim().toLowerCase(), m]),
+      );
+
+      let matched = 0;
+      let unmatched = 0;
+      let tagged = 0;
+      let statesFilled = 0;
+      let consentOff = 0;
+      let linked = 0;
+      const unmatchedSample: string[] = [];
+
+      for (const c of contacts) {
+        const email = String(c?.email ?? "").trim().toLowerCase();
+        if (!email) continue;
+        const cust = byEmail.get(email);
+        if (!cust) {
+          unmatched += 1;
+          if (unmatchedSample.length < 25) unmatchedSample.push(email);
+          continue;
+        }
+        matched += 1;
+
+        const attrs = c?.attributes ?? {};
+        const blocked = c?.emailBlacklisted === true || c?.smsBlacklisted === true;
+        const updates: Record<string, unknown> = {};
+
+        if (!cust.state) {
+          const code = normaliseStateCode(
+            attrs.STATE ?? attrs.state ?? attrs.CITY ?? attrs.COUNTRY ?? null,
+          );
+          if (code) {
+            updates.state = code;
+            statesFilled += 1;
+          }
+        }
+        if (blocked && cust.marketing_consent !== false) {
+          updates.marketing_consent = false;
+          updates.marketing_consent_source = "brevo_unsubscribed";
+          consentOff += 1;
+        }
+        if (!cust.brevo_contact_id && c?.id) {
+          updates.brevo_contact_id = String(c.id);
+          linked += 1;
+        }
+
+        if (tagId) tagged += 1;
+
+        if (apply) {
+          if (Object.keys(updates).length) {
+            updates.brevo_synced_at = new Date().toISOString();
+            await supabase.from("customers").update(updates).eq("id", cust.id);
+          }
+          if (tagId) {
+            await supabase
+              .from("contact_tags")
+              .upsert(
+                { customer_id: cust.id, tag_id: tagId },
+                { onConflict: "customer_id,tag_id", ignoreDuplicates: true },
+              );
+          }
+        }
+      }
+
+      return json({
+        listId,
+        listName,
+        apply,
+        tagId,
+        processed: contacts.length,
+        matched,
+        unmatched,
+        unmatchedSample,
+        tagged,
+        statesFilled,
+        consentOff,
+        linked,
+        hasMore: contacts.length === limit,
+        nextOffset: offset + contacts.length,
+      });
+    }
+
     return json({ error: `Unknown action: ${action}` }, 400);
+
 
   } catch (err: any) {
     const message = err?.message ?? String(err);
