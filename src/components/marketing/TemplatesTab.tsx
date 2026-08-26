@@ -4,6 +4,7 @@ import {
   Archive,
   ArchiveRestore,
   Copy,
+  Eye,
   Layers,
   Loader2,
   Pencil,
@@ -486,7 +487,13 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       </Dialog>
 
       {/* Send test email */}
-      <Dialog open={testOpen} onOpenChange={setTestOpen}>
+      <Dialog
+        open={testOpen}
+        onOpenChange={(o) => {
+          setTestOpen(o);
+          if (!o) document.body.style.pointerEvents = "";
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Send test email</DialogTitle>
