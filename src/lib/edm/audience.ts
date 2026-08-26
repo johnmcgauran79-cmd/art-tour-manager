@@ -179,7 +179,7 @@ export const describeFilters = (
   return parts.length ? parts.join(" · ") : "All consented contacts";
 };
 
-export const AU_STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
+export { AU_STATE_CODES as AU_STATES } from "@/lib/auStates";
 
 export const LEAD_STAGES = [
   { value: "new", label: "New" },
