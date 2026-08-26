@@ -43,6 +43,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
   const [fromEmailInternal, setFromEmailInternal] = useState('');
   const [tokenExpiry, setTokenExpiry] = useState(168);
   const [instalmentTemplate, setInstalmentTemplate] = useState(DEFAULT_INSTALMENT_TEMPLATE);
+  const [noInstalmentTemplate, setNoInstalmentTemplate] = useState(DEFAULT_NO_INSTALMENT_TEMPLATE);
 
   useEffect(() => {
     if (settings) {
