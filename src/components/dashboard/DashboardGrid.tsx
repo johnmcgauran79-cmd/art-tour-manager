@@ -152,6 +152,9 @@ export const DashboardGrid = () => {
   }, [visibleWidgets, layout]);
 
   const persist = async (nextLayout: LayoutItem[], nextHidden: string[]) => {
+    // Don't write anything until we've loaded the user's saved layout,
+    // otherwise defaults would overwrite their setup.
+    if (!hydrated.current) return;
     try {
       await save({ layout: stampLayout(nextLayout), hidden_widgets: nextHidden });
     } catch (e: any) {
@@ -175,6 +178,16 @@ export const DashboardGrid = () => {
     dirty.current = true;
   };
 
+  // Autosave while editing so a layout is never lost by forgetting "Done".
+  useEffect(() => {
+    if (!editMode || !dirty.current) return;
+    const t = setTimeout(() => {
+      void persist(layout, hidden);
+      dirty.current = false;
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [layout, hidden, editMode]);
+
   const handleDoneEditing = async () => {
     if (dirty.current) {
       await persist(layout, hidden);
@@ -182,6 +195,7 @@ export const DashboardGrid = () => {
     }
     setEditMode(false);
   };
+
 
   const toggleWidget = async (id: string, checked: boolean) => {
     const next = checked ? hidden.filter((h) => h !== id) : [...hidden, id];
