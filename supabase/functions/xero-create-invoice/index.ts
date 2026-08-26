@@ -170,6 +170,7 @@ async function buildLineItems(
 ): Promise<any[]> {
   const passengerNames = descriptionOverride || buildPassengerDescription(booking, customer);
   const roomType = getRoomType(booking.hotel_bookings as any[]);
+  const beddingType = getBeddingType(booking.hotel_bookings as any[]);
 
   // Fetch configurable line templates from database
   const { data: lineTemplates } = await supabase
@@ -199,7 +200,8 @@ async function buildLineItems(
         const descText = t.description_template
           .replace('{{tour_name}}', tour.name || '')
           .replace('{{passenger_names}}', passengerNames)
-          .replace('{{room_type}}', roomType);
+          .replace('{{room_type}}', roomType)
+          .replace('{{bedding_type}}', beddingType);
         lineItems.push({ Description: descText, Quantity: 1, UnitAmount: 0 });
         break;
       }
