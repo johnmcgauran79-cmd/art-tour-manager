@@ -259,8 +259,14 @@ Deno.serve(async (req) => {
     for (const r of recipients || []) {
       if (!r.email) continue;
 
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+      const html = `<!DOCTYPE html><html><head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family: 'Poppins', Arial, Helvetica, sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
 <tr><td align="center">
 <table cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">

@@ -126,8 +126,14 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
         ${t.names.map(n => `<li style="padding:4px 0;font-size:14px">${n}</li>`).join('')}
       </ul>
     `).join('<hr style="margin:24px 0"/>');
-    w.document.write(`<!doctype html><html><head><title>Name Tag Generator</title>
-      <style>body{font-family:Arial,sans-serif;margin:24px}h1{color:#1a365d;border-bottom:2px solid #1a365d;padding-bottom:8px}h2{color:#1a365d;margin-top:24px}</style>
+    w.document.write(`<!doctype html><html><head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style><title>Name Tag Generator</title>
+      <style>body{font-family: 'Poppins', Arial, Helvetica, sans-serif;margin:24px}h1{color:#1a365d;border-bottom:2px solid #1a365d;padding-bottom:8px}h2{color:#1a365d;margin-top:24px}</style>
       </head><body><h1>Name Tag Generator</h1>${sections}</body></html>`);
     w.document.close();
     setTimeout(() => w.print(), 300);

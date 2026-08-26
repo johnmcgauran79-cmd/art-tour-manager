@@ -78,10 +78,16 @@ export const generateTourAttendeesHTML = (attendees: string[], tourName: string)
     <!DOCTYPE html>
     <html>
     <head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style>
       <meta charset="UTF-8">
       <title>Tour Attendees - ${tourName}</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; color: #333; }
+        body { font-family: 'Poppins', Arial, Helvetica, sans-serif; margin: 0; padding: 0; color: #333; }
         .branded-header { background-color: #232628; padding: 24px 32px; text-align: center; }
         .branded-header img { height: 50px; max-width: 200px; width: auto; display: inline-block; }
         .title-section { padding: 24px 32px; text-align: center; }

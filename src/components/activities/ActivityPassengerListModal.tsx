@@ -30,7 +30,7 @@ export const ActivityPassengerListModal = ({
     const total = passengers?.reduce((sum, p) => sum + p.passengers_attending, 0) || 0;
     return `
       <style>
-        .att-doc { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; }
+        .att-doc { font-family: 'Poppins', Arial, Helvetica, sans-serif; color: #1a1a1a; }
         .att-doc h1 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 8px; font-size: 20px; margin: 0 0 8px; }
         .att-doc h2 { color: #2d3748; font-size: 14px; font-weight: normal; margin: 0 0 12px; }
         .att-doc .summary { background-color: #eef4fb; padding: 10px 12px; border-radius: 4px; margin: 12px 0; font-size: 12px; }
@@ -128,9 +128,15 @@ export const ActivityPassengerListModal = ({
       <!DOCTYPE html>
       <html>
         <head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style>
           <title>Activity Passenger List - ${activityName}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
+            body { font-family: 'Poppins', Arial, Helvetica, sans-serif; margin: 20px; }
             h1 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 10px; }
             h2 { color: #2d3748; margin-top: 20px; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }

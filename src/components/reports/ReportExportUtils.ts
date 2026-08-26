@@ -194,9 +194,15 @@ export const printReport = (report: ReportItem, tourName: string) => {
     printWindow.document.write(`
       <html>
         <head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style>
           <title>${report.title} - ${tourName}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
+            body { font-family: 'Poppins', Arial, Helvetica, sans-serif; margin: 20px; }
             h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
             table { width: 100%; border-collapse: collapse; margin-top: 15px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -377,7 +383,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
       <title>${title}</title>
       <style>
         body {
-          font-family: Arial, sans-serif;
+          font-family: 'Poppins', Arial, Helvetica, sans-serif;
           margin: 40px;
           color: #333;
         }

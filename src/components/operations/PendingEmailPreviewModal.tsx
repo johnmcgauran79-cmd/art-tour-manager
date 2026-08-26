@@ -196,7 +196,7 @@ export const PendingEmailPreviewModal = ({
             <div className="border rounded-lg p-6 bg-background email-preview-body">
               <style>{`
                 .email-preview-body {
-                  font-family: Arial, Helvetica, sans-serif;
+                  font-family: 'Poppins', Arial, Helvetica, sans-serif;
                   font-size: 14px;
                   line-height: 1.6;
                   color: #55575d;

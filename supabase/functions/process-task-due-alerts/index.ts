@@ -110,7 +110,7 @@ function alertHtml(
       : hoursBefore
       ? `This task is due in ${Math.round(hoursBefore / 24)} day${Math.round(hoursBefore / 24) === 1 ? "" : "s"}`
       : "Task reminder";
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f5;font-family: 'Poppins', Arial, Helvetica, sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px;"><tr><td align="center">
 <table cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background:#fff;border-radius:8px;overflow:hidden;">
 <tr><td style="background:#232628;padding:20px;text-align:center;"><img src="${headerImg}" alt="" style="height:50px;max-width:300px;" /></td></tr>
