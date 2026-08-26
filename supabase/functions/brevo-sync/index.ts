@@ -16,6 +16,16 @@ import {
 } from "../_shared/crmMigration.ts";
 import { normaliseStateCode } from "../_shared/auStates.ts";
 
+const errorStatusFromMessage = (message: string) => {
+  const match = message.match(/\[(\d{3})\]/);
+  const status = match ? Number(match[1]) : 500;
+  return status >= 400 && status < 600 ? status : 500;
+};
+
+const tagSlug = (name: string, listId: number) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") ||
+  `brevo-list-${listId}`;
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -320,9 +330,10 @@ Deno.serve(async (req) => {
       const listId = Number(body?.listId);
       if (!listId) return json({ error: "listId is required" }, 400);
       const listName = String(body?.listName ?? `Brevo list ${listId}`).trim();
-      const limit = Math.min(Math.max(Number(body?.limit) || 250, 1), 500);
+      const limit = Math.min(Math.max(Number(body?.limit) || 50, 1), 50);
       const offset = Math.max(Number(body?.offset) || 0, 0);
       const apply = body?.apply === true;
+      const slug = tagSlug(listName, listId);
 
       const res = await brevoRequest(
         `contacts/lists/${listId}/contacts?limit=${limit}&offset=${offset}`,
@@ -331,28 +342,34 @@ Deno.serve(async (req) => {
 
       // Resolve (or create) the ART tag for this list.
       let tagId: string | null = null;
-      const { data: existingTag } = await supabase
+      const { data: existingTag, error: existingTagErr } = await supabase
         .from("tags")
         .select("id")
         .eq("brevo_list_id", listId)
         .maybeSingle();
+      if (existingTagErr) throw existingTagErr;
       if (existingTag) {
         tagId = existingTag.id;
       } else if (apply) {
-        const { data: byName } = await supabase
+        const { data: byName, error: byNameErr } = await supabase
           .from("tags")
           .select("id")
           .ilike("name", listName)
           .maybeSingle();
+        if (byNameErr) throw byNameErr;
         if (byName) {
-          await supabase.from("tags").update({ brevo_list_id: listId }).eq("id", byName.id);
+          const { error: tagLinkErr } = await supabase
+            .from("tags")
+            .update({ brevo_list_id: listId })
+            .eq("id", byName.id);
+          if (tagLinkErr) throw tagLinkErr;
           tagId = byName.id;
         } else {
           const { data: created, error: tagErr } = await supabase
             .from("tags")
             .insert({
               name: listName,
-              slug: listName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+              slug,
               category: "Audience",
               brevo_list_id: listId,
             })
@@ -366,6 +383,25 @@ Deno.serve(async (req) => {
       const emails = contacts
         .map((c: any) => String(c?.email ?? "").trim().toLowerCase())
         .filter(Boolean);
+
+      if (emails.length === 0) {
+        return json({
+          listId,
+          listName,
+          apply,
+          tagId,
+          processed: contacts.length,
+          matched: 0,
+          unmatched: 0,
+          unmatchedSample: [],
+          tagged: 0,
+          statesFilled: 0,
+          consentOff: 0,
+          linked: 0,
+          hasMore: contacts.length === limit,
+          nextOffset: offset + contacts.length,
+        });
+      }
 
       const { data: matches, error: matchErr } = await supabase
         .from("customers")
@@ -383,6 +419,8 @@ Deno.serve(async (req) => {
       let consentOff = 0;
       let linked = 0;
       const unmatchedSample: string[] = [];
+      const tagRows: Array<{ customer_id: string; tag_id: string }> = [];
+      const queuedTagRows = new Set<string>();
 
       for (const c of contacts) {
         const email = String(c?.email ?? "").trim().toLowerCase();
@@ -418,22 +456,29 @@ Deno.serve(async (req) => {
           linked += 1;
         }
 
-        if (tagId) tagged += 1;
+        if (tagId && !queuedTagRows.has(cust.id)) {
+          tagged += 1;
+          queuedTagRows.add(cust.id);
+          if (apply) tagRows.push({ customer_id: cust.id, tag_id: tagId });
+        }
 
         if (apply) {
           if (Object.keys(updates).length) {
             updates.brevo_synced_at = new Date().toISOString();
-            await supabase.from("customers").update(updates).eq("id", cust.id);
-          }
-          if (tagId) {
-            await supabase
-              .from("contact_tags")
-              .upsert(
-                { customer_id: cust.id, tag_id: tagId },
-                { onConflict: "customer_id,tag_id", ignoreDuplicates: true },
-              );
+            const { error: updateErr } = await supabase
+              .from("customers")
+              .update(updates)
+              .eq("id", cust.id);
+            if (updateErr) throw updateErr;
           }
         }
+      }
+
+      if (apply && tagRows.length > 0) {
+        const { error: contactTagsErr } = await supabase
+          .from("contact_tags")
+          .upsert(tagRows, { onConflict: "customer_id,tag_id", ignoreDuplicates: true });
+        if (contactTagsErr) throw contactTagsErr;
       }
 
       return json({
@@ -460,6 +505,6 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     const message = err?.message ?? String(err);
     console.error("brevo-sync error:", message);
-    return json({ error: message }, 500);
+    return json({ error: message }, errorStatusFromMessage(message));
   }
 });

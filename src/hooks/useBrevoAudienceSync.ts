@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -40,7 +41,21 @@ const emptyTotals = (): SyncTotals => ({
 
 const invoke = async (body: Record<string, unknown>) => {
   const { data, error } = await supabase.functions.invoke("brevo-sync", { body });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const details = await error.context.text().catch(() => "");
+      if (details) {
+        try {
+          const parsed = JSON.parse(details);
+          throw new Error(parsed?.error ?? parsed?.message ?? details);
+        } catch (parseError) {
+          if (parseError instanceof Error && parseError.message !== details) throw parseError;
+          throw new Error(details);
+        }
+      }
+    }
+    throw new Error(error.message);
+  }
   if ((data as any)?.error) throw new Error((data as any).error);
   return data as any;
 };
@@ -92,7 +107,7 @@ export const useBrevoAudienceSync = () => {
               listId: list.id,
               listName: list.name,
               offset,
-              limit: 250,
+              limit: 50,
               apply,
             });
             totals.processed += res.processed ?? 0;
