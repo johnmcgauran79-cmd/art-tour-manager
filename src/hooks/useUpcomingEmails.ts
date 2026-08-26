@@ -167,9 +167,14 @@ export const useUpcomingEmails = (options: Options = {}) => {
           supabase
             .from("automated_email_rules")
             .select(
-              `id, rule_name, days_before_tour, is_active, email_templates:email_templates(name)`
+              `id, rule_name, days_before_tour, is_active, trigger_type, email_templates:email_templates(name)`
             )
-            .eq("is_active", true),
+            .eq("is_active", true)
+            // Only date-based rules can be forecast. Event-driven rules
+            // (e.g. booking confirmations on status change) have no due date
+            // until the triggering event happens.
+            .eq("trigger_type", "days_before_tour"),
+
           (() => {
             let tq = supabase
               .from("tours")
