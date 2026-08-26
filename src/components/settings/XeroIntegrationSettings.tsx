@@ -260,6 +260,36 @@ export const XeroIntegrationSettings = () => {
     }
   };
 
+  const handleSyncStates = async () => {
+    setIsSyncing(true);
+    setSyncingType('states');
+    try {
+      const response = await fetch(
+        `https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/sync-xero-states`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'preview' }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Preview failed');
+
+      setStateProposals(result.proposals || []);
+      setStateTotalChecked(result.total_checked || 0);
+      setShowStateReviewModal(true);
+    } catch (error: any) {
+      console.error('Error previewing states:', error);
+      toast({ title: "Preview Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSyncing(false);
+      setSyncingType(null);
+    }
+  };
+
+
+
   if (isLoading) {
     return <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading Xero settings...</div>;
   }
