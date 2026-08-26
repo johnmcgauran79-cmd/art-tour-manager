@@ -4,6 +4,8 @@ import {
   ArrowUp,
   Code2,
   Copy,
+  CopyPlus,
+  ClipboardPaste,
   Eye,
   EyeOff,
   Maximize2,
@@ -48,6 +50,11 @@ import {
   appendBlockToCell,
   blockLabel,
   duplicateBlockById,
+  duplicateCellById,
+  appendBlocksToCell,
+  cloneBlock,
+  cloneBlocks,
+  findCellById,
   findBlockById,
   insertBlockAfter,
   isContainer,
@@ -183,6 +190,52 @@ export function EdmBuilder({
   };
 
   const move = (id: string, dir: -1 | 1) => onBlocksChange(moveBlockById(blocks, id, dir));
+
+  const [clip, setClip] = useState<
+    { kind: "block"; blocks: EdmBlock[]; label: string } | null
+  >(null);
+
+  const copyBlock = (id: string) => {
+    const b = findBlockById(blocks, id);
+    if (!b) return;
+    setClip({ kind: "block", blocks: [b], label: blockLabel[b.type] });
+    toast({ title: `Copied ${blockLabel[b.type]}`, description: "Paste it anywhere in this email." });
+  };
+
+  const copyCell = (cellId: string) => {
+    const hit = findCellById(blocks, cellId);
+    if (!hit) return;
+    setClip({ kind: "block", blocks: hit.cell.blocks, label: "column contents" });
+    toast({
+      title: "Copied column contents",
+      description: `${hit.cell.blocks.length} block(s) copied.`,
+    });
+  };
+
+  const pasteAfter = (id: string) => {
+    if (!clip) return;
+    let next = blocks;
+    let afterId = id;
+    let lastId = id;
+    for (const b of clip.blocks) {
+      const copy = cloneBlock(b);
+      next = insertBlockAfter(next, copy, afterId);
+      afterId = copy.id;
+      lastId = copy.id;
+    }
+    onBlocksChange(next);
+    setSelectedId(lastId);
+  };
+
+  const pasteIntoCell = (cellId: string) => {
+    if (!clip) return;
+    onBlocksChange(appendBlocksToCell(blocks, cellId, cloneBlocks(clip.blocks)));
+  };
+
+  const duplicateCell = (cellId: string) => {
+    const res = duplicateCellById(blocks, cellId);
+    onBlocksChange(res.blocks);
+  };
 
   const duplicate = (id: string) => {
     const res = duplicateBlockById(blocks, id);
@@ -382,6 +435,12 @@ export function EdmBuilder({
                     onDuplicate={duplicate}
                     onRemove={remove}
                     onAddToCell={addToCell}
+                    onCopy={copyBlock}
+                    onPasteAfter={pasteAfter}
+                    onCopyCell={copyCell}
+                    onPasteIntoCell={pasteIntoCell}
+                    onDuplicateCell={duplicateCell}
+                    clipLabel={clip?.label ?? null}
                   />
                 )}
               </div>
@@ -462,6 +521,13 @@ function BlockTree({
   onDuplicate,
   onRemove,
   onAddToCell,
+  onCopy,
+  onPasteAfter,
+  onCopyCell,
+  onPasteIntoCell,
+  onDuplicateCell,
+  clipLabel,
+
 }: {
   blocks: EdmBlock[];
   depth: number;
@@ -471,6 +537,12 @@ function BlockTree({
   onDuplicate: (id: string) => void;
   onRemove: (id: string) => void;
   onAddToCell: (cellId: string, type: EdmBlockType) => void;
+  onCopy: (id: string) => void;
+  onPasteAfter: (id: string) => void;
+  onCopyCell: (cellId: string) => void;
+  onPasteIntoCell: (cellId: string) => void;
+  onDuplicateCell: (cellId: string) => void;
+  clipLabel: string | null;
 }) {
   return (
     <div className="space-y-1.5" style={{ paddingLeft: depth ? 10 : 0 }}>
@@ -529,9 +601,37 @@ function BlockTree({
                   e.stopPropagation();
                   onDuplicate(b.id);
                 }}
-                aria-label="Duplicate"
+                aria-label={`Duplicate ${blockLabel[b.type]} with all its settings`}
+                title={`Duplicate ${blockLabel[b.type]} (copies everything inside)`}
+              >
+                <CopyPlus className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy(b.id);
+                }}
+                aria-label="Copy"
+                title="Copy — then paste it anywhere in this email"
               >
                 <Copy className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={!clipLabel}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPasteAfter(b.id);
+                }}
+                aria-label="Paste after"
+                title={clipLabel ? `Paste ${clipLabel} below this block` : "Nothing copied yet"}
+              >
+                <ClipboardPaste className="h-3 w-3" />
               </Button>
               <Button
                 variant="ghost"
@@ -568,6 +668,37 @@ function BlockTree({
                           </Button>
                         }
                       />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => onDuplicateCell(cell.id)}
+                        aria-label={`Duplicate ${label}`}
+                        title="Duplicate this column (adds a new column with the same content)"
+                      >
+                        <CopyPlus className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => onCopyCell(cell.id)}
+                        aria-label={`Copy ${label} contents`}
+                        title="Copy everything in this column"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        disabled={!clipLabel}
+                        onClick={() => onPasteIntoCell(cell.id)}
+                        aria-label={`Paste into ${label}`}
+                        title={clipLabel ? `Paste ${clipLabel} into this column` : "Nothing copied yet"}
+                      >
+                        <ClipboardPaste className="h-3 w-3" />
+                      </Button>
                     </div>
                     {cell.blocks.length === 0 ? (
                       <p className="py-1 text-center text-[10px] text-muted-foreground">Empty</p>
@@ -581,6 +712,12 @@ function BlockTree({
                         onDuplicate={onDuplicate}
                         onRemove={onRemove}
                         onAddToCell={onAddToCell}
+                        onCopy={onCopy}
+                        onPasteAfter={onPasteAfter}
+                        onCopyCell={onCopyCell}
+                        onPasteIntoCell={onPasteIntoCell}
+                        onDuplicateCell={onDuplicateCell}
+                        clipLabel={clipLabel}
                       />
                     )}
                   </div>
