@@ -455,21 +455,9 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           });
         }
 
-        // Activity allocations (from the shared RPC) — counted under activities.
-        const tourAllocationRows = allocationRows.filter(
-          (r: any) => r.tour_id === tour.id && !NON_COUNTING_BOOKING_STATUSES.includes(r.status)
-        );
-        track("activities", tourAllocationRows.length);
-        tourAllocationRows.forEach((r: any) => {
-          const who = [r.lead_passenger_first_name, r.lead_passenger_last_name].filter(Boolean).join(" ") || r.group_name || "Booking";
-          flag(
-            "activities",
-            who,
-            `${r.activity_name}: ${r.discrepancy_type?.replace(/_/g, " ") || "allocation mismatch"}`,
-            r.booking_id,
-            { acknowledged: allocationAckKeys.has(`${r.booking_id}:${r.activity_id}`) }
-          );
-        });
+        // Passenger-level activity allocation gaps are tracked in the Activity Bookings
+        // review screen, not in tour readiness.
+
 
         // ================= OPS: TOUR SETUP =================================
         track("ops", 4);
