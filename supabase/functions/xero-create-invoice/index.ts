@@ -204,10 +204,10 @@ async function buildLineItems(
       case 'description': {
         const t = item.template;
         const descText = t.description_template
-          .replace('{{tour_name}}', tour.name || '')
-          .replace('{{passenger_names}}', passengerNames)
-          .replace('{{room_type}}', roomType)
-          .replace('{{bedding_type}}', beddingType);
+          .replaceAll('{{tour_name}}', tour.name || '')
+          .replaceAll('{{passenger_names}}', passengerNames)
+          .replaceAll('{{room_type}}', roomType)
+          .replaceAll('{{bedding_type}}', beddingType);
         lineItems.push({ Description: descText, Quantity: 1, UnitAmount: 0 });
         break;
       }
