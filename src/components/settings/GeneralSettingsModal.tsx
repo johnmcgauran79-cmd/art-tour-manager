@@ -222,6 +222,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
                   <code>{"{{tour_instalment_details}}"}</code> in booking emails and the WordPress
                   "Payment Details" field. Recomputed whenever a tour is saved.
                 </div>
+                <Label className="text-xs font-semibold">With instalment</Label>
                 <Textarea
                   value={instalmentTemplate}
                   onChange={(e) => setInstalmentTemplate(e.target.value)}
@@ -242,12 +243,33 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
                   </div>
                   {instalmentPreview}
                 </div>
+
+                <Label className="text-xs font-semibold">
+                  No instalment (fallback)
+                </Label>
+                <Textarea
+                  value={noInstalmentTemplate}
+                  onChange={(e) => setNoInstalmentTemplate(e.target.value)}
+                  rows={4}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Used automatically when a tour has no instalment required or no instalment amount, so the
+                  WordPress "Payment Details" field and emails are never left blank. Merge fields:{" "}
+                  <code>{"{{deposit_amount}}"}</code>,{" "}
+                  <code>{"{{three_months_before_start}}"}</code>.
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">
+                    Preview (deposit $500, start 5 Nov 2026)
+                  </div>
+                  {noInstalmentPreview}
+                </div>
                 <Button
                   size="sm"
                   onClick={handleSaveInstalmentTemplate}
                   disabled={updateSetting.isPending}
                 >
-                  <Save className="h-4 w-4 mr-1" /> Save Template
+                  <Save className="h-4 w-4 mr-1" /> Save Templates
                 </Button>
               </CardContent>
             </Card>
