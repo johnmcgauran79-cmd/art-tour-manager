@@ -176,13 +176,6 @@ export const BrevoAudienceSyncPanel = () => {
                     {code}: {stateCounts?.[code] ?? 0}
                   </Badge>
                 ))}
-                <Badge variant="outline" className="text-xs">
-                  No state:{" "}
-                  {Math.max(
-                    0,
-                    (Object.values(stateCounts ?? {}).length ? 0 : 0),
-                  ) || "—"}
-                </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
                 Audiences only include contacts with marketing consent, so these are the numbers a
