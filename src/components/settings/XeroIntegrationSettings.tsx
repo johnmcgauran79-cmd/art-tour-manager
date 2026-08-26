@@ -393,6 +393,19 @@ export const XeroIntegrationSettings = () => {
                   </Button>
                   <Button
                     variant="outline"
+                    onClick={handleSyncStates}
+                    disabled={isSyncing}
+                  >
+                    {syncingType === 'states' ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <MapPin className="w-4 h-4 mr-2" />
+                    )}
+                    Fill Missing States from Xero
+                  </Button>
+
+                  <Button
+                    variant="outline"
                     onClick={handleSyncReceipts}
                     disabled={isSyncing}
                   >
