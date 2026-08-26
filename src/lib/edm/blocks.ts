@@ -839,9 +839,9 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
 
   switch (b.type) {
     case "heading":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_BODY};font-size:${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
         b.fontSize || headingSize(b.size)
-      }px;line-height:1.25;font-weight:700;color:${primary};text-align:${align};">${esc(
+      }px;line-height:1.25;font-weight:400;color:${primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
