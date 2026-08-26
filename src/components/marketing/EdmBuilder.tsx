@@ -636,10 +636,12 @@ export function EdmBuilder({
             </CardContent>
           </Card>
 
-          {livePreview && (
-            <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
-          )}
+            {livePreview && (
+              <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
+            )}
+          </div>
         </div>
+
       )}
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
