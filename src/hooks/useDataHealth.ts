@@ -263,7 +263,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       const firstError = [
         hotelsRes, hotelRes, waiverRes, docsRes, pickupRes, formRes, formResponseRes,
         formExemptionRes, itineraryRes, attachmentRes, wpLinkRes, websiteChangeRes,
-        allocationRes, allocationAckRes, invoiceRes, activityRes,
+        invoiceRes, activityRes,
       ].find((r: any) => r?.error)?.error;
       if (firstError) throw firstError;
 
