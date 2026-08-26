@@ -11,6 +11,7 @@ import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralS
 import { Textarea } from "@/components/ui/textarea";
 import {
   DEFAULT_INSTALMENT_TEMPLATE,
+  DEFAULT_NO_INSTALMENT_TEMPLATE,
   renderInstalmentDetails,
 } from "@/lib/instalmentDetailsTemplate";
 
