@@ -36,12 +36,17 @@ export default function TourEdit() {
   const { data: brands = [] } = useBrands();
   const { data: tours, isLoading } = useTours();
   const { data: generalSettings } = useGeneralSettings();
-  const instalmentTemplate = (() => {
-    const s = generalSettings?.find((x) => x.setting_key === "instalment_details_template");
-    if (!s) return DEFAULT_INSTALMENT_TEMPLATE;
+  const readSetting = (key: string, fallback: string) => {
+    const s = generalSettings?.find((x) => x.setting_key === key);
+    if (!s) return fallback;
     const v = s.setting_value;
-    return (typeof v === "string" ? v : String(v ?? "")) || DEFAULT_INSTALMENT_TEMPLATE;
-  })();
+    return (typeof v === "string" ? v : String(v ?? "")) || fallback;
+  };
+  const instalmentTemplate = readSetting("instalment_details_template", DEFAULT_INSTALMENT_TEMPLATE);
+  const noInstalmentTemplate = readSetting(
+    "instalment_details_template_no_instalment",
+    DEFAULT_NO_INSTALMENT_TEMPLATE,
+  );
   const tour = tours?.find(t => t.id === id);
   
   const [formData, setFormData] = useState({
