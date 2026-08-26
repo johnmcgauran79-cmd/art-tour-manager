@@ -68,6 +68,8 @@ export function AudiencesTab() {
   const { data: audiences = [], isLoading } = useAudiences();
   const { data: allTags = [] } = useTags();
   const { data: tours = [] } = useTours();
+  const { data: stateCounts } = useContactStateCounts();
+
   const save = useSaveAudience();
   const del = useDeleteAudience();
 
