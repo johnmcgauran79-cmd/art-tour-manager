@@ -63,6 +63,11 @@ export const TourHealthPanel = ({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-1">
+              {tour.dmcManaged && (
+                <Badge variant="outline" className="text-[11px]">
+                  DMC managed
+                </Badge>
+              )}
               <Badge variant="outline" className="text-[11px]">
                 Guest data {tour.guestScore}
               </Badge>
