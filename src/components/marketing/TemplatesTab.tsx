@@ -531,6 +531,29 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Quick preview */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="flex max-h-[92vh] max-w-4xl flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>{preview?.name}</DialogTitle>
+            <DialogDescription>Subject: {preview?.subject}</DialogDescription>
+          </DialogHeader>
+          {preview?.html?.trim() ? (
+            <iframe
+              title="Template preview"
+              className="min-h-[60vh] w-full flex-1 rounded-md border bg-white"
+              sandbox=""
+              srcDoc={preview.html}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center rounded-md border p-10 text-sm text-muted-foreground">
+              This template has no content yet.
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
