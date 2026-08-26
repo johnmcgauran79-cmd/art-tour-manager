@@ -45,10 +45,11 @@ export function RichTextEditor({
   placeholder,
   className,
   lineHeight,
+  websiteStyle,
 }: RichTextEditorProps) {
   return (
     <div
-      className={cn("rich-text-editor", className)}
+      className={cn("rich-text-editor", websiteStyle && "rte-website", className)}
       style={lineHeight ? ({ "--rte-lh": String(lineHeight) } as React.CSSProperties) : undefined}
     >
       <ReactQuill
