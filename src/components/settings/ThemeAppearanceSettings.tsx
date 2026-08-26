@@ -164,14 +164,7 @@ export const ThemeAppearanceSettings = () => {
               Outline Button
             </button>
             <div
-              className="px-4 py-2 rounded-md text-sm font-medium"
-              style={{
-                backgroundColor: localColors.theme_email_button_color || DEFAULTS.theme_email_button_color,
-                color: localColors.theme_email_button_text || DEFAULTS.theme_email_button_text,
-              }}
-            >
-              Email CTA
-            </div>
+
             <div
               className="w-20 h-10 rounded-md flex items-center justify-center text-xs"
               style={{
