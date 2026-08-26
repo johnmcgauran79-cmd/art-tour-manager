@@ -338,10 +338,6 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         websiteChangesByTour.set(c.tour_id, list);
       });
 
-      const allocationAckKeys = new Set(
-        (allocationAckRes.data || []).map((a: any) => `${a.booking_id}:${a.activity_id}`)
-      );
-      const allocationRows = ((allocationRes.data as any[]) || []).filter((r: any) => tourIds.includes(r.tour_id));
 
       const invoiceByBooking = new Map<string, any>();
       (invoiceRes.data || []).forEach((m: any) => invoiceByBooking.set(m.booking_id, m));
