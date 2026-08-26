@@ -222,13 +222,15 @@ export default function TourEdit() {
       instalment_required: formData.instalment_required,
       instalment_amount: formData.instalment_required && formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
       instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
-      instalment_details: formData.instalment_required
-        ? renderInstalmentDetails(instalmentTemplate, {
-            deposit_required: formData.deposit_required,
-            instalment_amount: formData.instalment_amount,
-            start_date: formData.start_date,
-          })
-        : null,
+      instalment_details:
+        resolveInstalmentDetails({
+          instalment_required: formData.instalment_required,
+          instalmentTemplate,
+          noInstalmentTemplate,
+          deposit_required: formData.deposit_required,
+          instalment_amount: formData.instalment_amount,
+          start_date: formData.start_date,
+        }) || null,
       final_payment_date: formData.final_payment_date || null,
       travel_documents_required: formData.travel_documents_required,
       pickup_location_required: formData.pickup_location_required,
