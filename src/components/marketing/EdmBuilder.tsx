@@ -5,6 +5,8 @@ import {
   Code2,
   Copy,
   Eye,
+  EyeOff,
+  Maximize2,
   LayoutTemplate,
   Monitor,
   Plus,
@@ -153,6 +155,7 @@ export function EdmBuilder({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [livePreview, setLivePreview] = useState(true);
 
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
@@ -295,18 +298,34 @@ export function EdmBuilder({
           </div>
         )}
 
-        <Button
-          size="sm"
-          variant="secondary"
-          className={cn("gap-1.5", mode === "html" && "ml-auto")}
-          onClick={() => setPreviewOpen(true)}
-        >
-          <Eye className="h-3.5 w-3.5" /> Preview
-        </Button>
+        <div className={cn("flex items-center gap-2", mode === "html" && "ml-auto")}>
+          <Button
+            size="sm"
+            variant={livePreview ? "secondary" : "outline"}
+            className="gap-1.5"
+            onClick={() => setLivePreview((v) => !v)}
+            aria-pressed={livePreview}
+          >
+            {livePreview ? (
+              <EyeOff className="h-3.5 w-3.5" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
+            )}
+            {livePreview ? "Hide live preview" : "Show live preview"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setPreviewOpen(true)}
+          >
+            <Maximize2 className="h-3.5 w-3.5" /> Full screen
+          </Button>
+        </div>
       </div>
 
       {mode === "html" ? (
-        <div className="space-y-2">
+        <div className={cn("grid gap-4", livePreview && "lg:grid-cols-2")}>
           <div className="space-y-2">
             <Label>HTML source</Label>
             <Textarea
@@ -320,9 +339,19 @@ export function EdmBuilder({
               Include <code>{"{{unsubscribe_url}}"}</code> so the email stays compliant.
             </p>
           </div>
+          {livePreview && (
+            <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
+          )}
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        <div
+          className={cn(
+            "grid gap-4",
+            livePreview
+              ? "xl:grid-cols-[280px_minmax(0,1fr)_minmax(360px,1fr)]"
+              : "lg:grid-cols-[320px_1fr]"
+          )}
+        >
           {/* Block tree */}
           <Card className="h-fit">
             <CardHeader className="pb-3">
@@ -385,6 +414,10 @@ export function EdmBuilder({
               )}
             </CardContent>
           </Card>
+
+          {livePreview && (
+            <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
+          )}
         </div>
       )}
 
@@ -557,6 +590,59 @@ function BlockTree({
         );
       })}
     </div>
+  );
+}
+
+function LivePreviewCard({
+  html,
+  device,
+  onDeviceChange,
+}: {
+  html: string;
+  device: "desktop" | "mobile";
+  onDeviceChange: (d: "desktop" | "mobile") => void;
+}) {
+  return (
+    <Card className="h-fit xl:sticky xl:top-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <Eye className="h-3.5 w-3.5" /> Live preview
+        </CardTitle>
+        <div className="flex items-center gap-1 rounded-md border p-0.5">
+          <Button
+            variant={device === "desktop" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => onDeviceChange("desktop")}
+            aria-label="Desktop preview"
+          >
+            <Monitor className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={device === "mobile" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => onDeviceChange("mobile")}
+            aria-label="Mobile preview"
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-center rounded-lg border bg-muted/40 p-2">
+          <iframe
+            title="Live email preview"
+            srcDoc={html}
+            sandbox=""
+            className={cn(
+              "h-[68vh] rounded bg-background",
+              device === "mobile" ? "w-[390px]" : "w-full"
+            )}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
