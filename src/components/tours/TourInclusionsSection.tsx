@@ -271,7 +271,7 @@ export function TourInclusionsSection({ tourId }: Props) {
             </div>
           ) : (
             <>
-              <RichTextEditor value={descDraft} onChange={setDescDraft} />
+              <RichTextEditor value={descDraft} onChange={setDescDraft} websiteStyle />
               <Button
                 type="button"
                 variant="secondary"

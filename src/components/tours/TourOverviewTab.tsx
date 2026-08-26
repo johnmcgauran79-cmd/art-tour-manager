@@ -521,7 +521,7 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
           </CardHeader>
           <CardContent>
             <div
-              className="prose prose-sm max-w-none text-sm"
+              className="website-html text-sm"
               dangerouslySetInnerHTML={{ __html: tour.websiteDescription }}
             />
           </CardContent>
