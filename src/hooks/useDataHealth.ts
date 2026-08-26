@@ -614,6 +614,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           acknowledged,
           byCheck,
           categoryScores,
+          dmcManaged,
         };
       });
 
