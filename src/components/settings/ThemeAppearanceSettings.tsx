@@ -141,8 +141,6 @@ export const ThemeAppearanceSettings = () => {
         </div>
 
 
-
-
         {/* Preview */}
         <div className="border rounded-lg p-4 space-y-3">
           <h4 className="text-sm font-semibold text-foreground">Preview</h4>
