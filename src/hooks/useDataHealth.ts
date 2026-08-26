@@ -101,6 +101,8 @@ export interface TourHealth {
   byCheck: Record<string, number>;
   /** 0-100 readiness per category (only categories that applied). */
   categoryScores: Partial<Record<DataHealthCheckId, number>>;
+  /** Tour is run by an outside DMC — supplier-level checks are relaxed. */
+  dmcManaged?: boolean;
 }
 
 export interface DataHealthResult {
