@@ -7034,6 +7034,7 @@ var reorder_tour_inclusions_default = defineTool111({
 // src/lib/mcp/tools/update-tour-website-description.ts
 import { defineTool as defineTool112 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z108 } from "npm:zod@^3.25.76";
+import { normalizeWebsiteHtml } from "npm:@/lib/websiteHtml";
 var update_tour_website_description_default = defineTool112({
   name: "update_tour_website_description",
   title: "Update tour website description",
@@ -7046,7 +7047,7 @@ var update_tour_website_description_default = defineTool112({
   handler: async ({ tour_id, website_description }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
     if (denied) return denied;
-    const { error } = await supabaseForUser(ctx).from("tours").update({ website_description }).eq("id", tour_id);
+    const { error } = await supabaseForUser(ctx).from("tours").update({ website_description: normalizeWebsiteHtml(website_description) }).eq("id", tour_id);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     const out = { tour_id, length: website_description.length };
     return {
