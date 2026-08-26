@@ -286,7 +286,7 @@ serve(async (req) => {
     }
     
     let emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+      <div style="font-family: 'Poppins', Arial, Helvetica, sans-serif; max-width: 800px; margin: 0 auto;">
         <h1 style="color: #333;">${reportTitle}${!isSystemWideOnly && tourName ? ': ' + tourName : ''}</h1>
         ${!isSystemWideOnly && tourStartDate ? `<p style="color: #666;">Tour Start Date: ${tourStartDate}</p>` : ''}
         <hr style="border: 1px solid #eee; margin: 20px 0;">

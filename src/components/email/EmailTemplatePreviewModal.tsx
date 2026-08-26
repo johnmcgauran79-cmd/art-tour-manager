@@ -195,8 +195,14 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
 
     // Wrap in branded email shell
     const fullHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background-color:#f5f5f5;">
+<html><head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: 'Poppins', Arial, Helvetica, sans-serif;line-height:1.6;color:#333;margin:0;padding:0;background-color:#f5f5f5;">
   <div style="max-width:800px;margin:0 auto;padding:20px;">
     <div style="background:${shellPrimary};padding:30px;text-align:center;border-radius:8px 8px 0 0;">
       <img src="${headerImageUrl}" alt="Header" style="height:80px;max-width:400px;width:auto;" />

@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
     const reportContent = htmlContent || reportHtml || "";
 
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
+      <div style="font-family: 'Poppins', Arial, Helvetica, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
         <div style="margin: 20px 0;">
           ${htmlBody}
         </div>

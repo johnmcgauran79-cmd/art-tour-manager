@@ -3,11 +3,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Modern type system: Sora for display/headings, Manrope for body */
-:root {
-  --font-display: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+/* ART brand type system: Larken for display/headings, Poppins for body */
+@font-face {
+  font-family: 'Larken';
+  src: url('/fonts/Larken-Regular.woff2') format('woff2'),
+       url('/fonts/Larken-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
+/* Synthesised italic — Larken ships Regular only */
+@font-face {
+  font-family: 'Larken';
+  src: url('/fonts/Larken-Regular.woff2') format('woff2'),
+       url('/fonts/Larken-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --font-display: 'Larken', 'Georgia', 'Times New Roman', serif;
+  --font-body: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 
 /* ReactQuill Editor Improvements */
 .ql-editor {
@@ -314,6 +333,18 @@
     @apply text-xs leading-normal text-muted-foreground;
   }
 }
+
+/* ART brand rules: Larken headings are never uppercase and rarely bold */
+h1, h2, h3, h4, h5, h6, .font-display {
+  text-transform: none !important;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+thead tr th {
+  font-weight: 500;
+}
+
+
 
 /* Protect email template section headers and hotel cards from prose/global overrides */
 .prose .email-section-header td,

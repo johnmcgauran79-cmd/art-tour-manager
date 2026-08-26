@@ -330,7 +330,7 @@ const handler = async (req: Request): Promise<Response> => {
     const htmlBody = emailBody.replace(/\n/g, '<br>');
 
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
+      <div style="font-family: 'Poppins', Arial, Helvetica, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px;">Rooming List - ${hotelName}</h1>
         
         <div style="margin: 20px 0;">

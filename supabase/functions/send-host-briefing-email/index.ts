@@ -24,17 +24,23 @@ const wrapBrandedEmail = (content: string, headerImageUrl?: string): string => {
   return `<!DOCTYPE html>
 <html>
 <head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     .email-body p, .email-body li, .email-body div {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Poppins', Arial, Helvetica, sans-serif;
       font-size: 14px;
       line-height: 1.6;
       color: #55575d;
     }
     .email-body h1, .email-body h2, .email-body h3, .email-body h4 {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Poppins', Arial, Helvetica, sans-serif;
       line-height: 1.3;
       color: #1a2332;
     }
@@ -50,7 +56,7 @@ const wrapBrandedEmail = (content: string, headerImageUrl?: string): string => {
     .email-body hr { border: none; border-top: 2px solid #e5e7eb; margin: 24px 0; }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, Helvetica, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Poppins', Arial, Helvetica, sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
     <tr>
       <td align="center">
@@ -61,7 +67,7 @@ const wrapBrandedEmail = (content: string, headerImageUrl?: string): string => {
             </td>
           </tr>
           <tr>
-            <td class="email-body" style="padding: 40px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
+            <td class="email-body" style="padding: 40px; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
               ${content}
             </td>
           </tr>

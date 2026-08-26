@@ -1,3 +1,4 @@
+import { FONT_BODY, FONT_HEADING, BRAND_FONT_HEAD_HTML } from "@/lib/brandFonts";
 /**
  * EDM (email marketing) block model + HTML renderer.
  *
@@ -785,7 +786,7 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       const cell = cells[r * cols + c];
       return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
-      }font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${renderNested(
+      }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${renderNested(
         cell?.blocks || [],
         brand,
         ctx
@@ -838,13 +839,13 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
 
   switch (b.type) {
     case "heading":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
         b.fontSize || headingSize(b.size)
-      }px;line-height:1.25;font-weight:700;color:${primary};text-align:${align};">${esc(
+      }px;line-height:1.25;font-weight:400;color:${primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:Arial,Helvetica,sans-serif;font-size:${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_BODY};font-size:${
         b.fontSize || 16
       }px;line-height:${b.lineHeight ?? 1.6};color:#333333;${
         b.align ? `text-align:${b.align};` : ""
@@ -889,7 +890,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
           )}" style="display:block;width:100%;height:auto;border:0;border-radius:6px;" /></td>`
         : ""
     }
-    <td class="edm-col" valign="top" style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">${
+    <td class="edm-col" valign="top" style="font-family:${FONT_BODY};font-size:16px;line-height:1.6;color:#333333;">${
       b.html || ""
     }</td>
   </tr></table></td></tr>`;
@@ -909,7 +910,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
   <a href="${esc(
     b.linkUrl || "#"
-  )}" style="${widthCss}background:${bg};color:${fg};font-family:Arial,Helvetica,sans-serif;font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
+  )}" style="${widthCss}background:${bg};color:${fg};font-family:${FONT_BODY};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
     b.text || "Click here"
   )}</a></td></tr>`;
     }
@@ -928,7 +929,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
           )}" style="display:block;width:100%;height:auto;border:0;" /></td></tr>`
         : ""
     }
-    <tr><td style="padding:20px;font-family:Arial,Helvetica,sans-serif;">
+    <tr><td style="padding:20px;font-family:${FONT_BODY};">
       <div style="font-size:20px;font-weight:700;color:${primary};">${esc(b.text || "")}</div>
       ${
         b.meta
@@ -957,21 +958,21 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
     case "twoColumn":
       return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td class="edm-col" width="50%" valign="top" style="padding-right:12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${
+    <td class="edm-col" width="50%" valign="top" style="padding-right:12px;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${
       b.html || ""
     }</td>
-    <td class="edm-col" width="50%" valign="top" style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#333333;">${
+    <td class="edm-col" width="50%" valign="top" style="padding-left:12px;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${
       b.html2 || ""
     }</td>
   </tr></table></td></tr>`;
     case "quote":
       return `<tr><td style="padding:${pad(ctx, "16px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
-    <tr><td style="padding:18px 22px;font-family:Georgia,serif;font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
+    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
       b.html || ""
     }${
       b.text
-        ? `<div style="margin-top:10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-style:normal;color:#64748b;">— ${esc(
+        ? `<div style="margin-top:10px;font-family:${FONT_BODY};font-size:13px;font-style:normal;color:#64748b;">— ${esc(
             b.text
           )}</div>`
         : ""
@@ -1085,6 +1086,7 @@ export const renderEdmHtml = (
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(opts.subject || brand.name)}</title>
+${BRAND_FONT_HEAD_HTML}
 <style>
 @media only screen and (max-width:600px){
   td.edm-col{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;}
@@ -1147,7 +1149,7 @@ ${
         footerBorder && footerBorder !== "transparent"
           ? `border-top:1px solid ${footerBorder};`
           : ""
-      }font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:${footerColor};text-align:${footerAlign};">
+      }font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:${footerColor};text-align:${footerAlign};">
       ${footerSocial}
       ${brandBody}
       ${unsub}

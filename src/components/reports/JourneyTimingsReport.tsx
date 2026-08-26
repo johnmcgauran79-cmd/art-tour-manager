@@ -156,10 +156,16 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
   return `<!DOCTYPE html>
 <html>
 <head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
+body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
+h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
+</style>
   <meta charset="utf-8" />
   <title>Journey Timings — ${tourName}</title>
   <style>
-    body { font-family: Arial, Helvetica, sans-serif; color: #1a1a2e; margin: 24px; }
+    body { font-family: 'Poppins', Arial, Helvetica, sans-serif; color: #1a1a2e; margin: 24px; }
     h1 { font-size: 20px; margin: 0 0 4px; }
     .subtitle { color: #666; margin: 0 0 20px; font-size: 13px; }
     .activity { margin-bottom: 18px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; page-break-inside: avoid; }

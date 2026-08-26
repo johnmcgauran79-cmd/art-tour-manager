@@ -141,7 +141,7 @@ serve(async (req) => {
     };
 
     const html = `
-      <div style="font-family: Arial, sans-serif;">
+      <div style="font-family: 'Poppins', Arial, Helvetica, sans-serif;">
         <p style="color: #666; margin-bottom: 16px;">Total outstanding payment issues: <strong>${totalCount}</strong></p>
         ${renderSection('Deposits Owing', depositsOwing, '#d97706')}
         ${renderSection('Instalments Owing', instalmentsOwing, '#ea580c')}
