@@ -447,6 +447,32 @@ export function EdmBuilder({
         )}
 
         {mode === "blocks" && (
+          <div className="flex items-center gap-1 rounded-md border p-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={undo}
+              disabled={past.length === 0}
+              title="Undo last change (Ctrl/Cmd+Z)"
+            >
+              <Undo2 className="h-3.5 w-3.5" /> Undo
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={redo}
+              disabled={future.length === 0}
+              title="Redo (Ctrl/Cmd+Shift+Z)"
+            >
+              <Redo2 className="h-3.5 w-3.5" /> Redo
+            </Button>
+          </div>
+        )}
+
+
+        {mode === "blocks" && (
           <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
             <Button
               variant={device === "desktop" ? "secondary" : "ghost"}
