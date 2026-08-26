@@ -16,6 +16,8 @@ import { TeamsChannelNotifyCard } from "@/components/settings/TeamsChannelNotify
 import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
 import { CrmMigrationConsole } from "@/components/settings/CrmMigrationConsole";
+import { BrevoAudienceSyncPanel } from "@/components/settings/BrevoAudienceSyncPanel";
+
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -248,6 +250,18 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
         <IntegrationStatusPanel />
       </div>
 
+      {/* Marketing audiences (Brevo tags/states) */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Marketing Audiences</h2>
+          <p className="text-sm text-muted-foreground">
+            Bring Brevo lists into ART as tags, fill in contact states and honour Brevo
+            unsubscribes so state and tag audiences resolve correctly.
+          </p>
+        </div>
+        <BrevoAudienceSyncPanel />
+      </div>
+
       {/* CRM (Keap -> Brevo) */}
       <div className="space-y-4">
         <div>
@@ -259,6 +273,7 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
         </div>
         <CrmMigrationConsole />
       </div>
+
 
       {/* Microsoft Teams Notifications */}
       <div className="space-y-4">

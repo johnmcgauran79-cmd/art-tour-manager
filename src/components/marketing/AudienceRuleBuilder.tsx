@@ -34,7 +34,10 @@ export interface RuleBuilderOptions {
   tags: { id: string; name: string }[];
   tours: { id: string; name: string }[];
   leadSources: string[];
+  /** live consented-contact counts per state code, shown beside each option */
+  stateCounts?: Record<string, number>;
 }
+
 
 interface Props {
   value: AudienceGroup;
@@ -125,11 +128,18 @@ const RuleRow = ({
         return (
           <MultiSelect
             label="states"
-            options={AU_STATES.map((s) => ({ value: s, label: s }))}
+            options={AU_STATES.map((s) => ({
+              value: s,
+              label:
+                options.stateCounts?.[s] !== undefined
+                  ? `${s} (${options.stateCounts[s]})`
+                  : s,
+            }))}
             selected={listValue}
             onToggle={toggle}
           />
         );
+
       if (rule.field === "lead_stage")
         return (
           <MultiSelect
