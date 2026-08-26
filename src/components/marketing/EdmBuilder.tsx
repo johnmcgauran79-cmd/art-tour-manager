@@ -176,6 +176,90 @@ export function EdmBuilder({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
 
+  /* ---- resizable content-blocks panel ---- */
+  const PANEL_MIN = 240;
+  const PANEL_MAX = 640;
+  const [panelWidth, setPanelWidth] = useState<number>(() => {
+    const stored = Number(localStorage.getItem("edm-blocks-panel-width"));
+    return stored >= PANEL_MIN && stored <= PANEL_MAX ? stored : 320;
+  });
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("edm-blocks-panel-width", String(Math.round(panelWidth)));
+  }, [panelWidth]);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!dragRef.current) return;
+      const next = dragRef.current.startW + (e.clientX - dragRef.current.startX);
+      setPanelWidth(Math.min(PANEL_MAX, Math.max(PANEL_MIN, next)));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("user-select");
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
+  const startPanelDrag = (e: React.PointerEvent) => {
+    dragRef.current = { startX: e.clientX, startW: panelWidth };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  /* ---- undo / redo history ---- */
+  const [past, setPast] = useState<EdmBlock[][]>([]);
+  const [future, setFuture] = useState<EdmBlock[][]>([]);
+
+  /** Apply a block change, recording the previous state for undo. */
+  const commit = useCallback(
+    (next: EdmBlock[]) => {
+      setPast((p) => [...p.slice(-49), blocks]);
+      setFuture([]);
+      onBlocksChange(next);
+    },
+    [blocks, onBlocksChange]
+  );
+
+  const undo = useCallback(() => {
+    setPast((p) => {
+      if (p.length === 0) return p;
+      const prev = p[p.length - 1];
+      setFuture((f) => [blocks, ...f].slice(0, 50));
+      onBlocksChange(prev);
+      return p.slice(0, -1);
+    });
+  }, [blocks, onBlocksChange]);
+
+  const redo = useCallback(() => {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      setPast((p) => [...p.slice(-49), blocks]);
+      onBlocksChange(f[0]);
+      return f.slice(1);
+    });
+  }, [blocks, onBlocksChange]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA)$/.test(t.tagName))) return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
   const previewHtml = useMemo(
@@ -187,7 +271,8 @@ export function EdmBuilder({
   );
 
   const update = (id: string, patch: Partial<EdmBlock>) =>
-    onBlocksChange(updateBlockById(blocks, id, patch));
+    commit(updateBlockById(blocks, id, patch));
+
 
   const add = (type: EdmBlockType) => {
     const block = newBlock(type);
