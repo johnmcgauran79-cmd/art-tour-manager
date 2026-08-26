@@ -2,7 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { requireAdminOrManager } from "./_perms";
 import { supabaseForUser } from "./_supabase";
-import { normalizeWebsiteHtml } from "@/lib/websiteHtml";
+import { normalizeWebsiteHtml } from "../../websiteHtml";
 
 export default defineTool({
   name: "update_tour_website_description",
