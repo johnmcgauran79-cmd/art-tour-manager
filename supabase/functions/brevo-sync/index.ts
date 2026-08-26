@@ -23,8 +23,9 @@ const errorStatusFromMessage = (message: string) => {
 };
 
 const tagSlug = (name: string, listId: number) =>
-  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") ||
-  `brevo-list-${listId}`;
+  `${
+    name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "brevo-list"
+  }-${listId}`;
 
 
 Deno.serve(async (req) => {
