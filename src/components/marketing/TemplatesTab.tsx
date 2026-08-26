@@ -445,9 +445,26 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
               variant="outline"
               className="gap-1.5"
               onClick={() => {
+                if (!editing) return;
+                const html = htmlFor(editing);
+                if (!html.trim()) {
+                  toast({ title: "Nothing to send yet", variant: "destructive" });
+                  return;
+                }
+                setTestPayload({
+                  html,
+                  subject: editing.subject || editing.name || "Template test",
+                  brandId: (editing.brand_id as string) || null,
+                });
                 setTestEmail(user?.email || "");
-                setTestOpen(true);
+                // Close the editor first so the test dialog isn't trapped behind it.
+                setOpen(false);
+                setTimeout(() => {
+                  document.body.style.pointerEvents = "";
+                  setTestOpen(true);
+                }, 150);
               }}
+
             >
               <Send className="h-4 w-4" /> Send test
             </Button>
