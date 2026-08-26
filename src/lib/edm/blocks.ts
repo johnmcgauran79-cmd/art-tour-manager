@@ -467,6 +467,85 @@ export const appendBlockToCell = (
       : b
   );
 
+/** Deep-copy the blocks inside a cell (fresh ids). */
+export const cloneBlocks = (blocks: EdmBlock[]): EdmBlock[] => blocks.map(cloneBlock);
+
+/** Append several blocks into a specific container cell (used for pasting). */
+export const appendBlocksToCell = (
+  blocks: EdmBlock[],
+  cellId: string,
+  add: EdmBlock[]
+): EdmBlock[] =>
+  blocks.map((b) =>
+    b.cells
+      ? {
+          ...b,
+          cells: b.cells.map((c) =>
+            c.id === cellId
+              ? { ...c, blocks: [...c.blocks, ...add] }
+              : { ...c, blocks: appendBlocksToCell(c.blocks, cellId, add) }
+          ),
+        }
+      : b
+  );
+
+/** Find a cell (and its container) anywhere in the tree. */
+export const findCellById = (
+  blocks: EdmBlock[],
+  cellId: string
+): { container: EdmBlock; cell: { id: string; blocks: EdmBlock[] } } | null => {
+  for (const b of blocks) {
+    for (const c of b.cells || []) {
+      if (c.id === cellId) return { container: b, cell: c };
+      const hit = findCellById(c.blocks, cellId);
+      if (hit) return hit;
+    }
+  }
+  return null;
+};
+
+/**
+ * Duplicate a whole column: adds a new column to the container (cols + 1) and
+ * copies the source column's content into it — for tables the matching column
+ * of every row is copied so the grid stays rectangular.
+ */
+export const duplicateCellById = (
+  blocks: EdmBlock[],
+  cellId: string
+): { blocks: EdmBlock[]; newCellId?: string } => {
+  let newCellId: string | undefined;
+
+  const walk = (list: EdmBlock[]): EdmBlock[] =>
+    list.map((b) => {
+      const cells = b.cells;
+      if (!cells) return b;
+
+      const idx = cells.findIndex((c) => c.id === cellId);
+      if (idx >= 0) {
+        const cols = Math.max(1, b.cols || 1);
+        const rows = Math.max(1, Math.ceil(cells.length / cols));
+        const colIndex = idx % cols;
+        const next: { id: string; blocks: EdmBlock[] }[] = [];
+        for (let r = 0; r < rows; r++) {
+          const row = cells.slice(r * cols, r * cols + cols);
+          row.forEach((c, ci) => {
+            next.push(c);
+            if (ci === colIndex) {
+              const copy = { id: crypto.randomUUID(), blocks: cloneBlocks(c.blocks) };
+              if (r === 0) newCellId = copy.id;
+              next.push(copy);
+            }
+          });
+        }
+        return { ...b, cols: cols + 1, cells: next };
+      }
+
+      return { ...b, cells: cells.map((c) => ({ ...c, blocks: walk(c.blocks) })) };
+    });
+
+  return { blocks: walk(blocks), newCellId };
+};
+
 /** Resize a container's cell grid, preserving existing cell content. */
 export const resizeCells = (b: EdmBlock, cols: number, rows: number): EdmBlock => {
   const oldCols = b.cols || 1;
