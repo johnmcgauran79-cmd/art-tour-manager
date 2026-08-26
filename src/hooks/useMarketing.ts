@@ -603,9 +603,14 @@ export const useSaveEdmTemplate = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (
-      input: Partial<EdmTemplateRow> & { id?: string; saveAsNewVersion?: boolean }
+      input: Partial<EdmTemplateRow> & {
+        id?: string;
+        saveAsNewVersion?: boolean;
+        /** Autosave: persist without showing a toast. */
+        silent?: boolean;
+      }
     ) => {
-      const { id, saveAsNewVersion, created_at, updated_at, ...rest } = input as any;
+      const { id, saveAsNewVersion, silent, created_at, updated_at, ...rest } = input as any;
       const user = (await supabase.auth.getUser()).data.user;
 
       if (id && !saveAsNewVersion) {
@@ -640,6 +645,7 @@ export const useSaveEdmTemplate = () => {
     },
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ["edm-templates"] });
+      if (v.silent) return;
       toast({
         title: v.id && !v.saveAsNewVersion ? "Template updated" : "Template saved",
       });
