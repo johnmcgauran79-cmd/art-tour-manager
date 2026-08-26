@@ -11,6 +11,7 @@ import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralS
 import { Textarea } from "@/components/ui/textarea";
 import {
   DEFAULT_INSTALMENT_TEMPLATE,
+  DEFAULT_NO_INSTALMENT_TEMPLATE,
   renderInstalmentDetails,
 } from "@/lib/instalmentDetailsTemplate";
 
@@ -42,6 +43,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
   const [fromEmailInternal, setFromEmailInternal] = useState('');
   const [tokenExpiry, setTokenExpiry] = useState(168);
   const [instalmentTemplate, setInstalmentTemplate] = useState(DEFAULT_INSTALMENT_TEMPLATE);
+  const [noInstalmentTemplate, setNoInstalmentTemplate] = useState(DEFAULT_NO_INSTALMENT_TEMPLATE);
 
   useEffect(() => {
     if (settings) {
@@ -50,6 +52,9 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
       setFromEmailInternal(getSetting('default_from_email_internal', 'info@australianracingtours.com.au'));
       setTokenExpiry(getNumSetting('token_expiry_hours', 168));
       setInstalmentTemplate(getSetting('instalment_details_template', DEFAULT_INSTALMENT_TEMPLATE));
+      setNoInstalmentTemplate(
+        getSetting('instalment_details_template_no_instalment', DEFAULT_NO_INSTALMENT_TEMPLATE),
+      );
     }
   }, [settings]);
 
@@ -66,15 +71,26 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
   };
 
   const handleSaveInstalmentTemplate = async () => {
-    await updateSetting.mutateAsync({
-      settingKey: 'instalment_details_template',
-      value: instalmentTemplate,
-    });
+    await Promise.all([
+      updateSetting.mutateAsync({
+        settingKey: 'instalment_details_template',
+        value: instalmentTemplate,
+      }),
+      updateSetting.mutateAsync({
+        settingKey: 'instalment_details_template_no_instalment',
+        value: noInstalmentTemplate,
+      }),
+    ]);
   };
 
   const instalmentPreview = renderInstalmentDetails(instalmentTemplate, {
     deposit_required: 500,
     instalment_amount: 3500,
+    start_date: "2026-11-05",
+  });
+
+  const noInstalmentPreview = renderInstalmentDetails(noInstalmentTemplate, {
+    deposit_required: 500,
     start_date: "2026-11-05",
   });
 
@@ -206,6 +222,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
                   <code>{"{{tour_instalment_details}}"}</code> in booking emails and the WordPress
                   "Payment Details" field. Recomputed whenever a tour is saved.
                 </div>
+                <Label className="text-xs font-semibold">With instalment</Label>
                 <Textarea
                   value={instalmentTemplate}
                   onChange={(e) => setInstalmentTemplate(e.target.value)}
@@ -226,12 +243,33 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
                   </div>
                   {instalmentPreview}
                 </div>
+
+                <Label className="text-xs font-semibold">
+                  No instalment (fallback)
+                </Label>
+                <Textarea
+                  value={noInstalmentTemplate}
+                  onChange={(e) => setNoInstalmentTemplate(e.target.value)}
+                  rows={4}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Used automatically when a tour has no instalment required or no instalment amount, so the
+                  WordPress "Payment Details" field and emails are never left blank. Merge fields:{" "}
+                  <code>{"{{deposit_amount}}"}</code>,{" "}
+                  <code>{"{{three_months_before_start}}"}</code>.
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">
+                    Preview (deposit $500, start 5 Nov 2026)
+                  </div>
+                  {noInstalmentPreview}
+                </div>
                 <Button
                   size="sm"
                   onClick={handleSaveInstalmentTemplate}
                   disabled={updateSetting.isPending}
                 >
-                  <Save className="h-4 w-4 mr-1" /> Save Template
+                  <Save className="h-4 w-4 mr-1" /> Save Templates
                 </Button>
               </CardContent>
             </Card>

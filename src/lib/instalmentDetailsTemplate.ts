@@ -4,6 +4,11 @@
 export const DEFAULT_INSTALMENT_TEMPLATE =
   "A ${{deposit_amount}} per person deposit secures your place on the tour. A further ${{instalment_amount}} per person is due six months prior to departure ({{six_months_before_start}}), with the remaining balance payable 90 days ({{three_months_before_start}}) before the tour commences.";
 
+// Fallback used when a tour has no instalment, so the WordPress "Payment Details"
+// field and booking emails still get generated text.
+export const DEFAULT_NO_INSTALMENT_TEMPLATE =
+  "A ${{deposit_amount}} per person deposit secures your place on the tour. The remaining balance payable 90 days ({{three_months_before_start}}) before the tour commences.";
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -47,4 +52,33 @@ export function renderInstalmentDetails(
   return tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) =>
     Object.prototype.hasOwnProperty.call(values, key) ? values[key] : `{{${key}}}`,
   );
+}
+export interface ResolveInstalmentDetailsArgs extends InstalmentDetailsInputs {
+  instalment_required?: boolean | null;
+  instalmentTemplate?: string | null;
+  noInstalmentTemplate?: string | null;
+}
+
+/**
+ * Picks the correct template (instalment vs no-instalment) and renders it.
+ * Falls back to the no-instalment text whenever there is no usable instalment amount.
+ */
+export function resolveInstalmentDetails(args: ResolveInstalmentDetailsArgs): string {
+  const amount =
+    typeof args.instalment_amount === "string"
+      ? parseFloat(args.instalment_amount)
+      : (args.instalment_amount ?? NaN);
+  const hasInstalment =
+    args.instalment_required !== false && Number.isFinite(amount as number) && (amount as number) > 0;
+
+  const template = hasInstalment
+    ? (args.instalmentTemplate && args.instalmentTemplate.trim()) || DEFAULT_INSTALMENT_TEMPLATE
+    : (args.noInstalmentTemplate && args.noInstalmentTemplate.trim()) ||
+      DEFAULT_NO_INSTALMENT_TEMPLATE;
+
+  return renderInstalmentDetails(template, {
+    deposit_required: args.deposit_required,
+    instalment_amount: hasInstalment ? args.instalment_amount : null,
+    start_date: args.start_date,
+  });
 }
