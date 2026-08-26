@@ -652,6 +652,68 @@ export default function TourEdit() {
             />
           </div>
 
+          <div className="md:col-span-2 space-y-4 rounded-lg border border-dashed p-4 bg-muted/30">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="managed_by_dmc" className="text-base font-medium cursor-pointer">
+                  Managed by DMC
+                </Label>
+                <p className="text-xs text-muted-foreground max-w-2xl">
+                  Turn on when a destination management company handles suppliers (hotels, activities and
+                  transport). Tour Readiness will then skip supplier-level details and score booking data only.
+                </p>
+              </div>
+              <Switch
+                id="managed_by_dmc"
+                checked={formData.managed_by_dmc}
+                onCheckedChange={(checked) =>
+                  setFormData(prev => ({ ...prev, managed_by_dmc: checked }))
+                }
+              />
+            </div>
+
+            {formData.managed_by_dmc && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_name">DMC Name</Label>
+                  <Input
+                    id="dmc_name"
+                    value={formData.dmc_name}
+                    onChange={(e) => handleInputChange("dmc_name", e.target.value)}
+                    placeholder="e.g., Adventure Korea"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_contact_name">DMC Contact Name</Label>
+                  <Input
+                    id="dmc_contact_name"
+                    value={formData.dmc_contact_name}
+                    onChange={(e) => handleInputChange("dmc_contact_name", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_contact_email">DMC Contact Email</Label>
+                  <Input
+                    id="dmc_contact_email"
+                    type="email"
+                    value={formData.dmc_contact_email}
+                    onChange={(e) => handleInputChange("dmc_contact_email", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmc_contact_phone">DMC Contact Phone</Label>
+                  <Input
+                    id="dmc_contact_phone"
+                    value={formData.dmc_contact_phone}
+                    onChange={(e) => handleInputChange("dmc_contact_phone", e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+
+
           <div className="space-y-2">
             <Label htmlFor="capacity">Max Capacity</Label>
             <Input
