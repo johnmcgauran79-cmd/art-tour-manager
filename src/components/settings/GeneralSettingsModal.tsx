@@ -52,6 +52,9 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
       setFromEmailInternal(getSetting('default_from_email_internal', 'info@australianracingtours.com.au'));
       setTokenExpiry(getNumSetting('token_expiry_hours', 168));
       setInstalmentTemplate(getSetting('instalment_details_template', DEFAULT_INSTALMENT_TEMPLATE));
+      setNoInstalmentTemplate(
+        getSetting('instalment_details_template_no_instalment', DEFAULT_NO_INSTALMENT_TEMPLATE),
+      );
     }
   }, [settings]);
 
@@ -68,15 +71,26 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
   };
 
   const handleSaveInstalmentTemplate = async () => {
-    await updateSetting.mutateAsync({
-      settingKey: 'instalment_details_template',
-      value: instalmentTemplate,
-    });
+    await Promise.all([
+      updateSetting.mutateAsync({
+        settingKey: 'instalment_details_template',
+        value: instalmentTemplate,
+      }),
+      updateSetting.mutateAsync({
+        settingKey: 'instalment_details_template_no_instalment',
+        value: noInstalmentTemplate,
+      }),
+    ]);
   };
 
   const instalmentPreview = renderInstalmentDetails(instalmentTemplate, {
     deposit_required: 500,
     instalment_amount: 3500,
+    start_date: "2026-11-05",
+  });
+
+  const noInstalmentPreview = renderInstalmentDetails(noInstalmentTemplate, {
+    deposit_required: 500,
     start_date: "2026-11-05",
   });
 
