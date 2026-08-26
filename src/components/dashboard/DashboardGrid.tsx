@@ -37,28 +37,63 @@ const stampLayout = (items: LayoutItem[]): LayoutItem[] =>
 
 const cloneDefaultLayout = (): LayoutItem[] => stampLayout(DEFAULT_LAYOUT);
 
-const hasCurrentLayoutVersion = (items: LayoutItem[] | undefined) =>
-  !!items?.length &&
-  items.every((item) => (item as LayoutItem & { dashboardVersion?: number }).dashboardVersion === DASHBOARD_LAYOUT_VERSION);
+const maxBottom = (items: LayoutItem[]) =>
+  items.reduce((acc, i) => Math.max(acc, (i.y ?? 0) + (i.h ?? 0)), 0);
 
-// Merge saved layout with defaults so newly-added widgets still show up.
-const mergeLayout = (saved: LayoutItem[] | undefined): LayoutItem[] => {
-  if (saved?.length && !hasCurrentLayoutVersion(saved)) {
-    return cloneDefaultLayout();
+/**
+ * Merge a saved layout with the widget registry.
+ * - Saved positions/sizes always win, regardless of layout version.
+ * - Widgets the user has never seen (not in saved layout, not in hidden list)
+ *   are added to the layout at the bottom but kept HIDDEN, so a newly shipped
+ *   widget never rearranges an existing dashboard. Users opt in via Widgets menu.
+ */
+const mergeSaved = (
+  savedLayout: LayoutItem[] | undefined,
+  savedHidden: string[] | undefined
+): { layout: LayoutItem[]; hidden: string[] } => {
+  const hasSaved = !!savedLayout?.length;
+  if (!hasSaved) {
+    return { layout: cloneDefaultLayout(), hidden: [...DEFAULT_HIDDEN] };
   }
 
-  const map = new Map<string, LayoutItem>();
-  DEFAULT_LAYOUT.forEach((d) => map.set(d.i, { ...d }));
-  (saved ?? []).forEach((s) => {
-    if (map.has(s.i)) {
-      map.set(s.i, {
-        ...map.get(s.i)!,
-        ...s,
-        dashboardVersion: DASHBOARD_LAYOUT_VERSION,
-      } as LayoutItem);
+  const savedMap = new Map((savedLayout ?? []).map((s) => [s.i, s]));
+  const hidden = new Set(savedHidden ?? []);
+  const knownIds = new Set([...savedMap.keys(), ...hidden]);
+
+  const layout: LayoutItem[] = [];
+  const newWidgets: typeof DASHBOARD_WIDGETS = [];
+
+  DASHBOARD_WIDGETS.forEach((w) => {
+    const saved = savedMap.get(w.id);
+    if (saved) {
+      layout.push({ ...w.default, ...saved, i: w.id } as LayoutItem);
+    } else if (knownIds.has(w.id)) {
+      // Known but hidden with no stored position — keep default geometry.
+      layout.push({ ...w.default } as LayoutItem);
+    } else {
+      newWidgets.push(w);
     }
   });
-  return stampLayout(Array.from(map.values()));
+
+  // Park brand-new widgets below everything else and hide them by default.
+  let y = maxBottom(layout);
+  newWidgets.forEach((w, idx) => {
+    layout.push({
+      ...w.default,
+      x: (idx % 3) * 4,
+      y,
+      i: w.id,
+    } as LayoutItem);
+    if ((idx + 1) % 3 === 0) y += w.default.h ?? 10;
+    hidden.add(w.id);
+  });
+
+  // Drop stale ids for widgets that no longer exist.
+  const validIds = new Set(DASHBOARD_WIDGETS.map((w) => w.id));
+  return {
+    layout: stampLayout(layout),
+    hidden: Array.from(hidden).filter((id) => validIds.has(id)),
+  };
 };
 
 export const DashboardGrid = () => {
@@ -72,16 +107,19 @@ export const DashboardGrid = () => {
   const [hidden, setHidden] = useState<string[]>(DEFAULT_HIDDEN);
   const [gridRevision, setGridRevision] = useState(0);
   const dirty = useRef(false);
+  const hydrated = useRef(false);
 
   // Hydrate from DB once loaded
   useEffect(() => {
     if (isLoading) return;
-    const currentSavedLayout = hasCurrentLayoutVersion(saved?.layout);
-    setLayout(mergeLayout(saved?.layout));
-    setHidden(currentSavedLayout ? saved?.hidden_widgets ?? DEFAULT_HIDDEN : DEFAULT_HIDDEN);
+    const merged = mergeSaved(saved?.layout, saved?.hidden_widgets);
+    setLayout(merged.layout);
+    setHidden(merged.hidden);
     setGridRevision((revision) => revision + 1);
     dirty.current = false;
+    hydrated.current = true;
   }, [isLoading, saved]);
+
 
   const visibleWidgets = useMemo(
     () => DASHBOARD_WIDGETS.filter((w) => !hidden.includes(w.id)),
@@ -114,6 +152,9 @@ export const DashboardGrid = () => {
   }, [visibleWidgets, layout]);
 
   const persist = async (nextLayout: LayoutItem[], nextHidden: string[]) => {
+    // Don't write anything until we've loaded the user's saved layout,
+    // otherwise defaults would overwrite their setup.
+    if (!hydrated.current) return;
     try {
       await save({ layout: stampLayout(nextLayout), hidden_widgets: nextHidden });
     } catch (e: any) {
@@ -137,6 +178,16 @@ export const DashboardGrid = () => {
     dirty.current = true;
   };
 
+  // Autosave while editing so a layout is never lost by forgetting "Done".
+  useEffect(() => {
+    if (!editMode || !dirty.current) return;
+    const t = setTimeout(() => {
+      void persist(layout, hidden);
+      dirty.current = false;
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [layout, hidden, editMode]);
+
   const handleDoneEditing = async () => {
     if (dirty.current) {
       await persist(layout, hidden);
@@ -144,6 +195,7 @@ export const DashboardGrid = () => {
     }
     setEditMode(false);
   };
+
 
   const toggleWidget = async (id: string, checked: boolean) => {
     const next = checked ? hidden.filter((h) => h !== id) : [...hidden, id];
