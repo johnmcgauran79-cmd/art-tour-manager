@@ -3901,6 +3901,7 @@ export type Database = {
       }
       tags: {
         Row: {
+          brevo_list_id: number | null
           category: string | null
           color: string
           created_at: string
@@ -3911,6 +3912,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brevo_list_id?: number | null
           category?: string | null
           color?: string
           created_at?: string
@@ -3921,6 +3923,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brevo_list_id?: number | null
           category?: string | null
           color?: string
           created_at?: string
