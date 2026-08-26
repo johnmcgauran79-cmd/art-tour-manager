@@ -5604,6 +5604,10 @@ export type Database = {
           dates_not_confirmed: boolean
           days: number
           deposit_required: number | null
+          dmc_contact_email: string | null
+          dmc_contact_name: string | null
+          dmc_contact_phone: string | null
+          dmc_name: string | null
           end_date: string
           exclusions: string | null
           final_payment_date: string | null
@@ -5616,6 +5620,7 @@ export type Database = {
           instalment_required: boolean
           is_test_tour: boolean
           location: string | null
+          managed_by_dmc: boolean
           manual_billing: boolean
           manual_emails: boolean
           minimum_passengers_required: number | null
@@ -5673,6 +5678,10 @@ export type Database = {
           dates_not_confirmed?: boolean
           days: number
           deposit_required?: number | null
+          dmc_contact_email?: string | null
+          dmc_contact_name?: string | null
+          dmc_contact_phone?: string | null
+          dmc_name?: string | null
           end_date: string
           exclusions?: string | null
           final_payment_date?: string | null
@@ -5685,6 +5694,7 @@ export type Database = {
           instalment_required?: boolean
           is_test_tour?: boolean
           location?: string | null
+          managed_by_dmc?: boolean
           manual_billing?: boolean
           manual_emails?: boolean
           minimum_passengers_required?: number | null
@@ -5742,6 +5752,10 @@ export type Database = {
           dates_not_confirmed?: boolean
           days?: number
           deposit_required?: number | null
+          dmc_contact_email?: string | null
+          dmc_contact_name?: string | null
+          dmc_contact_phone?: string | null
+          dmc_name?: string | null
           end_date?: string
           exclusions?: string | null
           final_payment_date?: string | null
@@ -5754,6 +5768,7 @@ export type Database = {
           instalment_required?: boolean
           is_test_tour?: boolean
           location?: string | null
+          managed_by_dmc?: boolean
           manual_billing?: boolean
           manual_emails?: boolean
           minimum_passengers_required?: number | null
