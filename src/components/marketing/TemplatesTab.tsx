@@ -493,27 +493,20 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
             <Button
               disabled={sendTest.isPending || !testEmail.trim()}
               onClick={async () => {
-                if (!editing) return;
-                const mode = (editing.editor_mode as "blocks" | "html") || "blocks";
-                const html =
-                  mode === "blocks"
-                    ? renderEdmHtml((editing.blocks as EdmBlock[]) || [], brand, {
-                        subject: editing.subject || undefined,
-                        preheader: editing.preheader || undefined,
-                      })
-                    : editing.html_body || "";
-                if (!html.trim()) {
-                  toast({ title: "Nothing to send yet", variant: "destructive" });
-                  return;
+                if (!testPayload) return;
+                try {
+                  await sendTest.mutateAsync({
+                    email: testEmail.trim(),
+                    html: testPayload.html,
+                    subject: testPayload.subject,
+                    brandId: testPayload.brandId,
+                  });
+                  setTestOpen(false);
+                } catch {
+                  /* toast handled in hook */
                 }
-                await sendTest.mutateAsync({
-                  email: testEmail.trim(),
-                  html,
-                  subject: editing.subject || editing.name || "Template test",
-                  brandId: (editing.brand_id as string) || null,
-                });
-                setTestOpen(false);
               }}
+
             >
               {sendTest.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Send test
