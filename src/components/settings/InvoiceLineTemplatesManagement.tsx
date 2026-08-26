@@ -48,7 +48,7 @@ const AMOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 const VARIABLE_HELP: Record<string, string[]> = {
-  description: ["{{tour_name}}", "{{passenger_names}}", "{{room_type}}"],
+  description: ["{{tour_name}}", "{{passenger_names}}", "{{room_type}}", "{{bedding_type}}"],
   single_supplement: ["{{tour_name}}"],
   loyalty_discount: ["{{percentage}}"],
   payment_schedule: [
