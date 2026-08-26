@@ -247,8 +247,6 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         supabase.from("tour_attachments").select("id, tour_id").in("tour_id", tourIds),
         supabase.from("wordpress_tour_links").select("tour_id, wp_tour_id").in("tour_id", tourIds),
         supabase.from("website_change_requests").select("tour_id, section, status").in("tour_id", tourIds).in("status", ["pending", "approved"]),
-        supabase.rpc("get_activity_allocation_discrepancies"),
-        supabase.from("activity_discrepancy_acknowledgments").select("booking_id, activity_id").in("tour_id", tourIds),
         bookingIds.length
           ? supabase.from("xero_invoice_mappings").select("booking_id, amount_due, xero_status").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
