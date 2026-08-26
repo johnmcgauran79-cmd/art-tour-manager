@@ -4,6 +4,7 @@ import {
   Archive,
   ArchiveRestore,
   Copy,
+  Eye,
   Layers,
   Loader2,
   Pencil,
@@ -72,11 +73,17 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
   const [editing, setEditing] = useState<Partial<EdmTemplateRow> | null>(null);
   const [open, setOpen] = useState(false);
 
-  const brand = useMemo<EdmBrand>(() => {
-    const b =
-      brands.find((x) => x.id === editing?.brand_id) ||
-      brands.find((x) => x.is_default) ||
-      brands[0];
+  const [preview, setPreview] = useState<{ name: string; subject: string; html: string } | null>(
+    null
+  );
+  const [testPayload, setTestPayload] = useState<{
+    html: string;
+    subject: string;
+    brandId: string | null;
+  } | null>(null);
+
+  const brandFor = (brandId?: string | null): EdmBrand => {
+    const b = brands.find((x) => x.id === brandId) || brands.find((x) => x.is_default) || brands[0];
     return {
       name: b?.name || "Australian Racing Tours",
       emailHeaderImageUrl: b?.email_header_image_url,
@@ -89,7 +96,24 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       companyWebsite: b?.company_website,
       footerText: b?.footer_text,
     };
-  }, [brands, editing?.brand_id]);
+  };
+
+  const brand = useMemo<EdmBrand>(
+    () => brandFor(editing?.brand_id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brands, editing?.brand_id]
+  );
+
+  const htmlFor = (t: Partial<EdmTemplateRow>) => {
+    const mode = (t.editor_mode as "blocks" | "html") || "blocks";
+    return mode === "blocks"
+      ? renderEdmHtml((t.blocks as EdmBlock[]) || [], brandFor(t.brand_id), {
+          subject: t.subject || undefined,
+          preheader: t.preheader || undefined,
+        })
+      : t.html_body || "";
+  };
+
 
   const grouped = useMemo(() => {
     const map = new Map<string, EdmTemplateRow[]>();
@@ -274,6 +298,21 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
                   </Button>
                   <Button
                     size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() =>
+                      setPreview({
+                        name: t.name,
+                        subject: t.subject || t.name,
+                        html: htmlFor(t),
+                      })
+                    }
+                  >
+                    <Eye className="h-3.5 w-3.5" /> Preview
+                  </Button>
+
+                  <Button
+                    size="sm"
                     variant="ghost"
                     aria-label="Duplicate template"
                     onClick={() => duplicate(t)}
@@ -407,9 +446,26 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
               variant="outline"
               className="gap-1.5"
               onClick={() => {
+                if (!editing) return;
+                const html = htmlFor(editing);
+                if (!html.trim()) {
+                  toast({ title: "Nothing to send yet", variant: "destructive" });
+                  return;
+                }
+                setTestPayload({
+                  html,
+                  subject: editing.subject || editing.name || "Template test",
+                  brandId: (editing.brand_id as string) || null,
+                });
                 setTestEmail(user?.email || "");
-                setTestOpen(true);
+                // Close the editor first so the test dialog isn't trapped behind it.
+                setOpen(false);
+                setTimeout(() => {
+                  document.body.style.pointerEvents = "";
+                  setTestOpen(true);
+                }, 150);
               }}
+
             >
               <Send className="h-4 w-4" /> Send test
             </Button>
@@ -431,7 +487,13 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       </Dialog>
 
       {/* Send test email */}
-      <Dialog open={testOpen} onOpenChange={setTestOpen}>
+      <Dialog
+        open={testOpen}
+        onOpenChange={(o) => {
+          setTestOpen(o);
+          if (!o) document.body.style.pointerEvents = "";
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Send test email</DialogTitle>
@@ -455,27 +517,20 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
             <Button
               disabled={sendTest.isPending || !testEmail.trim()}
               onClick={async () => {
-                if (!editing) return;
-                const mode = (editing.editor_mode as "blocks" | "html") || "blocks";
-                const html =
-                  mode === "blocks"
-                    ? renderEdmHtml((editing.blocks as EdmBlock[]) || [], brand, {
-                        subject: editing.subject || undefined,
-                        preheader: editing.preheader || undefined,
-                      })
-                    : editing.html_body || "";
-                if (!html.trim()) {
-                  toast({ title: "Nothing to send yet", variant: "destructive" });
-                  return;
+                if (!testPayload) return;
+                try {
+                  await sendTest.mutateAsync({
+                    email: testEmail.trim(),
+                    html: testPayload.html,
+                    subject: testPayload.subject,
+                    brandId: testPayload.brandId,
+                  });
+                  setTestOpen(false);
+                } catch {
+                  /* toast handled in hook */
                 }
-                await sendTest.mutateAsync({
-                  email: testEmail.trim(),
-                  html,
-                  subject: editing.subject || editing.name || "Template test",
-                  brandId: (editing.brand_id as string) || null,
-                });
-                setTestOpen(false);
               }}
+
             >
               {sendTest.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Send test
@@ -483,6 +538,29 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Quick preview */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="flex max-h-[92vh] max-w-4xl flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>{preview?.name}</DialogTitle>
+            <DialogDescription>Subject: {preview?.subject}</DialogDescription>
+          </DialogHeader>
+          {preview?.html?.trim() ? (
+            <iframe
+              title="Template preview"
+              className="min-h-[60vh] w-full flex-1 rounded-md border bg-white"
+              sandbox=""
+              srcDoc={preview.html}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center rounded-md border p-10 text-sm text-muted-foreground">
+              This template has no content yet.
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
