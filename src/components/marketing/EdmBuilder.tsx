@@ -539,55 +539,76 @@ export function EdmBuilder({
           )}
         </div>
       ) : (
-        <div
-          className={cn(
-            "grid gap-4",
-            livePreview
-              ? "xl:grid-cols-[280px_minmax(0,1fr)_minmax(360px,1fr)]"
-              : "lg:grid-cols-[320px_1fr]"
-          )}
-        >
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
           {/* Block tree */}
-          <Card className="h-fit">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Content blocks</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <AddBlockMenu
-                onPick={add}
-                trigger={
-                  <Button size="sm" className="w-full gap-1.5">
-                    <Plus className="h-3.5 w-3.5" /> Add block
-                  </Button>
-                }
+          <Card
+            className="h-fit w-full shrink-0 xl:w-auto"
+            style={{ width: undefined }}
+          >
+            <div className="xl:hidden">
+              <BlocksPanelBody
+                width={undefined}
+                blocks={blocks}
+                add={add}
+                selectedId={selectedId}
+                setSelectedId={setSelectedId}
+                move={move}
+                duplicate={duplicate}
+                remove={remove}
+                addToCell={addToCell}
+                copyBlock={copyBlock}
+                pasteAfter={pasteAfter}
+                copyCell={copyCell}
+                pasteIntoCell={pasteIntoCell}
+                duplicateCell={duplicateCell}
+                removeCell={removeCell}
+                clearCell={clearCell}
+                clipLabel={clip?.label ?? null}
               />
-
-              <div className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
-                {blocks.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">
-                    Pick a layout or add your first block.
-                  </p>
-                ) : (
-                  <BlockTree
-                    blocks={blocks}
-                    depth={0}
-                    selectedId={selectedId}
-                    onSelect={setSelectedId}
-                    onMove={move}
-                    onDuplicate={duplicate}
-                    onRemove={remove}
-                    onAddToCell={addToCell}
-                    onCopy={copyBlock}
-                    onPasteAfter={pasteAfter}
-                    onCopyCell={copyCell}
-                    onPasteIntoCell={pasteIntoCell}
-                    onDuplicateCell={duplicateCell}
-                    clipLabel={clip?.label ?? null}
-                  />
-                )}
-              </div>
-            </CardContent>
+            </div>
+            <div className="hidden xl:block" style={{ width: panelWidth }}>
+              <BlocksPanelBody
+                width={panelWidth}
+                blocks={blocks}
+                add={add}
+                selectedId={selectedId}
+                setSelectedId={setSelectedId}
+                move={move}
+                duplicate={duplicate}
+                remove={remove}
+                addToCell={addToCell}
+                copyBlock={copyBlock}
+                pasteAfter={pasteAfter}
+                copyCell={copyCell}
+                pasteIntoCell={pasteIntoCell}
+                duplicateCell={duplicateCell}
+                removeCell={removeCell}
+                clearCell={clearCell}
+                clipLabel={clip?.label ?? null}
+              />
+            </div>
           </Card>
+
+          {/* Drag handle to widen/narrow the blocks panel */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize content blocks panel"
+            onPointerDown={startPanelDrag}
+            onDoubleClick={() => setPanelWidth(320)}
+            title="Drag to resize · double-click to reset"
+            className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch rounded bg-transparent hover:bg-accent xl:flex"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground" />
+          </div>
+
+          <div
+            className={cn(
+              "grid min-w-0 flex-1 gap-4",
+              livePreview && "xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)]"
+            )}
+          >
+
 
           {/* Inspector */}
           <Card className="h-fit">
