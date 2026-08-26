@@ -690,8 +690,9 @@ function BlockTree({
   onCopyCell,
   onPasteIntoCell,
   onDuplicateCell,
+  onRemoveCell,
+  onClearCell,
   clipLabel,
-
 }: {
   blocks: EdmBlock[];
   depth: number;
@@ -706,12 +707,15 @@ function BlockTree({
   onCopyCell: (cellId: string) => void;
   onPasteIntoCell: (cellId: string) => void;
   onDuplicateCell: (cellId: string) => void;
+  onRemoveCell: (cellId: string) => void;
+  onClearCell: (cellId: string) => void;
   clipLabel: string | null;
 }) {
   return (
     <div className="space-y-1.5" style={{ paddingLeft: depth ? 10 : 0 }}>
       {blocks.map((b, i) => {
         const cols = Math.max(1, b.cols || 1);
+        const label = blockLabel[b.type];
         return (
           <div key={b.id} className="space-y-1">
             <div
@@ -720,12 +724,12 @@ function BlockTree({
               onClick={() => onSelect(b.id)}
               onKeyDown={(e) => e.key === "Enter" && onSelect(b.id)}
               className={cn(
-                "flex items-center gap-0.5 rounded-md border px-2 py-1.5 text-xs",
+                "flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs",
                 selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted"
               )}
             >
-              <span className="flex-1 truncate font-medium">
-                {i + 1}. {blockLabel[b.type]}
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {i + 1}. {label}
                 {isContainer(b) && (
                   <span className="ml-1 text-muted-foreground">
                     ({cols}
@@ -736,133 +740,134 @@ function BlockTree({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-6 w-6 shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMove(b.id, -1);
                 }}
                 aria-label="Move up"
+                title="Move up"
               >
                 <ArrowUp className="h-3 w-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-6 w-6 shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMove(b.id, 1);
                 }}
                 aria-label="Move down"
+                title="Move down"
               >
                 <ArrowDown className="h-3 w-3" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(b.id);
-                }}
-                aria-label={`Duplicate ${blockLabel[b.type]} with all its settings`}
-                title={`Duplicate ${blockLabel[b.type]} (copies everything inside)`}
-              >
-                <CopyPlus className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopy(b.id);
-                }}
-                aria-label="Copy"
-                title="Copy — then paste it anywhere in this email"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                disabled={!clipLabel}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPasteAfter(b.id);
-                }}
-                aria-label="Paste after"
-                title={clipLabel ? `Paste ${clipLabel} below this block` : "Nothing copied yet"}
-              >
-                <ClipboardPaste className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(b.id);
-                }}
-                aria-label="Delete"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`${label} actions`}
+                    title="More actions"
+                  >
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="truncate">{label}</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => onDuplicate(b.id)}>
+                    <CopyPlus className="mr-2 h-3.5 w-3.5" /> Duplicate (with contents)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onCopy(b.id)}>
+                    <Copy className="mr-2 h-3.5 w-3.5" /> Copy
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={!clipLabel} onClick={() => onPasteAfter(b.id)}>
+                    <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
+                    {clipLabel ? `Paste ${clipLabel} below` : "Nothing copied yet"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onRemove(b.id)}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" />
+                    Delete {isContainer(b) ? "whole section" : label.toLowerCase()}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {isContainer(b) &&
               (b.cells || []).map((cell, idx) => {
                 const r = Math.floor(idx / cols) + 1;
                 const c = (idx % cols) + 1;
-                const label =
+                const cellLabel =
                   b.type === "table" ? `Row ${r} · Col ${c}` : `Column ${c}`;
+                const colName = b.type === "table" ? `column ${c}` : cellLabel.toLowerCase();
                 return (
                   <div key={cell.id} className="ml-3 rounded-md border border-dashed p-1.5">
                     <div className="flex items-center gap-1">
-                      <span className="flex-1 text-[10px] font-semibold uppercase text-muted-foreground">
-                        {label}
+                      <span className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase text-muted-foreground">
+                        {cellLabel}
                       </span>
                       <AddBlockMenu
                         includeLayout={false}
                         onPick={(t) => onAddToCell(cell.id, t)}
                         trigger={
-                          <Button variant="ghost" size="icon" className="h-5 w-5" aria-label={`Add block to ${label}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 shrink-0"
+                            aria-label={`Add block to ${cellLabel}`}
+                            title={`Add block to ${cellLabel}`}
+                          >
                             <Plus className="h-3 w-3" />
                           </Button>
                         }
                       />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => onDuplicateCell(cell.id)}
-                        aria-label={`Duplicate ${label}`}
-                        title="Duplicate this column (adds a new column with the same content)"
-                      >
-                        <CopyPlus className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => onCopyCell(cell.id)}
-                        aria-label={`Copy ${label} contents`}
-                        title="Copy everything in this column"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        disabled={!clipLabel}
-                        onClick={() => onPasteIntoCell(cell.id)}
-                        aria-label={`Paste into ${label}`}
-                        title={clipLabel ? `Paste ${clipLabel} into this column` : "Nothing copied yet"}
-                      >
-                        <ClipboardPaste className="h-3 w-3" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 shrink-0"
+                            aria-label={`${cellLabel} actions`}
+                            title="Column actions"
+                          >
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuLabel>{cellLabel}</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => onDuplicateCell(cell.id)}>
+                            <CopyPlus className="mr-2 h-3.5 w-3.5" /> Duplicate column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onCopyCell(cell.id)}>
+                            <Copy className="mr-2 h-3.5 w-3.5" /> Copy column contents
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!clipLabel}
+                            onClick={() => onPasteIntoCell(cell.id)}
+                          >
+                            <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
+                            {clipLabel ? `Paste ${clipLabel} here` : "Nothing copied yet"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onClearCell(cell.id)}>
+                            <Eraser className="mr-2 h-3.5 w-3.5" /> Empty this column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onRemoveCell(cell.id)}
+                          >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            {cols <= 1 ? "Delete whole section" : `Delete ${colName}`}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     {cell.blocks.length === 0 ? (
                       <p className="py-1 text-center text-[10px] text-muted-foreground">Empty</p>
@@ -881,6 +886,8 @@ function BlockTree({
                         onCopyCell={onCopyCell}
                         onPasteIntoCell={onPasteIntoCell}
                         onDuplicateCell={onDuplicateCell}
+                        onRemoveCell={onRemoveCell}
+                        onClearCell={onClearCell}
                         clipLabel={clipLabel}
                       />
                     )}
@@ -893,6 +900,7 @@ function BlockTree({
     </div>
   );
 }
+
 
 function LivePreviewCard({
   html,
