@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Link2, Unlink, RefreshCw, Users, FileText, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
+import { Link2, Unlink, RefreshCw, Users, FileText, CheckCircle2, XCircle, Clock, Loader2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceSyncReviewModal } from "@/components/finance/InvoiceSyncReviewModal";
 import { InvoiceSyncProgressModal } from "@/components/finance/InvoiceSyncProgressModal";
 import { PhoneSyncReviewModal } from "@/components/finance/PhoneSyncReviewModal";
+import { StateSyncReviewModal } from "@/components/finance/StateSyncReviewModal";
+
 
 interface XeroSettings {
   id: string;
