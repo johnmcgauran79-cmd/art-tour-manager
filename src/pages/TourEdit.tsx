@@ -805,31 +805,33 @@ export default function TourEdit() {
           </div>
         </div>
 
-        {formData.instalment_required && (
-          <div className="space-y-2">
-            <Label htmlFor="instalment_details">Instalment / Payment Details</Label>
-            <div
-              id="instalment_details"
-              className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap"
-            >
-              {renderInstalmentDetails(instalmentTemplate, {
-                deposit_required: formData.deposit_required,
-                instalment_amount: formData.instalment_amount,
-                start_date: formData.start_date,
-              }) || (
-                <span className="text-muted-foreground">
-                  Enter deposit, instalment amount and start date to generate.
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Auto-generated from the deposit, instalment amount and tour start date. Edit the template in
-              <strong> Settings → General Settings → Instalment Details Template</strong>. Used in booking
-              confirmation emails via <code>{"{{tour_instalment_details}}"}</code> and synced to the WordPress
-              "Payment Details" field on save.
-            </p>
+        <div className="space-y-2">
+          <Label htmlFor="instalment_details">Instalment / Payment Details</Label>
+          <div
+            id="instalment_details"
+            className="rounded-md border bg-muted/40 p-3 text-sm whitespace-pre-wrap"
+          >
+            {resolveInstalmentDetails({
+              instalment_required: formData.instalment_required,
+              instalmentTemplate,
+              noInstalmentTemplate,
+              deposit_required: formData.deposit_required,
+              instalment_amount: formData.instalment_amount,
+              start_date: formData.start_date,
+            }) || (
+              <span className="text-muted-foreground">
+                Enter deposit{formData.instalment_required ? ", instalment amount" : ""} and start date to generate.
+              </span>
+            )}
           </div>
-        )}
+          <p className="text-xs text-muted-foreground">
+            Auto-generated from the deposit{formData.instalment_required ? ", instalment amount" : ""} and tour start
+            date. When no instalment is required the no-instalment template is used instead. Edit both templates in
+            <strong> Settings → General Settings → Instalment Details Template</strong>. Used in booking
+            confirmation emails via <code>{"{{tour_instalment_details}}"}</code> and synced to the WordPress
+            "Payment Details" field on save.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
