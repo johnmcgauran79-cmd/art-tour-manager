@@ -86,6 +86,14 @@ function getRoomType(hotelBookings: any[]): string {
   }
 }
 
+// Bare bedding word for invoice descriptions: "Twin", "Single", "Double"...
+function getBeddingType(hotelBookings: any[]): string {
+  const bedding = hotelBookings?.[0]?.bedding;
+  if (!bedding) return 'Standard';
+  return String(bedding).charAt(0).toUpperCase() + String(bedding).slice(1);
+}
+
+
 async function resolveXeroContact(
   supabase: any,
   auth: { token: string; tenantId: string },
