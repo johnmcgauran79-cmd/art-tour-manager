@@ -484,6 +484,15 @@ export const XeroIntegrationSettings = () => {
         totalChecked={phoneTotalChecked}
         onApplyComplete={() => loadRecentSyncLog()}
       />
+
+      <StateSyncReviewModal
+        open={showStateReviewModal}
+        onClose={() => setShowStateReviewModal(false)}
+        proposals={stateProposals}
+        totalChecked={stateTotalChecked}
+        onApplyComplete={() => loadRecentSyncLog()}
+      />
+
     </div>
   );
 };
