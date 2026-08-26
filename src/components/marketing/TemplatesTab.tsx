@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import {
   Archive,
   ArchiveRestore,
+  Check,
   Copy,
   Eye,
   Layers,
@@ -139,8 +140,70 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       brand_id: defaultBrand?.id ?? null,
       version: 1,
     });
+    lastSavedRef.current = null;
+    setSavedAt(null);
     setOpen(true);
   };
+
+  /** Snapshot of the last persisted payload, so autosave only fires on changes. */
+  const lastSavedRef = useRef<string | null>(null);
+  const [autoSaveOn, setAutoSaveOn] = useState(true);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [autoSaving, setAutoSaving] = useState(false);
+
+  const payloadFor = useCallback(
+    (t: Partial<EdmTemplateRow>) => {
+      const mode = (t.editor_mode as "blocks" | "html") || "blocks";
+      return {
+        name: t.name || "",
+        description: t.description || null,
+        category: t.category || "General",
+        subject: t.subject || null,
+        preheader: t.preheader || null,
+        editor_mode: mode,
+        blocks: ((t.blocks as any) || []) as any,
+        html_body:
+          mode === "blocks"
+            ? renderEdmHtml((t.blocks as EdmBlock[]) || [], brandFor(t.brand_id), {
+                subject: t.subject || undefined,
+                preheader: t.preheader || undefined,
+              })
+            : t.html_body || "",
+        brand_id: t.brand_id || null,
+      };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brands]
+  );
+
+  // Autosave: debounce edits and persist quietly so nothing is lost.
+  useEffect(() => {
+    if (!open || !autoSaveOn || !editing?.name?.trim()) return;
+    const payload = payloadFor(editing);
+    const fingerprint = JSON.stringify(payload);
+    if (lastSavedRef.current === fingerprint) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setAutoSaving(true);
+        const saved = await saveTemplate.mutateAsync({
+          id: editing.id,
+          silent: true,
+          ...payload,
+        });
+        lastSavedRef.current = fingerprint;
+        setSavedAt(new Date());
+        if (saved?.id && !editing.id) setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
+      } catch {
+        // Leave the fingerprint unset so the next tick retries.
+      } finally {
+        setAutoSaving(false);
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, open, autoSaveOn, payloadFor]);
 
   const commit = async (asNewVersion: boolean) => {
     if (!editing?.name) {
@@ -438,7 +501,23 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="items-center gap-2 sm:justify-between">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <label className="flex items-center gap-2">
+                <Switch checked={autoSaveOn} onCheckedChange={setAutoSaveOn} />
+                Autosave
+              </label>
+              {autoSaving ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                </span>
+              ) : savedAt ? (
+                <span className="flex items-center gap-1">
+                  <Check className="h-3 w-3 text-primary" /> Saved {format(savedAt, "HH:mm:ss")}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
@@ -482,6 +561,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
               {saveTemplate.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               {editing?.id ? "Update template" : "Save template"}
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
