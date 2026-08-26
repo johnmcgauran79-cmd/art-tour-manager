@@ -46,10 +46,8 @@ const DEFAULTS: Record<string, string> = {
   theme_secondary_color: '#d4a017',
   theme_sidebar_bg: '#fafafa',
   theme_sidebar_text: '#0a1929',
-  theme_email_button_color: '#0a1929',
-  theme_email_button_text: '#d4a017',
-  theme_email_accent_color: '#d4a017',
 };
+
 
 export const ThemeAppearanceSettings = () => {
   const { data: settings } = useGeneralSettings();
@@ -101,7 +99,7 @@ export const ThemeAppearanceSettings = () => {
           Theme & Appearance
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Customise brand colours across the app UI and outgoing emails. Changes apply immediately after saving.
+          Customise brand colours across the app UI. Changes apply immediately after saving.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -140,33 +138,6 @@ export const ThemeAppearanceSettings = () => {
           </div>
         </div>
 
-        {/* Email Colors */}
-        <div className="space-y-4 border-t pt-4">
-          <h4 className="text-sm font-semibold text-foreground">Email Branding</h4>
-          <div className="space-y-4">
-            <ColorField
-              label="Email Button Color"
-              description="CTA button background in outgoing emails"
-              settingKey="theme_email_button_color"
-              value={localColors.theme_email_button_color || DEFAULTS.theme_email_button_color}
-              onChange={handleColorChange}
-            />
-            <ColorField
-              label="Email Button Text"
-              description="CTA button text colour in outgoing emails"
-              settingKey="theme_email_button_text"
-              value={localColors.theme_email_button_text || DEFAULTS.theme_email_button_text}
-              onChange={handleColorChange}
-            />
-            <ColorField
-              label="Email Accent"
-              description="Highlight/accent colour used in email templates"
-              settingKey="theme_email_accent_color"
-              value={localColors.theme_email_accent_color || DEFAULTS.theme_email_accent_color}
-              onChange={handleColorChange}
-            />
-          </div>
-        </div>
 
         {/* Preview */}
         <div className="border rounded-lg p-4 space-y-3">
@@ -191,15 +162,7 @@ export const ThemeAppearanceSettings = () => {
               Outline Button
             </button>
             <div
-              className="px-4 py-2 rounded-md text-sm font-medium"
-              style={{
-                backgroundColor: localColors.theme_email_button_color || DEFAULTS.theme_email_button_color,
-                color: localColors.theme_email_button_text || DEFAULTS.theme_email_button_text,
-              }}
-            >
-              Email CTA
-            </div>
-            <div
+
               className="w-20 h-10 rounded-md flex items-center justify-center text-xs"
               style={{
                 backgroundColor: localColors.theme_sidebar_bg || DEFAULTS.theme_sidebar_bg,
