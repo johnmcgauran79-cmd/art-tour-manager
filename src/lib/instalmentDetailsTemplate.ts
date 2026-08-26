@@ -4,6 +4,11 @@
 export const DEFAULT_INSTALMENT_TEMPLATE =
   "A ${{deposit_amount}} per person deposit secures your place on the tour. A further ${{instalment_amount}} per person is due six months prior to departure ({{six_months_before_start}}), with the remaining balance payable 90 days ({{three_months_before_start}}) before the tour commences.";
 
+// Fallback used when a tour has no instalment, so the WordPress "Payment Details"
+// field and booking emails still get generated text.
+export const DEFAULT_NO_INSTALMENT_TEMPLATE =
+  "A ${{deposit_amount}} per person deposit secures your place on the tour. The remaining balance payable 90 days ({{three_months_before_start}}) before the tour commences.";
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
