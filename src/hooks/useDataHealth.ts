@@ -541,12 +541,15 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
             }
           }
 
-          // --- ops: hotel room allocated for this booking ---
-          const bookingHotels = hotelByBooking.get(b.id) || [];
-          track("hotel", 1);
-          const needsHotel = bookingHotels.length === 0 || bookingHotels.some((h: any) => h.required !== false && !h.hotel_id);
-          if (needsHotel) {
-            flag("hotel", leadName, "No hotel room allocated", b.id);
+          // --- ops: hotel room allocated for this booking (skip when accommodation isn't required) ---
+          if (b.accommodation_required !== false) {
+            const bookingHotels = hotelByBooking.get(b.id) || [];
+            track("hotel", 1);
+            const needsHotel =
+              bookingHotels.length === 0 || bookingHotels.some((h: any) => h.required !== false && !h.hotel_id);
+            if (needsHotel) {
+              flag("hotel", leadName, "No hotel room allocated", b.id);
+            }
           }
 
           // --- ops: payments inside 30 days ---
