@@ -8,6 +8,60 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
+const XERO_CONTACT_PAGE_SIZE = 100;
+const XERO_PAGE_DELAY_MS = 300;
+const XERO_MAX_RETRIES = 4;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function getRetryAfterMs(response: Response): number | null {
+  const retryAfter = response.headers.get('retry-after');
+  if (!retryAfter) return null;
+
+  const seconds = Number(retryAfter);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+
+  const retryDate = Date.parse(retryAfter);
+  if (Number.isNaN(retryDate)) return null;
+
+  return Math.max(0, retryDate - Date.now());
+}
+
+async function fetchXeroContactsPage(auth: { token: string; tenantId: string }, page: number): Promise<any[]> {
+  for (let attempt = 0; attempt <= XERO_MAX_RETRIES; attempt++) {
+    if (page > 1 || attempt > 0) await sleep(XERO_PAGE_DELAY_MS);
+
+    const contactsResponse = await fetch(
+      `https://api.xero.com/api.xro/2.0/Contacts?page=${page}&where=ContactStatus==\"ACTIVE\"`,
+      {
+        headers: {
+          'Authorization': `Bearer ${auth.token}`,
+          'Xero-Tenant-Id': auth.tenantId,
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (contactsResponse.ok) {
+      const contactsData = await contactsResponse.json();
+      return contactsData.Contacts || [];
+    }
+
+    const errorText = await contactsResponse.text();
+    if (contactsResponse.status !== 429 || attempt >= XERO_MAX_RETRIES) {
+      throw new Error(`Failed to fetch Xero contacts: ${contactsResponse.status} - ${errorText}`);
+    }
+
+    const retryAfterMs = getRetryAfterMs(contactsResponse);
+    const fallbackMs = XERO_PAGE_DELAY_MS * Math.pow(2, attempt + 1);
+    const waitMs = Math.min(retryAfterMs ?? fallbackMs, 15000);
+    console.warn(`Xero contacts rate limited on page ${page}; retrying in ${waitMs}ms`);
+    await sleep(waitMs);
+  }
+
+  return [];
+}
+
 async function getValidAccessToken(supabase: any): Promise<{ token: string; tenantId: string; settingsId: string } | null> {
   const { data: settings } = await supabase
     .from('xero_integration_settings')
@@ -198,24 +252,7 @@ serve(async (req) => {
     let unmatchedWithState = 0;
 
     while (hasMore) {
-      const contactsResponse = await fetch(
-        `https://api.xero.com/api.xro/2.0/Contacts?page=${page}&where=ContactStatus=="ACTIVE"`,
-        {
-          headers: {
-            'Authorization': `Bearer ${auth.token}`,
-            'Xero-Tenant-Id': auth.tenantId,
-            'Accept': 'application/json',
-          },
-        }
-      );
-
-      if (!contactsResponse.ok) {
-        const errorText = await contactsResponse.text();
-        throw new Error(`Failed to fetch Xero contacts: ${contactsResponse.status} - ${errorText}`);
-      }
-
-      const contactsData = await contactsResponse.json();
-      const xeroContacts = contactsData.Contacts || [];
+      const xeroContacts = await fetchXeroContactsPage(auth, page);
       if (xeroContacts.length === 0) { hasMore = false; break; }
       totalXeroContacts += xeroContacts.length;
 
@@ -263,7 +300,7 @@ serve(async (req) => {
         });
       }
 
-      if (xeroContacts.length < 100) { hasMore = false; } else { page++; }
+      if (xeroContacts.length < XERO_CONTACT_PAGE_SIZE) { hasMore = false; } else { page++; }
     }
 
     console.log(`State sync preview: ${totalXeroContacts} Xero contacts, ${matchedCount} matched, ${proposals.length} state fills proposed, ${unmatchedWithState} unmatched with state`);
