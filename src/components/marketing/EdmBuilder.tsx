@@ -70,6 +70,9 @@ import {
   moveBlockById,
   newBlock,
   removeBlockById,
+  removeCellById,
+  clearCellById,
+
   renderEdmHtml,
   resizeCells,
   updateBlockById,
