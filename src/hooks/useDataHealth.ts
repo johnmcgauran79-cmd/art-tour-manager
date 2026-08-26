@@ -216,8 +216,6 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         attachmentRes,
         wpLinkRes,
         websiteChangeRes,
-        allocationRes,
-        allocationAckRes,
         invoiceRes,
         activityRes,
       ] = await Promise.all([
