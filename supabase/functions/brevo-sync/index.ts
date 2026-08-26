@@ -22,12 +22,6 @@ const errorStatusFromMessage = (message: string) => {
   return status >= 400 && status < 600 ? status : 500;
 };
 
-const tagSlug = (name: string, listId: number) =>
-  `${
-    name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "brevo-list"
-  }-${listId}`;
-
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -334,7 +328,6 @@ Deno.serve(async (req) => {
       const limit = Math.min(Math.max(Number(body?.limit) || 50, 1), 50);
       const offset = Math.max(Number(body?.offset) || 0, 0);
       const apply = body?.apply === true;
-      const slug = tagSlug(listName, listId);
 
       const res = await brevoRequest(
         `contacts/lists/${listId}/contacts?limit=${limit}&offset=${offset}`,
@@ -370,7 +363,6 @@ Deno.serve(async (req) => {
             .from("tags")
             .insert({
               name: listName,
-              slug,
               category: "Audience",
               brevo_list_id: listId,
             })
