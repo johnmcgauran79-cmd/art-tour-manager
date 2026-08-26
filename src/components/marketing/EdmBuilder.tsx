@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -6,17 +6,23 @@ import {
   Copy,
   CopyPlus,
   ClipboardPaste,
+  Eraser,
   Eye,
   EyeOff,
+  GripVertical,
   Maximize2,
   LayoutTemplate,
   Monitor,
+  MoreHorizontal,
   Plus,
+  Redo2,
   Smartphone,
   Palette,
   Trash2,
   Type,
+  Undo2,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +47,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +70,9 @@ import {
   moveBlockById,
   newBlock,
   removeBlockById,
+  removeCellById,
+  clearCellById,
+
   renderEdmHtml,
   resizeCells,
   updateBlockById,
@@ -164,6 +176,90 @@ export function EdmBuilder({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
 
+  /* ---- resizable content-blocks panel ---- */
+  const PANEL_MIN = 240;
+  const PANEL_MAX = 640;
+  const [panelWidth, setPanelWidth] = useState<number>(() => {
+    const stored = Number(localStorage.getItem("edm-blocks-panel-width"));
+    return stored >= PANEL_MIN && stored <= PANEL_MAX ? stored : 320;
+  });
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("edm-blocks-panel-width", String(Math.round(panelWidth)));
+  }, [panelWidth]);
+
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!dragRef.current) return;
+      const next = dragRef.current.startW + (e.clientX - dragRef.current.startX);
+      setPanelWidth(Math.min(PANEL_MAX, Math.max(PANEL_MIN, next)));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("user-select");
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
+  const startPanelDrag = (e: React.PointerEvent) => {
+    dragRef.current = { startX: e.clientX, startW: panelWidth };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  /* ---- undo / redo history ---- */
+  const [past, setPast] = useState<EdmBlock[][]>([]);
+  const [future, setFuture] = useState<EdmBlock[][]>([]);
+
+  /** Apply a block change, recording the previous state for undo. */
+  const commit = useCallback(
+    (next: EdmBlock[]) => {
+      setPast((p) => [...p.slice(-49), blocks]);
+      setFuture([]);
+      onBlocksChange(next);
+    },
+    [blocks, onBlocksChange]
+  );
+
+  const undo = useCallback(() => {
+    setPast((p) => {
+      if (p.length === 0) return p;
+      const prev = p[p.length - 1];
+      setFuture((f) => [blocks, ...f].slice(0, 50));
+      onBlocksChange(prev);
+      return p.slice(0, -1);
+    });
+  }, [blocks, onBlocksChange]);
+
+  const redo = useCallback(() => {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      setPast((p) => [...p.slice(-49), blocks]);
+      onBlocksChange(f[0]);
+      return f.slice(1);
+    });
+  }, [blocks, onBlocksChange]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA)$/.test(t.tagName))) return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
+
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
   const previewHtml = useMemo(
@@ -175,21 +271,22 @@ export function EdmBuilder({
   );
 
   const update = (id: string, patch: Partial<EdmBlock>) =>
-    onBlocksChange(updateBlockById(blocks, id, patch));
+    commit(updateBlockById(blocks, id, patch));
+
 
   const add = (type: EdmBlockType) => {
     const block = newBlock(type);
-    onBlocksChange(insertBlockAfter(blocks, block, selectedId));
+    commit(insertBlockAfter(blocks, block, selectedId));
     setSelectedId(block.id);
   };
 
   const addToCell = (cellId: string, type: EdmBlockType) => {
     const block = newBlock(type);
-    onBlocksChange(appendBlockToCell(blocks, cellId, block));
+    commit(appendBlockToCell(blocks, cellId, block));
     setSelectedId(block.id);
   };
 
-  const move = (id: string, dir: -1 | 1) => onBlocksChange(moveBlockById(blocks, id, dir));
+  const move = (id: string, dir: -1 | 1) => commit(moveBlockById(blocks, id, dir));
 
   const [clip, setClip] = useState<
     { kind: "block"; blocks: EdmBlock[]; label: string } | null
@@ -223,29 +320,47 @@ export function EdmBuilder({
       afterId = copy.id;
       lastId = copy.id;
     }
-    onBlocksChange(next);
+    commit(next);
     setSelectedId(lastId);
   };
 
   const pasteIntoCell = (cellId: string) => {
     if (!clip) return;
-    onBlocksChange(appendBlocksToCell(blocks, cellId, cloneBlocks(clip.blocks)));
+    commit(appendBlocksToCell(blocks, cellId, cloneBlocks(clip.blocks)));
   };
 
   const duplicateCell = (cellId: string) => {
     const res = duplicateCellById(blocks, cellId);
-    onBlocksChange(res.blocks);
+    commit(res.blocks);
+  };
+
+  /** Delete a whole column (and, in tables, that column in every row). */
+  const removeCell = (cellId: string) => {
+    commit(removeCellById(blocks, cellId));
+    setSelectedId(null);
+    toast({ title: "Column deleted", description: "Use Undo if that wasn't intended." });
+  };
+
+  /** Empty a column but keep the column itself. */
+  const clearCell = (cellId: string) => {
+    commit(clearCellById(blocks, cellId));
+    setSelectedId(null);
   };
 
   const duplicate = (id: string) => {
     const res = duplicateBlockById(blocks, id);
-    onBlocksChange(res.blocks);
+    commit(res.blocks);
     if (res.newId) setSelectedId(res.newId);
   };
 
   const remove = (id: string) => {
-    onBlocksChange(removeBlockById(blocks, id));
+    const b = findBlockById(blocks, id);
+    commit(removeBlockById(blocks, id));
     if (selectedId === id) setSelectedId(null);
+    toast({
+      title: `${b ? blockLabel[b.type] : "Block"} deleted`,
+      description: "Use Undo if that wasn't intended.",
+    });
   };
 
   /** Open (creating if needed) the template-level design settings block. */
@@ -256,14 +371,15 @@ export function EdmBuilder({
       return;
     }
     const block = newBlock("design");
-    onBlocksChange([block, ...blocks]);
+    commit([block, ...blocks]);
     setSelectedId(block.id);
   };
 
   const applyTemplate = (key: string) => {
     const tpl = edmStarterTemplates.find((t) => t.key === key);
     if (!tpl) return;
-    onBlocksChange(tpl.build());
+    commit(tpl.build());
+
     onModeChange("blocks");
     setSelectedId(null);
     toast({ title: `${tpl.name} layout applied` });
@@ -329,6 +445,32 @@ export function EdmBuilder({
             <Palette className="h-3.5 w-3.5" /> Header &amp; background
           </Button>
         )}
+
+        {mode === "blocks" && (
+          <div className="flex items-center gap-1 rounded-md border p-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={undo}
+              disabled={past.length === 0}
+              title="Undo last change (Ctrl/Cmd+Z)"
+            >
+              <Undo2 className="h-3.5 w-3.5" /> Undo
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={redo}
+              disabled={future.length === 0}
+              title="Redo (Ctrl/Cmd+Shift+Z)"
+            >
+              <Redo2 className="h-3.5 w-3.5" /> Redo
+            </Button>
+          </div>
+        )}
+
 
         {mode === "blocks" && (
           <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
@@ -397,16 +539,12 @@ export function EdmBuilder({
           )}
         </div>
       ) : (
-        <div
-          className={cn(
-            "grid gap-4",
-            livePreview
-              ? "xl:grid-cols-[280px_minmax(0,1fr)_minmax(360px,1fr)]"
-              : "lg:grid-cols-[320px_1fr]"
-          )}
-        >
-          {/* Block tree */}
-          <Card className="h-fit">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+          {/* Block tree — width is user-adjustable via the drag handle */}
+          <Card
+            className="h-fit w-full shrink-0 xl:w-[var(--edm-panel-w)]"
+            style={{ ["--edm-panel-w" as string]: `${panelWidth}px` }}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Content blocks</CardTitle>
             </CardHeader>
@@ -440,12 +578,36 @@ export function EdmBuilder({
                     onCopyCell={copyCell}
                     onPasteIntoCell={pasteIntoCell}
                     onDuplicateCell={duplicateCell}
+                    onRemoveCell={removeCell}
+                    onClearCell={clearCell}
                     clipLabel={clip?.label ?? null}
                   />
                 )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Drag handle to widen/narrow the blocks panel */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize content blocks panel"
+            onPointerDown={startPanelDrag}
+            onDoubleClick={() => setPanelWidth(320)}
+            title="Drag to resize · double-click to reset"
+            className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch rounded hover:bg-accent xl:flex"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground" />
+          </div>
+
+          <div
+            className={cn(
+              "grid min-w-0 flex-1 gap-4",
+              livePreview && "xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)]"
+            )}
+          >
+
+
 
           {/* Inspector */}
           <Card className="h-fit">
@@ -474,10 +636,12 @@ export function EdmBuilder({
             </CardContent>
           </Card>
 
-          {livePreview && (
-            <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
-          )}
+            {livePreview && (
+              <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
+            )}
+          </div>
         </div>
+
       )}
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -526,8 +690,9 @@ function BlockTree({
   onCopyCell,
   onPasteIntoCell,
   onDuplicateCell,
+  onRemoveCell,
+  onClearCell,
   clipLabel,
-
 }: {
   blocks: EdmBlock[];
   depth: number;
@@ -542,12 +707,15 @@ function BlockTree({
   onCopyCell: (cellId: string) => void;
   onPasteIntoCell: (cellId: string) => void;
   onDuplicateCell: (cellId: string) => void;
+  onRemoveCell: (cellId: string) => void;
+  onClearCell: (cellId: string) => void;
   clipLabel: string | null;
 }) {
   return (
     <div className="space-y-1.5" style={{ paddingLeft: depth ? 10 : 0 }}>
       {blocks.map((b, i) => {
         const cols = Math.max(1, b.cols || 1);
+        const label = blockLabel[b.type];
         return (
           <div key={b.id} className="space-y-1">
             <div
@@ -556,12 +724,12 @@ function BlockTree({
               onClick={() => onSelect(b.id)}
               onKeyDown={(e) => e.key === "Enter" && onSelect(b.id)}
               className={cn(
-                "flex items-center gap-0.5 rounded-md border px-2 py-1.5 text-xs",
+                "flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs",
                 selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted"
               )}
             >
-              <span className="flex-1 truncate font-medium">
-                {i + 1}. {blockLabel[b.type]}
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {i + 1}. {label}
                 {isContainer(b) && (
                   <span className="ml-1 text-muted-foreground">
                     ({cols}
@@ -572,133 +740,134 @@ function BlockTree({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-6 w-6 shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMove(b.id, -1);
                 }}
                 aria-label="Move up"
+                title="Move up"
               >
                 <ArrowUp className="h-3 w-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-6 w-6 shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   onMove(b.id, 1);
                 }}
                 aria-label="Move down"
+                title="Move down"
               >
                 <ArrowDown className="h-3 w-3" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(b.id);
-                }}
-                aria-label={`Duplicate ${blockLabel[b.type]} with all its settings`}
-                title={`Duplicate ${blockLabel[b.type]} (copies everything inside)`}
-              >
-                <CopyPlus className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCopy(b.id);
-                }}
-                aria-label="Copy"
-                title="Copy — then paste it anywhere in this email"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                disabled={!clipLabel}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPasteAfter(b.id);
-                }}
-                aria-label="Paste after"
-                title={clipLabel ? `Paste ${clipLabel} below this block` : "Nothing copied yet"}
-              >
-                <ClipboardPaste className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(b.id);
-                }}
-                aria-label="Delete"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`${label} actions`}
+                    title="More actions"
+                  >
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="truncate">{label}</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => onDuplicate(b.id)}>
+                    <CopyPlus className="mr-2 h-3.5 w-3.5" /> Duplicate (with contents)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onCopy(b.id)}>
+                    <Copy className="mr-2 h-3.5 w-3.5" /> Copy
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={!clipLabel} onClick={() => onPasteAfter(b.id)}>
+                    <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
+                    {clipLabel ? `Paste ${clipLabel} below` : "Nothing copied yet"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onRemove(b.id)}
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" />
+                    Delete {isContainer(b) ? "whole section" : label.toLowerCase()}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {isContainer(b) &&
               (b.cells || []).map((cell, idx) => {
                 const r = Math.floor(idx / cols) + 1;
                 const c = (idx % cols) + 1;
-                const label =
+                const cellLabel =
                   b.type === "table" ? `Row ${r} · Col ${c}` : `Column ${c}`;
+                const colName = b.type === "table" ? `column ${c}` : cellLabel.toLowerCase();
                 return (
                   <div key={cell.id} className="ml-3 rounded-md border border-dashed p-1.5">
                     <div className="flex items-center gap-1">
-                      <span className="flex-1 text-[10px] font-semibold uppercase text-muted-foreground">
-                        {label}
+                      <span className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase text-muted-foreground">
+                        {cellLabel}
                       </span>
                       <AddBlockMenu
                         includeLayout={false}
                         onPick={(t) => onAddToCell(cell.id, t)}
                         trigger={
-                          <Button variant="ghost" size="icon" className="h-5 w-5" aria-label={`Add block to ${label}`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 shrink-0"
+                            aria-label={`Add block to ${cellLabel}`}
+                            title={`Add block to ${cellLabel}`}
+                          >
                             <Plus className="h-3 w-3" />
                           </Button>
                         }
                       />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => onDuplicateCell(cell.id)}
-                        aria-label={`Duplicate ${label}`}
-                        title="Duplicate this column (adds a new column with the same content)"
-                      >
-                        <CopyPlus className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => onCopyCell(cell.id)}
-                        aria-label={`Copy ${label} contents`}
-                        title="Copy everything in this column"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        disabled={!clipLabel}
-                        onClick={() => onPasteIntoCell(cell.id)}
-                        aria-label={`Paste into ${label}`}
-                        title={clipLabel ? `Paste ${clipLabel} into this column` : "Nothing copied yet"}
-                      >
-                        <ClipboardPaste className="h-3 w-3" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 shrink-0"
+                            aria-label={`${cellLabel} actions`}
+                            title="Column actions"
+                          >
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuLabel>{cellLabel}</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => onDuplicateCell(cell.id)}>
+                            <CopyPlus className="mr-2 h-3.5 w-3.5" /> Duplicate column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onCopyCell(cell.id)}>
+                            <Copy className="mr-2 h-3.5 w-3.5" /> Copy column contents
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!clipLabel}
+                            onClick={() => onPasteIntoCell(cell.id)}
+                          >
+                            <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
+                            {clipLabel ? `Paste ${clipLabel} here` : "Nothing copied yet"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onClearCell(cell.id)}>
+                            <Eraser className="mr-2 h-3.5 w-3.5" /> Empty this column
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onRemoveCell(cell.id)}
+                          >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            {cols <= 1 ? "Delete whole section" : `Delete ${colName}`}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     {cell.blocks.length === 0 ? (
                       <p className="py-1 text-center text-[10px] text-muted-foreground">Empty</p>
@@ -717,6 +886,8 @@ function BlockTree({
                         onCopyCell={onCopyCell}
                         onPasteIntoCell={onPasteIntoCell}
                         onDuplicateCell={onDuplicateCell}
+                        onRemoveCell={onRemoveCell}
+                        onClearCell={onClearCell}
                         clipLabel={clipLabel}
                       />
                     )}
@@ -729,6 +900,7 @@ function BlockTree({
     </div>
   );
 }
+
 
 function LivePreviewCard({
   html,
