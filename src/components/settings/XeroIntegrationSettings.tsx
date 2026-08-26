@@ -418,7 +418,7 @@ export const XeroIntegrationSettings = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Invoice sync fetches changes from Xero and shows a review screen before applying. Contact sync imports new contacts automatically. Phone sync compares and updates phone numbers.
+                  Invoice sync fetches changes from Xero and shows a review screen before applying. Contact sync imports new contacts automatically. Phone sync compares and updates phone numbers. State sync finds matched Xero contacts whose address gives a state the system is missing — existing states are never overwritten.
                 </p>
               </div>
 
