@@ -46,10 +46,8 @@ const DEFAULTS: Record<string, string> = {
   theme_secondary_color: '#d4a017',
   theme_sidebar_bg: '#fafafa',
   theme_sidebar_text: '#0a1929',
-  theme_email_button_color: '#0a1929',
-  theme_email_button_text: '#d4a017',
-  theme_email_accent_color: '#d4a017',
 };
+
 
 export const ThemeAppearanceSettings = () => {
   const { data: settings } = useGeneralSettings();
