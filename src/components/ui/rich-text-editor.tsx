@@ -9,7 +9,10 @@ interface RichTextEditorProps {
   className?: string;
   /** live line-height preview inside the editor */
   lineHeight?: number;
+  /** render paragraphs with website spacing (matches published output) */
+  websiteStyle?: boolean;
 }
+
 
 // Use inline styles for alignment so email clients (which ignore <style> blocks)
 // still respect the chosen alignment.
