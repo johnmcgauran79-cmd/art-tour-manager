@@ -125,11 +125,18 @@ const RuleRow = ({
         return (
           <MultiSelect
             label="states"
-            options={AU_STATES.map((s) => ({ value: s, label: s }))}
+            options={AU_STATES.map((s) => ({
+              value: s,
+              label:
+                options.stateCounts?.[s] !== undefined
+                  ? `${s} (${options.stateCounts[s]})`
+                  : s,
+            }))}
             selected={listValue}
             onToggle={toggle}
           />
         );
+
       if (rule.field === "lead_stage")
         return (
           <MultiSelect
