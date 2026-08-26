@@ -540,53 +540,51 @@ export function EdmBuilder({
         </div>
       ) : (
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-          {/* Block tree */}
+          {/* Block tree — width is user-adjustable via the drag handle */}
           <Card
-            className="h-fit w-full shrink-0 xl:w-auto"
-            style={{ width: undefined }}
+            className="h-fit w-full shrink-0 xl:w-[var(--edm-panel-w)]"
+            style={{ ["--edm-panel-w" as string]: `${panelWidth}px` }}
           >
-            <div className="xl:hidden">
-              <BlocksPanelBody
-                width={undefined}
-                blocks={blocks}
-                add={add}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-                move={move}
-                duplicate={duplicate}
-                remove={remove}
-                addToCell={addToCell}
-                copyBlock={copyBlock}
-                pasteAfter={pasteAfter}
-                copyCell={copyCell}
-                pasteIntoCell={pasteIntoCell}
-                duplicateCell={duplicateCell}
-                removeCell={removeCell}
-                clearCell={clearCell}
-                clipLabel={clip?.label ?? null}
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Content blocks</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <AddBlockMenu
+                onPick={add}
+                trigger={
+                  <Button size="sm" className="w-full gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Add block
+                  </Button>
+                }
               />
-            </div>
-            <div className="hidden xl:block" style={{ width: panelWidth }}>
-              <BlocksPanelBody
-                width={panelWidth}
-                blocks={blocks}
-                add={add}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-                move={move}
-                duplicate={duplicate}
-                remove={remove}
-                addToCell={addToCell}
-                copyBlock={copyBlock}
-                pasteAfter={pasteAfter}
-                copyCell={copyCell}
-                pasteIntoCell={pasteIntoCell}
-                duplicateCell={duplicateCell}
-                removeCell={removeCell}
-                clearCell={clearCell}
-                clipLabel={clip?.label ?? null}
-              />
-            </div>
+
+              <div className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
+                {blocks.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">
+                    Pick a layout or add your first block.
+                  </p>
+                ) : (
+                  <BlockTree
+                    blocks={blocks}
+                    depth={0}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    onMove={move}
+                    onDuplicate={duplicate}
+                    onRemove={remove}
+                    onAddToCell={addToCell}
+                    onCopy={copyBlock}
+                    onPasteAfter={pasteAfter}
+                    onCopyCell={copyCell}
+                    onPasteIntoCell={pasteIntoCell}
+                    onDuplicateCell={duplicateCell}
+                    onRemoveCell={removeCell}
+                    onClearCell={clearCell}
+                    clipLabel={clip?.label ?? null}
+                  />
+                )}
+              </div>
+            </CardContent>
           </Card>
 
           {/* Drag handle to widen/narrow the blocks panel */}
@@ -597,7 +595,7 @@ export function EdmBuilder({
             onPointerDown={startPanelDrag}
             onDoubleClick={() => setPanelWidth(320)}
             title="Drag to resize · double-click to reset"
-            className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch rounded bg-transparent hover:bg-accent xl:flex"
+            className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch rounded hover:bg-accent xl:flex"
           >
             <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground" />
           </div>
@@ -608,6 +606,7 @@ export function EdmBuilder({
               livePreview && "xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)]"
             )}
           >
+
 
 
           {/* Inspector */}
