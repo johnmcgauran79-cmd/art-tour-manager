@@ -72,11 +72,17 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
   const [editing, setEditing] = useState<Partial<EdmTemplateRow> | null>(null);
   const [open, setOpen] = useState(false);
 
-  const brand = useMemo<EdmBrand>(() => {
-    const b =
-      brands.find((x) => x.id === editing?.brand_id) ||
-      brands.find((x) => x.is_default) ||
-      brands[0];
+  const [preview, setPreview] = useState<{ name: string; subject: string; html: string } | null>(
+    null
+  );
+  const [testPayload, setTestPayload] = useState<{
+    html: string;
+    subject: string;
+    brandId: string | null;
+  } | null>(null);
+
+  const brandFor = (brandId?: string | null): EdmBrand => {
+    const b = brands.find((x) => x.id === brandId) || brands.find((x) => x.is_default) || brands[0];
     return {
       name: b?.name || "Australian Racing Tours",
       emailHeaderImageUrl: b?.email_header_image_url,
@@ -89,7 +95,24 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       companyWebsite: b?.company_website,
       footerText: b?.footer_text,
     };
-  }, [brands, editing?.brand_id]);
+  };
+
+  const brand = useMemo<EdmBrand>(
+    () => brandFor(editing?.brand_id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brands, editing?.brand_id]
+  );
+
+  const htmlFor = (t: Partial<EdmTemplateRow>) => {
+    const mode = (t.editor_mode as "blocks" | "html") || "blocks";
+    return mode === "blocks"
+      ? renderEdmHtml((t.blocks as EdmBlock[]) || [], brandFor(t.brand_id), {
+          subject: t.subject || undefined,
+          preheader: t.preheader || undefined,
+        })
+      : t.html_body || "";
+  };
+
 
   const grouped = useMemo(() => {
     const map = new Map<string, EdmTemplateRow[]>();
