@@ -35,6 +35,10 @@ export const XeroIntegrationSettings = () => {
   const [phoneProposals, setPhoneProposals] = useState<any[]>([]);
   const [phoneTotalChecked, setPhoneTotalChecked] = useState(0);
   const [showPhoneReviewModal, setShowPhoneReviewModal] = useState(false);
+  const [stateProposals, setStateProposals] = useState<any[]>([]);
+  const [stateTotalChecked, setStateTotalChecked] = useState(0);
+  const [showStateReviewModal, setShowStateReviewModal] = useState(false);
+
   const { toast } = useToast();
 
   const loadSettings = async () => {
