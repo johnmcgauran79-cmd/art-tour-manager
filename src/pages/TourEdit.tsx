@@ -132,7 +132,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, payment_receipts_enabled, photos_videos_url, dates_not_confirmed, managed_by_dmc, dmc_name, dmc_contact_name, dmc_contact_email, dmc_contact_phone')
           .eq('id', id)
           .single();
         
