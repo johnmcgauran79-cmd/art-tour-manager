@@ -118,12 +118,12 @@ const EXCLUDED_TOUR_STATUSES = ["cancelled", "archived", "past"];
 const NON_COUNTING_BOOKING_STATUSES = ["cancelled", "waitlisted"];
 const SETTLED_BOOKING_STATUSES = ["fully_paid", "complimentary", "host", "racing_breaks_invoice"];
 
-/** Hotel is contractually locked in. */
-const HOTEL_READY_STATUSES = ["confirmed", "contracted", "paid", "finalised"];
+/** Hotel is contractually locked in (booking_workflow_status values that are "good"). */
+const HOTEL_READY_STATUSES = ["booked", "contract_signed", "contracted", "confirmed", "paid", "finalised"];
 /** Activity is locked in with the supplier. */
-const ACTIVITY_READY_STATUSES = ["confirmed", "finalised", "booked", "fully_paid", "paid_deposit"];
+const ACTIVITY_READY_STATUSES = ["booked", "contract_signed", "confirmed", "finalised", "fully_paid", "paid_deposit"];
 const PAYMENT_READY_STATUSES = ["fully_paid", "partially_paid", "not_required", "pay_on_the_day"];
-const TRANSPORT_READY_STATUSES = ["booked", "confirmed", "paid_deposit", "fully_paid", "not_required"];
+const TRANSPORT_READY_STATUSES = ["booked", "contract_signed", "confirmed", "finalised", "paid_deposit", "fully_paid", "not_required"];
 
 const todayIso = () => new Date().toISOString().split("T")[0];
 
