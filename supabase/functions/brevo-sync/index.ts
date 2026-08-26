@@ -14,6 +14,8 @@ import {
 
   sleep,
 } from "../_shared/crmMigration.ts";
+import { normaliseStateCode } from "../_shared/auStates.ts";
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
