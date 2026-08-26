@@ -16,6 +16,8 @@ import { TeamsChannelNotifyCard } from "@/components/settings/TeamsChannelNotify
 import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
 import { CrmMigrationConsole } from "@/components/settings/CrmMigrationConsole";
+import { BrevoAudienceSyncPanel } from "@/components/settings/BrevoAudienceSyncPanel";
+
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
