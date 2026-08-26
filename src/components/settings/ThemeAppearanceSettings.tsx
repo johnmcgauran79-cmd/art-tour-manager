@@ -99,7 +99,7 @@ export const ThemeAppearanceSettings = () => {
           Theme & Appearance
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Customise brand colours across the app UI and outgoing emails. Changes apply immediately after saving.
+          Customise brand colours across the app UI. Changes apply immediately after saving.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
