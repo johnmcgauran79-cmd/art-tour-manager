@@ -165,7 +165,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       let tourQuery = supabase
         .from("tours")
         .select(
-          "id, name, start_date, end_date, status, capacity, tour_host, travel_documents_required, pickup_location_required, is_test_tour"
+          "id, name, start_date, end_date, status, capacity, tour_host, travel_documents_required, pickup_location_required, is_test_tour, managed_by_dmc"
         )
         .gte("start_date", today)
         .order("start_date", { ascending: true });
