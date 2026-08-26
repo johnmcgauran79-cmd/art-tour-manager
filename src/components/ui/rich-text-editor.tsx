@@ -9,7 +9,10 @@ interface RichTextEditorProps {
   className?: string;
   /** live line-height preview inside the editor */
   lineHeight?: number;
+  /** render paragraphs with website spacing (matches published output) */
+  websiteStyle?: boolean;
 }
+
 
 // Use inline styles for alignment so email clients (which ignore <style> blocks)
 // still respect the chosen alignment.
@@ -42,10 +45,11 @@ export function RichTextEditor({
   placeholder,
   className,
   lineHeight,
+  websiteStyle,
 }: RichTextEditorProps) {
   return (
     <div
-      className={cn("rich-text-editor", className)}
+      className={cn("rich-text-editor", websiteStyle && "rte-website", className)}
       style={lineHeight ? ({ "--rte-lh": String(lineHeight) } as React.CSSProperties) : undefined}
     >
       <ReactQuill

@@ -2,6 +2,7 @@ import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { requireAdminOrManager } from "./_perms";
 import { supabaseForUser } from "./_supabase";
+import { normalizeWebsiteHtml } from "../../websiteHtml";
 
 export default defineTool({
   name: "update_tour_website_description",
@@ -18,7 +19,7 @@ export default defineTool({
     if (denied) return denied;
     const { error } = await supabaseForUser(ctx)
       .from("tours")
-      .update({ website_description })
+      .update({ website_description: normalizeWebsiteHtml(website_description) })
       .eq("id", tour_id);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     const out = { tour_id, length: website_description.length };

@@ -7034,6 +7034,23 @@ var reorder_tour_inclusions_default = defineTool111({
 // src/lib/mcp/tools/update-tour-website-description.ts
 import { defineTool as defineTool112 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z108 } from "npm:zod@^3.25.76";
+
+// src/lib/websiteHtml.ts
+function normalizeWebsiteHtml(input) {
+  if (!input) return "";
+  let html = input;
+  html = html.replace(/(<br\s*\/?>\s*){2,}/gi, "</p><p>");
+  html = html.replace(/<div(\s[^>]*)?>/gi, "<p>").replace(/<\/div>/gi, "</p>");
+  html = html.replace(/\sstyle="([^"]*)"/gi, (_m, style) => {
+    const kept = String(style).split(";").map((d) => d.trim()).filter((d) => d && !/^(margin|padding|line-height)(-[a-z]+)?\s*:/i.test(d)).join("; ");
+    return kept ? ` style="${kept}"` : "";
+  });
+  html = html.replace(/<p(\s[^>]*)?>(\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, "");
+  html = html.replace(/>\s+</g, "><").trim();
+  return html;
+}
+
+// src/lib/mcp/tools/update-tour-website-description.ts
 var update_tour_website_description_default = defineTool112({
   name: "update_tour_website_description",
   title: "Update tour website description",
@@ -7046,7 +7063,7 @@ var update_tour_website_description_default = defineTool112({
   handler: async ({ tour_id, website_description }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
     if (denied) return denied;
-    const { error } = await supabaseForUser(ctx).from("tours").update({ website_description }).eq("id", tour_id);
+    const { error } = await supabaseForUser(ctx).from("tours").update({ website_description: normalizeWebsiteHtml(website_description) }).eq("id", tour_id);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     const out = { tour_id, length: website_description.length };
     return {
