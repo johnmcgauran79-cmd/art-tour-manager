@@ -107,7 +107,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     // If bounced or complained, add to suppression list
     if (eventType === "bounced" || eventType === "complained") {
-      const recipientEmail = data?.to?.[0] || data?.recipient;
+      // Resend may report the recipient as `Display Name <addr@example.com>`;
+      // only the bare address should ever be stored/suppressed.
+      const normaliseAddress = (raw: string): string => {
+        const match = raw.match(/<([^>]+)>/);
+        return (match ? match[1] : raw).trim().replace(/^["']|["']$/g, "").toLowerCase();
+      };
+      const rawRecipient = data?.to?.[0] || data?.recipient;
+      const recipientEmail = rawRecipient ? normaliseAddress(String(rawRecipient)) : null;
       const bounceReason = data?.bounce?.message || data?.complaint?.message || "Unknown reason";
       
       if (recipientEmail) {
@@ -117,7 +124,8 @@ const handler = async (req: Request): Promise<Response> => {
         const { error: suppressionError } = await supabase
           .from("email_suppressions")
           .upsert({
-            email_address: recipientEmail.toLowerCase(),
+            email_address: recipientEmail,
+
             suppression_type: eventType,
             reason: bounceReason,
             last_bounced_at: new Date().toISOString(),
@@ -130,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           // Update bounce count
           try {
-            await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() });
+            await supabase.rpc('increment_bounce_count', { email: recipientEmail });
           } catch {
             // If RPC doesn't exist, just log - the initial insert is enough
             console.log("Bounce count increment not available, skipping");
