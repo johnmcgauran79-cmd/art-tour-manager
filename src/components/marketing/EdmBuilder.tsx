@@ -682,6 +682,7 @@ function BlockTree({
   selectedId,
   onSelect,
   onMove,
+  onDropBlock,
   onDuplicate,
   onRemove,
   onAddToCell,
@@ -699,6 +700,7 @@ function BlockTree({
   selectedId: string | null;
   onSelect: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
+  onDropBlock: (dragId: string, targetId: string, place: "before" | "after") => void;
   onDuplicate: (id: string) => void;
   onRemove: (id: string) => void;
   onAddToCell: (cellId: string, type: EdmBlockType) => void;
@@ -711,11 +713,14 @@ function BlockTree({
   onClearCell: (cellId: string) => void;
   clipLabel: string | null;
 }) {
+  const [dropHint, setDropHint] = useState<{ id: string; place: "before" | "after" } | null>(null);
+
   return (
     <div className="space-y-1.5" style={{ paddingLeft: depth ? 10 : 0 }}>
       {blocks.map((b, i) => {
         const cols = Math.max(1, b.cols || 1);
         const label = blockLabel[b.type];
+        const hint = dropHint?.id === b.id ? dropHint.place : null;
         return (
           <div key={b.id} className="space-y-1">
             <div
@@ -723,11 +728,36 @@ function BlockTree({
               tabIndex={0}
               onClick={() => onSelect(b.id)}
               onKeyDown={(e) => e.key === "Enter" && onSelect(b.id)}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/edm-block", b.id);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                if (!e.dataTransfer.types.includes("text/edm-block")) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                const rect = e.currentTarget.getBoundingClientRect();
+                const place = e.clientY - rect.top < rect.height / 2 ? "before" : "after";
+                setDropHint({ id: b.id, place });
+              }}
+              onDragLeave={() => setDropHint((h) => (h?.id === b.id ? null : h))}
+              onDrop={(e) => {
+                const dragId = e.dataTransfer.getData("text/edm-block");
+                e.preventDefault();
+                e.stopPropagation();
+                const place = dropHint?.id === b.id ? dropHint.place : "before";
+                setDropHint(null);
+                if (dragId && dragId !== b.id) onDropBlock(dragId, b.id, place);
+              }}
               className={cn(
-                "flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs",
-                selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted"
+                "flex cursor-grab items-center gap-1 rounded-md border px-2 py-1.5 text-xs active:cursor-grabbing",
+                selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted",
+                hint === "before" && "border-t-2 border-t-primary",
+                hint === "after" && "border-b-2 border-b-primary"
               )}
             >
+              <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate font-medium">
                 {i + 1}. {label}
                 {isContainer(b) && (
