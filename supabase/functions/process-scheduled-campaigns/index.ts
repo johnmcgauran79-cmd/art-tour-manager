@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       if (!count) {
         await supabase
           .from("marketing_campaigns")
-          .update({ status: "sent", sent_at: nowIso })
+          .update({ status: "sent", send_completed_at: nowIso })
           .eq("id", campaign.id)
           .eq("status", "sending");
         continue;
