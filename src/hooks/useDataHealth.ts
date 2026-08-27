@@ -248,7 +248,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           .in("tour_id", tourIds),
         supabase.from("tour_attachments").select("id, tour_id").in("tour_id", tourIds),
         supabase.from("wordpress_tour_links").select("tour_id, wp_tour_id").in("tour_id", tourIds),
-        supabase.from("website_change_requests").select("tour_id, section, status").in("tour_id", tourIds).in("status", ["pending", "approved"]),
+        supabase.from("website_change_requests").select("tour_id, section, status, published_at").in("tour_id", tourIds).in("status", ["pending", "approved"]),
         bookingIds.length
           ? supabase.from("xero_invoice_mappings").select("booking_id, amount_due, xero_status").in("booking_id", bookingIds)
           : Promise.resolve({ data: [], error: null } as any),
@@ -494,7 +494,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         if (!wpLinked.has(tour.id)) flag("website", tour.name, "Not linked to a WordPress tour");
         const pendingChanges = websiteChangesByTour.get(tour.id) || [];
         const pendingReview = pendingChanges.filter((c: any) => c.status === "pending").length;
-        const approvedUnpublished = pendingChanges.filter((c: any) => c.status === "approved").length;
+        const approvedUnpublished = pendingChanges.filter((c: any) => c.status === "approved" && !c.published_at).length;
         if (pendingReview > 0) flag("website", tour.name, `${pendingReview} website change(s) awaiting review`);
         if (approvedUnpublished > 0) flag("website", tour.name, `${approvedUnpublished} approved change(s) not yet published`);
 
