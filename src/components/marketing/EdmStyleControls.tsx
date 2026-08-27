@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link2, Unlink, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { ART_BRAND_COLORS, getRecentColors, rememberColor } from "@/lib/edm/palette";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
