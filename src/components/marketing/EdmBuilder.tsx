@@ -1498,21 +1498,35 @@ function BlockInspector({
           </Select>
         </div>
 
-        <div className="space-y-1.5">
-          <Label>Cell background</Label>
-          <div className="flex gap-2">
-            <Input
-              type="color"
-              className="h-9 w-14 p-1"
-              value={block.bgColor || "#ffffff"}
-              onChange={(e) => onChange({ bgColor: e.target.value })}
-            />
-            <Input
-              value={block.bgColor || ""}
-              onChange={(e) => onChange({ bgColor: e.target.value })}
-              placeholder="Leave blank for none"
-            />
-          </div>
+        <div className="space-y-3 rounded-md border p-3">
+          <Label className="text-sm">Colours</Label>
+          <ColorField
+            label="Cell background"
+            value={block.bgColor}
+            fallback="#ffffff"
+            onChange={(bgColor) => onChange({ bgColor })}
+            clearable
+            clearLabel="Transparent"
+            hint="Colour behind the content inside each cell of this section."
+          />
+          <ColorField
+            label="Content background"
+            value={block.sectionBg}
+            fallback="#ffffff"
+            onChange={(sectionBg) => onChange({ sectionBg })}
+            clearable
+            clearLabel="Transparent"
+            hint="Colour behind the whole section's content area, including the gaps between cells."
+          />
+          <ColorField
+            label="Outer background"
+            value={block.outerBgColor}
+            fallback="#f4f5f7"
+            onChange={(outerBgColor) => onChange({ outerBgColor })}
+            clearable
+            clearLabel="Transparent"
+            hint="Full-width area around the section, including the space left and right of the content."
+          />
         </div>
 
         {t === "table" && (
