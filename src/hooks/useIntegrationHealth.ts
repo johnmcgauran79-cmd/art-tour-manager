@@ -71,16 +71,23 @@ export const useIntegrationHealth = () =>
       const xero = xeroSettings.data as any;
       const xeroRows = (xeroLog.data as any[]) || [];
       const xeroFailures = xeroRows.filter((r) => r.status === "error" || r.status === "failed");
-      const tokenExpired = xero?.token_expires_at ? new Date(xero.token_expires_at) < new Date() : false;
+      // Xero access tokens are short-lived (30 min) and refreshed automatically on
+      // the next API call, so an expired access token is NOT a problem. Only the
+      // refresh token expiring (no successful token activity for ~55 days) means a
+      // reconnect is genuinely required.
+      const xeroLastTouch = xero?.updated_at ?? xero?.last_contact_sync_at ?? null;
+      const refreshExpired = xeroLastTouch
+        ? new Date(xeroLastTouch).getTime() < Date.now() - 55 * 24 * 3600_000
+        : false;
       const unsentReceipts = ((xeroReceipts.data as any[]) || []).filter((r) => r.approval_status !== "rejected");
       results.push({
         id: "xero",
         name: "Xero",
-        state: !xero?.is_connected ? "disconnected" : xeroFailures.length > 0 || tokenExpired ? "degraded" : "connected",
+        state: !xero?.is_connected ? "disconnected" : refreshExpired || xeroFailures.length > 0 ? "degraded" : "connected",
         headline: !xero?.is_connected
           ? "Not connected"
-          : tokenExpired
-          ? "Token expired — reconnect required"
+          : refreshExpired
+          ? "Reconnect required — Xero authorisation has lapsed"
           : xeroFailures.length > 0
           ? `${xeroFailures.length} sync error(s) in the last 7 days`
           : `Connected to ${xero?.tenant_name || "Xero"}`,
@@ -89,7 +96,7 @@ export const useIntegrationHealth = () =>
         metrics: [
           { label: "Sync events (7d)", value: xeroRows.length },
           { label: "Errors (7d)", value: xeroFailures.length },
-          { label: "Receipts awaiting send", value: unsentReceipts.length },
+          { label: "Receipts awaiting send", value: unsentReceipts.length >= 200 ? "200+" : unsentReceipts.length },
         ],
         fixLink: { label: "Xero settings", to: "/?tab=settings" },
       });
