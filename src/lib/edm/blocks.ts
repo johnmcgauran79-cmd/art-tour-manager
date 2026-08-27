@@ -120,6 +120,11 @@ export interface EdmBlock {
   bordered?: boolean;
   /** cell background colour */
   bgColor?: string;
+  /**
+   * Full-width background behind the block, including the space to the left and
+   * right of the content (and any margin). Blank = transparent.
+   */
+  outerBgColor?: string;
   /** cell padding in px */
   cellPadding?: number;
   valign?: "top" | "middle" | "bottom";
