@@ -24,7 +24,6 @@ export const ART_SOURCES: ArtSource[] = [
   { key: "tours.location",            group: "Tour",  label: "Location",               kind: "text"   },
   { key: "tours.start_date",          group: "Tour",  label: "Start date",             kind: "date"   },
   { key: "tours.end_date",            group: "Tour",  label: "End date",               kind: "date"   },
-  { key: "tours.capacity",            group: "Tour",  label: "Capacity",               kind: "number" },
   { key: "tours.price_single",        group: "Tour",  label: "Single room price",      kind: "number" },
   { key: "tours.price_twin",          group: "Tour",  label: "Twin room (per person)", kind: "number" },
   { key: "tours.price_double",        group: "Tour",  label: "Double room (per person)", kind: "number" },

@@ -9,7 +9,6 @@ export const EDITABLE_ACF_SCALAR_FIELDS = [
   "end_date",
   "time_frame",
   "location",
-  "capacity",
   "single_room_price",
   "twin_room_per_person_price",
   "double_room_per_person_price",
