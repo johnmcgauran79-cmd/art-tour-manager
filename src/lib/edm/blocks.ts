@@ -705,7 +705,14 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
     const imgRules: string[] = [];
     if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
     if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    // Images are centred/right-aligned with auto margins, so the td text-align
+    // override alone can't move them on mobile — set the margins too.
+    if (m.align)
+      imgRules.push(
+        `margin:${m.align === "center" ? "0 auto" : m.align === "right" ? "0 0 0 auto" : "0"}!important`
+      );
     if (imgRules.length) rules.push(`tr.${cls}>td img{${imgRules.join(";")};}`);
+    if (m.align) rules.push(`tr.${cls}>td a{display:block!important;text-align:${m.align}!important;}`);
   }
 
   if (isContainer(b) || b.type === "twoColumn" || b.type === "imageText") {
