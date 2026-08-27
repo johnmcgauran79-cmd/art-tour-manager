@@ -47,7 +47,7 @@ export const useIntegrationHealth = () =>
       ] = await Promise.all([
         supabase.from("xero_integration_settings").select("tenant_name, is_connected, token_expires_at, last_contact_sync_at, updated_at").maybeSingle(),
         supabase.from("xero_sync_log").select("status, error_message, created_at, sync_type").gte("created_at", week).order("created_at", { ascending: false }).limit(200),
-        supabase.from("xero_payment_receipts").select("id, approval_status, receipt_email_sent_at, send_error").is("receipt_email_sent_at", null).limit(200),
+        supabase.from("xero_payment_receipts").select("id", { count: "exact", head: true }).eq("approval_status", "pending").is("receipt_email_sent_at", null),
         supabase.from("wordpress_tour_links").select("tour_id, wp_tour_id, last_synced_at").limit(500),
         supabase.from("wordpress_integration_audit_logs").select("result_status, error_message, created_at, action").gte("created_at", week).order("created_at", { ascending: false }).limit(200),
         supabase.from("email_logs").select("id, error_message, sent_at").gte("created_at", day).limit(1000),
