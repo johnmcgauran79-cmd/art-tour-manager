@@ -908,6 +908,7 @@ function BlockTree({
                         selectedId={selectedId}
                         onSelect={onSelect}
                         onMove={onMove}
+                        onDropBlock={onDropBlock}
                         onDuplicate={onDuplicate}
                         onRemove={onRemove}
                         onAddToCell={onAddToCell}
