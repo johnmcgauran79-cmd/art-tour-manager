@@ -47,7 +47,7 @@ export const useIntegrationHealth = () =>
       ] = await Promise.all([
         supabase.from("xero_integration_settings").select("tenant_name, is_connected, token_expires_at, last_contact_sync_at, updated_at").maybeSingle(),
         supabase.from("xero_sync_log").select("status, error_message, created_at, sync_type").gte("created_at", week).order("created_at", { ascending: false }).limit(200),
-        supabase.from("xero_payment_receipts").select("id, approval_status, receipt_email_sent_at, send_error").is("receipt_email_sent_at", null).limit(200),
+        supabase.from("xero_payment_receipts").select("id", { count: "exact", head: true }).eq("approval_status", "pending").is("receipt_email_sent_at", null),
         supabase.from("wordpress_tour_links").select("tour_id, wp_tour_id, last_synced_at").limit(500),
         supabase.from("wordpress_integration_audit_logs").select("result_status, error_message, created_at, action").gte("created_at", week).order("created_at", { ascending: false }).limit(200),
         supabase.from("email_logs").select("id, error_message, sent_at").gte("created_at", day).limit(1000),
@@ -79,7 +79,9 @@ export const useIntegrationHealth = () =>
       const refreshExpired = xeroLastTouch
         ? new Date(xeroLastTouch).getTime() < Date.now() - 55 * 24 * 3600_000
         : false;
-      const unsentReceipts = ((xeroReceipts.data as any[]) || []).filter((r) => r.approval_status !== "rejected");
+      // Only receipts genuinely awaiting approval count here — "skipped" (no
+      // recipient email) and "rejected" receipts are never going to be sent.
+      const pendingReceipts = (xeroReceipts as any).count ?? 0;
       results.push({
         id: "xero",
         name: "Xero",
@@ -96,7 +98,7 @@ export const useIntegrationHealth = () =>
         metrics: [
           { label: "Sync events (7d)", value: xeroRows.length },
           { label: "Errors (7d)", value: xeroFailures.length },
-          { label: "Receipts awaiting send", value: unsentReceipts.length >= 200 ? "200+" : unsentReceipts.length },
+          { label: "Receipts awaiting approval", value: pendingReceipts },
         ],
         fixLink: { label: "Xero settings", to: "/?tab=settings" },
       });
