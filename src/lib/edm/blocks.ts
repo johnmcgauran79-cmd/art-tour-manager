@@ -743,14 +743,19 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
 
   const hiddenStyle = b.hidden ? "display:none;" : "";
   const margin = b.margin;
+  const outer = b.outerBgColor;
 
-  if (hasSpacing(margin)) {
-    // Outer, transparent row carries the margin; inner row keeps the padding
-    // (and any background colour) so backgrounds don't bleed into margins.
+  if (hasSpacing(margin) || outer) {
+    // Outer row carries the margin plus the optional full-width background;
+    // the inner row keeps the padding and the content background colour.
     html = html.replace("<tr", `<tr class="${cls}"`);
+    const outerAttrs = outer ? ` bgcolor="${outer}"` : "";
+    const outerBg = outer ? `background-color:${outer};` : "";
     return `<tr class="${cls}-m"${
       hiddenStyle ? ` style="${hiddenStyle}"` : ""
-    }><td style="padding:${spacingCss(margin!)};">
+    }><td${outerAttrs} style="${outerBg}padding:${
+      hasSpacing(margin) ? spacingCss(margin!) : "0"
+    };">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${html}</table>
 </td></tr>`;
   }
