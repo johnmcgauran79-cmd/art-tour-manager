@@ -442,6 +442,45 @@ export const moveBlockById = (blocks: EdmBlock[], id: string, dir: -1 | 1): EdmB
   return blocks.map((b) => mapCells(b, (inner) => moveBlockById(inner, id, dir)));
 };
 
+/** True when `id` is `root` or nested anywhere inside it. */
+const containsBlock = (root: EdmBlock, id: string): boolean => {
+  if (root.id === id) return true;
+  return (root.cells || []).some((c) => c.blocks.some((b) => containsBlock(b, id)));
+};
+
+const insertBlockBeforeOrAfter = (
+  blocks: EdmBlock[],
+  block: EdmBlock,
+  targetId: string,
+  place: "before" | "after"
+): EdmBlock[] => {
+  const i = blocks.findIndex((b) => b.id === targetId);
+  if (i >= 0) {
+    const next = [...blocks];
+    next.splice(place === "before" ? i : i + 1, 0, block);
+    return next;
+  }
+  return blocks.map((b) =>
+    mapCells(b, (inner) => insertBlockBeforeOrAfter(inner, block, targetId, place))
+  );
+};
+
+/**
+ * Drag-and-drop reorder: move `dragId` next to `targetId`, keeping its id and
+ * contents. Dropping a container onto one of its own descendants is ignored.
+ */
+export const moveBlockToTarget = (
+  blocks: EdmBlock[],
+  dragId: string,
+  targetId: string,
+  place: "before" | "after" = "before"
+): EdmBlock[] => {
+  if (dragId === targetId) return blocks;
+  const dragged = findBlockById(blocks, dragId);
+  if (!dragged || containsBlock(dragged, targetId)) return blocks;
+  return insertBlockBeforeOrAfter(removeBlockById(blocks, dragId), dragged, targetId, place);
+};
+
 /** Insert a block after `afterId` at the same level, or append at root. */
 export const insertBlockAfter = (
   blocks: EdmBlock[],
