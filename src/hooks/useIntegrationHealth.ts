@@ -98,7 +98,7 @@ export const useIntegrationHealth = () =>
         metrics: [
           { label: "Sync events (7d)", value: xeroRows.length },
           { label: "Errors (7d)", value: xeroFailures.length },
-          { label: "Receipts awaiting send", value: unsentReceipts.length >= 200 ? "200+" : unsentReceipts.length },
+          { label: "Receipts awaiting approval", value: pendingReceipts },
         ],
         fixLink: { label: "Xero settings", to: "/?tab=settings" },
       });
