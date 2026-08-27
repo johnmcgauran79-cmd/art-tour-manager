@@ -129,6 +129,8 @@ export interface EdmBlock {
   outerBgColor?: string;
   /** cell padding in px */
   cellPadding?: number;
+  /** extra horizontal space between columns in px (containers) */
+  colGap?: number;
   valign?: "top" | "middle" | "bottom";
 
   /* ---- design block ---- */
