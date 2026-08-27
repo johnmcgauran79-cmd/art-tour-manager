@@ -129,6 +129,8 @@ export interface EdmBlock {
   outerBgColor?: string;
   /** cell padding in px */
   cellPadding?: number;
+  /** extra horizontal space between columns in px (containers) */
+  colGap?: number;
   valign?: "top" | "middle" | "bottom";
 
   /* ---- design block ---- */
@@ -440,6 +442,45 @@ export const moveBlockById = (blocks: EdmBlock[], id: string, dir: -1 | 1): EdmB
   return blocks.map((b) => mapCells(b, (inner) => moveBlockById(inner, id, dir)));
 };
 
+/** True when `id` is `root` or nested anywhere inside it. */
+const containsBlock = (root: EdmBlock, id: string): boolean => {
+  if (root.id === id) return true;
+  return (root.cells || []).some((c) => c.blocks.some((b) => containsBlock(b, id)));
+};
+
+const insertBlockBeforeOrAfter = (
+  blocks: EdmBlock[],
+  block: EdmBlock,
+  targetId: string,
+  place: "before" | "after"
+): EdmBlock[] => {
+  const i = blocks.findIndex((b) => b.id === targetId);
+  if (i >= 0) {
+    const next = [...blocks];
+    next.splice(place === "before" ? i : i + 1, 0, block);
+    return next;
+  }
+  return blocks.map((b) =>
+    mapCells(b, (inner) => insertBlockBeforeOrAfter(inner, block, targetId, place))
+  );
+};
+
+/**
+ * Drag-and-drop reorder: move `dragId` next to `targetId`, keeping its id and
+ * contents. Dropping a container onto one of its own descendants is ignored.
+ */
+export const moveBlockToTarget = (
+  blocks: EdmBlock[],
+  dragId: string,
+  targetId: string,
+  place: "before" | "after" = "before"
+): EdmBlock[] => {
+  if (dragId === targetId) return blocks;
+  const dragged = findBlockById(blocks, dragId);
+  if (!dragged || containsBlock(dragged, targetId)) return blocks;
+  return insertBlockBeforeOrAfter(removeBlockById(blocks, dragId), dragged, targetId, place);
+};
+
 /** Insert a block after `afterId` at the same level, or append at root. */
 export const insertBlockAfter = (
   blocks: EdmBlock[],
@@ -705,7 +746,14 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
     const imgRules: string[] = [];
     if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
     if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    // Images are centred/right-aligned with auto margins, so the td text-align
+    // override alone can't move them on mobile — set the margins too.
+    if (m.align)
+      imgRules.push(
+        `margin:${m.align === "center" ? "0 auto" : m.align === "right" ? "0 0 0 auto" : "0"}!important`
+      );
     if (imgRules.length) rules.push(`tr.${cls}>td img{${imgRules.join(";")};}`);
+    if (m.align) rules.push(`tr.${cls}>td a{display:block!important;text-align:${m.align}!important;}`);
   }
 
   if (isContainer(b) || b.type === "twoColumn" || b.type === "imageText") {
@@ -793,10 +841,14 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       ? `border:1px solid ${brand.colorBorder || "#e2e8f0"};`
       : "";
 
+  const halfGap = Math.round(Math.max(0, b.colGap ?? 0) / 2);
   const body = Array.from({ length: rows }, (_, r) => {
     const tds = Array.from({ length: cols }, (_, c) => {
       const cell = cells[r * cols + c];
-      return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px;${cellBorder}${
+      // Extra horizontal space between columns (never on the outer edges).
+      const padLeft = c === 0 ? cp : cp + halfGap;
+      const padRight = c === cols - 1 ? cp : cp + halfGap;
+      return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
       }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${renderNested(
         cell?.blocks || [],
