@@ -807,7 +807,9 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
     return `<tr>${tds}</tr>`;
   }).join("\n");
 
-  return `<tr><td style="padding:${pad(ctx, "12px", b)};">
+  return `<tr><td${b.sectionBg ? ` bgcolor="${b.sectionBg}"` : ""} style="${
+    b.sectionBg ? `background-color:${b.sectionBg};` : ""
+  }padding:${pad(ctx, "12px", b)};">
   <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
     b.type === "table" ? `border-collapse:collapse;` : ""
   }">${body}</table></td></tr>`;
