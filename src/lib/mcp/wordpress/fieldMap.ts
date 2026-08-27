@@ -68,6 +68,5 @@ export const TOUR_FIELD_MAP: FieldMapEntry[] = [
   { artKey: "start_date", wpKey: "start_date", label: "Start date", kind: "date", toWp: toWpDate, fromWp: asStr },
   { artKey: "end_date", wpKey: "end_date", label: "End date", kind: "date", toWp: toWpDate, fromWp: asStr },
   { artKey: "location", wpKey: "location", label: "Location", kind: "text", toWp: asStr, fromWp: asStr },
-  { artKey: "capacity", wpKey: "capacity", label: "Capacity", kind: "number", toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)), fromWp: asStr },
   { artKey: "instalment_details", wpKey: "payment_details", label: "Payment details", kind: "html", toWp: asStr, fromWp: asStr },
 ];

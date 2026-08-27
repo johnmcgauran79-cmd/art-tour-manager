@@ -140,14 +140,6 @@ export const TOUR_FIELD_MAP: FieldMapEntry[] = [
     fromWp: asStr,
   },
   {
-    artKey: "capacity",
-    wpKey: "capacity",
-    label: "Capacity",
-    kind: "number",
-    toWp: (v) => (v === null || v === undefined || v === "" ? "" : String(v)),
-    fromWp: asStr,
-  },
-  {
     artKey: "instalment_details",
     wpKey: "payment_details",
     label: "Payment details",

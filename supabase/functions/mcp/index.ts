@@ -5360,7 +5360,6 @@ var EDITABLE_ACF_SCALAR_FIELDS = [
   "end_date",
   "time_frame",
   "location",
-  "capacity",
   "single_room_price",
   "twin_room_per_person_price",
   "double_room_per_person_price",
@@ -5409,7 +5408,7 @@ var repeaterItemSchema = z90.record(z90.string(), z90.unknown());
 var wordpress_update_tour_fields_default = defineTool94({
   name: "wordpress_update_tour_fields",
   title: "Update WordPress tour ACF fields",
-  description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, attach_brochure_here (WordPress media attachment ID for the brochure PDF, or null to clear), location, capacity, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 are NOT writable here \u2014 use wordpress_get_tour to inspect them. The itinerary repeater is handled by wordpress_preview_tour_itinerary / wordpress_push_tour_itinerary.",
+  description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, attach_brochure_here (WordPress media attachment ID for the brochure PDF, or null to clear), location, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 are NOT writable here \u2014 use wordpress_get_tour to inspect them. The itinerary repeater is handled by wordpress_preview_tour_itinerary / wordpress_push_tour_itinerary.",
   inputSchema: {
     tour_id: z90.number().int().min(1),
     acf: z90.object({
@@ -5420,7 +5419,6 @@ var wordpress_update_tour_fields_default = defineTool94({
       end_date: z90.string().optional(),
       time_frame: z90.string().optional(),
       location: z90.string().optional(),
-      capacity: z90.string().optional(),
       single_room_price: z90.string().optional(),
       twin_room_per_person_price: z90.string().optional(),
       double_room_per_person_price: z90.string().optional(),

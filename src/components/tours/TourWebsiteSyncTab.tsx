@@ -522,7 +522,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Phase 1 mapping: headline fields only (prices, dates, location, capacity, payment details).
+                Phase 1 mapping: headline fields only (prices, dates, location, payment details).
                 Inclusions/exclusions, FAQs, hotels, and itinerary sync will follow once the WordPress ACF shapes are finalised in REST.
               </p>
             </>

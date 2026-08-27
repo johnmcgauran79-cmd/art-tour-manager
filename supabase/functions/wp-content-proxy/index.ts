@@ -646,7 +646,7 @@ Deno.serve(async (req) => {
             if (/^hotel_\d/i.test(k)) group = "hotel";
             else if (/itinerary/i.test(k)) group = "itinerary";
             else if (Array.isArray(v)) group = "repeater";
-            else if (["price","status","radio_book_now","start_date","end_date","time_frame","location","capacity","single_room_price","twin_room_per_person_price","double_room_per_person_price","payment_details","add_download_brochure","attach_brochure_here"].includes(k)) group = "headline";
+            else if (["price","status","radio_book_now","start_date","end_date","time_frame","location","single_room_price","twin_room_per_person_price","double_room_per_person_price","payment_details","add_download_brochure","attach_brochure_here"].includes(k)) group = "headline";
             const isArr = Array.isArray(v);
             const sample = isArr
               ? `[array, ${(v as unknown[]).length} rows]`
