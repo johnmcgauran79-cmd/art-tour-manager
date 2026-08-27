@@ -138,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           // Update bounce count
           try {
-            await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() });
+            await supabase.rpc('increment_bounce_count', { email: recipientEmail });
           } catch {
             // If RPC doesn't exist, just log - the initial insert is enough
             console.log("Bounce count increment not available, skipping");
