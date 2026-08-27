@@ -79,7 +79,9 @@ export const useIntegrationHealth = () =>
       const refreshExpired = xeroLastTouch
         ? new Date(xeroLastTouch).getTime() < Date.now() - 55 * 24 * 3600_000
         : false;
-      const unsentReceipts = ((xeroReceipts.data as any[]) || []).filter((r) => r.approval_status !== "rejected");
+      // Only receipts genuinely awaiting approval count here — "skipped" (no
+      // recipient email) and "rejected" receipts are never going to be sent.
+      const pendingReceipts = (xeroReceipts as any).count ?? 0;
       results.push({
         id: "xero",
         name: "Xero",
