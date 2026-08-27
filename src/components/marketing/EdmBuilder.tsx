@@ -570,6 +570,7 @@ export function EdmBuilder({
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     onMove={move}
+                    onDropBlock={dropBlock}
                     onDuplicate={duplicate}
                     onRemove={remove}
                     onAddToCell={addToCell}
