@@ -56,6 +56,7 @@ const DataHealth = lazy(() => import("./pages/DataHealth"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const Leads = lazy(() => import("./pages/Leads"));
 const PublicForm = lazy(() => import("./pages/PublicForm"));
+const EmailPreferences = lazy(() => import("./pages/EmailPreferences"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -168,6 +169,7 @@ function App() {
               <Route path="/custom-form/:token" element={<CustomForm />} />
               <Route path="/f/:slug" element={<PublicForm />} />
               <Route path="/view-itinerary/:token" element={<ViewItinerary />} />
+              <Route path="/email-preferences/:token" element={<EmailPreferences />} />
               <Route path="/host-report/:token" element={<HostReport />} />
               <Route path="/teams-oauth-complete" element={<TeamsOAuthComplete />} />
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
