@@ -1552,16 +1552,50 @@ function BlockInspector({
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label>Cell padding (px)</Label>
-          <Input
-            type="number"
-            min={0}
-            max={40}
-            value={block.cellPadding ?? 8}
-            onChange={(e) => onChange({ cellPadding: Number(e.target.value) || 0 })}
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5">
+            <Label>Cell padding (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={40}
+              value={block.cellPadding ?? 8}
+              onChange={(e) => onChange({ cellPadding: Number(e.target.value) || 0 })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Space between columns (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={80}
+              value={block.colGap ?? 0}
+              onChange={(e) => onChange({ colGap: Number(e.target.value) || 0 })}
+            />
+          </div>
         </div>
+
+        <SpacingEditor
+          label="Row padding (inside the row background)"
+          value={block.padding}
+          linked={block.paddingLinked !== false}
+          onChange={(padding) => onChange({ padding })}
+          onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
+          hint="Top, right, bottom and left padding for the whole row."
+        />
+
+        <SpacingEditor
+          label="Row margin (outside the row background)"
+          value={block.margin}
+          linked={block.marginLinked !== false}
+          onChange={(margin) => onChange({ margin })}
+          onLinkedChange={(marginLinked) => onChange({ marginLinked })}
+        />
+
+        <p className="text-xs text-muted-foreground">
+          Switch the toolbar to <strong>Mobile</strong> to set phone-only padding, alignment and
+          whether the columns stack.
+        </p>
 
         <div className="space-y-1.5">
           <Label>Vertical alignment</Label>
