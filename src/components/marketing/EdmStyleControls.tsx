@@ -257,6 +257,39 @@ export function NumField({
   );
 }
 
+/** Clickable swatch row used for brand + recently used colours. */
+function Swatches({
+  title,
+  colors,
+  labels,
+  onPick,
+}: {
+  title: string;
+  colors: string[];
+  labels?: Record<string, string>;
+  onPick: (hex: string) => void;
+}) {
+  if (!colors.length) return null;
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{title}</p>
+      <div className="flex flex-wrap gap-1">
+        {colors.map((hex) => (
+          <button
+            key={hex}
+            type="button"
+            onClick={() => onPick(hex)}
+            title={labels?.[hex] ? `${labels[hex]} (${hex})` : hex}
+            aria-label={labels?.[hex] ? `${labels[hex]} ${hex}` : hex}
+            className="h-5 w-5 rounded border border-border shadow-sm transition-transform hover:scale-110"
+            style={{ backgroundColor: hex }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ColorField({
   label,
   value,
@@ -274,6 +307,21 @@ export function ColorField({
   clearLabel?: string;
   hint?: string;
 }) {
+  const [recent, setRecent] = useState<string[]>(() => getRecentColors());
+
+  useEffect(() => {
+    const sync = () => setRecent(getRecentColors());
+    window.addEventListener("edm-recent-colours", sync);
+    return () => window.removeEventListener("edm-recent-colours", sync);
+  }, []);
+
+  const pick = (hex: string | undefined) => {
+    onChange(hex);
+    rememberColor(hex);
+  };
+
+  const brandLabels = Object.fromEntries(ART_BRAND_COLORS.map((c) => [c.hex, c.label]));
+
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
@@ -283,12 +331,14 @@ export function ColorField({
           className="h-9 w-14 p-1"
           value={value || fallback}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => rememberColor(e.target.value)}
           aria-label={`${label} colour picker`}
         />
         <Input
           value={value || ""}
           onChange={(e) => onChange(e.target.value || undefined)}
-          placeholder={fallback}
+          onBlur={(e) => rememberColor(e.target.value)}
+          placeholder={`${fallback} — or type any #HEX`}
           aria-label={`${label} hex value`}
         />
         {clearable && value && (
@@ -297,6 +347,13 @@ export function ColorField({
           </Button>
         )}
       </div>
+      <Swatches
+        title="ART brand colours"
+        colors={ART_BRAND_COLORS.map((c) => c.hex)}
+        labels={brandLabels}
+        onPick={pick}
+      />
+      <Swatches title="Recently used" colors={recent} onPick={pick} />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
