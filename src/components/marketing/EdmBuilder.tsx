@@ -940,10 +940,9 @@ function LivePreviewCard({
       </CardHeader>
       <CardContent>
         <div className="flex justify-center rounded-lg border bg-muted/40 p-2">
-          <iframe
+          <PreviewFrame
             title="Live email preview"
-            srcDoc={html}
-            sandbox=""
+            html={html}
             className={cn(
               "h-[68vh] rounded bg-background",
               device === "mobile" ? "w-[390px]" : "w-full"
@@ -955,14 +954,58 @@ function LivePreviewCard({
   );
 }
 
+/**
+ * Preview iframe that keeps its scroll position when the email HTML changes,
+ * so tweaking a setting doesn't jump back to the top of the email.
+ */
+function PreviewFrame({
+  html,
+  title,
+  className,
+}: {
+  html: string;
+  title: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const frame = ref.current;
+    if (!frame) return;
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    const prev = doc.documentElement?.scrollTop || doc.body?.scrollTop || 0;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    // Restore after the new document has laid out.
+    requestAnimationFrame(() => {
+      const d = frame.contentDocument;
+      if (!d) return;
+      if (d.documentElement) d.documentElement.scrollTop = prev;
+      if (d.body) d.body.scrollTop = prev;
+    });
+  }, [html]);
+
+  return (
+    <iframe
+      ref={ref}
+      title={title}
+      // Same-origin so the scroll position can be read/restored; scripts stay
+      // blocked because allow-scripts is not granted.
+      sandbox="allow-same-origin"
+      className={className}
+    />
+  );
+}
+
 function PreviewPane({ html, device }: { html: string; device: "desktop" | "mobile" }) {
   return (
     <div className="space-y-2">
       <div className="flex justify-center rounded-lg border bg-muted/40 p-2">
-        <iframe
+        <PreviewFrame
           title="EDM preview"
-          srcDoc={html}
-          sandbox=""
+          html={html}
           className={cn(
             "h-[70vh] rounded bg-background",
             device === "mobile" ? "w-[390px]" : "w-full"
