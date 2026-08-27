@@ -188,7 +188,7 @@ export const EmailSuppressionsManagement = () => {
                   <TableHead>Reason</TableHead>
                   <TableHead>First Bounced</TableHead>
                   <TableHead>Last Bounced</TableHead>
-                  <TableHead className="w-[160px]">Actions</TableHead>
+                  <TableHead className="w-[240px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
