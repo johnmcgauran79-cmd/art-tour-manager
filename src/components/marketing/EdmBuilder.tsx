@@ -288,6 +288,12 @@ export function EdmBuilder({
 
   const move = (id: string, dir: -1 | 1) => commit(moveBlockById(blocks, id, dir));
 
+  /** Drag-and-drop reorder: drop a block above or below another block. */
+  const dropBlock = (dragId: string, targetId: string, place: "before" | "after") => {
+    const next = moveBlockToTarget(blocks, dragId, targetId, place);
+    if (next !== blocks) commit(next);
+  };
+
   const [clip, setClip] = useState<
     { kind: "block"; blocks: EdmBlock[]; label: string } | null
   >(null);
