@@ -120,6 +120,8 @@ export interface EdmBlock {
   bordered?: boolean;
   /** cell background colour */
   bgColor?: string;
+  /** container blocks: background behind the whole section's content area */
+  sectionBg?: string;
   /**
    * Full-width background behind the block, including the space to the left and
    * right of the content (and any margin). Blank = transparent.
@@ -805,7 +807,9 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
     return `<tr>${tds}</tr>`;
   }).join("\n");
 
-  return `<tr><td style="padding:${pad(ctx, "12px", b)};">
+  return `<tr><td${b.sectionBg ? ` bgcolor="${b.sectionBg}"` : ""} style="${
+    b.sectionBg ? `background-color:${b.sectionBg};` : ""
+  }padding:${pad(ctx, "12px", b)};">
   <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
     b.type === "table" ? `border-collapse:collapse;` : ""
   }">${body}</table></td></tr>`;
