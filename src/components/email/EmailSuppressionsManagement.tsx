@@ -188,7 +188,7 @@ export const EmailSuppressionsManagement = () => {
                   <TableHead>Reason</TableHead>
                   <TableHead>First Bounced</TableHead>
                   <TableHead>Last Bounced</TableHead>
-                  <TableHead className="w-[160px]">Actions</TableHead>
+                  <TableHead className="w-[240px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -227,8 +227,10 @@ export const EmailSuppressionsManagement = () => {
                           onClick={() => setEmailToRemove(suppression)}
                           title="Allow sending to this address again"
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Reactivate
                         </Button>
+
                       </div>
                     </TableCell>
                   </TableRow>
