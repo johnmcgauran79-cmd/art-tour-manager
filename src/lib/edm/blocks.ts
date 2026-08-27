@@ -802,10 +802,14 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       ? `border:1px solid ${brand.colorBorder || "#e2e8f0"};`
       : "";
 
+  const halfGap = Math.round(Math.max(0, b.colGap ?? 0) / 2);
   const body = Array.from({ length: rows }, (_, r) => {
     const tds = Array.from({ length: cols }, (_, c) => {
       const cell = cells[r * cols + c];
-      return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px;${cellBorder}${
+      // Extra horizontal space between columns (never on the outer edges).
+      const padLeft = c === 0 ? cp : cp + halfGap;
+      const padRight = c === cols - 1 ? cp : cp + halfGap;
+      return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
       }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${renderNested(
         cell?.blocks || [],
