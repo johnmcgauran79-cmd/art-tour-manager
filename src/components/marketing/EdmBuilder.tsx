@@ -1993,13 +1993,27 @@ function BlockInspector({
         hint="Space inside the block. Blank sides use the template default."
       />
 
-      <ColorField
-        label="Block background"
-        value={block.bgColor}
-        fallback="#ffffff"
-        onChange={(bgColor) => onChange({ bgColor })}
-        clearable
-      />
+      <div className="space-y-3 rounded-md border p-3">
+        <Label className="text-sm">Colours</Label>
+        <ColorField
+          label="Content background"
+          value={block.bgColor}
+          fallback="#ffffff"
+          onChange={(bgColor) => onChange({ bgColor })}
+          clearable
+          clearLabel="Transparent"
+          hint="Colour directly behind this block's text or image. Leave blank for transparent."
+        />
+        <ColorField
+          label="Outer background"
+          value={block.outerBgColor}
+          fallback="#f4f5f7"
+          onChange={(outerBgColor) => onChange({ outerBgColor })}
+          clearable
+          clearLabel="Transparent"
+          hint="Full-width area around the block, including the space left and right of the content."
+        />
+      </div>
     </div>
   );
 }

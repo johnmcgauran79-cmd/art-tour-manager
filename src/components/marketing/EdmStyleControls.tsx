@@ -263,12 +263,16 @@ export function ColorField({
   fallback,
   onChange,
   clearable,
+  clearLabel = "Clear",
+  hint,
 }: {
   label: string;
   value?: string;
   fallback: string;
   onChange: (v: string | undefined) => void;
   clearable?: boolean;
+  clearLabel?: string;
+  hint?: string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -279,18 +283,21 @@ export function ColorField({
           className="h-9 w-14 p-1"
           value={value || fallback}
           onChange={(e) => onChange(e.target.value)}
+          aria-label={`${label} colour picker`}
         />
         <Input
           value={value || ""}
           onChange={(e) => onChange(e.target.value || undefined)}
           placeholder={fallback}
+          aria-label={`${label} hex value`}
         />
         {clearable && value && (
           <Button type="button" variant="outline" size="sm" onClick={() => onChange(undefined)}>
-            Clear
+            {clearLabel}
           </Button>
         )}
       </div>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
