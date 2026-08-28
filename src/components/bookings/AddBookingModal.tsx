@@ -417,55 +417,8 @@ export const AddBookingModal = ({
         console.log('Skipping Xero invoice - status:', status, 'isFullTourBooking:', isFullTourBooking);
       }
 
-      // Save hotel allocations
-      const hotelInserts = Object.entries(hotelAllocations)
-        .filter(([_, allocation]) => allocation.allocated)
-        .map(([hotelId, allocation]) => {
-          const checkIn = (allocation.check_in_date || formData.check_in_date) || null;
-          const checkOut = (allocation.check_out_date || formData.check_out_date) || null;
-          
-          let nights = null;
-          if (checkIn && checkOut) {
-            const checkInDate = new Date(checkIn);
-            const checkOutDate = new Date(checkOut);
-            const diffTime = checkOutDate.getTime() - checkInDate.getTime();
-            nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          }
-          
-          return {
-            booking_id: newBooking.id,
-            hotel_id: hotelId,
-            required: true,
-            allocated: true,
-            check_in_date: checkIn || null,
-            check_out_date: checkOut || null,
-            nights: nights,
-            bedding: (allocation.bedding || 'double') as 'single' | 'double' | 'twin',
-            room_type: allocation.room_type || null,
-            room_upgrade: allocation.room_upgrade || null,
-            confirmation_number: allocation.confirmation_number || null,
-            room_requests: allocation.room_requests || null,
-          };
-        });
-
-      if (hotelInserts.length > 0) {
-        const { error: hotelError } = await supabase
-          .from('hotel_bookings')
-          .insert(hotelInserts)
-          .select();
-        
-        if (hotelError) {
-          console.error('Error creating hotel bookings:', hotelError);
-          throw new Error(`Failed to save hotel allocations: ${hotelError.message}`);
-        }
-      }
-
-      // Recalculate booking dates
-      if (cleanedFormData.accommodation_required) {
-        await recalculateBookingDates.mutateAsync(newBooking.id);
-      }
-
       // Save activity allocations
+
       const activityInserts = Object.entries(activityAllocations)
         .filter(([_, count]) => count > 0)
         .map(([activityId, count]) => ({
