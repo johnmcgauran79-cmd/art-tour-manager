@@ -24,6 +24,15 @@ export interface Brand {
   partner_name: string | null;
   partnership_note: string | null;
   partner_handles_billing: boolean;
+  /* Typography (theme profile) — nullable, falls back to ART defaults. */
+  font_body: string | null;
+  font_heading: string | null;
+  body_font_size_px: number | null;
+  body_line_height: number | null;
+  section_heading_size_px: number | null;
+  section_heading_weight: number | null;
+  section_heading_uppercase: boolean | null;
+  small_text_size_px: number | null;
   is_default: boolean;
   is_active: boolean;
   sort_order: number;
