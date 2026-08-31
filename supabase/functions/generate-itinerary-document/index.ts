@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { getBrandForTour } from "../_shared/brand.ts";
+import { buildBrandTypography, type BrandTypography } from "../_shared/brandFonts.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -242,7 +243,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl, brand.colorBorder);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName, brand.logoUrl || brand.headerImageUrl, brand.colorBorder, brand.typography);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -309,7 +310,8 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null, brandBorder?: string): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null, brandBorder?: string, typography?: BrandTypography | null): string {
+  const TYPO = typography || buildBrandTypography(null);
   // Pool of filler images, consumed as blank spaces are filled
   const fillerPool: any[] = [...(documentImages || [])];
   const GOLD_FILLER = '#c79a2e';
@@ -384,12 +386,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     <!DOCTYPE html>
     <html lang="en">
     <head>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
-<style>
-@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
-body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
-h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
-</style>
+${TYPO.headHtml}
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${tour.name} - Itinerary</title>
@@ -398,10 +395,10 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
-          font-family: 'Poppins', Arial, Helvetica, sans-serif;
-          line-height: 1.55;
+          font-family: ${TYPO.bodyFont};
+          line-height: ${TYPO.lineHeight};
           color: ${INK};
-          font-size: 10.5pt;
+          font-size: ${TYPO.bodySize}px;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
@@ -481,7 +478,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
           border: none;
           margin: 0 auto 20px;
         }
-        .welcome-body { color: ${INK}; font-size: 10.5pt; line-height: 1.5; }
+        .welcome-body { color: ${INK}; font-size: ${TYPO.bodySize}px; line-height: ${TYPO.lineHeight}; }
         .welcome-body p { margin: 0 0 12px; }
         .welcome-signoff {
           font-family: 'Dancing Script', 'Snell Roundhand', 'Apple Chancery', 'Segoe Script', cursive;
@@ -505,10 +502,10 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
         .section-first { page-break-before: avoid; break-before: avoid; }
         .section-title {
           color: ${NAVY};
-          font-size: 17pt;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
+          font-family: ${TYPO.headingFont};
+          font-size: ${TYPO.headingSize + 6}px;
+          font-weight: ${TYPO.headingWeight};
+          text-transform: ${TYPO.headingUppercase ? 'uppercase' : 'none'};
           margin: 0 0 4px;
           padding-bottom: 8px;
           border-bottom: 2px solid ${GOLD};
@@ -518,7 +515,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
           width: 100%;
           border-collapse: collapse;
           margin: 18px 0 8px;
-          font-size: 10pt;
+          font-size: ${TYPO.bodySize}px;
         }
         .acc-table th {
           background: ${NAVY};
@@ -541,14 +538,22 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
           break-inside: avoid;
         }
         .day-head { margin: 0 0 8px; }
-        .day-num { color: ${NAVY}; font-weight: 700; font-size: 12.5pt; }
-        .day-date { color: ${MUTED}; font-size: 11pt; margin: 0 8px; }
-        .day-name { color: ${GOLD}; font-weight: 700; font-size: 11.5pt; letter-spacing: 0.5px; text-transform: uppercase; }
+        .day-num, .day-name, .activity-title, .info-name {
+          font-family: ${TYPO.headingFont};
+          font-size: ${TYPO.headingSize}px;
+          font-weight: ${TYPO.headingWeight};
+          text-transform: ${TYPO.headingUppercase ? 'uppercase' : 'none'};
+          letter-spacing: normal;
+          line-height: 1.3;
+        }
+        .day-num { color: ${NAVY}; }
+        .day-date { color: ${MUTED}; font-size: ${TYPO.bodySize}px; margin: 0 8px; }
+        .day-name { color: ${GOLD}; }
         .activity { margin: 8px 0; }
         .activity-time {
-          color: ${NAVY}; font-weight: 700; font-size: 10pt; margin-right: 6px;
+          color: ${NAVY}; font-weight: 700; font-size: ${TYPO.bodySize}px; margin-right: 6px;
         }
-        .activity-title { font-weight: 700; color: ${NAVY}; }
+        .activity-title { color: ${NAVY}; }
         .activity-content { color: ${INK}; margin-top: 2px; }
         .activity-content p { margin: 0.4em 0; }
         .activity-content ul, .activity-content ol { margin: 0.4em 0; padding-left: 1.2em; }
@@ -576,10 +581,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
           font-size: 9.5pt;
           font-style: italic;
         }
-        .info-name {
-          color: ${NAVY}; font-weight: 700; font-size: 11.5pt; text-transform: uppercase;
-          letter-spacing: 0.5px; margin: 0 0 4px;
-        }
+        .info-name { color: ${NAVY}; margin: 0 0 6px; }
         .info-content { color: ${INK}; }
         .info-content p { margin: 0.4em 0; }
         .info-content ul, .info-content ol { margin: 0.4em 0; padding-left: 1.2em; }
