@@ -1,4 +1,5 @@
 // Shared brand/theme resolver for edge functions.
+import { buildBrandTypography, type BrandTypography } from "./brandFonts.ts";
 // Given a tour id (or none), returns the tour's brand or the default brand,
 // normalized so callers can read logo, colours, sender identity and footer.
 
@@ -23,6 +24,8 @@ export interface ResolvedBrand {
   footerText: string | null;
   partnerName: string | null;
   partnershipNote: string | null;
+  /** Resolved typography tokens (fonts + sizes) for all guest-facing comms. */
+  typography: BrandTypography;
 }
 
 const DEFAULT_HEADER =
@@ -49,6 +52,7 @@ const FALLBACK: ResolvedBrand = {
   footerText: null,
   partnerName: null,
   partnershipNote: null,
+  typography: buildBrandTypography(null),
 };
 
 function normalize(row: any): ResolvedBrand {
@@ -75,6 +79,7 @@ function normalize(row: any): ResolvedBrand {
     footerText: row.footer_text ?? null,
     partnerName: row.partner_name ?? null,
     partnershipNote: row.partnership_note ?? null,
+    typography: buildBrandTypography(row),
   };
 }
 
