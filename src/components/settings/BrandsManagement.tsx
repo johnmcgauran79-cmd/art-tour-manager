@@ -42,6 +42,14 @@ const BLANK: BrandInput = {
   partner_name: "",
   partnership_note: "",
   partner_handles_billing: false,
+  font_body: "Poppins",
+  font_heading: "Larken",
+  body_font_size_px: 12,
+  body_line_height: 1.6,
+  section_heading_size_px: 18,
+  section_heading_weight: 700,
+  section_heading_uppercase: false,
+  small_text_size_px: 11,
   is_default: false,
   is_active: true,
 };
@@ -214,6 +222,57 @@ const BrandEditor = ({ brand, open, onOpenChange }: { brand: Brand | null; open:
             <Label>Email Footer Text</Label>
             <Textarea value={form.footer_text || ""} onChange={(e) => set("footer_text", e.target.value)} rows={2}
               placeholder="Shown in the footer of branded emails." />
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-dashed p-3 bg-muted/30">
+            <div>
+              <Label className="text-sm font-medium">Typography</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Drives body copy and section headings across every branded email,
+                guest document and itinerary. Section headings (Additional Info and
+                itinerary sections) all use the one heading setting below.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Body Font</Label>
+                <Input value={form.font_body || ""} onChange={(e) => set("font_body", e.target.value)} placeholder="Poppins" />
+              </div>
+              <div className="space-y-1">
+                <Label>Heading Font</Label>
+                <Input value={form.font_heading || ""} onChange={(e) => set("font_heading", e.target.value)} placeholder="Larken" />
+              </div>
+              <div className="space-y-1">
+                <Label>Body Size (px)</Label>
+                <Input type="number" min={8} max={24} value={form.body_font_size_px ?? 12}
+                  onChange={(e) => set("body_font_size_px", Number(e.target.value) || 12)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Body Line Height</Label>
+                <Input type="number" step="0.05" min={1} max={2.5} value={form.body_line_height ?? 1.6}
+                  onChange={(e) => set("body_line_height", Number(e.target.value) || 1.6)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Section Heading Size (px)</Label>
+                <Input type="number" min={10} max={40} value={form.section_heading_size_px ?? 18}
+                  onChange={(e) => set("section_heading_size_px", Number(e.target.value) || 18)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Section Heading Weight</Label>
+                <Input type="number" step={100} min={300} max={800} value={form.section_heading_weight ?? 700}
+                  onChange={(e) => set("section_heading_weight", Number(e.target.value) || 700)} />
+              </div>
+              <div className="space-y-1">
+                <Label>Small / Footer Text Size (px)</Label>
+                <Input type="number" min={8} max={18} value={form.small_text_size_px ?? 11}
+                  onChange={(e) => set("small_text_size_px", Number(e.target.value) || 11)} />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={!!form.section_heading_uppercase}
+                onChange={(e) => set("section_heading_uppercase", e.target.checked)} />
+              Uppercase section headings (ART brand style is sentence case — leave off)
+            </label>
           </div>
 
           <div className="space-y-3 rounded-lg border border-dashed p-3 bg-muted/30">
