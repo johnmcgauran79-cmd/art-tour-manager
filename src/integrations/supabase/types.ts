@@ -1334,6 +1334,8 @@ export type Database = {
       }
       brands: {
         Row: {
+          body_font_size_px: number
+          body_line_height: number
           color_accent: string
           color_border: string
           color_button: string
@@ -1344,6 +1346,8 @@ export type Database = {
           company_website: string | null
           created_at: string
           email_header_image_url: string | null
+          font_body: string
+          font_heading: string
           footer_text: string | null
           from_email_client: string | null
           from_email_operational: string | null
@@ -1356,12 +1360,18 @@ export type Database = {
           partner_handles_billing: boolean
           partner_name: string | null
           partnership_note: string | null
+          section_heading_size_px: number
+          section_heading_uppercase: boolean
+          section_heading_weight: number
           sender_name: string
           short_name: string | null
+          small_text_size_px: number
           sort_order: number
           updated_at: string
         }
         Insert: {
+          body_font_size_px?: number
+          body_line_height?: number
           color_accent?: string
           color_border?: string
           color_button?: string
@@ -1372,6 +1382,8 @@ export type Database = {
           company_website?: string | null
           created_at?: string
           email_header_image_url?: string | null
+          font_body?: string
+          font_heading?: string
           footer_text?: string | null
           from_email_client?: string | null
           from_email_operational?: string | null
@@ -1384,12 +1396,18 @@ export type Database = {
           partner_handles_billing?: boolean
           partner_name?: string | null
           partnership_note?: string | null
+          section_heading_size_px?: number
+          section_heading_uppercase?: boolean
+          section_heading_weight?: number
           sender_name?: string
           short_name?: string | null
+          small_text_size_px?: number
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          body_font_size_px?: number
+          body_line_height?: number
           color_accent?: string
           color_border?: string
           color_button?: string
@@ -1400,6 +1418,8 @@ export type Database = {
           company_website?: string | null
           created_at?: string
           email_header_image_url?: string | null
+          font_body?: string
+          font_heading?: string
           footer_text?: string | null
           from_email_client?: string | null
           from_email_operational?: string | null
@@ -1412,8 +1432,12 @@ export type Database = {
           partner_handles_billing?: boolean
           partner_name?: string | null
           partnership_note?: string | null
+          section_heading_size_px?: number
+          section_heading_uppercase?: boolean
+          section_heading_weight?: number
           sender_name?: string
           short_name?: string | null
+          small_text_size_px?: number
           sort_order?: number
           updated_at?: string
         }
