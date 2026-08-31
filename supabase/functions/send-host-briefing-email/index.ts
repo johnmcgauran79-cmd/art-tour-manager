@@ -238,7 +238,7 @@ serve(async (req) => {
       );
     }
     const rawHtml = render(contentWithAttachments, mergeData);
-    const html = wrapBrandedEmail(rawHtml, headerImageUrl);
+    const html = wrapBrandedEmail(rawHtml, headerImageUrl, brand?.typography);
     const senderName = brand.senderName;
     const fromEmail = template.from_email || brand.fromEmailClient;
     // Strip any existing "Name <email>" formatting from from_email before re-wrapping
