@@ -1326,8 +1326,8 @@ const handler = async (req: Request): Promise<Response> => {
     if (hasHotelDetailsPlaceholder && mergeData.hotel_bookings && mergeData.hotel_bookings.length > 0) {
       const hotelCardsHtml = mergeData.hotel_bookings.map((hb: any) => {
         const rows: string[] = [];
-        const labelStyle = 'padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:100px;';
-        const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;';
+        const labelStyle = `padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:100px;`;
+        const valueStyle = `padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;`;
         rows.push(`<tr><td style="${labelStyle}">Check In</td><td style="${valueStyle}">${hb.hotel_check_in_date}</td></tr>`);
         rows.push(`<tr><td style="${labelStyle}">Check Out</td><td style="${valueStyle}">${hb.hotel_check_out_date}</td></tr>`);
         rows.push(`<tr><td style="${labelStyle}">Nights</td><td style="${valueStyle}">${hb.hotel_nights}</td></tr>`);
@@ -1350,8 +1350,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate {{tour_details_card}} styled card (hotel-card style)
     const hasTourDetailsCard = /\{\{\s*tour_details_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     if (hasTourDetailsCard) {
-      const labelStyle = 'padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:140px;';
-      const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;';
+      const labelStyle = `padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:140px;`;
+      const valueStyle = `padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;`;
       
       const rows: string[] = [];
       if (mergeData.tour_name) rows.push(`<tr><td style="${labelStyle}">Tour</td><td style="${valueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`);
@@ -1369,8 +1369,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate {{passenger_info_card}} styled card (hotel-card style)
     const hasPassengerInfoCard = /\{\{\s*passenger_info_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     if (hasPassengerInfoCard) {
-      const paxLabelStyle = 'padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:140px;';
-      const paxValueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;';
+      const paxLabelStyle = `padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:140px;`;
+      const paxValueStyle = `padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;`;
       
       const rows: string[] = [];
       const leadName = [mergeData.lead_passenger_first_name, mergeData.lead_passenger_last_name].filter(Boolean).join(' ');
