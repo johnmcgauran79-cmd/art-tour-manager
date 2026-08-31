@@ -4,6 +4,7 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getBrandForTour } from "../_shared/brand.ts";
 import { emailAttachmentUrl } from "../_shared/emailFileUrl.ts";
+import { buildBrandTypography, type BrandTypography } from "../_shared/brandFonts.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -19,35 +20,31 @@ const DEFAULT_HEADER_IMAGE_URL =
   "https://art-tour-manager.lovable.app/images/email-header-default.png";
 
 // Branded ART email wrapper — same chrome as booking confirmation emails
-const wrapBrandedEmail = (content: string, headerImageUrl?: string): string => {
+const wrapBrandedEmail = (content: string, headerImageUrl?: string, typo?: BrandTypography | null): string => {
   const logoUrl = headerImageUrl || DEFAULT_HEADER_IMAGE_URL;
+  const t = typo || buildBrandTypography(null);
   return `<!DOCTYPE html>
 <html>
 <head>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
-<style>
-@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
-body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
-h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
-</style>
+${t.headHtml}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     .email-body p, .email-body li, .email-body div {
-      font-family: 'Poppins', Arial, Helvetica, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
+      font-family: ${t.bodyFont};
+      font-size: ${t.bodySize}px;
+      line-height: ${t.lineHeight};
       color: #55575d;
     }
     .email-body h1, .email-body h2, .email-body h3, .email-body h4 {
-      font-family: 'Poppins', Arial, Helvetica, sans-serif;
+      font-family: ${t.headingFont};
       line-height: 1.3;
       color: #1a2332;
+      text-transform: ${t.headingUppercase ? 'uppercase' : 'none'};
     }
-    .email-body h1 { font-size: 22px; }
-    .email-body h2 { font-size: 18px; }
-    .email-body h3 { font-size: 16px; }
-    .email-body h4 { font-size: 15px; }
+    .email-body h1 { font-size: ${t.headingSize + 6}px; }
+    .email-body h2 { font-size: ${t.headingSize + 2}px; }
+    .email-body h3, .email-body h4, .email-body .art-section-heading { font-size: ${t.headingSize}px; font-weight: ${t.headingWeight}; }
     .email-body strong, .email-body b { color: #1a2332; }
     .email-body p { margin: 0 0 12px 0; }
     .email-body ul, .email-body ol { margin: 0 0 16px 0; padding-left: 24px; }
@@ -56,7 +53,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
     .email-body hr { border: none; border-top: 2px solid #e5e7eb; margin: 24px 0; }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Poppins', Arial, Helvetica, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: ${t.bodyFont};">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
     <tr>
       <td align="center">
@@ -67,14 +64,14 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
             </td>
           </tr>
           <tr>
-            <td class="email-body" style="padding: 40px; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
+            <td class="email-body" style="padding: 40px; ${t.bodyStyle} color: #55575d;">
               ${content}
             </td>
           </tr>
           <tr>
             <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">Australian Racing Tours</p>
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 5px 0 0;">Host pre-tour briefing.</p>
+              <p style="color: #9ca3af; ${t.smallStyle} text-align: center; margin: 0;">Australian Racing Tours</p>
+              <p style="color: #9ca3af; ${t.smallStyle} text-align: center; margin: 5px 0 0;">Host pre-tour briefing.</p>
             </td>
           </tr>
         </table>
