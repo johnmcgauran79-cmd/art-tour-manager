@@ -5,6 +5,7 @@ import { getBrandForBooking, brandMergeFields } from "../_shared/brand.ts";
 import { recolorCustomCards } from "../_shared/customCards.ts";
 import { formatPhoneInternational } from "../_shared/hostDetails.ts";
 import { emailAttachmentUrl } from "../_shared/emailFileUrl.ts";
+import { buildBrandTypography, type BrandTypography } from "../_shared/brandFonts.ts";
 
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -53,8 +54,8 @@ function buildCancellationPolicyTableHtml(policy: any, navy = "#232628", headerT
   return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
     <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:15px;font-weight:600;">${escapeCpHtml(policy.title)}</th></tr>
     <tr>
-      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
-      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
+      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:${ART_TYPO.bodySize}px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
+      <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:${ART_TYPO.bodySize}px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
     </tr>
     ${rowsHtml}
   </table>`;
@@ -242,9 +243,16 @@ const sanitizeQuillHtml = (html: string): string => {
   return cleaned;
 };
 
+// Resolved typography tokens for structured blocks rendered outside the wrapper.
+// Falls back to the brand defaults (Poppins 12px body, Larken section headings).
+const ART_TYPO = buildBrandTypography(null);
+const ART_BODY_STYLE = ART_TYPO.bodyStyle;
+const ADDITIONAL_INFO_HEADING_STYLE = ART_TYPO.sectionHeadingStyle;
+
 // Branded email wrapper - wraps content in ART header with logo
 // Includes CSS normalisation for Quill-generated content
-const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string, headerBgColor?: string, brandName?: string): string => {
+const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string, headerBgColor?: string, brandName?: string, typo?: BrandTypography | null): string => {
+  const t = typo || buildBrandTypography(null);
   const headerTitle = title || brandName || 'Australian Racing Tours';
   const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
   const headerBg = headerBgColor || '#232628';
@@ -253,39 +261,37 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
   return `<!DOCTYPE html>
 <html>
 <head>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
-<style>
-@font-face{font-family:'Larken';src:url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff2') format('woff2'),url('https://admin.australianracingtours.com.au/fonts/Larken-Regular.woff') format('woff');font-weight:400;font-style:normal;font-display:swap;}
-body,td,p,div,li,span{font-family:'Poppins', Arial, Helvetica, sans-serif;}
-h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-weight:400;text-transform:none;}
-</style>
+${t.headHtml}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* Normalise Quill-generated content — but exclude structured blocks */
     .email-body p, .email-body li, .email-body div {
-      font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-      font-size: 14px !important;
-      line-height: 1.6 !important;
+      font-family: ${t.bodyFont} !important;
+      font-size: ${t.bodySize}px !important;
+      line-height: ${t.lineHeight} !important;
       color: #55575d !important;
     }
     /* Default span/td — but NOT inside structured components */
     .email-body > span, .email-body > div > span {
-      font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
-      font-size: 14px !important;
+      font-family: ${t.bodyFont} !important;
+      font-size: ${t.bodySize}px !important;
       color: #55575d !important;
     }
     .email-body h1, .email-body h2, .email-body h3, .email-body h4, .email-body h5, .email-body h6 {
-      font-family: 'Poppins', Arial, Helvetica, sans-serif !important;
+      font-family: ${t.headingFont} !important;
       line-height: 1.3 !important;
+      text-transform: ${t.headingUppercase ? 'uppercase' : 'none'} !important;
     }
     .email-body h1:not([style]), .email-body h2:not([style]), .email-body h3:not([style]), .email-body h4:not([style]), .email-body h5:not([style]), .email-body h6:not([style]) {
       color: #1a2332 !important;
     }
-    .email-body h1 { font-size: 22px !important; }
-    .email-body h2 { font-size: 18px !important; }
-    .email-body h3 { font-size: 16px !important; }
-    .email-body h4 { font-size: 15px !important; }
+    .email-body h1 { font-size: ${t.headingSize + 6}px !important; }
+    .email-body h2 { font-size: ${t.headingSize + 2}px !important; }
+    .email-body h3 { font-size: ${t.headingSize}px !important; font-weight: ${t.headingWeight} !important; }
+    .email-body h4 { font-size: ${t.headingSize}px !important; font-weight: ${t.headingWeight} !important; }
+    /* Additional Info + itinerary section headings share one rule */
+    .email-body .art-section-heading { font-family: ${t.headingFont} !important; font-size: ${t.headingSize}px !important; font-weight: ${t.headingWeight} !important; text-transform: ${t.headingUppercase ? 'uppercase' : 'none'} !important; line-height: 1.3 !important; }
     .email-body strong:not([style]), .email-body b:not([style]) { color: #1a2332 !important; }
     .email-body p { margin: 0 0 12px 0 !important; }
     .email-body ul, .email-body ol { margin: 0 0 16px 0 !important; padding-left: 24px !important; }
@@ -304,7 +310,7 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
     .email-body .email-section-header strong { color: inherit !important; font-size: inherit !important; letter-spacing: inherit !important; }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Poppins', Arial, Helvetica, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: ${t.bodyFont};">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
     <tr>
       <td align="center">
@@ -317,15 +323,15 @@ h1,h2,h3,h4,h5,h6{font-family:'Larken', Georgia, 'Times New Roman', serif;font-w
           </tr>
           <!-- Body -->
           <tr>
-            <td class="email-body" style="padding: 40px; font-family: 'Poppins', Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
+            <td class="email-body" style="padding: 40px; ${t.bodyStyle} color: #55575d;">
               ${sanitizedContent}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">${footerName}</p>
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 5px 0 0;">This email was sent regarding your tour booking.</p>
+              <p style="color: #9ca3af; ${t.smallStyle} text-align: center; margin: 0;">${footerName}</p>
+              <p style="color: #9ca3af; ${t.smallStyle} text-align: center; margin: 5px 0 0;">This email was sent regarding your tour booking.</p>
             </td>
           </tr>
         </table>
@@ -1320,8 +1326,8 @@ const handler = async (req: Request): Promise<Response> => {
     if (hasHotelDetailsPlaceholder && mergeData.hotel_bookings && mergeData.hotel_bookings.length > 0) {
       const hotelCardsHtml = mergeData.hotel_bookings.map((hb: any) => {
         const rows: string[] = [];
-        const labelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:100px;';
-        const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
+        const labelStyle = 'padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:100px;';
+        const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;';
         rows.push(`<tr><td style="${labelStyle}">Check In</td><td style="${valueStyle}">${hb.hotel_check_in_date}</td></tr>`);
         rows.push(`<tr><td style="${labelStyle}">Check Out</td><td style="${valueStyle}">${hb.hotel_check_out_date}</td></tr>`);
         rows.push(`<tr><td style="${labelStyle}">Nights</td><td style="${valueStyle}">${hb.hotel_nights}</td></tr>`);
@@ -1334,7 +1340,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (hb.has_hotel_extra_night_price) {
           rows.push(`<tr><td style="${labelStyle}">Extra Nights</td><td style="${valueStyle}">Available for $${hb.hotel_extra_night_price}</td></tr>`);
         }
-        return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">🏨 ${hb.hotel_name}</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
+        return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:${ART_TYPO.headingSize}px;font-family:${ART_TYPO.headingFont};font-weight:${ART_TYPO.headingWeight};color:#1a2332;">🏨 ${hb.hotel_name}</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
       }).join('');
       mergeData.hotel_details = hotelCardsHtml;
     } else {
@@ -1344,8 +1350,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate {{tour_details_card}} styled card (hotel-card style)
     const hasTourDetailsCard = /\{\{\s*tour_details_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     if (hasTourDetailsCard) {
-      const labelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:140px;';
-      const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
+      const labelStyle = 'padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:140px;';
+      const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;';
       
       const rows: string[] = [];
       if (mergeData.tour_name) rows.push(`<tr><td style="${labelStyle}">Tour</td><td style="${valueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`);
@@ -1355,7 +1361,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (mergeData.tour_days || mergeData.tour_nights) rows.push(`<tr><td style="${labelStyle}">Duration</td><td style="${valueStyle}">${mergeData.tour_days ? mergeData.tour_days + ' days' : ''}${mergeData.tour_days && mergeData.tour_nights ? ', ' : ''}${mergeData.tour_nights ? mergeData.tour_nights + ' nights' : ''}</td></tr>`);
       if (mergeData.tour_host) rows.push(`<tr><td style="${labelStyle}">Tour Host</td><td style="${valueStyle}">${mergeData.tour_host}</td></tr>`);
       
-      mergeData.tour_details_card = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin:16px 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">✈️ Tour Details</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
+      mergeData.tour_details_card = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin:16px 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:${ART_TYPO.headingSize}px;font-family:${ART_TYPO.headingFont};font-weight:${ART_TYPO.headingWeight};color:#1a2332;">✈️ Tour Details</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
     } else {
       mergeData.tour_details_card = '';
     }
@@ -1363,8 +1369,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate {{passenger_info_card}} styled card (hotel-card style)
     const hasPassengerInfoCard = /\{\{\s*passenger_info_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     if (hasPassengerInfoCard) {
-      const paxLabelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:140px;';
-      const paxValueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
+      const paxLabelStyle = 'padding:4px 0;color:#55575d;font-size:${ART_TYPO.bodySize}px;width:140px;';
+      const paxValueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:${ART_TYPO.bodySize}px;font-weight:500;';
       
       const rows: string[] = [];
       const leadName = [mergeData.lead_passenger_first_name, mergeData.lead_passenger_last_name].filter(Boolean).join(' ');
@@ -1411,7 +1417,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
       
-      mergeData.passenger_info_card = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin:16px 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">👤 Passenger Information</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
+      mergeData.passenger_info_card = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin:16px 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:${ART_TYPO.headingSize}px;font-family:${ART_TYPO.headingFont};font-weight:${ART_TYPO.headingWeight};color:#1a2332;">👤 Passenger Information</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
     } else {
       mergeData.passenger_info_card = '';
     }
@@ -1548,7 +1554,7 @@ const handler = async (req: Request): Promise<Response> => {
           // Strip HTML tags for plain text content, keep for rich content
           const contentHtml = section.content || '';
           
-          return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;"><tr><td style="padding: 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="width: 44px; vertical-align: top; padding-right: 14px;"><div style="width: 40px; height: 40px; background-color: #f3f4f6; border-radius: 8px; text-align: center; line-height: 40px; font-size: 20px;">${emoji}</div></td><td style="vertical-align: top;"><h4 style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #1a2332;">${section.name}</h4><div style="font-size: 14px; color: #55575d; line-height: 1.5;">${contentHtml}</div></td></tr></table></td></tr></table>`;
+          return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;"><tr><td style="padding: 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="width: 44px; vertical-align: top; padding-right: 14px;"><div style="width: 40px; height: 40px; background-color: #f3f4f6; border-radius: 8px; text-align: center; line-height: 40px; font-size: 20px;">${emoji}</div></td><td style="vertical-align: top;"><h4 class="art-section-heading" style="margin: 0 0 8px 0; ${ADDITIONAL_INFO_HEADING_STYLE} color: #1a2332;">${section.name}</h4><div style="${ART_BODY_STYLE} color: #55575d;">${contentHtml}</div></td></tr></table></td></tr></table>`;
         }).join('');
 
         mergeData.additional_info_blocks = cancellationPolicyBlock + sectionsHtml;
@@ -1663,7 +1669,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Wrap the processed content in the branded email wrapper
       // Recolour custom cards to match the tour's brand theme.
       emailHtml = recolorCustomCards(emailHtml, { primary: brandPrimary, accent: brandAccent });
-      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName);
+      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName, resolvedBrand?.typography);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
       const fallbackContent = `
@@ -1672,7 +1678,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p>We will be in touch with more details soon.</p>
         <p>Best regards,<br>The Team</p>
       `;
-      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl, brandPrimary, brandName);
+      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl, brandPrimary, brandName, resolvedBrand?.typography);
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
@@ -2034,7 +2040,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Wrap in branded email template
       passengerEmailHtml = recolorCustomCards(passengerEmailHtml, { primary: brandPrimary, accent: brandAccent });
-      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName);
+      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName, resolvedBrand?.typography);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
       const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);
