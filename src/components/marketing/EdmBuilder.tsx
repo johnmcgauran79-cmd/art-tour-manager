@@ -10,9 +10,15 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  Heading,
+  Image as ImageIcon,
+  LayoutGrid,
   Maximize2,
   LayoutTemplate,
+  Minus,
+
   Monitor,
+  MousePointerClick,
   MoreHorizontal,
   Plus,
   Redo2,
@@ -58,6 +64,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   appendBlockToCell,
   blockLabel,
+  blockSummary,
   duplicateBlockById,
   duplicateCellById,
   appendBlocksToCell,
@@ -176,6 +183,8 @@ export function EdmBuilder({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
+  /** When set, the next click in the live preview places a block of this type. */
+  const [pickType, setPickType] = useState<EdmBlockType | null>(null);
 
   /* ---- resizable content-blocks panel ---- */
   const PANEL_MIN = 240;
@@ -214,6 +223,65 @@ export function EdmBuilder({
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   };
+
+  /* ---- block list scrolling (auto-scroll while dragging) ---- */
+  const treeScrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<{ dir: -1 | 0 | 1; speed: number; raf: number | null }>({
+    dir: 0,
+    speed: 0,
+    raf: null,
+  });
+
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current.raf != null) cancelAnimationFrame(autoScrollRef.current.raf);
+    autoScrollRef.current = { dir: 0, speed: 0, raf: null };
+  };
+
+  /** Scroll the block list while a block is dragged near its top/bottom edge. */
+  const handleTreeDragOver = (e: React.DragEvent) => {
+    const el = treeScrollRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const zone = 72;
+    const fromTop = e.clientY - rect.top;
+    const fromBottom = rect.bottom - e.clientY;
+    let dir: -1 | 0 | 1 = 0;
+    let speed = 0;
+    if (fromTop < zone) {
+      dir = -1;
+      speed = Math.max(4, ((zone - fromTop) / zone) * 22);
+    } else if (fromBottom < zone) {
+      dir = 1;
+      speed = Math.max(4, ((zone - fromBottom) / zone) * 22);
+    }
+    autoScrollRef.current.dir = dir;
+    autoScrollRef.current.speed = speed;
+    if (dir === 0) {
+      stopAutoScroll();
+      return;
+    }
+    if (autoScrollRef.current.raf != null) return;
+    const step = () => {
+      const box = treeScrollRef.current;
+      const st = autoScrollRef.current;
+      if (!box || st.dir === 0) {
+        stopAutoScroll();
+        return;
+      }
+      box.scrollTop += st.dir * st.speed;
+      st.raf = requestAnimationFrame(step);
+    };
+    autoScrollRef.current.raf = requestAnimationFrame(step);
+  };
+
+  useEffect(() => stopAutoScroll, []);
+
+  // Keep the selected block visible in the list (e.g. selected from preview).
+  useEffect(() => {
+    if (!selectedId) return;
+    const el = treeScrollRef.current?.querySelector(`[data-block-id="${selectedId}"]`);
+    (el as HTMLElement | null)?.scrollIntoView({ block: "nearest" });
+  }, [selectedId]);
 
   /* ---- undo / redo history ---- */
   const [past, setPast] = useState<EdmBlock[][]>([]);
@@ -261,13 +329,20 @@ export function EdmBuilder({
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo]);
 
+  useEffect(() => {
+    if (!pickType) return;
+    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setPickType(null);
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [pickType]);
+
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
   const previewHtml = useMemo(
     () =>
       mode === "html"
         ? html || "<p style='font-family:Arial'>Paste your HTML to see a preview.</p>"
-        : renderEdmHtml(blocks, brand, { subject, preheader }),
+        : renderEdmHtml(blocks, brand, { subject, preheader, interactive: true }),
     [mode, html, blocks, brand, subject, preheader]
   );
 
@@ -279,6 +354,31 @@ export function EdmBuilder({
     const block = newBlock(type);
     commit(insertBlockAfter(blocks, block, selectedId));
     setSelectedId(block.id);
+    toast({
+      title: `${blockLabel[type]} added`,
+      description: selectedId
+        ? `Placed directly below the selected ${
+            (findBlockById(blocks, selectedId)
+              ? blockLabel[findBlockById(blocks, selectedId)!.type]
+              : "block"
+            ).toLowerCase()
+          }.`
+        : "Placed at the end of the email.",
+    });
+  };
+
+  /** Insert a new block relative to an existing one (used by preview picking). */
+  const addAtTarget = (type: EdmBlockType, targetId: string, place: "before" | "after") => {
+    const block = newBlock(type);
+    const next = moveBlockToTarget(
+      insertBlockAfter(blocks, block, null),
+      block.id,
+      targetId,
+      place
+    );
+    commit(next);
+    setSelectedId(block.id);
+    setPickType(null);
   };
 
   const addToCell = (cellId: string, type: EdmBlockType) => {
@@ -556,16 +656,56 @@ export function EdmBuilder({
               <CardTitle className="text-sm">Content blocks</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <AddBlockMenu
-                onPick={add}
-                trigger={
-                  <Button size="sm" className="w-full gap-1.5">
-                    <Plus className="h-3.5 w-3.5" /> Add block
-                  </Button>
-                }
-              />
+              <div className="space-y-1.5">
+                <AddBlockMenu
+                  onPick={add}
+                  trigger={
+                    <Button size="sm" className="w-full gap-1.5">
+                      <Plus className="h-3.5 w-3.5" /> Add block
+                    </Button>
+                  }
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {selected
+                    ? `Goes directly below “${blockLabel[selected.type]}”.`
+                    : "Goes at the end of the email."}
+                </p>
+                <AddBlockMenu
+                  onPick={(t) => {
+                    setPickType(t);
+                    setLivePreview(true);
+                  }}
+                  trigger={
+                    <Button size="sm" variant="outline" className="w-full gap-1.5">
+                      <MousePointerClick className="h-3.5 w-3.5" /> Add at position…
+                    </Button>
+                  }
+                />
+                {pickType && (
+                  <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-2 py-1.5 text-[11px]">
+                    <span className="min-w-0 flex-1">
+                      Click in the live preview to place the {blockLabel[pickType].toLowerCase()}.
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-1.5 text-[11px]"
+                      onClick={() => setPickType(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
 
-              <div className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
+              <div
+                ref={treeScrollRef}
+                className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1"
+                onDragOver={handleTreeDragOver}
+                onDrop={stopAutoScroll}
+                onDragEnd={stopAutoScroll}
+                onDragLeave={stopAutoScroll}
+              >
                 {blocks.length === 0 ? (
                   <p className="py-6 text-center text-xs text-muted-foreground">
                     Pick a layout or add your first block.
@@ -645,7 +785,17 @@ export function EdmBuilder({
           </Card>
 
             {livePreview && (
-              <LivePreviewCard html={previewHtml} device={device} onDeviceChange={setDevice} />
+              <LivePreviewCard
+                html={previewHtml}
+                device={device}
+                onDeviceChange={setDevice}
+                selectedId={selectedId}
+                pickLabel={pickType ? blockLabel[pickType] : null}
+                onSelectBlock={setSelectedId}
+                onInsertAt={(targetId, place) =>
+                  pickType && addAtTarget(pickType, targetId, place)
+                }
+              />
             )}
           </div>
         </div>
@@ -682,6 +832,23 @@ export function EdmBuilder({
       </Dialog>
     </div>
   );
+}
+
+/** Small type icon so blocks are distinguishable at a glance in the list. */
+function BlockIcon({ type }: { type: EdmBlockType }) {
+  const Icon =
+    type === "image" || type === "imageText"
+      ? ImageIcon
+      : type === "button"
+        ? MousePointerClick
+        : type === "heading"
+          ? Heading
+          : type === "columns" || type === "table"
+            ? LayoutGrid
+            : type === "divider" || type === "spacer"
+              ? Minus
+              : Type;
+  return <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />;
 }
 
 function BlockTree({
@@ -728,6 +895,7 @@ function BlockTree({
       {blocks.map((b, i) => {
         const cols = Math.max(1, b.cols || 1);
         const label = blockLabel[b.type];
+        const summary = blockSummary(b);
         const hint = dropHint?.id === b.id ? dropHint.place : null;
         return (
           <div key={b.id} className="space-y-1">
@@ -736,6 +904,7 @@ function BlockTree({
               tabIndex={0}
               onClick={() => onSelect(b.id)}
               onKeyDown={(e) => e.key === "Enter" && onSelect(b.id)}
+              data-block-id={b.id}
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData("text/edm-block", b.id);
@@ -766,12 +935,20 @@ function BlockTree({
               )}
             >
               <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1 truncate font-medium">
-                {i + 1}. {label}
-                {isContainer(b) && (
-                  <span className="ml-1 text-muted-foreground">
-                    ({cols}
-                    {b.type === "table" ? `×${Math.max(1, b.rowCount || 1)}` : ""})
+              <BlockIcon type={b.type} />
+              <span className="min-w-0 flex-1">
+                <span className="flex min-w-0 items-center gap-1 truncate font-medium">
+                  {i + 1}. {label}
+                  {isContainer(b) && (
+                    <span className="text-muted-foreground">
+                      ({cols}
+                      {b.type === "table" ? `×${Math.max(1, b.rowCount || 1)}` : ""})
+                    </span>
+                  )}
+                </span>
+                {summary && (
+                  <span className="block truncate text-[10px] font-normal text-muted-foreground">
+                    {summary}
                   </span>
                 )}
               </span>
@@ -945,16 +1122,31 @@ function LivePreviewCard({
   html,
   device,
   onDeviceChange,
+  selectedId,
+  pickLabel,
+  onSelectBlock,
+  onInsertAt,
 }: {
   html: string;
   device: "desktop" | "mobile";
   onDeviceChange: (d: "desktop" | "mobile") => void;
+  selectedId?: string | null;
+  pickLabel?: string | null;
+  onSelectBlock?: (id: string) => void;
+  onInsertAt?: (targetId: string, place: "before" | "after") => void;
 }) {
   return (
     <Card className="h-fit xl:sticky xl:top-2">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <Eye className="h-3.5 w-3.5" /> Live preview
+          {onSelectBlock && (
+            <span className="text-[11px] font-normal text-muted-foreground">
+              {pickLabel
+                ? `Click to place the ${pickLabel.toLowerCase()}`
+                : "Click a section to edit it"}
+            </span>
+          )}
         </CardTitle>
         <div className="flex items-center gap-1 rounded-md border p-0.5">
           <Button
@@ -978,15 +1170,23 @@ function LivePreviewCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-center rounded-lg border bg-muted/40 p-2">
-          <PreviewFrame
-            title="Live email preview"
-            html={html}
-            className={cn(
-              "h-[68vh] rounded bg-background",
-              device === "mobile" ? "w-[390px]" : "w-full"
-            )}
-          />
+        {/* Narrow windows scroll horizontally instead of squeezing the email
+            down to a mobile-looking width. */}
+        <div className="overflow-x-auto rounded-lg border bg-muted/40 p-2">
+          <div className={cn("flex justify-center", device === "desktop" && "min-w-[720px]")}>
+            <PreviewFrame
+              title="Live email preview"
+              html={html}
+              selectedId={selectedId}
+              pickMode={!!pickLabel}
+              onSelectBlock={onSelectBlock}
+              onInsertAt={onInsertAt}
+              className={cn(
+                "h-[68vh] rounded bg-background",
+                device === "mobile" ? "w-[390px] shrink-0" : "w-full min-w-[720px]"
+              )}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -995,18 +1195,32 @@ function LivePreviewCard({
 
 /**
  * Preview iframe that keeps its scroll position when the email HTML changes,
- * so tweaking a setting doesn't jump back to the top of the email.
+ * so tweaking a setting doesn't jump back to the top of the email. When
+ * callbacks are supplied, rows tagged with data-edm-id become clickable so the
+ * preview and the editor stay in sync.
  */
 function PreviewFrame({
   html,
   title,
   className,
+  selectedId,
+  pickMode,
+  onSelectBlock,
+  onInsertAt,
 }: {
   html: string;
   title: string;
   className?: string;
+  selectedId?: string | null;
+  pickMode?: boolean;
+  onSelectBlock?: (id: string) => void;
+  onInsertAt?: (targetId: string, place: "before" | "after") => void;
 }) {
   const ref = useRef<HTMLIFrameElement>(null);
+
+  // Keep the latest handlers without re-writing the document.
+  const cbRef = useRef({ pickMode, onSelectBlock, onInsertAt });
+  cbRef.current = { pickMode, onSelectBlock, onInsertAt };
 
   useEffect(() => {
     const frame = ref.current;
@@ -1024,7 +1238,91 @@ function PreviewFrame({
       if (d.documentElement) d.documentElement.scrollTop = prev;
       if (d.body) d.body.scrollTop = prev;
     });
-  }, [html]);
+
+    if (!onSelectBlock) return;
+
+    const d = frame.contentDocument;
+    if (!d) return;
+
+    const style = d.createElement("style");
+    style.textContent = `
+      [data-edm-id]{cursor:pointer;}
+      [data-edm-id].edm-hover > td{outline:2px dashed #2563eb;outline-offset:-2px;}
+      [data-edm-id].edm-active > td{outline:2px solid #2563eb;outline-offset:-2px;}
+      [data-edm-id].edm-insert-before > td{box-shadow:inset 0 3px 0 0 #16a34a;}
+      [data-edm-id].edm-insert-after > td{box-shadow:inset 0 -3px 0 0 #16a34a;}
+    `;
+    d.head?.appendChild(style);
+
+    const rowOf = (t: EventTarget | null): HTMLElement | null =>
+      (t as HTMLElement | null)?.closest?.("[data-edm-id]") ?? null;
+
+    const clearMarks = () =>
+      d.querySelectorAll("[data-edm-id]").forEach((el) =>
+        el.classList.remove("edm-hover", "edm-insert-before", "edm-insert-after")
+      );
+
+    const onMove = (e: MouseEvent) => {
+      const row = rowOf(e.target);
+      clearMarks();
+      if (!row) return;
+      if (cbRef.current.pickMode) {
+        const rect = row.getBoundingClientRect();
+        row.classList.add(
+          e.clientY - rect.top < rect.height / 2 ? "edm-insert-before" : "edm-insert-after"
+        );
+      } else {
+        row.classList.add("edm-hover");
+      }
+    };
+
+    const onLeave = () => clearMarks();
+
+    const onClick = (e: MouseEvent) => {
+      const row = rowOf(e.target);
+      if (!row) return;
+      e.preventDefault();
+      const id = row.getAttribute("data-edm-id");
+      if (!id) return;
+      if (cbRef.current.pickMode && cbRef.current.onInsertAt) {
+        const rect = row.getBoundingClientRect();
+        cbRef.current.onInsertAt(
+          id,
+          e.clientY - rect.top < rect.height / 2 ? "before" : "after"
+        );
+      } else {
+        cbRef.current.onSelectBlock?.(id);
+      }
+      clearMarks();
+    };
+
+    d.addEventListener("mousemove", onMove);
+    d.addEventListener("mouseleave", onLeave);
+    d.addEventListener("click", onClick);
+    return () => {
+      d.removeEventListener("mousemove", onMove);
+      d.removeEventListener("mouseleave", onLeave);
+      d.removeEventListener("click", onClick);
+    };
+  }, [html, onSelectBlock]);
+
+  // Outline whichever block is selected in the editor.
+  useEffect(() => {
+    const d = ref.current?.contentDocument;
+    if (!d) return;
+    const apply = () => {
+      d.querySelectorAll("[data-edm-id].edm-active").forEach((el) =>
+        el.classList.remove("edm-active")
+      );
+      if (!selectedId) return;
+      const el = d.querySelector(`[data-edm-id="${selectedId}"]`);
+      if (!el) return;
+      el.classList.add("edm-active");
+      el.scrollIntoView({ block: "nearest" });
+    };
+    const raf = requestAnimationFrame(apply);
+    return () => cancelAnimationFrame(raf);
+  }, [selectedId, html]);
 
   return (
     <iframe
@@ -1037,6 +1335,7 @@ function PreviewFrame({
     />
   );
 }
+
 
 function PreviewPane({ html, device }: { html: string; device: "desktop" | "mobile" }) {
   return (

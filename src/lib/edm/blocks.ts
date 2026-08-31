@@ -368,6 +368,53 @@ export const blockLabel: Record<EdmBlockType, string> = {
 
 export const isContainer = (b: EdmBlock) => b.type === "columns" || b.type === "table";
 
+/**
+ * Short human preview of a block's content so the editor list is scannable
+ * (e.g. "Text · Hi {{first_name}}, we have just opened…").
+ */
+export const blockSummary = (b: EdmBlock): string => {
+  const plain = (s?: string) =>
+    (s || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const fileName = (url?: string) =>
+    (url || "").split("?")[0].split("/").filter(Boolean).pop() || "";
+
+  let raw = "";
+  switch (b.type) {
+    case "heading":
+    case "button":
+      raw = plain(b.text);
+      break;
+    case "text":
+    case "quote":
+      raw = plain(b.html);
+      break;
+    case "image":
+      raw = plain(b.imageAlt) || fileName(b.imageUrl);
+      break;
+    case "imageText":
+      raw = plain(b.html) || plain(b.imageAlt) || fileName(b.imageUrl);
+      break;
+    case "tourCard":
+      raw = [plain(b.text), plain(b.meta)].filter(Boolean).join(" · ");
+      break;
+    case "social":
+      raw = (b.socials || []).map((s) => s.platform).join(", ");
+      break;
+    case "spacer":
+      raw = b.height ? `${b.height}px` : "";
+      break;
+    default:
+      raw = "";
+  }
+  if (!raw) return "";
+  return raw.length > 46 ? `${raw.slice(0, 46)}…` : raw;
+};
+
+
 /* ------------------------------------------------------------------ *
  * Tree helpers — blocks can be nested inside container cells.
  * ------------------------------------------------------------------ */
@@ -670,7 +717,10 @@ interface RenderCtx {
   padX: number;
   /** collected @media (max-width:600px) rules */
   css: string[];
+  /** tag rows with data-edm-id so the builder preview can be clicked */
+  tag?: boolean;
 }
+
 
 const px = (n: number) => `${Math.max(0, Math.round(n))}px`;
 
@@ -794,6 +844,8 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
   const hiddenStyle = b.hidden ? "display:none;" : "";
   const margin = b.margin;
   const outer = b.outerBgColor;
+  // Builder-only hook so clicking the live preview can select this block.
+  const tagAttr = ctx.tag ? ` data-edm-id="${b.id}"` : "";
 
   if (hasSpacing(margin) || outer) {
     // Outer row carries the margin plus the optional full-width background;
@@ -801,7 +853,7 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
     html = html.replace("<tr", `<tr class="${cls}"`);
     const outerAttrs = outer ? ` bgcolor="${outer}"` : "";
     const outerBg = outer ? `background-color:${outer};` : "";
-    return `<tr class="${cls}-m"${
+    return `<tr class="${cls}-m"${tagAttr}${
       hiddenStyle ? ` style="${hiddenStyle}"` : ""
     }><td${outerAttrs} style="${outerBg}padding:${
       hasSpacing(margin) ? spacingCss(margin!) : "0"
@@ -812,7 +864,7 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
 
   return html.replace(
     "<tr",
-    `<tr class="${cls} ${cls}-m"${hiddenStyle ? ` style="${hiddenStyle}"` : ""}`
+    `<tr class="${cls} ${cls}-m"${tagAttr}${hiddenStyle ? ` style="${hiddenStyle}"` : ""}`
   );
 };
 
@@ -825,9 +877,10 @@ const renderNested = (blocks: EdmBlock[], brand: EdmBrand, ctx: RenderCtx): stri
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${renderRows(
     blocks,
     brand,
-    { padX: 0, css: ctx.css }
+    { padX: 0, css: ctx.css, tag: ctx.tag }
   )}</table>`;
 };
+
 
 const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
   const cols = Math.max(1, b.cols || 1);
@@ -1109,7 +1162,7 @@ export const stripPastedSpacing = (html: string): string => {
 export const renderEdmHtml = (
   blocks: EdmBlock[],
   brand: EdmBrand,
-  opts: { subject?: string; preheader?: string } = {}
+  opts: { subject?: string; preheader?: string; interactive?: boolean } = {}
 ): string => {
   const design = blocks.find((b) => b.type === "design");
   const contentBlocks = blocks.filter((b) => b.type !== "design");
@@ -1138,7 +1191,7 @@ export const renderEdmHtml = (
         ? design?.imageUrl || ""
         : brand.emailHeaderImageUrl || "";
 
-  const ctx: RenderCtx = { padX: 32, css: [] };
+  const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive };
   const body = renderRows(contentBlocks, brand, ctx);
   const mobileCss = ctx.css.join("\n  ");
 
