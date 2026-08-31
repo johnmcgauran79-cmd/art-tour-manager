@@ -47,8 +47,8 @@ function buildCancellationPolicyTableHtml(policy: any, navy = "#232628", headerT
   const rowsHtml = (policy.rows || []).map((row: any, i: number) => {
     const bg = i % 2 === 1 ? "#f3f4f6" : "#ffffff";
     return `<tr>
-      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;width:42%;vertical-align:top;">${escapeCpHtml(row.notice)}</td>
-      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeCpHtml(row.refund)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:${ART_TYPO.bodySize}px;color:#1a2332;border-bottom:1px solid #e5e7eb;width:42%;vertical-align:top;">${escapeCpHtml(row.notice)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:${ART_TYPO.bodySize}px;color:#55575d;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeCpHtml(row.refund)}</td>
     </tr>`;
   }).join("");
   return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
