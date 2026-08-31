@@ -52,7 +52,7 @@ function buildCancellationPolicyTableHtml(policy: any, navy = "#232628", headerT
     </tr>`;
   }).join("");
   return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
-    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:15px;font-weight:600;">${escapeCpHtml(policy.title)}</th></tr>
+    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:${headerText};text-align:left;font-family:${ART_TYPO.headingFont};font-size:${ART_TYPO.headingSize}px;font-weight:${ART_TYPO.headingWeight};">${escapeCpHtml(policy.title)}</th></tr>
     <tr>
       <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:${ART_TYPO.bodySize}px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
       <th style="padding:8px 14px;background-color:${navy};color:${headerText};text-align:left;font-size:${ART_TYPO.bodySize}px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
@@ -601,8 +601,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       return [
         `<div style="background:#f9f9f9;padding:16px;border-radius:6px;margin:20px 0;">`,
-        `<h3 style="margin:0 0 12px 0;color:#333;font-size:16px;border-bottom:1px solid #ddd;padding-bottom:10px;">Current Details on File</h3>`,
-        `<table style="width:100%;border-collapse:collapse;font-size:14px;">`,
+        `<h3 class="art-section-heading" style="margin:0 0 12px 0;color:#333;font-size:${ART_TYPO.headingSize}px;border-bottom:1px solid #ddd;padding-bottom:10px;">Current Details on File</h3>`,
+        `<table style="width:100%;border-collapse:collapse;font-size:${ART_TYPO.bodySize}px;">`,
         `<tr><td style="padding:6px 10px 6px 0;color:#666;width:40%;"><strong>Name (as per passport):</strong></td><td style="padding:6px 0;">${formatField(nameAsPerPassport)}</td></tr>`,
         `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Date of Birth:</strong></td><td style="padding:6px 0;">${docs?.date_of_birth ? formatDate(docs.date_of_birth) : formatField(null)}</td></tr>`,
         `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Passport Number:</strong></td><td style="padding:6px 0;">${formatField(docs?.passport_number)}</td></tr>`,
