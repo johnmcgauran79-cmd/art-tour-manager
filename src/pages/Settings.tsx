@@ -22,6 +22,8 @@ export const Settings = ({ onBack }: SettingsProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
+  const isManager = userRole === 'manager';
+  const canManageBrands = isAdmin || isManager;
 
   // Persist the active settings tab + email sub-tab in the URL so links
   // can be shared and reflect exactly what the user is viewing.
@@ -47,21 +49,21 @@ export const Settings = ({ onBack }: SettingsProps) => {
   // If a non-admin lands on the admin-only system tab via a shared link,
   // silently redirect them to the default tab.
   useEffect(() => {
-    if ((activeTab === 'system' || activeTab === 'brands') && !isAdmin) {
+    if ((activeTab === 'system' && !isAdmin) || (activeTab === 'brands' && !canManageBrands)) {
       setActiveTab('email-management');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, isAdmin]);
+  }, [activeTab, isAdmin, canManageBrands]);
 
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-4'} mb-8`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : canManageBrands ? 'grid-cols-5' : 'grid-cols-4'} mb-8`}>
           <TabsTrigger value="email-management">Email Management</TabsTrigger>
           <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
-          {isAdmin && <TabsTrigger value="brands">Brands</TabsTrigger>}
+          {canManageBrands && <TabsTrigger value="brands">Brands</TabsTrigger>}
           {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
         </TabsList>
 
@@ -141,7 +143,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
           </TabsContent>
         )}
 
-        {isAdmin && (
+        {canManageBrands && (
           <TabsContent value="brands" className="space-y-6">
             <BrandsManagement />
           </TabsContent>
