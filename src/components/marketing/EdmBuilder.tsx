@@ -778,6 +778,7 @@ export function EdmBuilder({
                 <BlockInspector
                   block={selected}
                   device={device}
+                  brand={brand}
                   onChange={(p) => update(selected.id, p)}
                 />
               )}
@@ -1358,10 +1359,12 @@ function BlockInspector({
   block,
   onChange,
   device,
+  brand,
 }: {
   block: EdmBlock;
   onChange: (patch: Partial<EdmBlock>) => void;
   device: "desktop" | "mobile";
+  brand: EdmBrand;
 }) {
   const t = block.type;
 
@@ -1648,6 +1651,7 @@ function BlockInspector({
               <RichTextEditor
                 value={block.footerHtml || ""}
                 onChange={(footerHtml) => onChange({ footerHtml })}
+                brandColors={brand.paletteColors || undefined}
               />
             </div>
           )}
@@ -1996,6 +2000,7 @@ function BlockInspector({
             value={block.html || ""}
             onChange={(html) => onChange({ html })}
             lineHeight={t === "text" ? (block.lineHeight ?? 1.6) : undefined}
+            brandColors={brand.paletteColors || undefined}
           />
         </div>
       )}
@@ -2003,7 +2008,11 @@ function BlockInspector({
       {t === "twoColumn" && (
         <div className="space-y-1.5">
           <Label>Right column</Label>
-          <RichTextEditor value={block.html2 || ""} onChange={(html2) => onChange({ html2 })} />
+          <RichTextEditor
+            value={block.html2 || ""}
+            onChange={(html2) => onChange({ html2 })}
+            brandColors={brand.paletteColors || undefined}
+          />
         </div>
       )}
 
@@ -2330,6 +2339,15 @@ function BlockInspector({
 
       {t === "heading" && (
         <>
+          <ColorField
+            label="Heading text colour"
+            value={block.color}
+            fallback={brand.colorPrimary || "#0f172a"}
+            onChange={(color) => onChange({ color })}
+            clearable
+            clearLabel="Use theme colour"
+            colors={brand.paletteColors || undefined}
+          />
           <div className="space-y-1.5">
             <Label>Size</Label>
             <Select value={block.size || "lg"} onValueChange={(size) => onChange({ size: size as any })}>

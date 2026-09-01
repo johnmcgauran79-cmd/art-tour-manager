@@ -172,6 +172,8 @@ export interface EdmBlock {
   paddingLinked?: boolean;
 
   /* ---- typography ---- */
+  /** default text colour for heading/text content */
+  color?: string;
   /** text/heading font size in px */
   fontSize?: number;
   /** text block line height multiplier */
@@ -223,6 +225,7 @@ export interface EdmBrand {
   companyPhone?: string | null;
   companyWebsite?: string | null;
   footerText?: string | null;
+  paletteColors?: { hex: string; label: string }[] | null;
 }
 
 export const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; slug: string }[] = [
@@ -960,13 +963,13 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
     case "heading":
       return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
         b.fontSize || headingSize(b.size)
-      }px;line-height:1.25;font-weight:400;color:${primary};text-align:${align};">${esc(
+      }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
       return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_BODY};font-size:${
         b.fontSize || 16
-      }px;line-height:${b.lineHeight ?? 1.6};color:#333333;${
+      }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
         b.align ? `text-align:${b.align};` : ""
       }"><div style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
         b.html || ""

@@ -140,6 +140,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       companyPhone: b?.company_phone,
       companyWebsite: b?.company_website,
       footerText: b?.footer_text,
+      paletteColors: b?.palette_colors,
     };
   }, [brands, editing?.brand_id]);
 

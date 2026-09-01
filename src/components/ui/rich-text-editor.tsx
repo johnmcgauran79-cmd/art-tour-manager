@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getRecentColors, normalise, rememberColor } from "@/lib/edm/palette";
+import { getRecentColors, normalise, rememberColor, type PaletteColor } from "@/lib/edm/palette";
 import { useLiveBrandColors } from "@/hooks/useBrandPalette";
 
 interface RichTextEditorProps {
@@ -19,6 +19,8 @@ interface RichTextEditorProps {
   lineHeight?: number;
   /** render paragraphs with website spacing (matches published output) */
   websiteStyle?: boolean;
+  /** Theme-specific quick-pick colours. Defaults to the app's active brand palette. */
+  brandColors?: PaletteColor[];
 }
 
 
@@ -42,7 +44,6 @@ const modules = {
     [{ list: "ordered" }, { list: "bullet" }],
     [{ align: [] }],
     ["link", "blockquote", "code-block"],
-    [{ color: [] }, { background: [] }],
     ["clean"],
   ],
 };
@@ -56,13 +57,16 @@ function ColorPickerButton({
   icon,
   title,
   apply,
+  colors,
 }: {
   format: "color" | "background";
   icon: React.ReactNode;
   title: string;
   apply: (format: "color" | "background", hex: string | null) => void;
+  colors?: PaletteColor[];
 }) {
-  const brandColors = useLiveBrandColors();
+  const liveBrandColors = useLiveBrandColors();
+  const brandColors = colors?.length ? colors : liveBrandColors;
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState("#000000");
   const recent = getRecentColors();
@@ -167,6 +171,7 @@ export function RichTextEditor({
   className,
   lineHeight,
   websiteStyle,
+  brandColors,
 }: RichTextEditorProps) {
   const quillRef = useRef<ReactQuill | null>(null);
 
@@ -202,12 +207,14 @@ export function RichTextEditor({
           title="Text colour"
           icon={<Baseline className="h-3.5 w-3.5" />}
           apply={apply}
+          colors={brandColors}
         />
         <ColorPickerButton
           format="background"
           title="Highlight colour"
           icon={<PaintBucket className="h-3.5 w-3.5" />}
           apply={apply}
+          colors={brandColors}
         />
       </div>
     </div>
