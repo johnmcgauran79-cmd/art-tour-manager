@@ -1357,6 +1357,7 @@ export type Database = {
           legal_name: string | null
           logo_url: string | null
           name: string
+          palette_colors: Json
           partner_handles_billing: boolean
           partner_name: string | null
           partnership_note: string | null
@@ -1393,6 +1394,7 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name: string
+          palette_colors?: Json
           partner_handles_billing?: boolean
           partner_name?: string | null
           partnership_note?: string | null
@@ -1429,6 +1431,7 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name?: string
+          palette_colors?: Json
           partner_handles_billing?: boolean
           partner_name?: string | null
           partnership_note?: string | null
