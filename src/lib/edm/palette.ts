@@ -2,10 +2,10 @@
  * Colour palette helpers used by every colour picker in the app (email builder,
  * rich-text editors, block/background controls).
  *
- * The brand swatches are editable in Settings → Theme & Appearance → Brand
- * Colour Palette and stored in `general_settings.brand_palette_colors`. The
- * list below is only the fallback used before settings load (or if the setting
- * has never been saved).
+ * The brand swatches belong to each brand/theme (`brands.palette_colors`) and
+ * are editable in Settings → Brands & Themes → Brand Colour Palette. The
+ * in-memory list here mirrors the default theme's palette; the constants below
+ * are only the fallback used before brands load.
  */
 
 export interface PaletteColor {
@@ -26,7 +26,6 @@ export const DEFAULT_BRAND_COLORS: PaletteColor[] = [
   { hex: "#000000", label: "Black" },
 ];
 
-export const BRAND_PALETTE_SETTING_KEY = "brand_palette_colors";
 export const BRAND_PALETTE_EVENT = "brand-palette-changed";
 
 let brandColors: PaletteColor[] = [...DEFAULT_BRAND_COLORS];
