@@ -106,21 +106,12 @@ export const ThemeAppearanceSettings = () => {
         {/* App UI Colors */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground">App UI</h4>
+          <p className="text-xs text-muted-foreground">
+            The app's primary and accent colours come from the <strong>default theme</strong>
+            {" "}(Settings → Brands & Themes) — change that theme's Primary / Accent colours and the
+            admin app follows. The sidebar colours below are app-only.
+          </p>
           <div className="space-y-4">
-            <ColorField
-              label="Primary Color"
-              description="Main buttons, headers, navigation background"
-              settingKey="theme_primary_color"
-              value={localColors.theme_primary_color || DEFAULTS.theme_primary_color}
-              onChange={handleColorChange}
-            />
-            <ColorField
-              label="Accent Color"
-              description="Highlights, active states, links, button text"
-              settingKey="theme_secondary_color"
-              value={localColors.theme_secondary_color || DEFAULTS.theme_secondary_color}
-              onChange={handleColorChange}
-            />
             <ColorField
               label="Sidebar Background"
               description="Sidebar panel background"
