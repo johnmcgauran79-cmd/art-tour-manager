@@ -778,6 +778,7 @@ export function EdmBuilder({
                 <BlockInspector
                   block={selected}
                   device={device}
+                  brand={brand}
                   onChange={(p) => update(selected.id, p)}
                 />
               )}
@@ -1358,10 +1359,12 @@ function BlockInspector({
   block,
   onChange,
   device,
+  brand,
 }: {
   block: EdmBlock;
   onChange: (patch: Partial<EdmBlock>) => void;
   device: "desktop" | "mobile";
+  brand: EdmBrand;
 }) {
   const t = block.type;
 
@@ -1648,6 +1651,7 @@ function BlockInspector({
               <RichTextEditor
                 value={block.footerHtml || ""}
                 onChange={(footerHtml) => onChange({ footerHtml })}
+                brandColors={brand.paletteColors || undefined}
               />
             </div>
           )}
