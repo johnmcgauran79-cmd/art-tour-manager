@@ -33,6 +33,8 @@ export interface Brand {
   section_heading_weight: number | null;
   section_heading_uppercase: boolean | null;
   small_text_size_px: number | null;
+  /** Quick-pick colour swatches shown in colour pickers for this theme. */
+  palette_colors: { hex: string; label: string }[] | null;
   is_default: boolean;
   is_active: boolean;
   sort_order: number;
