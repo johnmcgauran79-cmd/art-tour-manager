@@ -20,6 +20,8 @@ import {
 } from "@/hooks/useBrands";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BrandPaletteSettings } from "@/components/settings/BrandPaletteSettings";
+
 
 const BLANK: BrandInput = {
   name: "",
@@ -342,7 +344,9 @@ export const BrandsManagement = () => {
   };
 
   return (
+    <div className="space-y-6">
     <Card>
+
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center gap-2">
@@ -410,5 +414,8 @@ export const BrandsManagement = () => {
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+    <BrandPaletteSettings />
+    </div>
   );
 };
+
