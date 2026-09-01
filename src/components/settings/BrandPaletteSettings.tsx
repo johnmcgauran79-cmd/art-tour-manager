@@ -3,24 +3,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Palette, Plus, RotateCcw, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Palette, Plus, RotateCcw, Trash2, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { DEFAULT_BRAND_COLORS, type PaletteColor } from "@/lib/edm/palette";
-import { useBrandPalette, useSaveBrandPalette } from "@/hooks/useBrandPalette";
+import { useBrandPalette, useSaveBrandPalette, paletteOf } from "@/hooks/useBrandPalette";
 
 /**
- * Editor for the brand swatches offered by every colour picker in the app
- * (email builder blocks, rich-text colours, backgrounds).
+ * Editor for the brand swatches offered by every colour picker in the app.
+ * The palette belongs to a brand/theme, so each theme carries its own swatches;
+ * the default theme's palette is also what drives the app's own system colours.
  */
 export const BrandPaletteSettings = () => {
-  const { colors: saved } = useBrandPalette();
+  const { brands, brand: defaultBrand, isLoading } = useBrandPalette();
   const savePalette = useSaveBrandPalette();
-  const [colors, setColors] = useState<PaletteColor[]>(saved);
+
+  const [brandId, setBrandId] = useState<string>("");
+  const [colors, setColors] = useState<PaletteColor[]>(DEFAULT_BRAND_COLORS);
   const [dirty, setDirty] = useState(false);
 
+  // Default the selector to the default brand once brands load.
   useEffect(() => {
-    setColors(saved);
+    if (!brandId && defaultBrand) setBrandId(defaultBrand.id);
+  }, [defaultBrand, brandId]);
+
+  const selected = brands.find((b) => b.id === brandId) ?? defaultBrand ?? null;
+
+  useEffect(() => {
+    setColors(paletteOf(selected));
     setDirty(false);
-  }, [saved]);
+  }, [selected?.id, selected?.palette_colors]);
 
   const update = (next: PaletteColor[]) => {
     setColors(next);
@@ -46,12 +60,34 @@ export const BrandPaletteSettings = () => {
           Brand Colour Palette
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          These swatches appear in every colour picker — email builder blocks, text and
-          background colours, buttons. Any custom HEX can still be entered wherever a colour
-          is chosen; this list is just the quick-pick palette.
+          Each brand/theme has its own quick-pick swatches. They appear in every colour picker —
+          email builder blocks, text and background colours, buttons — for that theme. Any custom
+          HEX can still be typed wherever a colour is chosen. The default theme's palette is the
+          one used for the admin app's own colours.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Theme</Label>
+            <Select value={brandId} onValueChange={setBrandId}>
+              <SelectTrigger className="w-[260px]">
+                <SelectValue placeholder={isLoading ? "Loading…" : "Select a theme"} />
+              </SelectTrigger>
+              <SelectContent>
+                {brands.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}{b.is_default ? " (default)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selected?.is_default && (
+            <Badge variant="secondary">Default theme — also styles the admin app</Badge>
+          )}
+        </div>
+
         <div className="space-y-2">
           {colors.map((c, i) => (
             <div key={`${c.hex}-${i}`} className="flex items-center gap-2">
@@ -81,30 +117,19 @@ export const BrandPaletteSettings = () => {
                 aria-label="Swatch name"
               />
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Move up"
-                onClick={() => move(i, -1)}
+                type="button" variant="ghost" size="icon" className="h-8 w-8"
+                aria-label="Move up" onClick={() => move(i, -1)}
               >
                 <ArrowUp className="h-3.5 w-3.5" />
               </Button>
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Move down"
-                onClick={() => move(i, 1)}
+                type="button" variant="ghost" size="icon" className="h-8 w-8"
+                aria-label="Move down" onClick={() => move(i, 1)}
               >
                 <ArrowDown className="h-3.5 w-3.5" />
               </Button>
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive"
+                type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive"
                 aria-label="Remove swatch"
                 onClick={() => update(colors.filter((_, idx) => idx !== i))}
               >
@@ -116,28 +141,24 @@ export const BrandPaletteSettings = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
+            type="button" variant="outline" size="sm" className="gap-1.5"
             onClick={() => update([...colors, { hex: "#000000", label: "New colour" }])}
           >
             <Plus className="h-3.5 w-3.5" /> Add colour
           </Button>
           <Button
-            onClick={() => savePalette.mutate(colors)}
-            disabled={!dirty || savePalette.isPending}
+            type="button" variant="outline" size="sm" className="gap-1.5"
+            onClick={() => update([...DEFAULT_BRAND_COLORS])}
           >
-            {savePalette.isPending ? "Saving..." : "Save Palette"}
+            <RotateCcw className="h-3.5 w-3.5" /> Reset to defaults
           </Button>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => update([...DEFAULT_BRAND_COLORS])}
-            disabled={savePalette.isPending}
+            type="button" size="sm"
+            disabled={!dirty || !selected || savePalette.isPending}
+            onClick={() => selected && savePalette.mutate({ brandId: selected.id, colors })}
           >
-            <RotateCcw className="mr-1 h-4 w-4" />
-            Reset to Defaults
+            {savePalette.isPending && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+            Save Palette
           </Button>
         </div>
       </CardContent>
