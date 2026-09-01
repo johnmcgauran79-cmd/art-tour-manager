@@ -302,6 +302,7 @@ export function ColorField({
   clearable,
   clearLabel = "Clear",
   hint,
+  colors,
 }: {
   label: string;
   value?: string;
@@ -310,6 +311,7 @@ export function ColorField({
   clearable?: boolean;
   clearLabel?: string;
   hint?: string;
+  colors?: { hex: string; label: string }[];
 }) {
   const [recent, setRecent] = useState<string[]>(() => getRecentColors());
 
@@ -324,7 +326,8 @@ export function ColorField({
     rememberColor(hex);
   };
 
-  const brandColors = useLiveBrandColors();
+  const liveBrandColors = useLiveBrandColors();
+  const brandColors = colors?.length ? colors : liveBrandColors;
   const brandLabels = Object.fromEntries(brandColors.map((c) => [c.hex, c.label]));
 
   return (
