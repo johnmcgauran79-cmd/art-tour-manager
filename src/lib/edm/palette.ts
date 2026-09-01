@@ -1,10 +1,19 @@
 /**
- * Colour palette helpers for the email builder: the approved ART brand colours
- * plus a rolling list of recently used colours (kept in the browser) so a HEX
- * value never has to be typed twice.
+ * Colour palette helpers used by every colour picker in the app (email builder,
+ * rich-text editors, block/background controls).
+ *
+ * The brand swatches are editable in Settings → Theme & Appearance → Brand
+ * Colour Palette and stored in `general_settings.brand_palette_colors`. The
+ * list below is only the fallback used before settings load (or if the setting
+ * has never been saved).
  */
 
-export const ART_BRAND_COLORS: { hex: string; label: string }[] = [
+export interface PaletteColor {
+  hex: string;
+  label: string;
+}
+
+export const DEFAULT_BRAND_COLORS: PaletteColor[] = [
   { hex: "#0a1929", label: "ART navy" },
   { hex: "#0f172a", label: "Deep navy" },
   { hex: "#d4a017", label: "ART gold" },
@@ -17,12 +26,37 @@ export const ART_BRAND_COLORS: { hex: string; label: string }[] = [
   { hex: "#000000", label: "Black" },
 ];
 
+export const BRAND_PALETTE_SETTING_KEY = "brand_palette_colors";
+export const BRAND_PALETTE_EVENT = "brand-palette-changed";
+
+let brandColors: PaletteColor[] = [...DEFAULT_BRAND_COLORS];
+
+/** Current editable brand palette (synced from Settings at app start). */
+export const getBrandColors = (): PaletteColor[] => brandColors;
+
+/** Replace the in-memory palette and notify any mounted colour pickers. */
+export const setBrandColors = (colors: PaletteColor[] | null | undefined) => {
+  const cleaned = (colors || [])
+    .map((c) => ({ hex: normalise(c?.hex || "") || "", label: (c?.label || "").trim() }))
+    .filter((c) => c.hex);
+  brandColors = cleaned.length ? cleaned : [...DEFAULT_BRAND_COLORS];
+  try {
+    window.dispatchEvent(new Event(BRAND_PALETTE_EVENT));
+  } catch {
+    /* SSR / no window — nothing to notify */
+  }
+};
+
+/** @deprecated Use getBrandColors() so edits in Settings are respected. */
+export const ART_BRAND_COLORS = DEFAULT_BRAND_COLORS;
+
 const KEY = "edm-recent-colours";
 const MAX = 12;
 
-const normalise = (hex: string): string | null => {
+export const normalise = (hex: string): string | null => {
   const v = hex.trim().toLowerCase();
-  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(v) ? v : null;
+  if (!/^#?([0-9a-f]{3}|[0-9a-f]{6})$/.test(v)) return null;
+  return v.startsWith("#") ? v : `#${v}`;
 };
 
 export const getRecentColors = (): string[] => {

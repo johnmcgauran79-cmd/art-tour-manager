@@ -25,6 +25,8 @@ import { GeneralSettingsModal } from "@/components/settings/GeneralSettingsModal
 import { UserManagementModal } from "@/components/users/UserManagementModal";
 import { SystemLogModal } from "@/components/settings/SystemLogModal";
 import { ThemeAppearanceSettings } from "@/components/settings/ThemeAppearanceSettings";
+import { BrandPaletteSettings } from "@/components/settings/BrandPaletteSettings";
+
 import { EmergencyContactImportModal } from "@/components/contacts/EmergencyContactImportModal";
 import { WaiverSettingsCard } from "@/components/settings/WaiverSettingsCard";
 import { TaskStatusManagementModal } from "@/components/tasks/TaskStatusManagementModal";
@@ -381,7 +383,11 @@ export const SystemSettings = () => {
         title="Branding & Appearance"
         description="Theme colours, logos and appearance across the app, emails and documents."
       >
-        <ThemeAppearanceSettings />
+        <div className="space-y-6">
+          <ThemeAppearanceSettings />
+          <BrandPaletteSettings />
+        </div>
+
       </SettingsSectionDialog>
 
       <SettingsSectionDialog

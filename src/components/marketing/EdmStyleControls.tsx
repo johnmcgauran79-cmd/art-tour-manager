@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link2, Unlink, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { ART_BRAND_COLORS, getRecentColors, rememberColor } from "@/lib/edm/palette";
+import { getRecentColors, rememberColor } from "@/lib/edm/palette";
+import { useLiveBrandColors } from "@/hooks/useBrandPalette";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -322,7 +324,8 @@ export function ColorField({
     rememberColor(hex);
   };
 
-  const brandLabels = Object.fromEntries(ART_BRAND_COLORS.map((c) => [c.hex, c.label]));
+  const brandColors = useLiveBrandColors();
+  const brandLabels = Object.fromEntries(brandColors.map((c) => [c.hex, c.label]));
 
   return (
     <div className="space-y-1.5">
@@ -350,11 +353,12 @@ export function ColorField({
         )}
       </div>
       <Swatches
-        title="ART brand colours"
-        colors={ART_BRAND_COLORS.map((c) => c.hex)}
+        title="Brand colours"
+        colors={brandColors.map((c) => c.hex)}
         labels={brandLabels}
         onPick={pick}
       />
+
       <Swatches title="Recently used" colors={recent} onPick={pick} />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>

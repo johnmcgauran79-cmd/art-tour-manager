@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
+import { useSyncBrandPalette } from "@/hooks/useBrandPalette";
+
 
 /**
  * Converts a hex color (#RRGGBB) to HSL string "H S% L%" for CSS variables.
@@ -69,6 +71,8 @@ function getLightTint(hex: string): string | null {
 
 export const useThemeProvider = () => {
   const { data: settings } = useGeneralSettings();
+  useSyncBrandPalette();
+
 
   useEffect(() => {
     if (!settings) return;
