@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 import { useSyncBrandPalette } from "@/hooks/useBrandPalette";
+import { useDefaultBrand } from "@/hooks/useBrands";
 
 
 /**
@@ -71,6 +72,7 @@ function getLightTint(hex: string): string | null {
 
 export const useThemeProvider = () => {
   const { data: settings } = useGeneralSettings();
+  const { defaultBrand } = useDefaultBrand();
   useSyncBrandPalette();
 
 
@@ -84,8 +86,10 @@ export const useThemeProvider = () => {
       return typeof val === 'string' ? val : null;
     };
 
-    const primary = getSetting('theme_primary_color');
-    const secondary = getSetting('theme_secondary_color');
+    // The default brand/theme drives the app's own primary + accent colours;
+    // the sidebar colours stay as standalone app settings.
+    const primary = defaultBrand?.color_primary || getSetting('theme_primary_color');
+    const secondary = defaultBrand?.color_accent || getSetting('theme_secondary_color');
     const sidebarBg = getSetting('theme_sidebar_bg');
     const sidebarText = getSetting('theme_sidebar_text');
 
@@ -156,5 +160,5 @@ export const useThemeProvider = () => {
       ];
       props.forEach(p => root.style.removeProperty(p));
     };
-  }, [settings]);
+  }, [settings, defaultBrand?.color_primary, defaultBrand?.color_accent]);
 };
