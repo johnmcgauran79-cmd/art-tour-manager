@@ -2,27 +2,34 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useGeneralSettings } from "@/hooks/useGeneralSettings";
+import { useBrands, type Brand } from "@/hooks/useBrands";
 import {
   BRAND_PALETTE_EVENT,
-  BRAND_PALETTE_SETTING_KEY,
   DEFAULT_BRAND_COLORS,
   getBrandColors,
   setBrandColors,
   type PaletteColor,
 } from "@/lib/edm/palette";
 
-/** Read the saved brand palette out of general_settings. */
-export const useBrandPalette = () => {
-  const { data: settings, isLoading } = useGeneralSettings();
-  const raw = settings?.find((s) => s.setting_key === BRAND_PALETTE_SETTING_KEY)?.setting_value;
-  const colors: PaletteColor[] = Array.isArray(raw) && raw.length
-    ? (raw as PaletteColor[])
-    : DEFAULT_BRAND_COLORS;
-  return { colors, isLoading };
+/** Normalise whatever is stored on a brand into a usable swatch list. */
+export const paletteOf = (brand?: Brand | null): PaletteColor[] => {
+  const raw = brand?.palette_colors;
+  return Array.isArray(raw) && raw.length ? (raw as PaletteColor[]) : DEFAULT_BRAND_COLORS;
 };
 
-/** Keeps the in-memory palette (used by every colour picker) in sync. */
+/**
+ * Palette for a specific brand/theme. With no brand id, the default brand's
+ * palette is returned (that's the one driving the app's own system colours).
+ */
+export const useBrandPalette = (brandId?: string | null) => {
+  const { data: brands, isLoading } = useBrands();
+  const brand = brandId
+    ? brands?.find((b) => b.id === brandId)
+    : brands?.find((b) => b.is_default) ?? brands?.[0];
+  return { colors: paletteOf(brand), brand: brand ?? null, brands: brands ?? [], isLoading };
+};
+
+/** Keeps the in-memory palette (used by every colour picker) in sync with the default brand. */
 export const useSyncBrandPalette = () => {
   const { colors } = useBrandPalette();
   useEffect(() => {
@@ -42,28 +49,21 @@ export const useLiveBrandColors = (): PaletteColor[] => {
   return colors;
 };
 
+/** Save the palette against one brand/theme. */
 export const useSaveBrandPalette = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (colors: PaletteColor[]) => {
+    mutationFn: async ({ brandId, colors }: { brandId: string; colors: PaletteColor[] }) => {
       const { error } = await supabase
-        .from("general_settings")
-        .upsert(
-          {
-            setting_key: BRAND_PALETTE_SETTING_KEY,
-            setting_value: colors as any,
-            description: "Editable brand colour swatches shown in all colour pickers",
-            updated_at: new Date().toISOString(),
-          } as any,
-          { onConflict: "setting_key" }
-        );
+        .from("brands")
+        .update({ palette_colors: colors } as any)
+        .eq("id", brandId);
       if (error) throw error;
       return colors;
     },
-    onSuccess: (colors) => {
-      setBrandColors(colors);
-      queryClient.invalidateQueries({ queryKey: ["general-settings"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["brands"] });
       toast({ title: "Brand palette saved" });
     },
     onError: (e: any) =>
