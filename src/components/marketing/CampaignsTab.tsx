@@ -61,6 +61,7 @@ import {
 import {
   countAudience,
   describeFilters,
+  parseEmailList,
   
   type AudienceContact,
   type AudienceFilters,
@@ -134,6 +135,7 @@ export function CampaignsTab({
   const [progress, setProgress] = useState<{ sent: number; total: number } | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewMode, setReviewMode] = useState<"now" | "schedule">("now");
+  const [emailsRaw, setEmailsRaw] = useState("");
 
 
   const brand = useMemo<EdmBrand>(() => {
