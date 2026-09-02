@@ -341,7 +341,7 @@ export function CampaignsTab({
         campaignId: saved.id,
         recipients: contacts.map((c) => ({
           email: c.email,
-          customer_id: c.id,
+          customer_id: c.id || null,
           first_name: c.first_name,
           last_name: c.last_name,
         })),
@@ -358,6 +358,7 @@ export function CampaignsTab({
     });
     setReviewOpen(false);
     setOpen(false);
+    onSentOrScheduled?.();
   };
 
 
@@ -382,7 +383,7 @@ export function CampaignsTab({
       campaignId,
       recipients: contacts.map((c) => ({
         email: c.email!,
-        customer_id: c.id,
+        customer_id: c.id || null,
         first_name: c.first_name,
         last_name: c.last_name,
       })),
@@ -391,7 +392,9 @@ export function CampaignsTab({
     setProgress(null);
     setReviewOpen(false);
     setOpen(false);
+    onSentOrScheduled?.();
   };
+
 
 
   const duplicate = async (c: MarketingCampaign) => {
