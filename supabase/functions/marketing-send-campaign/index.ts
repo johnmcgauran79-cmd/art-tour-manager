@@ -224,6 +224,29 @@ function serve_handler() {
         return json({ queued: rows.length, skipped: recipients.length - rows.length, total: count || 0 });
       }
 
+      /* --------------------------- requeue failed ---------------------------- */
+      if (action === "requeue_failed") {
+        const { error } = await supabase
+          .from("campaign_recipients")
+          .update({ status: "queued", error_message: null })
+          .eq("campaign_id", campaignId)
+          .eq("status", "failed");
+        if (error) throw error;
+
+        const { count } = await supabase
+          .from("campaign_recipients")
+          .select("id", { count: "exact", head: true })
+          .eq("campaign_id", campaignId)
+          .eq("status", "queued");
+
+        await supabase
+          .from("marketing_campaigns")
+          .update({ status: "sending", failed_count: 0, send_completed_at: null })
+          .eq("id", campaignId);
+
+        return json({ requeued: count || 0 });
+      }
+
       /* -------------------------------- process ------------------------------ */
       if (action === "process") {
         const batchSize = Math.min(Number(body?.batchSize) || 40, 100);
@@ -237,6 +260,8 @@ function serve_handler() {
 
         let sent = 0;
         let failed = 0;
+        /** Provider daily/rate quota hit — stop and leave the rest queued. */
+        let quotaExceeded = false;
 
         for (const r of batch || []) {
           try {
@@ -281,6 +306,11 @@ function serve_handler() {
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error(`Campaign ${campaignId} failed for ${r.email}: ${msg}`);
+            if (/quota|rate limit|too many requests/i.test(msg)) {
+              // Leave this recipient queued so it can go out once the quota resets.
+              quotaExceeded = true;
+              break;
+            }
             await supabase
               .from("campaign_recipients")
               .update({ status: "failed", error_message: msg })
@@ -290,6 +320,7 @@ function serve_handler() {
           // Resend allows ~2 requests/second.
           await sleep(600);
         }
+
 
         const [{ count: remaining }, { count: sentTotal }, { count: failedTotal }, { count: total }] =
           await Promise.all([
@@ -326,7 +357,14 @@ function serve_handler() {
           })
           .eq("id", campaignId);
 
-        return json({ sent, failed, remaining: remaining || 0, total: total || 0 });
+        return json({
+          sent,
+          failed,
+          remaining: remaining || 0,
+          total: total || 0,
+          quotaExceeded,
+        });
+
       }
 
       return json({ error: `Unknown action: ${action}` }, 400);

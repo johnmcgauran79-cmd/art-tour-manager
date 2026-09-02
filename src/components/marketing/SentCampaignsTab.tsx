@@ -8,9 +8,11 @@ import {
   Mail,
   MousePointerClick,
   RefreshCw,
+  RotateCcw,
   Send,
   Users,
 } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,9 +37,11 @@ import { useToast } from "@/hooks/use-toast";
 import {
   useCampaignRecipients,
   useCampaigns,
+  useRetryFailedRecipients,
   useSaveCampaign,
   type MarketingCampaign,
 } from "@/hooks/useMarketing";
+
 
 const statusVariant: Record<string, "secondary" | "default" | "outline" | "destructive"> = {
   draft: "secondary",
@@ -59,7 +63,10 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
   const { toast } = useToast();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const save = useSaveCampaign();
+  const retry = useRetryFailedRecipients();
   const [detail, setDetail] = useState<MarketingCampaign | null>(null);
+  const [retryTarget, setRetryTarget] = useState<MarketingCampaign | null>(null);
+
   const { data: recipients = [], isLoading: recipientsLoading } = useCampaignRecipients(
     detail?.id
   );
@@ -215,6 +222,25 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
                     <TableCell className="text-right">{c.unsubscribe_count}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
+                        {(c.failed_count || 0) > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Retry failed recipients"
+                            title={`Retry ${c.failed_count} failed recipient(s)`}
+                            disabled={retry.isPending}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRetryTarget(c);
+                            }}
+                          >
+                            {retry.isPending && retryTarget?.id === c.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="h-4 w-4 text-destructive" />
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -244,6 +270,7 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
                         </Button>
                       </div>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
@@ -378,6 +405,21 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
             <Button variant="outline" onClick={() => setDetail(null)}>
               Close
             </Button>
+            {(detail?.failed_count || 0) > 0 && (
+              <Button
+                variant="secondary"
+                className="gap-1.5"
+                disabled={retry.isPending}
+                onClick={() => detail && setRetryTarget(detail)}
+              >
+                {retry.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                Retry {detail?.failed_count} failed
+              </Button>
+            )}
             <Button
               className="gap-1.5"
               disabled={save.isPending || !detail}
@@ -393,6 +435,55 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* --------------------------- retry failed confirm --------------------------- */}
+      <Dialog
+        open={!!retryTarget}
+        onOpenChange={(v) => !v && !retry.isPending && setRetryTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" /> Retry failed recipients
+            </DialogTitle>
+            <DialogDescription>
+              {retryTarget?.failed_count} recipient(s) of “{retryTarget?.name}” did not receive the
+              email. They will be re-queued and sent again. Contacts who already received it are
+              skipped, so nobody gets a duplicate.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+            Most failures are caused by the daily sending quota. If the quota has not reset yet, the
+            retry will stop early and the remaining recipients stay queued for another attempt.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              disabled={retry.isPending}
+              onClick={() => setRetryTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="gap-1.5"
+              disabled={retry.isPending || !retryTarget}
+              onClick={async () => {
+                if (!retryTarget) return;
+                await retry.mutateAsync({ campaignId: retryTarget.id });
+                setRetryTarget(null);
+              }}
+            >
+              {retry.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Retry now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
