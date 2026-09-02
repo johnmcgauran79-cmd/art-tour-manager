@@ -215,6 +215,25 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
                     <TableCell className="text-right">{c.unsubscribe_count}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
+                        {(c.failed_count || 0) > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Retry failed recipients"
+                            title={`Retry ${c.failed_count} failed recipient(s)`}
+                            disabled={retry.isPending}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRetryTarget(c);
+                            }}
+                          >
+                            {retry.isPending && retryTarget?.id === c.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="h-4 w-4 text-destructive" />
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -244,6 +263,7 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
                         </Button>
                       </div>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
