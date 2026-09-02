@@ -61,6 +61,7 @@ import {
 import {
   countAudience,
   describeFilters,
+  parseEmailList,
   
   type AudienceContact,
   type AudienceFilters,
@@ -96,9 +97,15 @@ interface CampaignsTabProps {
   /** Campaign to open automatically (used when starting from a template). */
   openCampaignId?: string | null;
   onOpenedCampaign?: () => void;
+  /** Fired once a campaign has been sent or scheduled, so the page can switch to the Sent tab. */
+  onSentOrScheduled?: () => void;
 }
 
-export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabProps = {}) {
+export function CampaignsTab({
+  openCampaignId,
+  onOpenedCampaign,
+  onSentOrScheduled,
+}: CampaignsTabProps = {}) {
   const { toast } = useToast();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: audiences = [] } = useAudiences();
@@ -128,6 +135,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const [progress, setProgress] = useState<{ sent: number; total: number } | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewMode, setReviewMode] = useState<"now" | "schedule">("now");
+  const [emailsRaw, setEmailsRaw] = useState("");
 
 
   const brand = useMemo<EdmBrand>(() => {
@@ -156,9 +164,11 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const adHocFilters: AudienceFilters = (editing?.audience_filters as AudienceFilters) || {};
   const recipientSource: string = editing?.audience_id
     ? editing.audience_id
-    : adHocFilters.tagIds?.length
-      ? "__tags__"
-      : "__all__";
+    : adHocFilters.emails?.length
+      ? "__emails__"
+      : adHocFilters.tagIds?.length
+        ? "__tags__"
+        : "__all__";
   /** Filters actually used to resolve recipients for this campaign. */
   const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
   const tagLookup = useMemo(
@@ -169,6 +179,12 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const setRecipientSource = (value: string) => {
     if (!editing) return;
     if (value === "__all__") setEditing({ ...editing, audience_id: null, audience_filters: {} });
+    else if (value === "__emails__")
+      setEditing({
+        ...editing,
+        audience_id: null,
+        audience_filters: { emails: adHocFilters.emails || [] },
+      });
     else if (value === "__tags__")
       setEditing({
         ...editing,
@@ -191,6 +207,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       },
     });
   };
+
 
   useEffect(() => {
     if (!open) {
@@ -224,6 +241,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const openCampaign = (c: Partial<MarketingCampaign>) => {
     setEditing(c);
     setScheduleAt(toLocalInput(c.scheduled_send_at));
+    setEmailsRaw(((c.audience_filters as AudienceFilters)?.emails || []).join("\n"));
     setProgress(null);
     setOpen(true);
   };
@@ -308,6 +326,10 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       toast({ title: "Choose at least one tag first", variant: "destructive" });
       return;
     }
+    if (recipientSource === "__emails__" && !adHocFilters.emails?.length) {
+      toast({ title: "Paste at least one valid email address", variant: "destructive" });
+      return;
+    }
     setReviewMode(mode);
     setReviewOpen(true);
   };
@@ -326,7 +348,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
         campaignId: saved.id,
         recipients: contacts.map((c) => ({
           email: c.email,
-          customer_id: c.id,
+          customer_id: c.id || null,
           first_name: c.first_name,
           last_name: c.last_name,
         })),
@@ -343,6 +365,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     });
     setReviewOpen(false);
     setOpen(false);
+    onSentOrScheduled?.();
   };
 
 
@@ -367,7 +390,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       campaignId,
       recipients: contacts.map((c) => ({
         email: c.email!,
-        customer_id: c.id,
+        customer_id: c.id || null,
         first_name: c.first_name,
         last_name: c.last_name,
       })),
@@ -376,7 +399,9 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     setProgress(null);
     setReviewOpen(false);
     setOpen(false);
+    onSentOrScheduled?.();
   };
+
 
 
   const duplicate = async (c: MarketingCampaign) => {
@@ -692,6 +717,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                       <SelectContent>
                         <SelectItem value="__all__">Whole database (all consented)</SelectItem>
                         <SelectItem value="__tags__">Contacts with tags…</SelectItem>
+                        <SelectItem value="__emails__">Specific email addresses…</SelectItem>
                         {audiences.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             Audience: {a.name}
@@ -731,10 +757,37 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                       </Popover>
                     )}
                   </div>
+
+                  {recipientSource === "__emails__" && (
+                    <div className="space-y-1.5 rounded-md border bg-muted/30 p-3">
+                      <Label className="text-xs">Paste email addresses</Label>
+                      <Textarea
+                        rows={4}
+                        value={emailsRaw}
+                        placeholder={"jane@example.com, john@example.com\nsomeone.else@example.com"}
+                        onChange={(e) => {
+                          setEmailsRaw(e.target.value);
+                          setEditing({
+                            ...editing,
+                            audience_id: null,
+                            audience_filters: { emails: parseEmailList(e.target.value) },
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Separate with commas, spaces or new lines. Each address is matched to a
+                        contact where one exists so merge fields still personalise;{" "}
+                        {adHocFilters.emails?.length || 0} valid address
+                        {(adHocFilters.emails?.length || 0) === 1 ? "" : "es"} found.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
                     {describeFilters(effectiveFilters, tagLookup)}
                   </p>
                 </div>
+
                 <Badge variant="secondary" className="h-9 justify-center gap-1.5 px-3">
                   <BarChart3 className="h-3.5 w-3.5" />
                   {audienceCount === null ? "—" : `${audienceCount} recipients`}
