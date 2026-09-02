@@ -127,6 +127,14 @@ function serve_handler() {
         "info@australianracingtours.com.au";
       // Quote the display name so inboxes always render it (never the mailbox name)
       const from = `"${fromName.replace(/"/g, "")}" <${fromEmail}>`;
+      // Replies must land in a real, monitored mailbox — the sending subdomain
+      // has no inbox, so always fall back to bookings@.
+      const replyTo =
+        (campaign.reply_to || "").trim() ||
+        (Deno.env.get("MARKETING_REPLY_TO") || "").trim() ||
+        (brand.from_email_client || "").trim() ||
+        "bookings@australianracingtours.com.au";
+
 
       const html = campaign.html_body || "";
       if (!html) return json({ error: "Campaign has no content to send" }, 400);
@@ -153,7 +161,7 @@ function serve_handler() {
           to: [testEmail],
           subject: `[TEST] ${campaign.subject}`,
           html: rendered,
-          reply_to: campaign.reply_to || undefined,
+          reply_to: replyTo,
         });
         if ((sent as any)?.error) return json({ error: (sent as any).error.message }, 502);
         return json({ ok: true });
@@ -251,7 +259,7 @@ function serve_handler() {
                 last_name: r.last_name || "",
               }),
               html: rendered,
-              reply_to: campaign.reply_to || undefined,
+              reply_to: replyTo,
               headers: {
                 "List-Unsubscribe": `<${APP_URL}/email-preferences/${token}?unsubscribe=1>`,
                 "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

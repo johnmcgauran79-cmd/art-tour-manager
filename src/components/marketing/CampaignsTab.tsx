@@ -234,6 +234,8 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       brand_id: defaultBrand?.id ?? null,
       from_name: defaultBrand?.sender_name ?? null,
       from_email: defaultBrand?.from_email_client ?? null,
+      reply_to: "bookings@australianracingtours.com.au",
+
       status: "draft",
     };
   };
@@ -639,13 +641,24 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                 </div>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Preview text (preheader)</Label>
                   <Input
                     value={editing.preheader || ""}
                     onChange={(e) => setEditing({ ...editing, preheader: e.target.value })}
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Reply-to email</Label>
+                  <Input
+                    value={editing.reply_to || ""}
+                    onChange={(e) => setEditing({ ...editing, reply_to: e.target.value })}
+                    placeholder="bookings@australianracingtours.com.au"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Where replies land. Leave blank to use bookings@australianracingtours.com.au.
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>From name</Label>
@@ -663,6 +676,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                   />
                 </div>
               </div>
+
 
               <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                 <div className="space-y-1.5">
