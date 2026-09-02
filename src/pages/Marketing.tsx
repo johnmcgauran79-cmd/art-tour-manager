@@ -53,6 +53,9 @@ export default function Marketing() {
           <TabsTrigger value="campaigns" className="gap-1.5">
             <Send className="h-3.5 w-3.5" /> Campaigns
           </TabsTrigger>
+          <TabsTrigger value="sent" className="gap-1.5">
+            <MailCheck className="h-3.5 w-3.5" /> Emails sent
+          </TabsTrigger>
           <TabsTrigger value="templates" className="gap-1.5">
             <LayoutTemplate className="h-3.5 w-3.5" /> Templates
           </TabsTrigger>
@@ -71,8 +74,18 @@ export default function Marketing() {
           <CampaignsTab
             openCampaignId={pendingCampaignId}
             onOpenedCampaign={() => setPendingCampaignId(null)}
+            onSentOrScheduled={() => onTabChange("sent")}
           />
         </TabsContent>
+        <TabsContent value="sent" className="mt-4">
+          <SentCampaignsTab
+            onResend={(id) => {
+              setPendingCampaignId(id);
+              onTabChange("campaigns");
+            }}
+          />
+        </TabsContent>
+
         <TabsContent value="templates" className="mt-4">
           <TemplatesTab
             onDraftCreated={(id) => {
