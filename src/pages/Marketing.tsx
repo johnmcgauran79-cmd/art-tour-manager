@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, LayoutTemplate, Megaphone, Send, Tag, Target } from "lucide-react";
+import { FileText, LayoutTemplate, MailCheck, Megaphone, Send, Tag, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { CampaignsTab } from "@/components/marketing/CampaignsTab";
+import { SentCampaignsTab } from "@/components/marketing/SentCampaignsTab";
 import { TemplatesTab } from "@/components/marketing/TemplatesTab";
 import { AudiencesTab } from "@/components/marketing/AudiencesTab";
 import { LandingPagesTab } from "@/components/marketing/LandingPagesTab";
 import { TagsTab } from "@/components/marketing/TagsTab";
 
-const TABS = ["campaigns", "templates", "audiences", "tags", "forms"] as const;
+const TABS = ["campaigns", "sent", "templates", "audiences", "tags", "forms"] as const;
 
 export default function Marketing() {
   const [searchParams, setSearchParams] = useSearchParams();
