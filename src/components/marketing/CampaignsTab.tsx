@@ -156,9 +156,11 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const adHocFilters: AudienceFilters = (editing?.audience_filters as AudienceFilters) || {};
   const recipientSource: string = editing?.audience_id
     ? editing.audience_id
-    : adHocFilters.tagIds?.length
-      ? "__tags__"
-      : "__all__";
+    : adHocFilters.emails?.length
+      ? "__emails__"
+      : adHocFilters.tagIds?.length
+        ? "__tags__"
+        : "__all__";
   /** Filters actually used to resolve recipients for this campaign. */
   const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
   const tagLookup = useMemo(
@@ -169,6 +171,12 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const setRecipientSource = (value: string) => {
     if (!editing) return;
     if (value === "__all__") setEditing({ ...editing, audience_id: null, audience_filters: {} });
+    else if (value === "__emails__")
+      setEditing({
+        ...editing,
+        audience_id: null,
+        audience_filters: { emails: adHocFilters.emails || [] },
+      });
     else if (value === "__tags__")
       setEditing({
         ...editing,
@@ -191,6 +199,7 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       },
     });
   };
+
 
   useEffect(() => {
     if (!open) {
