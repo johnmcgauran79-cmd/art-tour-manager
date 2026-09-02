@@ -750,10 +750,37 @@ export function CampaignsTab({
                       </Popover>
                     )}
                   </div>
+
+                  {recipientSource === "__emails__" && (
+                    <div className="space-y-1.5 rounded-md border bg-muted/30 p-3">
+                      <Label className="text-xs">Paste email addresses</Label>
+                      <Textarea
+                        rows={4}
+                        value={emailsRaw}
+                        placeholder={"jane@example.com, john@example.com\nsomeone.else@example.com"}
+                        onChange={(e) => {
+                          setEmailsRaw(e.target.value);
+                          setEditing({
+                            ...editing,
+                            audience_id: null,
+                            audience_filters: { emails: parseEmailList(e.target.value) },
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Separate with commas, spaces or new lines. Each address is matched to a
+                        contact where one exists so merge fields still personalise;{" "}
+                        {adHocFilters.emails?.length || 0} valid address
+                        {(adHocFilters.emails?.length || 0) === 1 ? "" : "es"} found.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
                     {describeFilters(effectiveFilters, tagLookup)}
                   </p>
                 </div>
+
                 <Badge variant="secondary" className="h-9 justify-center gap-1.5 px-3">
                   <BarChart3 className="h-3.5 w-3.5" />
                   {audienceCount === null ? "—" : `${audienceCount} recipients`}
