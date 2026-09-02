@@ -63,7 +63,10 @@ export function SentCampaignsTab({ onResend }: SentCampaignsTabProps = {}) {
   const { toast } = useToast();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const save = useSaveCampaign();
+  const retry = useRetryFailedRecipients();
   const [detail, setDetail] = useState<MarketingCampaign | null>(null);
+  const [retryTarget, setRetryTarget] = useState<MarketingCampaign | null>(null);
+
   const { data: recipients = [], isLoading: recipientsLoading } = useCampaignRecipients(
     detail?.id
   );
