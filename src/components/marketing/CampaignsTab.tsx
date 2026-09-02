@@ -234,6 +234,8 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       brand_id: defaultBrand?.id ?? null,
       from_name: defaultBrand?.sender_name ?? null,
       from_email: defaultBrand?.from_email_client ?? null,
+      reply_to: "bookings@australianracingtours.com.au",
+
       status: "draft",
     };
   };
