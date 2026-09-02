@@ -293,29 +293,25 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     if (saved) toast({ title: "Draft saved", description: "Come back any time to finish it." });
   };
 
-  const handleSchedule = async () => {
-    if (!scheduleAt) {
-      toast({ title: "Choose a send date and time", variant: "destructive" });
+  const openReview = (mode: "now" | "schedule") => {
+    if (!editing?.name || !editing?.subject) {
+      toast({ title: "Name and subject required", variant: "destructive" });
       return;
     }
     if (recipientSource === "__tags__" && !adHocFilters.tagIds?.length) {
-      toast({ title: "Choose at least one tag before scheduling", variant: "destructive" });
+      toast({ title: "Choose at least one tag first", variant: "destructive" });
       return;
     }
-    const when = new Date(scheduleAt);
-    if (Number.isNaN(when.getTime()) || when.getTime() < Date.now() - 60_000) {
-      toast({ title: "Pick a time in the future", variant: "destructive" });
-      return;
-    }
-    const saved = await persist({
-      status: "scheduled",
-      scheduled_send_at: when.toISOString(),
-    });
+    setReviewMode(mode);
+    setReviewOpen(true);
+  };
+
+  const handleSchedule = async (iso: string, contacts: AudienceContact[]) => {
+    const saved = await persist({ status: "scheduled", scheduled_send_at: iso });
     if (!saved?.id) return;
 
     // Queue the audience now so the scheduled worker only has to send.
     try {
-      const contacts = await resolveAudience(effectiveFilters);
       if (contacts.length === 0) {
         toast({ title: "No consented recipients in that audience", variant: "destructive" });
         return;
@@ -334,10 +330,12 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       return;
     }
 
+    setScheduleAt(toLocalInput(iso));
     toast({
       title: "Campaign scheduled",
-      description: `Sending automatically on ${format(when, "dd/MM/yyyy 'at' HH:mm")}.`,
+      description: `Sending automatically on ${format(new Date(iso), "dd/MM/yyyy 'at' HH:mm")} (your local time).`,
     });
+    setReviewOpen(false);
     setOpen(false);
   };
 
@@ -350,15 +348,10 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     }
   };
 
-  const handleSend = async () => {
+  const handleSend = async (contacts: AudienceContact[]) => {
     const saved = await persist();
     const campaignId = saved?.id || editing?.id;
     if (!campaignId) return;
-    if (recipientSource === "__tags__" && !adHocFilters.tagIds?.length) {
-      toast({ title: "Choose at least one tag first", variant: "destructive" });
-      return;
-    }
-    const contacts = await resolveAudience(effectiveFilters);
     if (!contacts.length) {
       toast({ title: "No consented recipients in that audience", variant: "destructive" });
       return;
@@ -375,8 +368,10 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       onProgress: (sent, total) => setProgress({ sent, total }),
     });
     setProgress(null);
+    setReviewOpen(false);
     setOpen(false);
   };
+
 
   const duplicate = async (c: MarketingCampaign) => {
     const { id, created_at, updated_at, ...rest } = c as any;
