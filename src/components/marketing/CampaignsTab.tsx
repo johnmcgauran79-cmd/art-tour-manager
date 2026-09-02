@@ -710,6 +710,7 @@ export function CampaignsTab({
                       <SelectContent>
                         <SelectItem value="__all__">Whole database (all consented)</SelectItem>
                         <SelectItem value="__tags__">Contacts with tags…</SelectItem>
+                        <SelectItem value="__emails__">Specific email addresses…</SelectItem>
                         {audiences.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             Audience: {a.name}
