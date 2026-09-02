@@ -854,17 +854,45 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
               )}
               Save draft
             </Button>
-            <Button onClick={handleSend} disabled={send.isPending} className="gap-1.5">
+            <Button
+              onClick={() => openReview("now")}
+              disabled={send.isPending}
+              className="gap-1.5"
+            >
               {send.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Send now
+              Review &amp; send
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ------------------------------ pre-send review ----------------------------- */}
+      <CampaignSendReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        initialMode={reviewMode}
+        campaignName={editing?.name}
+        subject={editing?.subject}
+        preheader={editing?.preheader}
+        fromName={editing?.from_name}
+        fromEmail={editing?.from_email}
+        replyTo={editing?.reply_to}
+        brandName={brand.name}
+        audienceLabel={
+          selectedAudience
+            ? `${selectedAudience.name} — ${describeFilters(effectiveFilters, tagLookup)}`
+            : describeFilters(effectiveFilters, tagLookup)
+        }
+        filters={effectiveFilters}
+        isPending={send.isPending || save.isPending || queue.isPending}
+        onSendNow={handleSend}
+        onSchedule={handleSchedule}
+      />
+
 
       {/* ------------------------------ save as template ---------------------------- */}
       <Dialog open={!!templateDialog} onOpenChange={(v) => !v && setTemplateDialog(null)}>
