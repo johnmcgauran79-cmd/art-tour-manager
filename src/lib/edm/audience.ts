@@ -29,11 +29,27 @@ export interface AudienceFilters {
   /** match contacts carrying ANY of the selected tags instead of all of them */
   tagMatchAny?: boolean;
   /**
+   * Explicit list of email addresses to send to. When present it takes
+   * precedence over every other filter — contacts are matched by email so
+   * merge fields still work, and unknown addresses are sent to as-is.
+   */
+  emails?: string[];
+  /**
    * Advanced rule tree (nested AND/OR/NOT). When present it takes precedence
    * over the simple filters above and is evaluated client-side.
    */
   rules?: AudienceGroup;
 }
+
+/** Parse a pasted blob of addresses into a clean, de-duped list. */
+export const parseEmailList = (raw: string): string[] => {
+  const found = raw
+    .split(/[\s,;<>()"']+/)
+    .map((s) => s.trim().replace(/[.,;:]+$/, "").toLowerCase())
+    .filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s));
+  return Array.from(new Set(found));
+};
+
 
 /** True when the audience uses the advanced rule tree. */
 export const hasRules = (f: AudienceFilters): boolean =>
