@@ -326,6 +326,10 @@ export function CampaignsTab({
       toast({ title: "Choose at least one tag first", variant: "destructive" });
       return;
     }
+    if (recipientSource === "__emails__" && !adHocFilters.emails?.length) {
+      toast({ title: "Paste at least one valid email address", variant: "destructive" });
+      return;
+    }
     setReviewMode(mode);
     setReviewOpen(true);
   };
