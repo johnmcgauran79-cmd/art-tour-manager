@@ -126,6 +126,9 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const [testEmail, setTestEmail] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
   const [progress, setProgress] = useState<{ sent: number; total: number } | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewMode, setReviewMode] = useState<"now" | "schedule">("now");
+
 
   const brand = useMemo<EdmBrand>(() => {
     const b =
