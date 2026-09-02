@@ -161,7 +161,7 @@ function serve_handler() {
           to: [testEmail],
           subject: `[TEST] ${campaign.subject}`,
           html: rendered,
-          reply_to: campaign.reply_to || undefined,
+          reply_to: replyTo,
         });
         if ((sent as any)?.error) return json({ error: (sent as any).error.message }, 502);
         return json({ ok: true });
@@ -259,7 +259,7 @@ function serve_handler() {
                 last_name: r.last_name || "",
               }),
               html: rendered,
-              reply_to: campaign.reply_to || undefined,
+              reply_to: replyTo,
               headers: {
                 "List-Unsubscribe": `<${APP_URL}/email-preferences/${token}?unsubscribe=1>`,
                 "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
