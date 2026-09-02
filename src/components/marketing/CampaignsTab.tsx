@@ -61,7 +61,8 @@ import {
 import {
   countAudience,
   describeFilters,
-  resolveAudience,
+  
+  type AudienceContact,
   type AudienceFilters,
 } from "@/lib/edm/audience";
 import { useTags } from "@/hooks/useTags";
@@ -70,6 +71,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmBuilder } from "./EdmBuilder";
+import { CampaignSendReviewDialog } from "./CampaignSendReviewDialog";
+
 
 const statusVariant: Record<string, "secondary" | "default" | "outline" | "destructive"> = {
   draft: "secondary",
@@ -123,6 +126,9 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
   const [testEmail, setTestEmail] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
   const [progress, setProgress] = useState<{ sent: number; total: number } | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewMode, setReviewMode] = useState<"now" | "schedule">("now");
+
 
   const brand = useMemo<EdmBrand>(() => {
     const b =
@@ -293,29 +299,25 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     if (saved) toast({ title: "Draft saved", description: "Come back any time to finish it." });
   };
 
-  const handleSchedule = async () => {
-    if (!scheduleAt) {
-      toast({ title: "Choose a send date and time", variant: "destructive" });
+  const openReview = (mode: "now" | "schedule") => {
+    if (!editing?.name || !editing?.subject) {
+      toast({ title: "Name and subject required", variant: "destructive" });
       return;
     }
     if (recipientSource === "__tags__" && !adHocFilters.tagIds?.length) {
-      toast({ title: "Choose at least one tag before scheduling", variant: "destructive" });
+      toast({ title: "Choose at least one tag first", variant: "destructive" });
       return;
     }
-    const when = new Date(scheduleAt);
-    if (Number.isNaN(when.getTime()) || when.getTime() < Date.now() - 60_000) {
-      toast({ title: "Pick a time in the future", variant: "destructive" });
-      return;
-    }
-    const saved = await persist({
-      status: "scheduled",
-      scheduled_send_at: when.toISOString(),
-    });
+    setReviewMode(mode);
+    setReviewOpen(true);
+  };
+
+  const handleSchedule = async (iso: string, contacts: AudienceContact[]) => {
+    const saved = await persist({ status: "scheduled", scheduled_send_at: iso });
     if (!saved?.id) return;
 
     // Queue the audience now so the scheduled worker only has to send.
     try {
-      const contacts = await resolveAudience(effectiveFilters);
       if (contacts.length === 0) {
         toast({ title: "No consented recipients in that audience", variant: "destructive" });
         return;
@@ -334,10 +336,12 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       return;
     }
 
+    setScheduleAt(toLocalInput(iso));
     toast({
       title: "Campaign scheduled",
-      description: `Sending automatically on ${format(when, "dd/MM/yyyy 'at' HH:mm")}.`,
+      description: `Sending automatically on ${format(new Date(iso), "dd/MM/yyyy 'at' HH:mm")} (your local time).`,
     });
+    setReviewOpen(false);
     setOpen(false);
   };
 
@@ -350,15 +354,10 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
     }
   };
 
-  const handleSend = async () => {
+  const handleSend = async (contacts: AudienceContact[]) => {
     const saved = await persist();
     const campaignId = saved?.id || editing?.id;
     if (!campaignId) return;
-    if (recipientSource === "__tags__" && !adHocFilters.tagIds?.length) {
-      toast({ title: "Choose at least one tag first", variant: "destructive" });
-      return;
-    }
-    const contacts = await resolveAudience(effectiveFilters);
     if (!contacts.length) {
       toast({ title: "No consented recipients in that audience", variant: "destructive" });
       return;
@@ -375,8 +374,10 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
       onProgress: (sent, total) => setProgress({ sent, total }),
     });
     setProgress(null);
+    setReviewOpen(false);
     setOpen(false);
   };
+
 
   const duplicate = async (c: MarketingCampaign) => {
     const { id, created_at, updated_at, ...rest } = c as any;
@@ -804,19 +805,13 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                 </Button>
               </div>
 
-              <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/30 p-3">
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-1.5">
-                    <CalendarClock className="h-3.5 w-3.5" /> Schedule send (your local time)
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    value={scheduleAt}
-                    onChange={(e) => setScheduleAt(e.target.value)}
-                    className="w-64"
-                  />
-                </div>
-                <Button variant="secondary" onClick={handleSchedule} disabled={save.isPending}>
+              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => openReview("schedule")}
+                  className="gap-1.5"
+                >
+                  <CalendarClock className="h-4 w-4" />
                   {editing.status === "scheduled" ? "Update schedule" : "Schedule campaign"}
                 </Button>
                 {editing.status === "scheduled" && (
@@ -833,7 +828,12 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                     </p>
                   </>
                 )}
+                <p className="w-full text-xs text-muted-foreground">
+                  You'll get a full review — sender, subject, list and recipient count — before
+                  anything goes out, and can pick the timezone for the send time.
+                </p>
               </div>
+
             </div>
           )}
 
@@ -854,17 +854,45 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
               )}
               Save draft
             </Button>
-            <Button onClick={handleSend} disabled={send.isPending} className="gap-1.5">
+            <Button
+              onClick={() => openReview("now")}
+              disabled={send.isPending}
+              className="gap-1.5"
+            >
               {send.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Send now
+              Review &amp; send
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ------------------------------ pre-send review ----------------------------- */}
+      <CampaignSendReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        initialMode={reviewMode}
+        campaignName={editing?.name}
+        subject={editing?.subject}
+        preheader={editing?.preheader}
+        fromName={editing?.from_name}
+        fromEmail={editing?.from_email}
+        replyTo={editing?.reply_to}
+        brandName={brand.name}
+        audienceLabel={
+          selectedAudience
+            ? `${selectedAudience.name} — ${describeFilters(effectiveFilters, tagLookup)}`
+            : describeFilters(effectiveFilters, tagLookup)
+        }
+        filters={effectiveFilters}
+        isPending={send.isPending || save.isPending || queue.isPending}
+        onSendNow={handleSend}
+        onSchedule={handleSchedule}
+      />
+
 
       {/* ------------------------------ save as template ---------------------------- */}
       <Dialog open={!!templateDialog} onOpenChange={(v) => !v && setTemplateDialog(null)}>
