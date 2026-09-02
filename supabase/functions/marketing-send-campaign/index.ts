@@ -357,7 +357,14 @@ function serve_handler() {
           })
           .eq("id", campaignId);
 
-        return json({ sent, failed, remaining: remaining || 0, total: total || 0 });
+        return json({
+          sent,
+          failed,
+          remaining: remaining || 0,
+          total: total || 0,
+          quotaExceeded,
+        });
+
       }
 
       return json({ error: `Unknown action: ${action}` }, 400);
