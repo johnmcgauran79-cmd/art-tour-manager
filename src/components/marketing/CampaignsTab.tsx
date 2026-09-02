@@ -62,6 +62,7 @@ import {
   countAudience,
   describeFilters,
   resolveAudience,
+  type AudienceContact,
   type AudienceFilters,
 } from "@/lib/edm/audience";
 import { useTags } from "@/hooks/useTags";
@@ -70,6 +71,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmBuilder } from "./EdmBuilder";
+import { CampaignSendReviewDialog } from "./CampaignSendReviewDialog";
+
 
 const statusVariant: Record<string, "secondary" | "default" | "outline" | "destructive"> = {
   draft: "secondary",
