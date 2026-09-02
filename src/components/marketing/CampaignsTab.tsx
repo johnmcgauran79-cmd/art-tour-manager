@@ -96,9 +96,15 @@ interface CampaignsTabProps {
   /** Campaign to open automatically (used when starting from a template). */
   openCampaignId?: string | null;
   onOpenedCampaign?: () => void;
+  /** Fired once a campaign has been sent or scheduled, so the page can switch to the Sent tab. */
+  onSentOrScheduled?: () => void;
 }
 
-export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabProps = {}) {
+export function CampaignsTab({
+  openCampaignId,
+  onOpenedCampaign,
+  onSentOrScheduled,
+}: CampaignsTabProps = {}) {
   const { toast } = useToast();
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: audiences = [] } = useAudiences();
