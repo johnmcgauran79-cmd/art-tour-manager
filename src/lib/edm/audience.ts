@@ -109,8 +109,47 @@ const applyFilters = (query: any, f: AudienceFilters, tagCustomerIds?: string[] 
   return q;
 };
 
+/**
+ * Resolve an explicit list of addresses into contacts, matching each address to
+ * a customer record where one exists so merge fields still personalise.
+ */
+export const resolveEmailList = async (emails: string[]): Promise<AudienceContact[]> => {
+  const clean = Array.from(
+    new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))
+  );
+  if (!clean.length) return [];
+
+  const matched = new Map<string, AudienceContact>();
+  for (let i = 0; i < clean.length; i += 200) {
+    const chunk = clean.slice(i, i + 200);
+    const { data, error } = await supabase
+      .from("customers")
+      .select("id, first_name, last_name, email, state, lead_stage, latest_tour_name")
+      .in("email", chunk);
+    if (error) throw error;
+    (data || []).forEach((c: any) => {
+      const key = (c.email || "").trim().toLowerCase();
+      if (key && !matched.has(key)) matched.set(key, c as AudienceContact);
+    });
+  }
+
+  return clean.map(
+    (email) =>
+      matched.get(email) || {
+        id: "",
+        first_name: null,
+        last_name: null,
+        email,
+        state: null,
+        lead_stage: null,
+        latest_tour_name: null,
+      }
+  );
+};
+
 /** Count matching, consented contacts without fetching them all. */
 export const countAudience = async (filters: AudienceFilters): Promise<number> => {
+  if (filters.emails?.length) return (await resolveEmailList(filters.emails)).length;
   if (hasRules(filters)) return (await resolveRuleTree(filters.rules as AudienceGroup)).length;
   const tagIds = filters.tagIds?.length
     ? await customerIdsForTags(filters.tagIds, filters.tagMatchAny)
@@ -129,10 +168,12 @@ export const resolveAudience = async (
   filters: AudienceFilters
 ): Promise<AudienceContact[]> => {
   const out: AudienceContact[] = [];
+  if (filters.emails?.length) return resolveEmailList(filters.emails);
   if (hasRules(filters)) {
     const rows = await resolveRuleTree(filters.rules as AudienceGroup);
     return rows.map((r) => ({
       id: r.id,
+
       first_name: r.first_name,
       last_name: r.last_name,
       email: r.email,
