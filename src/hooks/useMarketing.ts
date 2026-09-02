@@ -481,21 +481,94 @@ export const useSendCampaign = () => {
           body: { action: "process", campaignId, batchSize: 40 },
         });
         if (error) throw error;
-        const res = data as { sent: number; failed: number; remaining: number; total: number };
+        const res = data as {
+          sent: number;
+          failed: number;
+          remaining: number;
+          total: number;
+          quotaExceeded?: boolean;
+        };
         onProgress?.(res.total - res.remaining, res.total);
+        if (res.quotaExceeded) return { quotaExceeded: true, remaining: res.remaining };
         if (res.remaining <= 0) break;
         if (++guard > 500) break;
       }
+      return { quotaExceeded: false, remaining: 0 };
     },
-    onSuccess: (_d, v) => {
+    onSuccess: (result, v) => {
       qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
       qc.invalidateQueries({ queryKey: ["campaign-recipients", v.campaignId] });
+      if (result?.quotaExceeded) {
+        toast({
+          title: "Daily sending quota reached",
+          description: `${result.remaining} recipient(s) are still queued. Retry from Emails sent once the quota resets.`,
+          variant: "destructive",
+        });
+        return;
+      }
       toast({ title: "Campaign sent", description: "All queued emails have been processed." });
     },
     onError: (e: any) =>
       toast({ title: "Send failed", description: e.message, variant: "destructive" }),
   });
 };
+
+/**
+ * Re-queue every failed recipient of a campaign and drain the queue again.
+ * Recipients already marked sent are untouched, so nobody gets a duplicate.
+ */
+export const useRetryFailedRecipients = () => {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ campaignId }: { campaignId: string }) => {
+      const { data: rq, error: rqErr } = await supabase.functions.invoke(
+        "marketing-send-campaign",
+        { body: { action: "requeue_failed", campaignId } }
+      );
+      if (rqErr) throw rqErr;
+      const requeued = (rq as { requeued?: number })?.requeued || 0;
+      if (!requeued) return { requeued: 0, quotaExceeded: false, remaining: 0 };
+
+      let guard = 0;
+      for (;;) {
+        const { data, error } = await supabase.functions.invoke("marketing-send-campaign", {
+          body: { action: "process", campaignId, batchSize: 40 },
+        });
+        if (error) throw error;
+        const res = data as { remaining: number; quotaExceeded?: boolean };
+        if (res.quotaExceeded) return { requeued, quotaExceeded: true, remaining: res.remaining };
+        if (res.remaining <= 0) break;
+        if (++guard > 500) break;
+      }
+      return { requeued, quotaExceeded: false, remaining: 0 };
+    },
+    onSuccess: (result, v) => {
+      qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
+      qc.invalidateQueries({ queryKey: ["campaign-recipients", v.campaignId] });
+      if (!result.requeued) {
+        toast({ title: "Nothing to retry", description: "No failed recipients on this campaign." });
+        return;
+      }
+      if (result.quotaExceeded) {
+        toast({
+          title: "Daily sending quota reached again",
+          description: `${result.remaining} recipient(s) remain queued — try again after the quota resets.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Retry complete",
+        description: `${result.requeued} recipient(s) re-processed.`,
+      });
+    },
+    onError: (e: any) =>
+      toast({ title: "Retry failed", description: e.message, variant: "destructive" }),
+  });
+};
+
 
 /** Queue recipients without sending — used when scheduling a campaign. */
 export const useQueueCampaignRecipients = () => {
