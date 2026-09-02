@@ -805,19 +805,13 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                 </Button>
               </div>
 
-              <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/30 p-3">
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-1.5">
-                    <CalendarClock className="h-3.5 w-3.5" /> Schedule send (your local time)
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    value={scheduleAt}
-                    onChange={(e) => setScheduleAt(e.target.value)}
-                    className="w-64"
-                  />
-                </div>
-                <Button variant="secondary" onClick={handleSchedule} disabled={save.isPending}>
+              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => openReview("schedule")}
+                  className="gap-1.5"
+                >
+                  <CalendarClock className="h-4 w-4" />
                   {editing.status === "scheduled" ? "Update schedule" : "Schedule campaign"}
                 </Button>
                 {editing.status === "scheduled" && (
@@ -834,7 +828,12 @@ export function CampaignsTab({ openCampaignId, onOpenedCampaign }: CampaignsTabP
                     </p>
                   </>
                 )}
+                <p className="w-full text-xs text-muted-foreground">
+                  You'll get a full review — sender, subject, list and recipient count — before
+                  anything goes out, and can pick the timezone for the send time.
+                </p>
               </div>
+
             </div>
           )}
 
