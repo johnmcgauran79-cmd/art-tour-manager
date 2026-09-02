@@ -216,6 +216,10 @@ export const describeFilters = (
   f: AudienceFilters,
   lookup: { tags?: Record<string, string>; tours?: Record<string, string> } = {}
 ): string => {
+  if (f.emails?.length)
+    return `Specific addresses (${f.emails.length}): ${f.emails.slice(0, 4).join(", ")}${
+      f.emails.length > 4 ? `, +${f.emails.length - 4} more` : ""
+    }`;
   if (hasRules(f)) return describeNode(f.rules as AudienceGroup, lookup) || "All consented contacts";
   const parts: string[] = [];
   if (f.states?.length) parts.push(`State: ${f.states.join(", ")}`);
