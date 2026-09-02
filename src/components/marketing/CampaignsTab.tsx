@@ -241,6 +241,7 @@ export function CampaignsTab({
   const openCampaign = (c: Partial<MarketingCampaign>) => {
     setEditing(c);
     setScheduleAt(toLocalInput(c.scheduled_send_at));
+    setEmailsRaw(((c.audience_filters as AudienceFilters)?.emails || []).join("\n"));
     setProgress(null);
     setOpen(true);
   };
