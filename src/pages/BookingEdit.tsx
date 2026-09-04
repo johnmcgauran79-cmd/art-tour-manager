@@ -697,7 +697,19 @@ export default function BookingEdit() {
                     value={formData.passenger_count}
                     onChange={(e) => {
                       const value = Math.max(1, Number(e.target.value) || 1);
-                      setFormData(prev => ({ ...prev, passenger_count: value }));
+                      // Reducing the passenger count removes the passengers no longer travelling
+                      if (value < 3) {
+                        setSelectedPassenger3(null);
+                      }
+                      if (value < 2) {
+                        setSelectedPassenger2(null);
+                      }
+                      setFormData(prev => ({
+                        ...prev,
+                        passenger_count: value,
+                        passenger_2_name: value >= 2 ? prev.passenger_2_name : '',
+                        passenger_3_name: value >= 3 ? prev.passenger_3_name : '',
+                      }));
                     }}
                   />
                 </div>
