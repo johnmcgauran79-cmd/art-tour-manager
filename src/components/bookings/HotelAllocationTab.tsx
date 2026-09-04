@@ -141,19 +141,19 @@ export const HotelAllocationTab = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="single" disabled={passengerCount >= 2}>
+                            <SelectItem value="single">
                               Single
                             </SelectItem>
-                            <SelectItem value="double" disabled={passengerCount === 1}>
+                            <SelectItem value="double">
                               Double
                             </SelectItem>
-                            <SelectItem value="twin" disabled={passengerCount === 1}>
+                            <SelectItem value="twin">
                               Twin
                             </SelectItem>
-                            <SelectItem value="triple" disabled={passengerCount === 1}>
+                            <SelectItem value="triple">
                               Triple
                             </SelectItem>
-                            <SelectItem value="family" disabled={passengerCount === 1}>
+                            <SelectItem value="family">
                               Family
                             </SelectItem>
                           </SelectContent>
