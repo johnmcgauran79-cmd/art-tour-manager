@@ -54,21 +54,13 @@ export const HotelAllocationTab = ({
   };
 
   const handleBeddingChange = (hotelId: string, value: string, allocation: HotelAllocation) => {
-    if (passengerCount === 1 && value !== 'single') {
+    // Any bedding type can be chosen for any passenger count — guests move between
+    // twin and two singles regularly. Unusual combinations only get a gentle note.
+    if ((passengerCount === 1 && value !== 'single') || (passengerCount >= 2 && value === 'single')) {
       toast({
-        title: "Invalid Selection",
-        description: "Single passenger bookings can only have Single bedding.",
-        variant: "destructive",
+        title: "Unusual bedding choice",
+        description: `${passengerCount} passenger${passengerCount === 1 ? '' : 's'} with ${value} bedding — saved, just double-check it's correct.`,
       });
-      return;
-    }
-    if (passengerCount >= 2 && value === 'single') {
-      toast({
-        title: "Invalid Selection",
-        description: `You have ${passengerCount} passengers. Single bedding is not appropriate. Please select Double, Twin, Triple, or Family.`,
-        variant: "destructive",
-      });
-      return;
     }
     handleAllocationChange(hotelId, 'bedding', value);
   };
@@ -149,19 +141,19 @@ export const HotelAllocationTab = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="single" disabled={passengerCount >= 2}>
+                            <SelectItem value="single">
                               Single
                             </SelectItem>
-                            <SelectItem value="double" disabled={passengerCount === 1}>
+                            <SelectItem value="double">
                               Double
                             </SelectItem>
-                            <SelectItem value="twin" disabled={passengerCount === 1}>
+                            <SelectItem value="twin">
                               Twin
                             </SelectItem>
-                            <SelectItem value="triple" disabled={passengerCount === 1}>
+                            <SelectItem value="triple">
                               Triple
                             </SelectItem>
-                            <SelectItem value="family" disabled={passengerCount === 1}>
+                            <SelectItem value="family">
                               Family
                             </SelectItem>
                           </SelectContent>

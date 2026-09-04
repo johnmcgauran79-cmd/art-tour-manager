@@ -256,19 +256,20 @@ export default function BookingEdit() {
           console.log('No hotels on tour - will use tour dates for check-in/check-out');
         }
 
+        // Bedding vs passenger count mismatches are flagged as a warning only —
+        // guests legitimately move between twin and two singles, so saving is never blocked.
         if (hotelBookings && hotelBookings.length > 0) {
-          if (formData.passenger_count === 1) {
-            const invalidBedding = hotelBookings.find(hb => hb.bedding !== 'single');
-            if (invalidBedding) {
-              setValidationError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before saving changes.");
-              return;
-            }
-          } else if (formData.passenger_count >= 2) {
-            const singleBedding = hotelBookings.find(hb => hb.bedding === 'single');
-            if (singleBedding) {
-              setValidationError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before saving changes.`);
-              return;
-            }
+          const mismatch = formData.passenger_count === 1
+            ? hotelBookings.find(hb => hb.bedding !== 'single')
+            : hotelBookings.find(hb => hb.bedding === 'single');
+
+          if (mismatch) {
+            toast({
+              title: "Check bedding type",
+              description: formData.passenger_count === 1
+                ? "This booking has 1 passenger but the room is not set to Single. Saved anyway — update it in the Hotels tab if needed."
+                : `This booking has ${formData.passenger_count} passengers with Single bedding. Saved anyway — update it in the Hotels tab if needed.`,
+            });
           }
         }
       }
@@ -318,10 +319,14 @@ export default function BookingEdit() {
     updateBooking.mutate({
       id: booking.id,
       passenger_count: formData.passenger_count,
-      passenger_2_name: selectedPassenger2 ? `${selectedPassenger2.first_name || ''} ${selectedPassenger2.last_name || ''}`.trim() : formData.passenger_2_name,
-      passenger_3_name: selectedPassenger3 ? `${selectedPassenger3.first_name || ''} ${selectedPassenger3.last_name || ''}`.trim() : formData.passenger_3_name,
-      passenger_2_id: selectedPassenger2?.id || null,
-      passenger_3_id: selectedPassenger3?.id || null,
+      passenger_2_name: formData.passenger_count >= 2
+        ? (selectedPassenger2 ? `${selectedPassenger2.first_name || ''} ${selectedPassenger2.last_name || ''}`.trim() : formData.passenger_2_name)
+        : null,
+      passenger_3_name: formData.passenger_count >= 3
+        ? (selectedPassenger3 ? `${selectedPassenger3.first_name || ''} ${selectedPassenger3.last_name || ''}`.trim() : formData.passenger_3_name)
+        : null,
+      passenger_2_id: formData.passenger_count >= 2 ? (selectedPassenger2?.id || null) : null,
+      passenger_3_id: formData.passenger_count >= 3 ? (selectedPassenger3?.id || null) : null,
       group_name: formData.group_name,
       booking_agent: formData.booking_agent,
       status: formData.status,
@@ -696,7 +701,19 @@ export default function BookingEdit() {
                     value={formData.passenger_count}
                     onChange={(e) => {
                       const value = Math.max(1, Number(e.target.value) || 1);
-                      setFormData(prev => ({ ...prev, passenger_count: value }));
+                      // Reducing the passenger count removes the passengers no longer travelling
+                      if (value < 3) {
+                        setSelectedPassenger3(null);
+                      }
+                      if (value < 2) {
+                        setSelectedPassenger2(null);
+                      }
+                      setFormData(prev => ({
+                        ...prev,
+                        passenger_count: value,
+                        passenger_2_name: value >= 2 ? prev.passenger_2_name : '',
+                        passenger_3_name: value >= 3 ? prev.passenger_3_name : '',
+                      }));
                     }}
                   />
                 </div>
