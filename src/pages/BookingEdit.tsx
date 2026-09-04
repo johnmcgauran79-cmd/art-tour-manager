@@ -319,10 +319,14 @@ export default function BookingEdit() {
     updateBooking.mutate({
       id: booking.id,
       passenger_count: formData.passenger_count,
-      passenger_2_name: selectedPassenger2 ? `${selectedPassenger2.first_name || ''} ${selectedPassenger2.last_name || ''}`.trim() : formData.passenger_2_name,
-      passenger_3_name: selectedPassenger3 ? `${selectedPassenger3.first_name || ''} ${selectedPassenger3.last_name || ''}`.trim() : formData.passenger_3_name,
-      passenger_2_id: selectedPassenger2?.id || null,
-      passenger_3_id: selectedPassenger3?.id || null,
+      passenger_2_name: formData.passenger_count >= 2
+        ? (selectedPassenger2 ? `${selectedPassenger2.first_name || ''} ${selectedPassenger2.last_name || ''}`.trim() : formData.passenger_2_name)
+        : null,
+      passenger_3_name: formData.passenger_count >= 3
+        ? (selectedPassenger3 ? `${selectedPassenger3.first_name || ''} ${selectedPassenger3.last_name || ''}`.trim() : formData.passenger_3_name)
+        : null,
+      passenger_2_id: formData.passenger_count >= 2 ? (selectedPassenger2?.id || null) : null,
+      passenger_3_id: formData.passenger_count >= 3 ? (selectedPassenger3?.id || null) : null,
       group_name: formData.group_name,
       booking_agent: formData.booking_agent,
       status: formData.status,
