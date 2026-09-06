@@ -15,6 +15,7 @@ import {
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useTours } from "@/hooks/useTours";
 import { LeadDialog } from "@/components/crm/LeadDialog";
+import { SubmissionsList } from "@/components/crm/SubmissionsList";
 import {
   useAddTourInterest,
   useContactRelationships,
@@ -185,6 +186,8 @@ export function ContactCrmPanel({ customerId }: Props) {
       </Card>
 
       <LeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} customerId={customerId} />
+      <SubmissionsList customerId={customerId} title="Website forms submitted" />
+
     </div>
   );
 }
