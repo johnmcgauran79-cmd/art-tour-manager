@@ -6819,6 +6819,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_crm_staff: { Args: { _user_id: string }; Returns: boolean }
       is_host_for_tour: {
         Args: { _tour_id: string; _user_id: string }
         Returns: boolean
