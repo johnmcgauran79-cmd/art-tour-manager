@@ -185,8 +185,10 @@ export function ContactCrmPanel({ customerId }: Props) {
         </CardContent>
       </Card>
 
-      <LeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} customerId={customerId} />
       <SubmissionsList customerId={customerId} title="Website forms submitted" />
+
+      <LeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} customerId={customerId} />
+
 
     </div>
   );
