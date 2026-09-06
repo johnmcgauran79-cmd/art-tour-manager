@@ -55,6 +55,8 @@ const WordpressContent = lazy(() => import("./pages/WordpressContent"));
 const DataHealth = lazy(() => import("./pages/DataHealth"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const Leads = lazy(() => import("./pages/Leads"));
+const LeadDetail = lazy(() => import("./pages/LeadDetail"));
+
 const PublicForm = lazy(() => import("./pages/PublicForm"));
 const EmailPreferences = lazy(() => import("./pages/EmailPreferences"));
 
@@ -264,6 +266,17 @@ function App() {
                   </TaskRoute>
                 }
               />
+              <Route
+                path="/leads/:id"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <LeadDetail />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+
               <Route
                 path="/communications"
                 element={

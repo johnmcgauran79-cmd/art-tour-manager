@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ClipboardList, Users } from "lucide-react";
+import { BarChart3, ClipboardList, Inbox, KanbanSquare, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
-import { LeadsTab } from "@/components/marketing/LeadsTab";
 import { LeadTasksTab } from "@/components/marketing/LeadTasksTab";
+import { LeadInbox } from "@/components/crm/LeadInbox";
+import { LeadPipelineBoard } from "@/components/crm/LeadPipelineBoard";
+import { CrmDashboard } from "@/components/crm/CrmDashboard";
 
-const TABS = ["pipeline", "tasks"] as const;
+const TABS = ["inbox", "pipeline", "dashboard", "tasks"] as const;
 
 export default function Leads() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initial = searchParams.get("ltab");
   const [tab, setTab] = useState<string>(
-    TABS.includes(initial as any) ? (initial as string) : "pipeline"
+    TABS.includes(initial as any) ? (initial as string) : "inbox"
   );
 
   const onTabChange = (value: string) => {
@@ -32,23 +34,34 @@ export default function Leads() {
           Leads
         </h1>
         <p className="text-sm text-muted-foreground">
-          Your sales pipeline and every lead task in one place — follow up, log calls and keep the
-          stages moving.
+          Every enquiry, who owns it, what happens next — plus the numbers behind it.
         </p>
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
         <TabsList>
+          <TabsTrigger value="inbox" className="gap-1.5">
+            <Inbox className="h-3.5 w-3.5" /> Today
+          </TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-1.5">
-            <Users className="h-3.5 w-3.5" /> Pipeline
+            <KanbanSquare className="h-3.5 w-3.5" /> Pipeline
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="gap-1.5">
+            <BarChart3 className="h-3.5 w-3.5" /> Numbers
           </TabsTrigger>
           <TabsTrigger value="tasks" className="gap-1.5">
             <ClipboardList className="h-3.5 w-3.5" /> Lead tasks
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="inbox" className="mt-4">
+          <LeadInbox />
+        </TabsContent>
         <TabsContent value="pipeline" className="mt-4">
-          <LeadsTab />
+          <LeadPipelineBoard />
+        </TabsContent>
+        <TabsContent value="dashboard" className="mt-4">
+          <CrmDashboard />
         </TabsContent>
         <TabsContent value="tasks" className="mt-4">
           <LeadTasksTab />

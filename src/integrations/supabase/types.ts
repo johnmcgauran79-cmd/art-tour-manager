@@ -7333,6 +7333,10 @@ export type Database = {
         Args: { _customer_id: string }
         Returns: undefined
       }
+      recompute_customer_lifetime: {
+        Args: { _customer_id: string }
+        Returns: undefined
+      }
       record_website_change: {
         Args: {
           _after: Json

@@ -8,7 +8,7 @@
  * Triggers in Postgres extract these into the `task_entity_links` table.
  */
 
-export type EntityType = "booking" | "hotel" | "activity" | "tour" | "contact";
+export type EntityType = "booking" | "hotel" | "activity" | "tour" | "contact" | "lead";
 
 export interface ParsedEntityLink {
   type: EntityType;
@@ -23,7 +23,7 @@ export interface ParsedEntityLink {
 }
 
 export const ENTITY_LINK_REGEX =
-  /\[\[(booking|hotel|activity|tour|contact):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\|([^\]]*))?\]\]/gi;
+  /\[\[(booking|hotel|activity|tour|contact|lead):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\|([^\]]*))?\]\]/gi;
 
 export function buildEntityToken(type: EntityType, id: string, label: string): string {
   // Strip pipe and bracket characters from label to keep parsing safe
@@ -62,6 +62,8 @@ export function entityLinkHref(
       return `/tours/${id}`;
     case "contact":
       return `/contacts/${id}`;
+    case "lead":
+      return `/leads/${id}`;
     case "hotel":
       // Deep-link into the parent tour's Hotels tab and pre-select this hotel.
       return tourId ? `/tours/${tourId}?tab=hotels&hotelId=${id}` : null;
@@ -76,6 +78,7 @@ export const ENTITY_LABELS: Record<EntityType, string> = {
   activity: "Activity",
   tour: "Tour",
   contact: "Contact",
+  lead: "Enquiry",
 };
 
 /**
