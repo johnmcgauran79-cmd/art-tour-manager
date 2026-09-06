@@ -1596,6 +1596,51 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_relationships: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          notes: string | null
+          related_customer_id: string
+          relationship_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          notes?: string | null
+          related_customer_id: string
+          relationship_type?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          related_customer_id?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_relationships_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_relationships_related_customer_id_fkey"
+            columns: ["related_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_tags: {
         Row: {
           created_at: string
@@ -1631,6 +1676,79 @@ export type Database = {
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_activities: {
+        Row: {
+          activity_type: string
+          body: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          direction: string | null
+          id: string
+          lead_id: string | null
+          occurred_at: string
+          outcome: string | null
+          staff_id: string | null
+          subject: string | null
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity_type?: string
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          direction?: string | null
+          id?: string
+          lead_id?: string | null
+          occurred_at?: string
+          outcome?: string | null
+          staff_id?: string | null
+          subject?: string | null
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          direction?: string | null
+          id?: string
+          lead_id?: string | null
+          occurred_at?: string
+          outcome?: string | null
+          staff_id?: string | null
+          subject?: string | null
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -3231,6 +3349,202 @@ export type Database = {
           },
           {
             foreignKeyName: "landing_pages_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_stage_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          from_stage: string | null
+          id: string
+          lead_id: string
+          note: string | null
+          to_stage: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          lead_id: string
+          note?: string | null
+          to_stage: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          from_stage?: string | null
+          id?: string
+          lead_id?: string
+          note?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_stage_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          ad_campaign: string | null
+          ad_name: string | null
+          ad_set: string | null
+          booking_id: string | null
+          campaign: string | null
+          closed_at: string | null
+          companions: string | null
+          converted_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          estimated_value: number | null
+          external_submission_id: string | null
+          first_response_at: string | null
+          form_slug: string | null
+          id: string
+          landing_page_url: string | null
+          last_activity_at: string
+          lead_type: string
+          lost_notes: string | null
+          lost_reason: string | null
+          medium: string | null
+          next_action_date: string | null
+          next_action_note: string | null
+          notes: string | null
+          owner_id: string | null
+          partner: string | null
+          passengers: number | null
+          priority: string
+          referrer: string | null
+          source: string | null
+          stage: string
+          submission_id: string | null
+          tour_id: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          ad_campaign?: string | null
+          ad_name?: string | null
+          ad_set?: string | null
+          booking_id?: string | null
+          campaign?: string | null
+          closed_at?: string | null
+          companions?: string | null
+          converted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          estimated_value?: number | null
+          external_submission_id?: string | null
+          first_response_at?: string | null
+          form_slug?: string | null
+          id?: string
+          landing_page_url?: string | null
+          last_activity_at?: string
+          lead_type?: string
+          lost_notes?: string | null
+          lost_reason?: string | null
+          medium?: string | null
+          next_action_date?: string | null
+          next_action_note?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          partner?: string | null
+          passengers?: number | null
+          priority?: string
+          referrer?: string | null
+          source?: string | null
+          stage?: string
+          submission_id?: string | null
+          tour_id?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          ad_campaign?: string | null
+          ad_name?: string | null
+          ad_set?: string | null
+          booking_id?: string | null
+          campaign?: string | null
+          closed_at?: string | null
+          companions?: string | null
+          converted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          estimated_value?: number | null
+          external_submission_id?: string | null
+          first_response_at?: string | null
+          form_slug?: string | null
+          id?: string
+          landing_page_url?: string | null
+          last_activity_at?: string
+          lead_type?: string
+          lost_notes?: string | null
+          lost_reason?: string | null
+          medium?: string | null
+          next_action_date?: string | null
+          next_action_note?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          partner?: string | null
+          passengers?: number | null
+          priority?: string
+          referrer?: string | null
+          source?: string | null
+          stage?: string
+          submission_id?: string | null
+          tour_id?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "landing_page_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_tour_id_fkey"
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
@@ -5491,6 +5805,70 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tour_inclusion_items_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_interests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          interest_level: string
+          lead_id: string | null
+          notes: string | null
+          source: string | null
+          status: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          interest_level?: string
+          lead_id?: string | null
+          notes?: string | null
+          source?: string | null
+          status?: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          interest_level?: string
+          lead_id?: string | null
+          notes?: string | null
+          source?: string | null
+          status?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_interests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_interests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_interests_tour_id_fkey"
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
