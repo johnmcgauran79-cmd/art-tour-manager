@@ -34,6 +34,7 @@ export const useEntityResolver = (refs: EntityRefInput[]) => {
       activity: new Set(),
       tour: new Set(),
       contact: new Set(),
+      lead: new Set(),
     };
     refs.forEach((r) => map[r.entity_type].add(r.entity_id));
     return map;

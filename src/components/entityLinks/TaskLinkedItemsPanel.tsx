@@ -31,6 +31,7 @@ const entityIcon: Record<EntityType, typeof Briefcase> = {
   activity: ActivityIcon,
   tour: MapPin,
   contact: User,
+  lead: User,
 };
 
 /**

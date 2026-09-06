@@ -80,6 +80,7 @@ const entityIcon: Record<EntityType, typeof Briefcase> = {
   activity: ActivityIcon,
   tour: MapPin,
   contact: User,
+  lead: User,
 };
 
 const entityChipClass: Record<EntityType, string> = {
@@ -88,6 +89,7 @@ const entityChipClass: Record<EntityType, string> = {
   activity: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200",
   tour: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200",
   contact: "bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/40 dark:text-pink-200",
+  lead: "bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-200",
 };
 
 const Chip = ({
