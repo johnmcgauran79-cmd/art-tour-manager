@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,12 @@ interface PublicPage {
   submit_button_text: string | null;
   fields: unknown;
   form_type: "interest" | "booking";
+  success_redirect_url: string | null;
+  show_country: boolean | null;
+  show_travellers: boolean | null;
+  show_previous_traveller: boolean | null;
+  show_preferred_contact: boolean | null;
+  allow_multiple_tours: boolean | null;
   brand?: {
     name: string;
     logo_url: string | null;
@@ -60,6 +66,7 @@ interface PaxRow {
 }
 
 const ROOM_TYPES = ["Single", "Twin share", "Double", "Triple"];
+const CONTACT_METHODS = ["Email", "Phone call", "Text message"];
 
 /**
  * Public register-interest / booking form. No login required — reads the page
@@ -67,6 +74,14 @@ const ROOM_TYPES = ["Single", "Twin share", "Double", "Triple"];
  */
 export default function PublicForm() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const embedded = searchParams.get("embed") === "1";
+  /** Stable reference so a retried or double-tapped submit is only stored once. */
+  const submissionUid = useRef(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
   const [page, setPage] = useState<PublicPage | null>(null);
   const [tours, setTours] = useState<PublicTour[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +99,10 @@ export default function PublicForm() {
     message: "",
     consent: false,
     honeypot: "",
+    country: "",
+    travellers: "",
+    previous_traveller: "",
+    preferred_contact: "",
     room_type: "",
     bedding: "",
     emergency_contact: "",
@@ -109,6 +128,36 @@ export default function PublicForm() {
       setLoading(false);
     })();
   }, [slug]);
+
+  /* Marketing attribution captured from the page URL, so Google Ads / EDM
+     traffic can be told apart later. */
+  const attribution = useMemo(
+    () => ({
+      utm_source: searchParams.get("utm_source") || "",
+      utm_medium: searchParams.get("utm_medium") || "",
+      utm_campaign: searchParams.get("utm_campaign") || "",
+      utm_content: searchParams.get("utm_content") || "",
+      utm_term: searchParams.get("utm_term") || "",
+      referrer: searchParams.get("ref") || document.referrer || "",
+      landing_page_url: window.location.href,
+    }),
+    [searchParams]
+  );
+
+  /* When embedded in an iframe, tell the parent page how tall we are so the
+     form never scrolls inside a small box. */
+  useEffect(() => {
+    if (!embedded) return;
+    const send = () =>
+      window.parent?.postMessage(
+        { type: "art-form-height", slug, height: document.body.scrollHeight },
+        "*"
+      );
+    send();
+    const observer = new ResizeObserver(send);
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, [embedded, slug, page, done]);
 
   const isBooking = page?.form_type === "booking";
   const accent = page?.brand?.color_button || page?.brand?.color_primary || undefined;
@@ -146,6 +195,13 @@ export default function PublicForm() {
     const { data, error: fnError } = await supabase.functions.invoke("marketing-submit-lead", {
       body: {
         slug,
+        submission_uid: submissionUid.current,
+        attribution,
+        country: form.country,
+        travellers: form.travellers ? Number(form.travellers) : null,
+        previous_traveller:
+          form.previous_traveller === "" ? null : form.previous_traveller === "yes",
+        preferred_contact: form.preferred_contact,
         first_name: form.first_name,
         last_name: form.last_name,
         email: form.email,
@@ -186,6 +242,13 @@ export default function PublicForm() {
       return;
     }
     setDone((data as any)?.thank_you || page?.thank_you_message || "Thanks — we'll be in touch.");
+    const redirect = (data as any)?.redirect_url || page?.success_redirect_url;
+    if (redirect) {
+      if (embedded) window.parent?.postMessage({ type: "art-form-redirect", url: redirect }, "*");
+      window.setTimeout(() => {
+        (embedded ? window.parent || window : window).location.href = redirect;
+      }, 1200);
+    }
   };
 
   if (loading) {
@@ -209,9 +272,9 @@ export default function PublicForm() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/40 py-8">
-      <div className="mx-auto w-full max-w-2xl px-4">
-        {page.brand?.logo_url && (
+    <div className={embedded ? "bg-transparent py-2" : "min-h-screen bg-muted/40 py-8"}>
+      <div className={embedded ? "mx-auto w-full max-w-2xl px-2" : "mx-auto w-full max-w-2xl px-4"}>
+        {!embedded && page.brand?.logo_url && (
           <img
             src={page.brand.logo_url}
             alt={page.brand.name}
@@ -219,8 +282,8 @@ export default function PublicForm() {
           />
         )}
 
-        <Card>
-          {page.hero_image_url && (
+        <Card className={embedded ? "border-0 shadow-none" : undefined}>
+          {!embedded && page.hero_image_url && (
             <img
               src={page.hero_image_url}
               alt={page.title}
@@ -310,6 +373,71 @@ export default function PublicForm() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {page.show_country && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="country">Country</Label>
+                      <Input
+                        id="country"
+                        value={form.country}
+                        onChange={(e) => setForm({ ...form, country: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  {page.show_travellers !== false && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="travellers">How many travelling?</Label>
+                      <Input
+                        id="travellers"
+                        type="number"
+                        min={1}
+                        max={99}
+                        inputMode="numeric"
+                        value={form.travellers}
+                        onChange={(e) => setForm({ ...form, travellers: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  {page.show_previous_traveller !== false && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="previous_traveller">Travelled with us before?</Label>
+                      <Select
+                        value={form.previous_traveller}
+                        onValueChange={(previous_traveller) =>
+                          setForm({ ...form, previous_traveller })
+                        }
+                      >
+                        <SelectTrigger id="previous_traveller">
+                          <SelectValue placeholder="Please choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {page.show_preferred_contact && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="preferred_contact">Preferred contact method</Label>
+                      <Select
+                        value={form.preferred_contact}
+                        onValueChange={(preferred_contact) =>
+                          setForm({ ...form, preferred_contact })
+                        }
+                      >
+                        <SelectTrigger id="preferred_contact">
+                          <SelectValue placeholder="Please choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONTACT_METHODS.map((m) => (
+                            <SelectItem key={m} value={m}>
+                              {m}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 {tours.length > 0 && (
@@ -592,7 +720,7 @@ export default function PublicForm() {
           </CardContent>
         </Card>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
+        <p className={embedded ? "hidden" : "mt-6 text-center text-xs text-muted-foreground"}>
           {page.brand?.name || "Australian Racing Tours"}
           {page.brand?.company_phone ? ` · ${page.brand.company_phone}` : ""}
         </p>

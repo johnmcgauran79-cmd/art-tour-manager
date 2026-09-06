@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useBrands } from "@/hooks/useBrands";
 import { useTours } from "@/hooks/useTours";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import {
   useDeleteLandingPage,
   useLandingPages,
@@ -50,6 +51,28 @@ import {
 import { parseFormFields } from "@/lib/marketing/formFields";
 import { FormFieldsEditor } from "./FormFieldsEditor";
 
+
+/**
+ * WordPress embed: a plain iframe (no ART credentials in the page) that resizes
+ * itself from the height messages the form posts, and follows redirects.
+ */
+const embedSnippet = (url: string, title: string, slug: string) => `<iframe
+  id="art-form-${slug}"
+  src="${url}?embed=1"
+  title="${title.replace(/"/g, "&quot;")}"
+  loading="lazy"
+  style="width:100%;min-height:760px;border:0;overflow:hidden"
+  scrolling="no"></iframe>
+<script>
+(function(){
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.slug !== "${slug}") return;
+    var f = document.getElementById("art-form-${slug}");
+    if (e.data.type === "art-form-height" && f) f.style.height = (e.data.height + 24) + "px";
+    if (e.data.type === "art-form-redirect" && e.data.url) window.location.href = e.data.url;
+  });
+})();
+</script>`;
 
 const slugify = (s: string) =>
   s
@@ -70,6 +93,7 @@ export function LandingPagesTab() {
 
   const [open, setOpen] = useState(false);
   const { data: allTags } = useTags();
+  const { data: emailTemplates = [] } = useEmailTemplates();
   const [editing, setEditing] = useState<Partial<LandingPage> | null>(null);
 
   const publicUrl = (slug?: string) => `${window.location.origin}/f/${slug || ""}`;
@@ -198,10 +222,7 @@ export function LandingPagesTab() {
                   size="sm"
                   className="gap-1.5"
                   onClick={() =>
-                    copy(
-                      `<iframe src="${publicUrl(p.slug)}" style="width:100%;min-height:900px;border:0" title="${p.title}"></iframe>`,
-                      "Embed code"
-                    )
+                    copy(embedSnippet(publicUrl(p.slug), p.title, p.slug), "Embed code")
                   }
                 >
                   <Copy className="h-3.5 w-3.5" /> Embed
@@ -506,6 +527,104 @@ export function LandingPagesTab() {
                     ))}
                   </div>
                 </ScrollArea>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label>Enquiry type recorded</Label>
+                  <Input
+                    value={editing.lead_type || ""}
+                    placeholder="register_interest"
+                    onChange={(e) => setEditing({ ...editing, lead_type: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Follow-up task due in (days)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={60}
+                    value={editing.followup_due_days ?? ""}
+                    placeholder="1"
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        followup_due_days: e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Task priority</Label>
+                  <Select
+                    value={editing.default_priority || "medium"}
+                    onValueChange={(default_priority) => setEditing({ ...editing, default_priority })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["low", "medium", "high", "critical"].map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {v}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-md border p-3">
+                <Label className="text-sm font-semibold">Questions shown on the form</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {[
+                    ["show_travellers", "How many travelling", true],
+                    ["show_previous_traveller", "Travelled with us before", true],
+                    ["show_country", "Country", false],
+                    ["show_preferred_contact", "Preferred contact method", false],
+                    ["allow_multiple_tours", "Allow more than one tour", true],
+                  ].map(([key, label, dflt]) => (
+                    <label key={key as string} className="flex items-center gap-2 text-sm">
+                      <Switch
+                        checked={
+                          (editing as any)[key as string] ?? (dflt as boolean)
+                        }
+                        onCheckedChange={(v) => setEditing({ ...editing, [key as string]: v })}
+                      />
+                      <span>{label as string}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-md border p-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={editing.ack_enabled ?? false}
+                    onCheckedChange={(ack_enabled) => setEditing({ ...editing, ack_enabled })}
+                  />
+                  <span>Send a thank-you email when someone submits this form</span>
+                </label>
+                {editing.ack_enabled && (
+                  <div className="space-y-1.5">
+                    <Label>Email used</Label>
+                    <Select
+                      value={editing.ack_template_id || ""}
+                      onValueChange={(ack_template_id) => setEditing({ ...editing, ack_template_id })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose an email template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(emailTemplates as any[]).map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <FormFieldsEditor

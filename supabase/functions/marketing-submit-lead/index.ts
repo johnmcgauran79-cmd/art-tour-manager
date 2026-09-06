@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 import { postTeamsMessage, escapeHtml } from "../_shared/teamsPost.ts";
+import { processSubmission, saveIntakeResult } from "../_shared/leadIntake.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,12 +15,18 @@ const json = (body: unknown, status = 200) =>
   });
 
 const ADMIN_URL = "https://admin.australianracingtours.com.au";
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const clean = (v: unknown, max = 500) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
+const cleanUrl = (v: unknown) => clean(v, 500).replace(/[<>"']/g, "");
 
-/** Public register-interest form handler. */
+/**
+ * Public form endpoint (register interest, booking and general enquiry forms).
+ *
+ * The submission is stored verbatim first so nothing can be lost, then the
+ * Phase 2 intake pipeline creates/matches the contact, lead, tour interests,
+ * timeline activity and follow-up task.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -36,12 +42,23 @@ Deno.serve(async (req) => {
     const lastName = clean(body?.last_name, 100);
     const phone = clean(body?.phone, 50);
     const state = clean(body?.state, 60);
+    const country = clean(body?.country, 80);
     const message = clean(body?.message, 2000);
+    const preferredContact = clean(body?.preferred_contact, 30);
+    const travellersRaw = Number(body?.travellers);
+    const travellers =
+      Number.isFinite(travellersRaw) && travellersRaw > 0 && travellersRaw < 200
+        ? Math.round(travellersRaw)
+        : null;
+    const previousTraveller =
+      body?.previous_traveller === true ? true : body?.previous_traveller === false ? false : null;
     const consent = body?.consent === true;
     const extra = body?.extra && typeof body.extra === "object" ? body.extra : {};
+    const submissionUid = clean(body?.submission_uid, 60) || crypto.randomUUID();
     const selectedTourIds: string[] = Array.isArray(body?.tour_ids)
       ? body.tour_ids.filter((t: unknown) => typeof t === "string").slice(0, 20)
       : [];
+    const attribution = body?.attribution && typeof body.attribution === "object" ? body.attribution : {};
 
     if (!slug) return json({ error: "Missing form" }, 400);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
@@ -60,6 +77,17 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!page || !page.is_active) return json({ error: "This form is no longer available" }, 404);
 
+    const thankYou = page.thank_you_message || "Thanks — we'll be in touch shortly.";
+
+    /* Idempotency: the same submission reference is only ever processed once,
+       so a double-tap or a network retry cannot duplicate CRM records. */
+    const { data: dupe } = await supabase
+      .from("landing_page_submissions")
+      .select("id")
+      .eq("submission_uid", submissionUid)
+      .maybeSingle();
+    if (dupe) return json({ ok: true, duplicate: true, thank_you: thankYou });
+
     // Basic rate limit: max 5 submissions per email per hour.
     const hourAgo = new Date(Date.now() - 3600_000).toISOString();
     const { count: recent } = await supabase
@@ -69,62 +97,13 @@ Deno.serve(async (req) => {
       .gte("created_at", hourAgo);
     if ((recent || 0) >= 5) return json({ error: "Too many submissions, please try later" }, 429);
 
-    /* 1. Match or create the contact — never overwrite existing names. */
-    const { data: existing } = await supabase
-      .from("customers")
-      .select("id, first_name, last_name, phone, state, lead_stage, marketing_consent")
-      .ilike("email", email)
-      .maybeSingle();
-
-    let customerId = existing?.id as string | undefined;
-
-    if (customerId) {
-      const updates: Record<string, unknown> = {};
-      if (!existing?.phone && phone) updates.phone = phone;
-      if (!existing?.state && state) updates.state = state;
-      if (existing?.lead_stage === "none") updates.lead_stage = "new";
-      if (!existing?.marketing_consent && consent) {
-        updates.marketing_consent = true;
-        updates.marketing_consent_at = new Date().toISOString();
-        updates.marketing_consent_source = `Landing page: ${page.slug}`;
-      }
-      if (page.lead_source) updates.lead_source = page.lead_source;
-      if (page.tour_id || selectedTourIds[0])
-        updates.interested_tour_id = page.tour_id || selectedTourIds[0];
-      if (page.lead_owner_id) updates.lead_owner_id = page.lead_owner_id;
-      if (Object.keys(updates).length) {
-        await supabase.from("customers").update(updates).eq("id", customerId);
-      }
-    } else {
-      const { data: created, error: cErr } = await supabase
-        .from("customers")
-        .insert({
-          first_name: firstName,
-          last_name: lastName || "",
-          email,
-          phone: phone || null,
-          state: state || null,
-          lead_stage: "new",
-          lead_source: page.lead_source || `Landing page: ${page.slug}`,
-          lead_owner_id: page.lead_owner_id || null,
-          interested_tour_id: page.tour_id || selectedTourIds[0] || null,
-          lead_notes: message || null,
-          marketing_consent: consent,
-          marketing_consent_at: consent ? new Date().toISOString() : null,
-          marketing_consent_source: consent ? `Landing page: ${page.slug}` : null,
-        })
-        .select("id")
-        .maybeSingle();
-      if (cErr) throw cErr;
-      customerId = created?.id;
-    }
-
-    /* 2. Store the submission with proof of consent wording. */
-    const { data: submission } = await supabase
+    /* 1. Store the submission exactly as sent — this record is never rewritten
+          when the contact is later edited. */
+    const { data: submission, error: subErr } = await supabase
       .from("landing_page_submissions")
       .insert({
         landing_page_id: page.id,
-        customer_id: customerId || null,
+        submission_uid: submissionUid,
         payload: extra,
         form_type: page.form_type || "interest",
         tour_ids: selectedTourIds,
@@ -133,219 +112,49 @@ Deno.serve(async (req) => {
         email,
         phone,
         state,
+        country: country || null,
+        travellers,
+        previous_traveller: previousTraveller,
+        preferred_contact: preferredContact || null,
         message,
         tour_id: page.tour_id || null,
         consent_given: consent,
         consent_text: consent ? page.consent_text : null,
+        utm_source: clean((attribution as any).utm_source, 120) || null,
+        utm_medium: clean((attribution as any).utm_medium, 120) || null,
+        utm_campaign: clean((attribution as any).utm_campaign, 200) || null,
+        utm_content: clean((attribution as any).utm_content, 200) || null,
+        utm_term: clean((attribution as any).utm_term, 200) || null,
+        referrer: cleanUrl((attribution as any).referrer) || null,
+        landing_page_url: cleanUrl((attribution as any).landing_page_url) || null,
+        processing_status: "pending",
       })
-      .select("id")
-      .maybeSingle();
+      .select("*")
+      .single();
+    if (subErr) throw subErr;
 
     await supabase
       .from("landing_pages")
       .update({ submission_count: (page.submission_count || 0) + 1 })
       .eq("id", page.id);
 
-    /* 2a. Apply the form's automatic tags to the contact (e.g. "Registered
-       interest", "Facebook lead"). Duplicates are ignored. */
-    const autoTagIds: string[] = Array.isArray(page.auto_tag_ids) ? page.auto_tag_ids : [];
-    if (customerId && autoTagIds.length) {
-      const { error: tagErr } = await supabase
-        .from("contact_tags")
-        .upsert(
-          autoTagIds.map((tag_id: string) => ({ customer_id: customerId, tag_id })),
-          { onConflict: "customer_id,tag_id", ignoreDuplicates: true }
-        );
-      if (tagErr) console.error(`Auto-tagging failed: ${tagErr.message}`);
-    }
+    /* 2. Run the CRM intake pipeline. Failures are recorded against the
+          submission so it can be retried from ART Admin. */
+    const result = await processSubmission(supabase, submission, page);
+    await saveIntakeResult(supabase, submission.id, result);
 
-    if (consent && customerId) {
-      await supabase
-        .from("marketing_preferences")
-        .upsert({ email, customer_id: customerId, subscribed: true }, { onConflict: "email" });
-    }
-
-    /* 2b. Always create a linked task so nothing is lost, and record the
-       contact entity token so it appears under the contact's history. */
-    const formType = page.form_type === "booking" ? "booking" : "interest";
-    const fullName = `${firstName} ${lastName}`.trim();
-    const contactToken = customerId ? `[[contact:${customerId}|${fullName}]]` : fullName;
-
-    const tourNames: string[] = [];
-    const tourIdsForTask = selectedTourIds.length
-      ? selectedTourIds
-      : page.tour_id
-      ? [page.tour_id]
-      : [];
-    if (tourIdsForTask.length) {
-      const { data: tourRows } = await supabase
-        .from("tours")
-        .select("id, name, start_date")
-        .in("id", tourIdsForTask);
-      for (const t of tourRows || []) {
-        tourNames.push(`[[tour:${t.id}|${t.name}]]`);
-      }
-    }
-
-    const detailLines: string[] = [
-      `Contact: ${contactToken}`,
-      `Email: ${email}`,
-      phone ? `Phone: ${phone}` : "",
-      state ? `State: ${state}` : "",
-      tourNames.length
-        ? `${formType === "booking" ? "Tour to book" : "Tours of interest"}:\n- ${tourNames.join(
-            "\n- "
-          )}`
-        : "",
-    ];
-
-    if (formType === "booking") {
-      const pax = Array.isArray((extra as any).passengers) ? (extra as any).passengers : [];
-      if (pax.length) {
-        detailLines.push(
-          `Passengers (${pax.length}):\n${pax
-            .map(
-              (p: any, i: number) =>
-                `- Pax ${i + 1}: ${clean(p?.first_name, 100)} ${clean(p?.last_name, 100)}`.trim() +
-                (clean(p?.dietary, 200) ? ` — dietary: ${clean(p.dietary, 200)}` : "")
-            )
-            .join("\n")}`
-        );
-      }
-      const roomType = clean((extra as any).room_type, 60);
-      const bedding = clean((extra as any).bedding, 60);
-      const requests = clean((extra as any).special_requests, 1000);
-      const emergency = clean((extra as any).emergency_contact, 300);
-      if (roomType) detailLines.push(`Room type: ${roomType}`);
-      if (bedding) detailLines.push(`Bedding: ${bedding}`);
-      if (emergency) detailLines.push(`Emergency contact: ${emergency}`);
-      if (requests) detailLines.push(`Requests: ${requests}`);
-    }
-
-    // Answers to the form's own custom questions, in the order they were asked.
-    const answers = Array.isArray((extra as any).answers) ? (extra as any).answers : [];
-    const answerLines = answers
-      .map((a: any) => {
-        const label = clean(a?.label, 200);
-        const value = Array.isArray(a?.value)
-          ? a.value.map((v: any) => clean(v, 200)).filter(Boolean).join(", ")
-          : clean(a?.value, 1000);
-        return label && value ? `${label}: ${value}` : "";
-      })
-      .filter(Boolean);
-    if (answerLines.length) detailLines.push(answerLines.join("\n"));
-
-    if (message) detailLines.push(`Message: "${message}"`);
-    detailLines.push(`Submitted via: ${page.title} (/f/${page.slug})`);
-    detailLines.push(consent ? "Marketing consent: given" : "Marketing consent: not given");
-
-
-    const taskTitle =
-      formType === "booking"
-        ? `Booking received - send invoice - ${fullName}`
-        : `Register interest received - ${fullName}`;
-
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + (formType === "booking" ? 1 : 2));
-
-    const { data: mainTask, error: taskErr } = await supabase
-      .from("tasks")
-      .insert({
-        title: taskTitle,
-        description: detailLines.filter(Boolean).join("\n"),
-        status: "not_started",
-        priority: formType === "booking" ? "high" : "medium",
-        category: formType === "booking" ? "booking" : "marketing",
-        due_date: dueDate.toISOString().slice(0, 10),
-        tour_id: tourIdsForTask.length === 1 ? tourIdsForTask[0] : null,
-        created_by: page.lead_owner_id || null,
-      })
-      .select("id")
-      .maybeSingle();
-    if (taskErr) console.error("Failed to create form task:", taskErr.message);
-
-    if (mainTask?.id) {
-      /* Assignees + followers configured on the form, always including the
-         task owner so nothing lands unassigned. */
-      const assigneeIds = Array.from(
-        new Set(
-          [
-            ...(Array.isArray(page.task_assignee_ids) ? page.task_assignee_ids : []),
-            page.lead_owner_id,
-          ].filter(Boolean) as string[]
-        )
-      );
-      const watcherIds = Array.from(
-        new Set(
-          ((Array.isArray(page.task_watcher_ids) ? page.task_watcher_ids : []) as string[]).filter(
-            (id) => id && !assigneeIds.includes(id)
-          )
-        )
-      );
-
-      if (assigneeIds.length) {
-        const { error: aErr } = await supabase.from("task_assignments").insert(
-          assigneeIds.map((user_id) => ({ task_id: mainTask.id, user_id }))
-        );
-        if (aErr) console.error("Failed to assign form task:", aErr.message);
-      }
-      if (watcherIds.length) {
-        const { error: wErr } = await supabase.from("task_watchers").insert(
-          watcherIds.map((user_id) => ({ task_id: mainTask.id, user_id }))
-        );
-        if (wErr) console.error("Failed to add form task followers:", wErr.message);
-      }
-
-      /* Teams + in-app notification, same path as manual task assignment. */
-      const recipients = [...assigneeIds, ...watcherIds];
-      if (recipients.length) {
-        const actorUserId = page.created_by || page.lead_owner_id || recipients[0];
-        try {
-          await supabase.functions.invoke("send-task-notification", {
-            body: {
-              type: "assignment",
-              taskId: mainTask.id,
-              recipientUserIds: recipients,
-              actorUserId,
-              message:
-                formType === "booking"
-                  ? `New booking request from ${fullName} via ${page.title}`
-                  : `New enquiry from ${fullName} via ${page.title}`,
-            },
-          });
-        } catch (err) {
-          console.error(
-            "Task notification failed:",
-            err instanceof Error ? err.message : String(err)
-          );
-        }
-      }
-
-      // The task description carries a [[contact:uuid|Name]] token, which the
-      // sync_task_description_links trigger turns into a task_entity_links row.
-      if (submission?.id) {
-        await supabase
-          .from("landing_page_submissions")
-          .update({ task_id: mainTask.id })
-          .eq("id", submission.id);
-      }
-    }
-
-
-    /* Teams notification for the whole team when enabled on the page. */
-    if (page.notify_teams !== false) {
+    if (result.status === "failed") {
       const html = `
-<p><strong>${formType === "booking" ? "New booking request" : "New register-interest enquiry"} — ${escapeHtml(
-        page.title
-      )}</strong></p>
-<p>${escapeHtml(fullName)} (${escapeHtml(email)})${phone ? ` · ${escapeHtml(phone)}` : ""}</p>
-${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
-<p><a href="${ADMIN_URL}${mainTask?.id ? `/tasks/${mainTask.id}` : "/marketing?mtab=leads"}">Open in ART</a></p>`.trim();
-      const res = await postTeamsMessage(supabase, html);
-      if (!res.success) console.log("Teams notify skipped:", res.reason);
+<p><strong>Form submission needs attention — ${escapeHtml(page.title)}</strong></p>
+<p>${escapeHtml(`${firstName} ${lastName}`.trim())} (${escapeHtml(email)})</p>
+<p>Processing failed at step ${escapeHtml(result.step || "unknown")}: ${escapeHtml(
+        result.error || ""
+      )}</p>
+<p><a href="${ADMIN_URL}/marketing?mtab=submissions">Review submissions in ART</a></p>`.trim();
+      await postTeamsMessage(supabase, html);
     }
 
-    /* 3. Run matching automation rules. */
+    /* 3. Marketing automation rules (unchanged behaviour). */
     const { data: rules } = await supabase
       .from("marketing_automation_rules")
       .select("*")
@@ -359,33 +168,8 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
       for (const action of rule.actions || []) {
         let summary = "";
         try {
-          if (action.type === "send_template" && action.template_id) {
-            const { data: tpl } = await supabase
-              .from("email_templates")
-              .select("subject, content")
-              .eq("id", action.template_id)
-              .maybeSingle();
-            if (tpl) {
-              const fill = (s: string) =>
-                (s || "")
-                  .replace(/\{\{\s*first_name\s*\}\}/gi, firstName)
-                  .replace(/\{\{\s*last_name\s*\}\}/gi, lastName)
-                  .replace(/\{\{\s*email\s*\}\}/gi, email);
-              const sent = await resend.emails.send({
-                from: `${Deno.env.get("MARKETING_FROM_NAME") || "Australian Racing Tours"} <${
-                  Deno.env.get("MARKETING_FROM_EMAIL") || "info@australianracingtours.com.au"
-                }>`,
-                to: [email],
-                subject: fill(tpl.subject),
-                html: fill(tpl.content),
-              });
-              if ((sent as any)?.error) throw new Error((sent as any).error.message);
-              summary = `Sent template email to ${email}`;
-            }
-          } else if (action.type === "create_task" && action.title) {
-            const due = new Date();
-            due.setDate(due.getDate() + (Number(action.due_in_days) || 1));
-            const dueStr = due.toISOString().slice(0, 10);
+          if (action.type === "create_task" && action.title) {
+            const due = new Date(Date.now() + (Number(action.due_in_days) || 1) * 86400000);
             const { data: task } = await supabase
               .from("tasks")
               .insert({
@@ -396,52 +180,45 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
                 status: "not_started",
                 priority: "medium",
                 category: "marketing",
-                due_date: dueStr,
+                due_date: due.toISOString().slice(0, 10),
                 created_by: page.lead_owner_id || null,
+                customer_id: result.customer_id,
+                lead_id: result.lead_id,
+                crm_type: "sales_follow_up",
               })
               .select("id")
               .maybeSingle();
             const assignee = action.assignee_id || page.lead_owner_id;
-            if (task?.id && assignee) {
-              await supabase
-                .from("task_assignments")
-                .insert({ task_id: task.id, user_id: assignee });
-            }
+            if (task?.id && assignee)
+              await supabase.from("task_assignments").insert({ task_id: task.id, user_id: assignee });
             summary = `Created task "${action.title}"`;
           } else if (action.type === "notify_teams") {
-            const html = `
-<p><strong>New enquiry — ${escapeHtml(page.title)}</strong></p>
-<p>${escapeHtml(`${firstName} ${lastName}`.trim())} (${escapeHtml(email)})${
-              phone ? ` · ${escapeHtml(phone)}` : ""
-            }${state ? ` · ${escapeHtml(state)}` : ""}</p>
-${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
-<p><a href="${ADMIN_URL}/marketing?mtab=leads">Open the leads pipeline</a></p>`.trim();
-            const res = await postTeamsMessage(supabase, html);
+            const res = await postTeamsMessage(
+              supabase,
+              `<p><strong>New enquiry — ${escapeHtml(page.title)}</strong></p><p>${escapeHtml(
+                `${firstName} ${lastName}`.trim()
+              )} (${escapeHtml(email)})</p><p><a href="${ADMIN_URL}/leads/${result.lead_id}">Open the enquiry</a></p>`
+            );
             summary = res.success ? "Posted Teams notification" : `Teams skipped: ${res.reason}`;
-          } else if (action.type === "add_tag" && customerId) {
+          } else if (action.type === "add_tag" && result.customer_id) {
             const ids: string[] = action.tag_ids || (action.tag_id ? [action.tag_id] : []);
             if (ids.length) {
-              const { error: tErr } = await supabase
-                .from("contact_tags")
-                .upsert(
-                  ids.map((tag_id: string) => ({ customer_id: customerId, tag_id })),
-                  { onConflict: "customer_id,tag_id", ignoreDuplicates: true }
-                );
+              const { error: tErr } = await supabase.from("contact_tags").upsert(
+                ids.map((tag_id: string) => ({ customer_id: result.customer_id, tag_id })),
+                { onConflict: "customer_id,tag_id", ignoreDuplicates: true }
+              );
               if (tErr) throw tErr;
             }
             summary = `Applied ${ids.length} tag${ids.length === 1 ? "" : "s"}`;
-          } else if (action.type === "set_stage" && action.lead_stage && customerId) {
-            await supabase
-              .from("customers")
-              .update({ lead_stage: action.lead_stage })
-              .eq("id", customerId);
+          } else if (action.type === "set_stage" && action.lead_stage && result.lead_id) {
+            await supabase.from("leads").update({ stage: action.lead_stage }).eq("id", result.lead_id);
             summary = `Set lead stage to ${action.lead_stage}`;
           }
 
           await supabase.from("marketing_automation_log").insert({
             rule_id: rule.id,
-            customer_id: customerId || null,
-            submission_id: submission?.id || null,
+            customer_id: result.customer_id,
+            submission_id: submission.id,
             action_summary: summary || `Action ${action.type}`,
             success: true,
           });
@@ -450,8 +227,8 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
           console.error(`Automation rule ${rule.id} action ${action.type} failed: ${msg}`);
           await supabase.from("marketing_automation_log").insert({
             rule_id: rule.id,
-            customer_id: customerId || null,
-            submission_id: submission?.id || null,
+            customer_id: result.customer_id,
+            submission_id: submission.id,
             action_summary: `Action ${action.type} failed`,
             success: false,
             error_message: msg,
@@ -460,24 +237,15 @@ ${message ? `<p>"${escapeHtml(message)}"</p>` : ""}
       }
     }
 
-    /* 4. In-app notification for the lead owner. */
-    if (page.lead_owner_id) {
-      await supabase.from("user_notifications").insert({
-        user_id: page.lead_owner_id,
-        type: "system",
-        title: formType === "booking" ? "New booking request received" : "New enquiry received",
-        message: `${firstName} ${lastName} enquired via ${page.title} — open Marketing → Leads`,
-        related_id: customerId || null,
-      });
-    }
-
     return json({
       ok: true,
-      thank_you: page.thank_you_message || "Thanks — we'll be in touch shortly.",
+      submission_id: submission.id,
+      thank_you: thankYou,
+      redirect_url: page.success_redirect_url || null,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("marketing-submit-lead error:", msg);
-    return json({ error: msg }, 500);
+    return json({ error: "We couldn't record your enquiry — please try again or call us." }, 500);
   }
 });
