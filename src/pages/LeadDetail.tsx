@@ -38,6 +38,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { LeadDialog } from "@/components/crm/LeadDialog";
 import { LogActivityDialog } from "@/components/crm/LogActivityDialog";
 import { CrmActivityFeed } from "@/components/crm/CrmActivityFeed";
+import { SubmissionsList } from "@/components/crm/SubmissionsList";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import {
   useCrmConfig,
@@ -227,6 +228,7 @@ export default function LeadDetail() {
         <TabsList>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="history">Stage history</TabsTrigger>
         </TabsList>
 
@@ -236,6 +238,10 @@ export default function LeadDetail() {
 
         <TabsContent value="tasks" className="mt-4">
           <RelatedTasksSection entityType="lead" entityId={lead.id} title="Tasks for this enquiry" />
+        </TabsContent>
+
+        <TabsContent value="forms" className="mt-4">
+          <SubmissionsList leadId={lead.id} title="Forms behind this enquiry" />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
