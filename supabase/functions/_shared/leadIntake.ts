@@ -561,7 +561,7 @@ ${submission.message ? `<p>"${escapeHtml(submission.message)}"</p>` : ""}
     return result;
   } catch (err) {
     result.status = "failed";
-    result.error = err instanceof Error ? err.message : String(err);
+    result.error = describeError(err);
     result.needs_review = true;
     console.error(`Lead intake failed at step ${result.step}: ${result.error}`);
     return result;
