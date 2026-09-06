@@ -51,6 +51,9 @@ export default function ContactDetail() {
   const contact = contactData;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logType, setLogType] = useState("call");
+
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
   const { data: contactComms, isLoading: contactCommsLoading } = useContactCommunications(
     contact?.id,
