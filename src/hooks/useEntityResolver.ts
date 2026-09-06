@@ -88,6 +88,23 @@ export const useEntityResolver = (refs: EntityRefInput[]) => {
           })()
         );
       }
+      if (grouped.lead.size) {
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("leads")
+              .select("id, lead_type, customers!leads_customer_id_fkey(first_name, last_name)")
+              .in("id", [...grouped.lead]);
+            (data || []).forEach((l: any) => {
+              const person = `${l.customers?.first_name || ""} ${l.customers?.last_name || ""}`.trim();
+              out[`lead:${l.id}`] = {
+                label: person || "Enquiry",
+                deleted: false,
+              };
+            });
+          })()
+        );
+      }
       if (grouped.hotel.size) {
         jobs.push(
           (async () => {
