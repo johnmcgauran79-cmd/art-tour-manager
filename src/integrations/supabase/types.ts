@@ -2261,6 +2261,7 @@ export type Database = {
           interested_tour_id: string | null
           keap_contact_id: string | null
           keap_match_checked_at: string | null
+          last_activity_at: string | null
           last_name: string
           latest_tour_end_date: string | null
           latest_tour_name: string | null
@@ -2269,11 +2270,17 @@ export type Database = {
           lead_owner_id: string | null
           lead_source: string | null
           lead_stage: Database["public"]["Enums"]["lead_stage"]
+          lifetime_bookings: number
+          lifetime_value: number
           marketing_consent: boolean
           marketing_consent_at: string | null
           marketing_consent_source: string | null
           medical_conditions: string | null
           notes: string | null
+          original_source: string | null
+          original_source_at: string | null
+          owner_id: string | null
+          partner_referral: string | null
           phone: string | null
           phone_missing_acknowledged_at: string | null
           preferred_name: string | null
@@ -2303,6 +2310,7 @@ export type Database = {
           interested_tour_id?: string | null
           keap_contact_id?: string | null
           keap_match_checked_at?: string | null
+          last_activity_at?: string | null
           last_name: string
           latest_tour_end_date?: string | null
           latest_tour_name?: string | null
@@ -2311,11 +2319,17 @@ export type Database = {
           lead_owner_id?: string | null
           lead_source?: string | null
           lead_stage?: Database["public"]["Enums"]["lead_stage"]
+          lifetime_bookings?: number
+          lifetime_value?: number
           marketing_consent?: boolean
           marketing_consent_at?: string | null
           marketing_consent_source?: string | null
           medical_conditions?: string | null
           notes?: string | null
+          original_source?: string | null
+          original_source_at?: string | null
+          owner_id?: string | null
+          partner_referral?: string | null
           phone?: string | null
           phone_missing_acknowledged_at?: string | null
           preferred_name?: string | null
@@ -2345,6 +2359,7 @@ export type Database = {
           interested_tour_id?: string | null
           keap_contact_id?: string | null
           keap_match_checked_at?: string | null
+          last_activity_at?: string | null
           last_name?: string
           latest_tour_end_date?: string | null
           latest_tour_name?: string | null
@@ -2353,11 +2368,17 @@ export type Database = {
           lead_owner_id?: string | null
           lead_source?: string | null
           lead_stage?: Database["public"]["Enums"]["lead_stage"]
+          lifetime_bookings?: number
+          lifetime_value?: number
           marketing_consent?: boolean
           marketing_consent_at?: string | null
           marketing_consent_source?: string | null
           medical_conditions?: string | null
           notes?: string | null
+          original_source?: string | null
+          original_source_at?: string | null
+          owner_id?: string | null
+          partner_referral?: string | null
           phone?: string | null
           phone_missing_acknowledged_at?: string | null
           preferred_name?: string | null
@@ -3163,19 +3184,28 @@ export type Database = {
           created_at: string
           customer_id: string | null
           email: string | null
+          external_submission_id: string | null
           first_name: string | null
           form_type: string
           id: string
           ip_hash: string | null
           landing_page_id: string | null
+          landing_page_url: string | null
           last_name: string | null
+          lead_id: string | null
           message: string | null
           payload: Json
           phone: string | null
+          referrer: string | null
           state: string | null
           task_id: string | null
           tour_id: string | null
           tour_ids: string[]
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           consent_given?: boolean
@@ -3183,19 +3213,28 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           email?: string | null
+          external_submission_id?: string | null
           first_name?: string | null
           form_type?: string
           id?: string
           ip_hash?: string | null
           landing_page_id?: string | null
+          landing_page_url?: string | null
           last_name?: string | null
+          lead_id?: string | null
           message?: string | null
           payload?: Json
           phone?: string | null
+          referrer?: string | null
           state?: string | null
           task_id?: string | null
           tour_id?: string | null
           tour_ids?: string[]
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           consent_given?: boolean
@@ -3203,19 +3242,28 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           email?: string | null
+          external_submission_id?: string | null
           first_name?: string | null
           form_type?: string
           id?: string
           ip_hash?: string | null
           landing_page_id?: string | null
+          landing_page_url?: string | null
           last_name?: string | null
+          lead_id?: string | null
           message?: string | null
           payload?: Json
           phone?: string | null
+          referrer?: string | null
           state?: string | null
           task_id?: string | null
           tour_id?: string | null
           tour_ids?: string[]
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
@@ -3230,6 +3278,13 @@ export type Database = {
             columns: ["landing_page_id"]
             isOneToOne: false
             referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -5064,12 +5119,16 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string
+          crm_type: string | null
+          customer_id: string | null
           depends_on_task_id: string | null
           description: string | null
           due_date: string | null
           id: string
           is_automated: boolean
           last_activity_at: string
+          lead_id: string | null
+          outcome: string | null
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           quick_update: string | null
@@ -5088,12 +5147,16 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by: string
+          crm_type?: string | null
+          customer_id?: string | null
           depends_on_task_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           is_automated?: boolean
           last_activity_at?: string
+          lead_id?: string | null
+          outcome?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           quick_update?: string | null
@@ -5112,12 +5175,16 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          crm_type?: string | null
+          customer_id?: string | null
           depends_on_task_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           is_automated?: boolean
           last_activity_at?: string
+          lead_id?: string | null
+          outcome?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           quick_update?: string | null
@@ -5131,10 +5198,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_depends_on_task_id_fkey"
             columns: ["depends_on_task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -7381,6 +7462,7 @@ export type Database = {
         | "activity"
         | "tour"
         | "contact"
+        | "lead"
       task_notif_channel: "off" | "email" | "teams" | "both"
       task_priority: "low" | "medium" | "high" | "critical"
       task_status:
@@ -7640,6 +7722,7 @@ export const Constants = {
         "activity",
         "tour",
         "contact",
+        "lead",
       ],
       task_notif_channel: ["off", "email", "teams", "both"],
       task_priority: ["low", "medium", "high", "critical"],
