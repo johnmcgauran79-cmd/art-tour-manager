@@ -1635,6 +1635,132 @@ export type Database = {
           },
         ]
       }
+      crm_lead_sources: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      crm_lead_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_lost: boolean
+          is_open: boolean
+          is_won: boolean
+          key: string
+          label: string
+          requires_next_action: boolean
+          sort_order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_lost?: boolean
+          is_open?: boolean
+          is_won?: boolean
+          key: string
+          label: string
+          requires_next_action?: boolean
+          sort_order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_lost?: boolean
+          is_open?: boolean
+          is_won?: boolean
+          key?: string
+          label?: string
+          requires_next_action?: boolean
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      crm_lead_types: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      crm_lost_reasons: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       crm_migration_contacts: {
         Row: {
           address_line1: string | null
