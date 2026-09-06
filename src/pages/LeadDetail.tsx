@@ -103,7 +103,10 @@ export default function LeadDetail() {
             <Badge className={priorityBadgeClass(lead.priority)}>
               {labelFor(LEAD_PRIORITIES, lead.priority)}
             </Badge>
-            <Badge variant="outline">{labelFor(config?.types || [], lead.lead_type, "key", "label")}</Badge>
+            <Badge variant="outline">
+              {config?.types.find((t) => t.key === lead.lead_type)?.label ||
+                lead.lead_type.replace(/_/g, " ")}
+            </Badge>
             {lead.tour?.name && <Badge variant="outline">{lead.tour.name}</Badge>}
           </div>
         </div>
@@ -232,7 +235,7 @@ export default function LeadDetail() {
         </TabsContent>
 
         <TabsContent value="tasks" className="mt-4">
-          <RelatedTasksSection entityType="lead" entityId={lead.id} entityLabel={name} />
+          <RelatedTasksSection entityType="lead" entityId={lead.id} title="Tasks for this enquiry" />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
