@@ -568,6 +568,22 @@ ${submission.message ? `<p>"${escapeHtml(submission.message)}"</p>` : ""}
   }
 }
 
+/** Readable message for any thrown value, including Supabase error objects. */
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    const parts = [e.message, e.details, e.hint, e.code].filter(Boolean).map(String);
+    if (parts.length) return parts.join(" | ");
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
+  }
+  return String(err);
+}
+
 /** Write the outcome of an intake run back onto the submission record. */
 export async function saveIntakeResult(
   supabase: any,
