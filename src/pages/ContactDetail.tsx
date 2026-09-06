@@ -26,6 +26,10 @@ import { useContactCommunications } from "@/hooks/useCommunications";
 import { CommunicationsTimeline } from "@/components/communications/CommunicationsTimeline";
 import { MessageSquare } from "lucide-react";
 import { PaymentReceiptsHistory } from "@/components/finance/PaymentReceiptsHistory";
+import { ContactCrmPanel } from "@/components/crm/ContactCrmPanel";
+import { ContactTimeline } from "@/components/crm/ContactTimeline";
+import { LogActivityDialog } from "@/components/crm/LogActivityDialog";
+import { PhoneCall, StickyNote, TrendingUp, History } from "lucide-react";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -47,6 +51,9 @@ export default function ContactDetail() {
   const contact = contactData;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logType, setLogType] = useState("call");
+
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
   const { data: contactComms, isLoading: contactCommsLoading } = useContactCommunications(
     contact?.id,
@@ -321,6 +328,16 @@ export default function ContactDetail() {
 
             {!isViewOnly && (
               <>
+                <Button variant="outline" size="sm" onClick={() => { setLogType("call"); setLogOpen(true); }}>
+                  <PhoneCall className="mr-2 h-4 w-4" />
+                  Log call
+                </Button>
+
+                <Button variant="outline" size="sm" onClick={() => { setLogType("note"); setLogOpen(true); }}>
+                  <StickyNote className="mr-2 h-4 w-4" />
+                  Add note
+                </Button>
+
                 <SendProfileUpdateButton
                   customerId={contact.id}
                   customerName={fullName}
@@ -364,6 +381,14 @@ export default function ContactDetail() {
           <TabsTrigger value="communications">
             <MessageSquare className="h-4 w-4 mr-2" />
             Communications
+          </TabsTrigger>
+          <TabsTrigger value="sales">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Sales
+          </TabsTrigger>
+          <TabsTrigger value="timeline">
+            <History className="h-4 w-4 mr-2" />
+            Timeline
           </TabsTrigger>
           <TabsTrigger value="leads">
             <CheckSquare className="h-4 w-4 mr-2" />
@@ -461,10 +486,28 @@ export default function ContactDetail() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="sales" className="space-y-4 mt-6">
+          {id && <ContactCrmPanel customerId={id} />}
+        </TabsContent>
+
+        <TabsContent value="timeline" className="space-y-4 mt-6">
+          {id && <ContactTimeline customerId={id} email={contact.email || null} />}
+        </TabsContent>
+
         <TabsContent value="leads" className="space-y-4 mt-6">
           {id && <ContactLeadHistory customerId={id} />}
         </TabsContent>
       </Tabs>
+
+      {id && (
+        <LogActivityDialog
+          open={logOpen}
+          onOpenChange={setLogOpen}
+          customerId={id}
+          contactName={fullName}
+          defaultType={logType}
+        />
+      )}
     </div>
   );
 }
