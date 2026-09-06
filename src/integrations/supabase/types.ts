@@ -3179,8 +3179,10 @@ export type Database = {
       }
       landing_page_submissions: {
         Row: {
+          ack_email_status: string | null
           consent_given: boolean
           consent_text: string | null
+          country: string | null
           created_at: string
           customer_id: string | null
           email: string | null
@@ -3193,14 +3195,26 @@ export type Database = {
           landing_page_url: string | null
           last_name: string | null
           lead_id: string | null
+          match_method: string | null
           message: string | null
+          needs_review: boolean
           payload: Json
           phone: string | null
+          preferred_contact: string | null
+          previous_traveller: boolean | null
+          processed_at: string | null
+          processing_error: string | null
+          processing_status: string
+          processing_step: string | null
           referrer: string | null
+          retry_count: number
+          review_note: string | null
           state: string | null
+          submission_uid: string | null
           task_id: string | null
           tour_id: string | null
           tour_ids: string[]
+          travellers: number | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -3208,8 +3222,10 @@ export type Database = {
           utm_term: string | null
         }
         Insert: {
+          ack_email_status?: string | null
           consent_given?: boolean
           consent_text?: string | null
+          country?: string | null
           created_at?: string
           customer_id?: string | null
           email?: string | null
@@ -3222,14 +3238,26 @@ export type Database = {
           landing_page_url?: string | null
           last_name?: string | null
           lead_id?: string | null
+          match_method?: string | null
           message?: string | null
+          needs_review?: boolean
           payload?: Json
           phone?: string | null
+          preferred_contact?: string | null
+          previous_traveller?: boolean | null
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          processing_step?: string | null
           referrer?: string | null
+          retry_count?: number
+          review_note?: string | null
           state?: string | null
+          submission_uid?: string | null
           task_id?: string | null
           tour_id?: string | null
           tour_ids?: string[]
+          travellers?: number | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -3237,8 +3265,10 @@ export type Database = {
           utm_term?: string | null
         }
         Update: {
+          ack_email_status?: string | null
           consent_given?: boolean
           consent_text?: string | null
+          country?: string | null
           created_at?: string
           customer_id?: string | null
           email?: string | null
@@ -3251,14 +3281,26 @@ export type Database = {
           landing_page_url?: string | null
           last_name?: string | null
           lead_id?: string | null
+          match_method?: string | null
           message?: string | null
+          needs_review?: boolean
           payload?: Json
           phone?: string | null
+          preferred_contact?: string | null
+          previous_traveller?: boolean | null
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          processing_step?: string | null
           referrer?: string | null
+          retry_count?: number
+          review_note?: string | null
           state?: string | null
+          submission_uid?: string | null
           task_id?: string | null
           tour_id?: string | null
           tour_ids?: string[]
+          travellers?: number | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -3305,13 +3347,18 @@ export type Database = {
       }
       landing_pages: {
         Row: {
+          ack_enabled: boolean
+          ack_template_id: string | null
+          allow_multiple_tours: boolean
           auto_tag_ids: string[]
           body_html: string | null
           brand_id: string | null
           consent_text: string | null
           created_at: string
           created_by: string | null
+          default_priority: string
           fields: Json
+          followup_due_days: number
           form_type: string
           headline: string | null
           hero_image_url: string | null
@@ -3319,7 +3366,12 @@ export type Database = {
           is_active: boolean
           lead_owner_id: string | null
           lead_source: string | null
+          lead_type: string
           notify_teams: boolean
+          show_country: boolean
+          show_preferred_contact: boolean
+          show_previous_traveller: boolean
+          show_travellers: boolean
           slug: string
           subheadline: string | null
           submission_count: number
@@ -3335,13 +3387,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ack_enabled?: boolean
+          ack_template_id?: string | null
+          allow_multiple_tours?: boolean
           auto_tag_ids?: string[]
           body_html?: string | null
           brand_id?: string | null
           consent_text?: string | null
           created_at?: string
           created_by?: string | null
+          default_priority?: string
           fields?: Json
+          followup_due_days?: number
           form_type?: string
           headline?: string | null
           hero_image_url?: string | null
@@ -3349,7 +3406,12 @@ export type Database = {
           is_active?: boolean
           lead_owner_id?: string | null
           lead_source?: string | null
+          lead_type?: string
           notify_teams?: boolean
+          show_country?: boolean
+          show_preferred_contact?: boolean
+          show_previous_traveller?: boolean
+          show_travellers?: boolean
           slug: string
           subheadline?: string | null
           submission_count?: number
@@ -3365,13 +3427,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ack_enabled?: boolean
+          ack_template_id?: string | null
+          allow_multiple_tours?: boolean
           auto_tag_ids?: string[]
           body_html?: string | null
           brand_id?: string | null
           consent_text?: string | null
           created_at?: string
           created_by?: string | null
+          default_priority?: string
           fields?: Json
+          followup_due_days?: number
           form_type?: string
           headline?: string | null
           hero_image_url?: string | null
@@ -3379,7 +3446,12 @@ export type Database = {
           is_active?: boolean
           lead_owner_id?: string | null
           lead_source?: string | null
+          lead_type?: string
           notify_teams?: boolean
+          show_country?: boolean
+          show_preferred_contact?: boolean
+          show_previous_traveller?: boolean
+          show_travellers?: boolean
           slug?: string
           subheadline?: string | null
           submission_count?: number
