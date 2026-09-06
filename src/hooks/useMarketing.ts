@@ -76,6 +76,18 @@ export interface LandingPage {
   is_active: boolean;
   submission_count: number;
   created_at: string;
+
+  /* Phase 2 — form behaviour */
+  lead_type: string | null;
+  followup_due_days: number | null;
+  default_priority: string | null;
+  ack_enabled: boolean | null;
+  ack_template_id: string | null;
+  show_country: boolean | null;
+  show_travellers: boolean | null;
+  show_previous_traveller: boolean | null;
+  show_preferred_contact: boolean | null;
+  allow_multiple_tours: boolean | null;
 }
 
 export interface AutomationRule {
