@@ -265,6 +265,17 @@ function App() {
                 }
               />
               <Route
+                path="/leads/:id"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <LeadDetail />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+
+              <Route
                 path="/communications"
                 element={
                   <TaskRoute>
