@@ -511,7 +511,6 @@ export default function PublicForm() {
                         <SelectContent>
                           {CONTACT_METHOD_OPTIONS.map((m) => (
                             <SelectItem key={m} value={m}>
-
                               {m}
                             </SelectItem>
                           ))}
@@ -521,10 +520,15 @@ export default function PublicForm() {
                   )}
                 </div>
 
-                {tours.length > 0 && (
+                {shows("tours") && (tours.length > 0 || extraTourOptions.length > 0) && (
                   <div className="space-y-2">
                     <Label>
-                      {isBooking ? "Which tour would you like to book? *" : "Tours you're interested in"}
+                      {label(
+                        "tours",
+                        isBooking
+                          ? "Which tour would you like to book?"
+                          : "Tours you're interested in"
+                      )}
                     </Label>
                     <div className="space-y-2 rounded-md border p-3">
                       {tours.map((t) => (
@@ -543,9 +547,19 @@ export default function PublicForm() {
                           </span>
                         </label>
                       ))}
+                      {extraTourOptions.map((name) => (
+                        <label key={name} className="flex items-start gap-2 text-sm">
+                          <Checkbox
+                            checked={extraTours.includes(name)}
+                            onCheckedChange={() => toggleExtraTour(name)}
+                          />
+                          <span>{name}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 )}
+
 
                 {isBooking && (
                   <>
