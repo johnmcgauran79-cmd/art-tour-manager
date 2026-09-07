@@ -856,7 +856,7 @@ export const EmailTemplatesManagement = () => {
                     <TabsTrigger value="passenger_3">Pax 3</TabsTrigger>
                     <TabsTrigger value="tour">Tour</TabsTrigger>
                   </TabsList>
-                  <TabsList className="flex w-full flex-wrap h-auto gap-1">1
+                  <TabsList className="flex w-full flex-wrap h-auto gap-1">
                     <TabsTrigger value="booking">Booking</TabsTrigger>
                     <TabsTrigger value="hotel">Hotel</TabsTrigger>
                     <TabsTrigger value="activity">Activity</TabsTrigger>
