@@ -372,6 +372,19 @@ export async function processSubmission(
         Date.now() + (Number(page.followup_due_days) || (isBooking ? 1 : 2)) * 86400000
       );
 
+      // tasks.created_by is NOT NULL — public form submissions have no signed-in
+      // user, so fall back to the form's default owner, then any admin account.
+      let creatorId: string | null = page.lead_owner_id || null;
+      if (!creatorId) {
+        const { data: admin } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin")
+          .limit(1)
+          .maybeSingle();
+        creatorId = admin?.user_id || null;
+      }
+
       const { data: task, error: taskErr } = await supabase
         .from("tasks")
         .insert({
@@ -382,7 +395,7 @@ export async function processSubmission(
           category: isBooking ? "booking" : "marketing",
           due_date: dateOnly(due),
           tour_id: tourNames.length === 1 ? tourNames[0].id : null,
-          created_by: page.lead_owner_id || null,
+          created_by: creatorId,
           customer_id: result.customer_id,
           lead_id: result.lead_id,
           crm_type: isBooking ? "booking_request" : "sales_follow_up",
