@@ -185,3 +185,12 @@ verify_jwt = false
 
 [functions.marketing-landing-page]
 verify_jwt = false
+
+[functions.ms-mail-sync]
+verify_jwt = false
+
+[functions.ms-mail-send]
+verify_jwt = false
+
+[functions.ms-mail-attachment]
+verify_jwt = false
