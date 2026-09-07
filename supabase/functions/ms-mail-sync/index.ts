@@ -171,8 +171,14 @@ async function syncMailbox(
     })
     .eq("id", mailbox.id);
 
-  return { mailbox: mailbox.address, ...counts, error: failure };
+  return {
+    mailbox: mailbox.address,
+    ...counts,
+    error: failure,
+    windowStart: windowStart.toISOString(),
+  };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
