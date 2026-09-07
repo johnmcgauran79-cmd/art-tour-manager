@@ -280,17 +280,23 @@ export default function PublicForm() {
                 special_requests: form.special_requests,
               }
             : {}),
-          answers: customFields
-            .filter((f) => f.type !== "heading")
-            .map((f) => ({
-              label: f.label,
-              value:
-                f.type === "checkbox"
-                  ? answers[f.key] === true
-                    ? "Yes"
-                    : "No"
-                  : String(answers[f.key] ?? ""),
-            })),
+          answers: [
+            ...(extraTours.length
+              ? [{ label: "Other tours selected", value: extraTours.join(", ") }]
+              : []),
+            ...customFields
+              .filter((f) => f.type !== "heading")
+              .map((f) => ({
+                label: f.label,
+                value:
+                  f.type === "checkbox"
+                    ? answers[f.key] === true
+                      ? "Yes"
+                      : "No"
+                    : String(answers[f.key] ?? ""),
+              })),
+          ],
+
         },
       },
     });
