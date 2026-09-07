@@ -85,11 +85,14 @@ async function syncMailbox(
         url = `/users/${encodeURIComponent(mailbox.address)}/mailFolders/${folder}/messages/delta?$select=${MESSAGE_FIELDS}&$top=50`;
       } else {
         const field = folder === "sentitems" ? "sentDateTime" : "receivedDateTime";
+        const upper =
+          runType === "historical" ? ` and ${field} lt ${windowEnd.toISOString()}` : "";
         url =
           `/users/${encodeURIComponent(mailbox.address)}/mailFolders/${folder}/messages` +
           `?$select=${MESSAGE_FIELDS}&$top=50&$orderby=${field} desc` +
-          `&$filter=${field} ge ${windowStart.toISOString()}`;
+          `&$filter=${field} ge ${windowStart.toISOString()}${upper}`;
       }
+
 
       let pages = 0;
       while (url && pages < 60) {
