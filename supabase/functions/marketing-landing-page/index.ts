@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase
       .from("landing_pages")
       .select(
-        "id, slug, title, headline, subheadline, body_html, hero_image_url, fields, consent_text, thank_you_message, thank_you_heading, submit_button_text, is_active, tour_id, form_type, tour_ids, success_redirect_url, show_country, show_travellers, show_previous_traveller, show_preferred_contact, allow_multiple_tours, brand:brands(name, logo_url, color_primary, color_button, color_button_text, company_website, company_phone)"
+        "id, slug, title, headline, subheadline, body_html, hero_image_url, fields, field_config, extra_tour_options, room_type_options, consent_text, thank_you_message, thank_you_heading, submit_button_text, is_active, tour_id, form_type, tour_ids, success_redirect_url, show_country, show_travellers, show_previous_traveller, show_preferred_contact, allow_multiple_tours, brand:brands(name, logo_url, color_primary, color_button, color_button_text, company_website, company_phone)"
       )
       .eq("slug", slug)
       .maybeSingle();
@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
     if (!data || !data.is_active) return json({ error: "Page not found" }, 404);
 
     // Tour options offered on the form: the page's explicit list, or its single
-    // linked tour, or (when neither is set) all upcoming published tours.
+    // linked tour, or (when neither is set) all upcoming tours that still have
+    // places — sold out / closed / cancelled departures are never offered.
     const ids: string[] = Array.isArray((data as any).tour_ids)
       ? (data as any).tour_ids
       : [];
@@ -60,11 +61,12 @@ Deno.serve(async (req) => {
         .from("tours")
         .select("id, name, start_date, end_date")
         .gte("start_date", new Date().toISOString().slice(0, 10))
-        .not("status", "in", "(cancelled,archived)")
+        .not("status", "in", "(cancelled,archived,past,sold_out,closed)")
         .order("start_date")
         .limit(30);
       tours = (rows as any) || [];
     }
+
 
     return json({ page: data, tour: tours[0] || null, tours });
   } catch (err) {

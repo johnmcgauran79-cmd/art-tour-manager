@@ -88,6 +88,14 @@ export interface LandingPage {
   show_previous_traveller: boolean | null;
   show_preferred_contact: boolean | null;
   allow_multiple_tours: boolean | null;
+
+  /* Editable form layout */
+  /** Per-question on/off, required and label overrides for the built-in fields. */
+  field_config: Record<string, { enabled: boolean; required: boolean; label?: string }>;
+  /** Tours offered on the form that don't exist in ART yet. */
+  extra_tour_options: string[];
+  /** Room type choices offered on booking forms. */
+  room_type_options: string[];
 }
 
 export interface AutomationRule {

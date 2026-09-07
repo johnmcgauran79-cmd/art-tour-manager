@@ -18,6 +18,15 @@ import {
 } from "@/components/ui/select";
 import { AU_STATES } from "@/lib/edm/audience";
 import { parseFormFields } from "@/lib/marketing/formFields";
+import {
+  CONTACT_METHOD_OPTIONS,
+  DEFAULT_BEDDING_OPTIONS,
+  DEFAULT_ROOM_TYPES,
+  resolveStandardFields,
+  standardLabel,
+  type StandardFieldKey,
+  type StandardFieldSetting,
+} from "@/lib/marketing/standardFields";
 
 
 interface PublicTour {
@@ -40,6 +49,9 @@ interface PublicPage {
   thank_you_heading: string | null;
   submit_button_text: string | null;
   fields: unknown;
+  field_config: unknown;
+  extra_tour_options: string[] | null;
+  room_type_options: string[] | null;
   form_type: "interest" | "booking";
   success_redirect_url: string | null;
   show_country: boolean | null;
@@ -65,8 +77,6 @@ interface PaxRow {
   dietary: string;
 }
 
-const ROOM_TYPES = ["Single", "Twin share", "Double", "Triple"];
-const CONTACT_METHODS = ["Email", "Phone call", "Text message"];
 
 /**
  * Public register-interest / booking form. No login required — reads the page
@@ -109,6 +119,8 @@ export default function PublicForm() {
     special_requests: "",
   });
   const [selectedTours, setSelectedTours] = useState<string[]>([]);
+  /** Tours offered by name only (not yet set up in ART). */
+  const [extraTours, setExtraTours] = useState<string[]>([]);
   const [pax, setPax] = useState<PaxRow[]>([{ first_name: "", last_name: "", dietary: "" }]);
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
 
@@ -165,9 +177,28 @@ export default function PublicForm() {
   const heading = useMemo(() => page?.headline || page?.title || "", [page]);
   const customFields = useMemo(() => parseFormFields(page?.fields), [page]);
 
+  /** Which built-in questions this form asks, and how they're worded. */
+  const sf = useMemo(
+    () => resolveStandardFields(page as any),
+    [page]
+  ) as Record<StandardFieldKey, StandardFieldSetting>;
+  const shows = (key: StandardFieldKey) => sf[key]?.enabled !== false;
+  const label = (key: StandardFieldKey, fallback?: string) =>
+    standardLabel(key, sf, fallback) + (sf[key]?.required ? " *" : "");
+
+  const roomTypes = page?.room_type_options?.length ? page.room_type_options : DEFAULT_ROOM_TYPES;
+  const extraTourOptions = page?.extra_tour_options || [];
+  const multipleTours = isBooking
+    ? page?.allow_multiple_tours === true
+    : page?.allow_multiple_tours !== false;
+
   const toggleTour = (id: string) =>
     setSelectedTours((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : isBooking ? [id] : [...prev, id]
+      prev.includes(id) ? prev.filter((t) => t !== id) : multipleTours ? [...prev, id] : [id]
+    );
+  const toggleExtraTour = (name: string) =>
+    setExtraTours((prev) =>
+      prev.includes(name) ? prev.filter((t) => t !== name) : multipleTours ? [...prev, name] : [name]
     );
 
   const submit = async (e: React.FormEvent) => {
@@ -177,7 +208,36 @@ export default function PublicForm() {
       setError("Please enter your name and email address.");
       return;
     }
-    if (isBooking && selectedTours.length === 0) {
+
+    /* Compulsory built-in questions, as configured on the form. */
+    const values: Partial<Record<StandardFieldKey, unknown>> = {
+      last_name: form.last_name,
+      phone: form.phone,
+      state: form.state,
+      country: form.country,
+      travellers: form.travellers,
+      previous_traveller: form.previous_traveller,
+      preferred_contact: form.preferred_contact,
+      tours: [...selectedTours, ...extraTours].length ? "yes" : "",
+      passengers: pax.some((p) => p.first_name.trim()) ? "yes" : "",
+      room_type: form.room_type,
+      bedding: form.bedding,
+      emergency_contact: form.emergency_contact,
+      special_requests: form.special_requests,
+      message: form.message,
+      consent: form.consent ? "yes" : "",
+    };
+    const missingStandard = (Object.keys(values) as StandardFieldKey[]).find(
+      (key) =>
+        sf[key]?.enabled &&
+        sf[key]?.required &&
+        !String(values[key] ?? "").trim()
+    );
+    if (missingStandard) {
+      setError(`Please complete "${standardLabel(missingStandard, sf)}".`);
+      return;
+    }
+    if (isBooking && shows("tours") && selectedTours.length === 0 && extraTours.length === 0) {
       setError("Please choose the tour you'd like to book.");
       return;
     }
@@ -191,6 +251,7 @@ export default function PublicForm() {
       setError(`Please complete "${missing.label}".`);
       return;
     }
+
     setSubmitting(true);
     const { data, error: fnError } = await supabase.functions.invoke("marketing-submit-lead", {
       body: {
@@ -221,17 +282,23 @@ export default function PublicForm() {
                 special_requests: form.special_requests,
               }
             : {}),
-          answers: customFields
-            .filter((f) => f.type !== "heading")
-            .map((f) => ({
-              label: f.label,
-              value:
-                f.type === "checkbox"
-                  ? answers[f.key] === true
-                    ? "Yes"
-                    : "No"
-                  : String(answers[f.key] ?? ""),
-            })),
+          answers: [
+            ...(extraTours.length
+              ? [{ label: "Other tours selected", value: extraTours.join(", ") }]
+              : []),
+            ...customFields
+              .filter((f) => f.type !== "heading")
+              .map((f) => ({
+                label: f.label,
+                value:
+                  f.type === "checkbox"
+                    ? answers[f.key] === true
+                      ? "Yes"
+                      : "No"
+                    : String(answers[f.key] ?? ""),
+              })),
+          ],
+
         },
       },
     });
@@ -320,7 +387,7 @@ export default function PublicForm() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="first_name">First name *</Label>
+                    <Label htmlFor="first_name">{label("first_name", "First name")}</Label>
                     <Input
                       id="first_name"
                       value={form.first_name}
@@ -328,16 +395,18 @@ export default function PublicForm() {
                       required
                     />
                   </div>
+                  {shows("last_name") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="last_name">{label("last_name", "Surname")}</Label>
+                      <Input
+                        id="last_name"
+                        value={form.last_name}
+                        onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <Label htmlFor="last_name">Surname</Label>
-                    <Input
-                      id="last_name"
-                      value={form.last_name}
-                      onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{label("email", "Email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -346,36 +415,41 @@ export default function PublicForm() {
                       required
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="state">State</Label>
-                    <Select
-                      value={form.state}
-                      onValueChange={(state) => setForm({ ...form, state })}
-                    >
-                      <SelectTrigger id="state">
-                        <SelectValue placeholder="Select your state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AU_STATES.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="Overseas">Overseas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {page.show_country && (
+                  {shows("phone") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="country">Country</Label>
+                      <Label htmlFor="phone">{label("phone", "Phone")}</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  {shows("state") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="state">{label("state", "State")}</Label>
+                      <Select
+                        value={form.state}
+                        onValueChange={(state) => setForm({ ...form, state })}
+                      >
+                        <SelectTrigger id="state">
+                          <SelectValue placeholder="Select your state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AU_STATES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="Overseas">Overseas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {shows("country") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="country">{label("country", "Country")}</Label>
                       <Input
                         id="country"
                         value={form.country}
@@ -383,9 +457,11 @@ export default function PublicForm() {
                       />
                     </div>
                   )}
-                  {page.show_travellers !== false && (
+                  {shows("travellers") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="travellers">How many travelling?</Label>
+                      <Label htmlFor="travellers">
+                        {label("travellers", "How many travelling?")}
+                      </Label>
                       <Input
                         id="travellers"
                         type="number"
@@ -397,9 +473,11 @@ export default function PublicForm() {
                       />
                     </div>
                   )}
-                  {page.show_previous_traveller !== false && (
+                  {shows("previous_traveller") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="previous_traveller">Travelled with us before?</Label>
+                      <Label htmlFor="previous_traveller">
+                        {label("previous_traveller", "Travelled with us before?")}
+                      </Label>
                       <Select
                         value={form.previous_traveller}
                         onValueChange={(previous_traveller) =>
@@ -416,9 +494,11 @@ export default function PublicForm() {
                       </Select>
                     </div>
                   )}
-                  {page.show_preferred_contact && (
+                  {shows("preferred_contact") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="preferred_contact">Preferred contact method</Label>
+                      <Label htmlFor="preferred_contact">
+                        {label("preferred_contact", "Preferred contact method")}
+                      </Label>
                       <Select
                         value={form.preferred_contact}
                         onValueChange={(preferred_contact) =>
@@ -429,7 +509,7 @@ export default function PublicForm() {
                           <SelectValue placeholder="Please choose" />
                         </SelectTrigger>
                         <SelectContent>
-                          {CONTACT_METHODS.map((m) => (
+                          {CONTACT_METHOD_OPTIONS.map((m) => (
                             <SelectItem key={m} value={m}>
                               {m}
                             </SelectItem>
@@ -440,10 +520,15 @@ export default function PublicForm() {
                   )}
                 </div>
 
-                {tours.length > 0 && (
+                {shows("tours") && (tours.length > 0 || extraTourOptions.length > 0) && (
                   <div className="space-y-2">
                     <Label>
-                      {isBooking ? "Which tour would you like to book? *" : "Tours you're interested in"}
+                      {label(
+                        "tours",
+                        isBooking
+                          ? "Which tour would you like to book?"
+                          : "Tours you're interested in"
+                      )}
                     </Label>
                     <div className="space-y-2 rounded-md border p-3">
                       {tours.map((t) => (
@@ -462,113 +547,147 @@ export default function PublicForm() {
                           </span>
                         </label>
                       ))}
+                      {extraTourOptions.map((name) => (
+                        <label key={name} className="flex items-start gap-2 text-sm">
+                          <Checkbox
+                            checked={extraTours.includes(name)}
+                            onCheckedChange={() => toggleExtraTour(name)}
+                          />
+                          <span>{name}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 )}
 
+
                 {isBooking && (
                   <>
-                    <div className="space-y-2">
-                      <Label>Passengers</Label>
-                      {pax.map((p, i) => (
-                        <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                          <Input
-                            placeholder="First name"
-                            value={p.first_name}
-                            onChange={(e) =>
-                              setPax(pax.map((x, j) => (j === i ? { ...x, first_name: e.target.value } : x)))
+                    {shows("passengers") && (
+                      <div className="space-y-2">
+                        <Label>{label("passengers", "Passengers")}</Label>
+                        {pax.map((p, i) => (
+                          <div
+                            key={i}
+                            className={
+                              shows("passenger_dietary")
+                                ? "grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]"
+                                : "grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
                             }
-                          />
-                          <Input
-                            placeholder="Surname"
-                            value={p.last_name}
-                            onChange={(e) =>
-                              setPax(pax.map((x, j) => (j === i ? { ...x, last_name: e.target.value } : x)))
-                            }
-                          />
-                          <Input
-                            placeholder="Dietary needs"
-                            value={p.dietary}
-                            onChange={(e) =>
-                              setPax(pax.map((x, j) => (j === i ? { ...x, dietary: e.target.value } : x)))
-                            }
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Remove passenger"
-                            onClick={() => setPax(pax.filter((_, j) => j !== i))}
-                            disabled={pax.length === 1}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5"
-                        onClick={() => setPax([...pax, { first_name: "", last_name: "", dietary: "" }])}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Add passenger
-                      </Button>
-                    </div>
+                            <Input
+                              placeholder="First name"
+                              value={p.first_name}
+                              onChange={(e) =>
+                                setPax(pax.map((x, j) => (j === i ? { ...x, first_name: e.target.value } : x)))
+                              }
+                            />
+                            <Input
+                              placeholder="Surname"
+                              value={p.last_name}
+                              onChange={(e) =>
+                                setPax(pax.map((x, j) => (j === i ? { ...x, last_name: e.target.value } : x)))
+                              }
+                            />
+                            {shows("passenger_dietary") && (
+                              <Input
+                                placeholder={standardLabel("passenger_dietary", sf, "Dietary needs")}
+                                value={p.dietary}
+                                onChange={(e) =>
+                                  setPax(pax.map((x, j) => (j === i ? { ...x, dietary: e.target.value } : x)))
+                                }
+                              />
+                            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Remove passenger"
+                              onClick={() => setPax(pax.filter((_, j) => j !== i))}
+                              disabled={pax.length === 1}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setPax([...pax, { first_name: "", last_name: "", dietary: "" }])}
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Add passenger
+                        </Button>
+                      </div>
+                    )}
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <Label>Room type</Label>
-                        <Select
-                          value={form.room_type}
-                          onValueChange={(room_type) => setForm({ ...form, room_type })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select room type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ROOM_TYPES.map((r) => (
-                              <SelectItem key={r} value={r}>
-                                {r}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Bedding preference</Label>
-                        <Select
-                          value={form.bedding}
-                          onValueChange={(bedding) => setForm({ ...form, bedding })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select bedding" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Single beds">Single beds</SelectItem>
-                            <SelectItem value="Double bed">Double bed</SelectItem>
-                            <SelectItem value="King bed">King bed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <Label>Emergency contact (name and phone)</Label>
-                        <Input
-                          value={form.emergency_contact}
-                          onChange={(e) => setForm({ ...form, emergency_contact: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <Label>Special requests</Label>
-                        <Textarea
-                          rows={3}
-                          value={form.special_requests}
-                          onChange={(e) => setForm({ ...form, special_requests: e.target.value })}
-                        />
-                      </div>
+                      {shows("room_type") && (
+                        <div className="space-y-1.5">
+                          <Label>{label("room_type", "Room type")}</Label>
+                          <Select
+                            value={form.room_type}
+                            onValueChange={(room_type) => setForm({ ...form, room_type })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select room type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {roomTypes.map((r) => (
+                                <SelectItem key={r} value={r}>
+                                  {r}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {shows("bedding") && (
+                        <div className="space-y-1.5">
+                          <Label>{label("bedding", "Bedding preference")}</Label>
+                          <Select
+                            value={form.bedding}
+                            onValueChange={(bedding) => setForm({ ...form, bedding })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bedding" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DEFAULT_BEDDING_OPTIONS.map((b) => (
+                                <SelectItem key={b} value={b}>
+                                  {b}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {shows("emergency_contact") && (
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <Label>
+                            {label("emergency_contact", "Emergency contact (name and phone)")}
+                          </Label>
+                          <Input
+                            value={form.emergency_contact}
+                            onChange={(e) => setForm({ ...form, emergency_contact: e.target.value })}
+                          />
+                        </div>
+                      )}
+                      {shows("special_requests") && (
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <Label>{label("special_requests", "Special requests")}</Label>
+                          <Textarea
+                            rows={3}
+                            value={form.special_requests}
+                            onChange={(e) => setForm({ ...form, special_requests: e.target.value })}
+                          />
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
+
 
                 {customFields.length > 0 && (
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -664,29 +783,40 @@ export default function PublicForm() {
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="message">
-                    {isBooking ? "Anything else we should know?" : "Your message"}
-                  </Label>
-                  <Textarea
-                    id="message"
-                    rows={3}
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  />
-                </div>
+                {shows("message") && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="message">
+                      {label(
+                        "message",
+                        isBooking ? "Anything else we should know?" : "Your message"
+                      )}
+                    </Label>
+                    <Textarea
+                      id="message"
+                      rows={3}
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    />
+                  </div>
+                )}
 
+                {shows("consent") && (
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={form.consent}
+                      onCheckedChange={(v) => setForm({ ...form, consent: !!v })}
+                    />
+                    <span className="text-muted-foreground">
+                      {page.consent_text ||
+                        standardLabel(
+                          "consent",
+                          sf,
+                          "Yes, I'd like to receive tour news and offers. You can unsubscribe at any time."
+                        )}
+                    </span>
+                  </label>
+                )}
 
-                <label className="flex items-start gap-2 text-sm">
-                  <Checkbox
-                    checked={form.consent}
-                    onCheckedChange={(v) => setForm({ ...form, consent: !!v })}
-                  />
-                  <span className="text-muted-foreground">
-                    {page.consent_text ||
-                      "Yes, I'd like to receive tour news and offers. You can unsubscribe at any time."}
-                  </span>
-                </label>
 
                 {/* Honeypot — hidden from real visitors */}
                 <input

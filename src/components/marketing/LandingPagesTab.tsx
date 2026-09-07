@@ -49,7 +49,9 @@ import {
   type LandingPage,
 } from "@/hooks/useMarketing";
 import { parseFormFields } from "@/lib/marketing/formFields";
+import { DEFAULT_ROOM_TYPES, parseOptionLines } from "@/lib/marketing/standardFields";
 import { FormFieldsEditor } from "./FormFieldsEditor";
+import { StandardFieldsEditor } from "./StandardFieldsEditor";
 
 
 /**
@@ -95,6 +97,22 @@ export function LandingPagesTab() {
   const { data: allTags } = useTags();
   const { data: emailTemplates = [] } = useEmailTemplates();
   const [editing, setEditing] = useState<Partial<LandingPage> | null>(null);
+  const [tourSearch, setTourSearch] = useState("");
+
+  /** Tours worth offering on a form: future departures that aren't closed off. */
+  const today = new Date().toISOString().slice(0, 10);
+  const selectableTours = (tours as any[]).filter(
+    (t) =>
+      (!t.start_date || t.start_date >= today) &&
+      !["cancelled", "archived", "past", "sold_out", "closed"].includes(String(t.status))
+  );
+  const selectedIds = editing?.tour_ids || [];
+  const searchTerm = tourSearch.trim().toLowerCase();
+  const visibleTours = (tours as any[])
+    .filter((t) => selectableTours.some((s) => s.id === t.id) || selectedIds.includes(t.id))
+    .filter((t) => !searchTerm || String(t.name).toLowerCase().includes(searchTerm));
+
+
 
   const publicUrl = (slug?: string) => `${window.location.origin}/f/${slug || ""}`;
 
@@ -503,15 +521,48 @@ export function LandingPagesTab() {
 
 
               <div className="space-y-2">
-                <Label>
-                  Tours shown on the form{" "}
-                  <span className="text-xs text-muted-foreground">
-                    (leave empty to list all upcoming tours)
-                  </span>
-                </Label>
-                <ScrollArea className="h-40 rounded-md border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label>
+                    Tours people can choose{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (leave empty to list every upcoming tour that still has places)
+                    </span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          tour_ids: selectableTours.map((t: any) => t.id),
+                        })
+                      }
+                    >
+                      Select all upcoming
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditing({ ...editing, tour_ids: [] })}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+                <Input
+                  placeholder="Search tours…"
+                  value={tourSearch}
+                  onChange={(e) => setTourSearch(e.target.value)}
+                />
+                <ScrollArea className="h-48 rounded-md border p-3">
                   <div className="space-y-2">
-                    {tours.map((t: any) => (
+                    {visibleTours.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No tours match that search.</p>
+                    )}
+                    {visibleTours.map((t: any) => (
                       <label key={t.id} className="flex items-center gap-2 text-sm">
                         <Checkbox
                           checked={(editing.tour_ids || []).includes(t.id)}
@@ -523,11 +574,36 @@ export function LandingPagesTab() {
                             {format(new Date(t.start_date), "dd/MM/yyyy")}
                           </span>
                         )}
+                        {t.status && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {String(t.status).replace(/_/g, " ")}
+                          </Badge>
+                        )}
                       </label>
                     ))}
                   </div>
                 </ScrollArea>
+                <div className="space-y-1.5">
+                  <Label>
+                    Extra tours to offer{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (one per line — for tours you're thinking about that aren't set up yet)
+                    </span>
+                  </Label>
+                  <Textarea
+                    rows={3}
+                    placeholder={"Royal Ascot 2028\nHong Kong 2028"}
+                    value={(editing.extra_tour_options || []).join("\n")}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        extra_tour_options: parseOptionLines(e.target.value),
+                      })
+                    }
+                  />
+                </div>
               </div>
+
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
@@ -574,28 +650,49 @@ export function LandingPagesTab() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md border p-3">
-                <Label className="text-sm font-semibold">Questions shown on the form</Label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {[
-                    ["show_travellers", "How many travelling", true],
-                    ["show_previous_traveller", "Travelled with us before", true],
-                    ["show_country", "Country", false],
-                    ["show_preferred_contact", "Preferred contact method", false],
-                    ["allow_multiple_tours", "Allow more than one tour", true],
-                  ].map(([key, label, dflt]) => (
-                    <label key={key as string} className="flex items-center gap-2 text-sm">
+              <StandardFieldsEditor
+                page={editing}
+                onChange={(field_config) => setEditing({ ...editing, field_config })}
+              />
+
+              {editing.form_type === "booking" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>
+                      Room type choices{" "}
+                      <span className="text-xs text-muted-foreground">(one per line)</span>
+                    </Label>
+                    <Textarea
+                      rows={4}
+                      value={(editing.room_type_options || DEFAULT_ROOM_TYPES).join("\n")}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          room_type_options: parseOptionLines(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>
+                      Allow more than one tour{" "}
+                      <span className="text-xs text-muted-foreground">
+                        (booking forms normally allow one)
+                      </span>
+                    </Label>
+                    <label className="flex h-10 items-center gap-2 text-sm">
                       <Switch
-                        checked={
-                          (editing as any)[key as string] ?? (dflt as boolean)
+                        checked={editing.allow_multiple_tours === true}
+                        onCheckedChange={(allow_multiple_tours) =>
+                          setEditing({ ...editing, allow_multiple_tours })
                         }
-                        onCheckedChange={(v) => setEditing({ ...editing, [key as string]: v })}
                       />
-                      <span>{label as string}</span>
+                      People can pick several tours
                     </label>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
 
               <div className="space-y-3 rounded-md border p-3">
                 <label className="flex items-center gap-2 text-sm">
