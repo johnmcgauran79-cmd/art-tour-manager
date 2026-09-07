@@ -25,14 +25,18 @@ async function syncMailbox(
   mailbox: MailboxRow & { delta_links: Record<string, string>; history_months: number },
   runType: "delta" | "historical" | "manual",
   monthsOverride?: number,
+  before?: string,
 ) {
   const counts = empty();
   // A manual "Sync now" is a light catch-up, not a full history import.
   const months = monthsOverride ?? (runType === "manual" ? 0 : mailbox.history_months ?? 12);
-  const windowStart = new Date();
-  if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
+  // History is imported one month at a time so a single run always finishes
+  // inside the function's time budget; the caller chains the next chunk.
+  const windowEnd = runType === "historical" && before ? new Date(before) : new Date();
+  const windowStart = new Date(windowEnd);
+  if (runType === "historical") windowStart.setMonth(windowStart.getMonth() - 1);
+  else if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
   else windowStart.setDate(windowStart.getDate() - 7);
-
 
   const { data: run } = await db
     .from("email_sync_runs")
@@ -52,6 +56,24 @@ async function syncMailbox(
 
   const deltaLinks: Record<string, string> = { ...(mailbox.delta_links || {}) };
   let failure: string | null = null;
+
+  // Counts are written after every page so the admin screen shows progress
+  // even while a long import is still running.
+  const saveProgress = async () => {
+    if (!run?.id) return;
+    await db
+      .from("email_sync_runs")
+      .update({
+        messages_scanned: counts.scanned,
+        messages_stored: counts.stored,
+        messages_matched: counts.matched,
+        contacts_matched: counts.contacts,
+        messages_unmatched: counts.unmatched,
+        errors: counts.errors,
+      })
+      .eq("id", run.id);
+  };
+
 
   try {
     for (const folder of FOLDERS) {
