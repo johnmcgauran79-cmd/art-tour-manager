@@ -119,6 +119,8 @@ export default function PublicForm() {
     special_requests: "",
   });
   const [selectedTours, setSelectedTours] = useState<string[]>([]);
+  /** Tours offered by name only (not yet set up in ART). */
+  const [extraTours, setExtraTours] = useState<string[]>([]);
   const [pax, setPax] = useState<PaxRow[]>([{ first_name: "", last_name: "", dietary: "" }]);
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
 
