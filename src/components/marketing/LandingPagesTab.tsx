@@ -101,6 +101,22 @@ export function LandingPagesTab() {
   const { data: allTags } = useTags();
   const { data: emailTemplates = [] } = useEmailTemplates();
   const [editing, setEditing] = useState<Partial<LandingPage> | null>(null);
+  const [tourSearch, setTourSearch] = useState("");
+
+  /** Tours worth offering on a form: future departures that aren't closed off. */
+  const today = new Date().toISOString().slice(0, 10);
+  const selectableTours = (tours as any[]).filter(
+    (t) =>
+      (!t.start_date || t.start_date >= today) &&
+      !["cancelled", "archived", "past", "sold_out", "closed"].includes(String(t.status))
+  );
+  const selectedIds = editing?.tour_ids || [];
+  const searchTerm = tourSearch.trim().toLowerCase();
+  const visibleTours = (tours as any[])
+    .filter((t) => selectableTours.some((s) => s.id === t.id) || selectedIds.includes(t.id))
+    .filter((t) => !searchTerm || String(t.name).toLowerCase().includes(searchTerm));
+
+
 
   const publicUrl = (slug?: string) => `${window.location.origin}/f/${slug || ""}`;
 
