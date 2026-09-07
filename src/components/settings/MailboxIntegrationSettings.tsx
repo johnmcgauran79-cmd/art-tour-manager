@@ -104,10 +104,9 @@ export function MailboxIntegrationSettings() {
                     <Label className="text-xs">On</Label>
                     <Switch
                       checked={m.is_enabled}
-                      onCheckedChange={(v) =>
-                        update.mutate({ id: m.id, is_enabled: v, connected_at: v ? new Date().toISOString() : null } as any)
-                      }
+                      onCheckedChange={(v) => update.mutate({ id: m.id, is_enabled: v })}
                     />
+
                   </div>
                   {m.kind === "individual" && (
                     <Button variant="outline" size="sm" onClick={() => setAccessFor(m)}>

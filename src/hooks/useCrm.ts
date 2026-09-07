@@ -529,7 +529,7 @@ export const useRemoveRelationship = () => {
 
 export interface TimelineEntry {
   id: string;
-  kind: "activity" | "form" | "lead" | "task" | "booking" | "email";
+  kind: "activity" | "form" | "lead" | "task" | "booking" | "email" | "correspondence";
   at: string;
   title: string;
   detail?: string | null;
@@ -540,7 +540,7 @@ export const useContactTimeline = (customerId?: string | null, email?: string | 
   useQuery({
     queryKey: ["crm-timeline", customerId, email],
     queryFn: async () => {
-      const [activities, submissions, leads, tasks, bookings, emails] = await Promise.all([
+      const [activities, submissions, leads, tasks, bookings, emails, correspondence] = await Promise.all([
         db.from("crm_activities").select("*").eq("customer_id", customerId).order("occurred_at", { ascending: false }).limit(200),
         db.from("landing_page_submissions").select("id, created_at, form_type, message, tour_id, landing_page_id").eq("customer_id", customerId).order("created_at", { ascending: false }).limit(100),
         db.from("lead_stage_history").select("id, changed_at, from_stage, to_stage, lead_id, leads!inner(customer_id)").eq("leads.customer_id", customerId).order("changed_at", { ascending: false }).limit(200),
@@ -549,7 +549,13 @@ export const useContactTimeline = (customerId?: string | null, email?: string | 
         email
           ? db.from("campaign_recipients").select("id, sent_at, opened_at, clicked_at, email, marketing_campaigns(name)").eq("email", email).order("sent_at", { ascending: false }).limit(100)
           : Promise.resolve({ data: [], error: null }),
+        db
+          .from("crm_email_contacts")
+          .select("email_id, crm_emails(id, subject, preview, direction, occurred_at, from_name, from_address)")
+          .eq("customer_id", customerId)
+          .limit(200),
       ]);
+
 
       const entries: TimelineEntry[] = [];
 
@@ -612,6 +618,18 @@ export const useContactTimeline = (customerId?: string | null, email?: string | 
             .join(", ") || null,
         });
       }
+      for (const c of (correspondence.data || []) as any[]) {
+        const m = c.crm_emails;
+        if (!m?.occurred_at) continue;
+        entries.push({
+          id: `correspondence-${m.id}`,
+          kind: "correspondence",
+          at: m.occurred_at,
+          title: `${m.direction === "inbound" ? "Email received" : "Email sent"} — ${m.subject || "(no subject)"}`,
+          detail: m.preview || null,
+        });
+      }
+
 
       return entries
         .filter((e) => !!e.at)

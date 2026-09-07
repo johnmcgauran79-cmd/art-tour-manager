@@ -27,7 +27,9 @@ import { CommunicationsTimeline } from "@/components/communications/Communicatio
 import { MessageSquare } from "lucide-react";
 import { PaymentReceiptsHistory } from "@/components/finance/PaymentReceiptsHistory";
 import { ContactCrmPanel } from "@/components/crm/ContactCrmPanel";
+import { ContactEmailsPanel } from "@/components/crm/ContactEmailsPanel";
 import { ContactTimeline } from "@/components/crm/ContactTimeline";
+
 import { LogActivityDialog } from "@/components/crm/LogActivityDialog";
 import { PhoneCall, StickyNote, TrendingUp, History } from "lucide-react";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (

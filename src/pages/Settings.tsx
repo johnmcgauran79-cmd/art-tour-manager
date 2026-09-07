@@ -13,6 +13,8 @@ import { CancellationPolicySettings } from "@/components/settings/CancellationPo
 import { InvoiceLineTemplatesManagement } from "@/components/settings/InvoiceLineTemplatesManagement";
 import { EmailSettingsTab } from "@/components/email/EmailSettingsTab";
 import { BrandsManagement } from "@/components/settings/BrandsManagement";
+import { MailboxIntegrationSettings } from "@/components/settings/MailboxIntegrationSettings";
+
 
 interface SettingsProps {
   onBack: () => void;
@@ -69,12 +71,14 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         <TabsContent value="email-management" className="space-y-6">
           <Tabs value={emailSubTab} onValueChange={setEmailSubTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsList className="grid w-full grid-cols-5 mb-6">
               <TabsTrigger value="templates">Email Templates</TabsTrigger>
               <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
               <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
               <TabsTrigger value="email-settings">Email Settings</TabsTrigger>
+              <TabsTrigger value="mailboxes">Outlook Mailboxes</TabsTrigger>
             </TabsList>
+
 
             <TabsContent value="templates" className="space-y-6">
               <Card>
@@ -101,7 +105,12 @@ export const Settings = ({ onBack }: SettingsProps) => {
             <TabsContent value="email-settings" className="space-y-6">
               <EmailSettingsTab />
             </TabsContent>
+
+            <TabsContent value="mailboxes" className="space-y-6">
+              <MailboxIntegrationSettings />
+            </TabsContent>
           </Tabs>
+
         </TabsContent>
 
         <TabsContent value="invoice-management" className="space-y-6">
