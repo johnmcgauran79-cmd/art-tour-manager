@@ -27,9 +27,12 @@ async function syncMailbox(
   monthsOverride?: number,
 ) {
   const counts = empty();
-  const months = monthsOverride ?? mailbox.history_months ?? 12;
+  // A manual "Sync now" is a light catch-up, not a full history import.
+  const months = monthsOverride ?? (runType === "manual" ? 0 : mailbox.history_months ?? 12);
   const windowStart = new Date();
-  windowStart.setMonth(windowStart.getMonth() - months);
+  if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
+  else windowStart.setDate(windowStart.getDate() - 7);
+
 
   const { data: run } = await db
     .from("email_sync_runs")
