@@ -580,28 +580,49 @@ export function LandingPagesTab() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-md border p-3">
-                <Label className="text-sm font-semibold">Questions shown on the form</Label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {[
-                    ["show_travellers", "How many travelling", true],
-                    ["show_previous_traveller", "Travelled with us before", true],
-                    ["show_country", "Country", false],
-                    ["show_preferred_contact", "Preferred contact method", false],
-                    ["allow_multiple_tours", "Allow more than one tour", true],
-                  ].map(([key, label, dflt]) => (
-                    <label key={key as string} className="flex items-center gap-2 text-sm">
+              <StandardFieldsEditor
+                page={editing}
+                onChange={(field_config) => setEditing({ ...editing, field_config })}
+              />
+
+              {editing.form_type === "booking" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>
+                      Room type choices{" "}
+                      <span className="text-xs text-muted-foreground">(one per line)</span>
+                    </Label>
+                    <Textarea
+                      rows={4}
+                      value={(editing.room_type_options || DEFAULT_ROOM_TYPES).join("\n")}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          room_type_options: parseOptionLines(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>
+                      Allow more than one tour{" "}
+                      <span className="text-xs text-muted-foreground">
+                        (booking forms normally allow one)
+                      </span>
+                    </Label>
+                    <label className="flex h-10 items-center gap-2 text-sm">
                       <Switch
-                        checked={
-                          (editing as any)[key as string] ?? (dflt as boolean)
+                        checked={editing.allow_multiple_tours === true}
+                        onCheckedChange={(allow_multiple_tours) =>
+                          setEditing({ ...editing, allow_multiple_tours })
                         }
-                        onCheckedChange={(v) => setEditing({ ...editing, [key as string]: v })}
                       />
-                      <span>{label as string}</span>
+                      People can pick several tours
                     </label>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
 
               <div className="space-y-3 rounded-md border p-3">
                 <label className="flex items-center gap-2 text-sm">
