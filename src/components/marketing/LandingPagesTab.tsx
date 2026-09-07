@@ -509,15 +509,48 @@ export function LandingPagesTab() {
 
 
               <div className="space-y-2">
-                <Label>
-                  Tours shown on the form{" "}
-                  <span className="text-xs text-muted-foreground">
-                    (leave empty to list all upcoming tours)
-                  </span>
-                </Label>
-                <ScrollArea className="h-40 rounded-md border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label>
+                    Tours people can choose{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (leave empty to list every upcoming tour that still has places)
+                    </span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          tour_ids: selectableTours.map((t: any) => t.id),
+                        })
+                      }
+                    >
+                      Select all upcoming
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditing({ ...editing, tour_ids: [] })}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+                <Input
+                  placeholder="Search tours…"
+                  value={tourSearch}
+                  onChange={(e) => setTourSearch(e.target.value)}
+                />
+                <ScrollArea className="h-48 rounded-md border p-3">
                   <div className="space-y-2">
-                    {tours.map((t: any) => (
+                    {visibleTours.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No tours match that search.</p>
+                    )}
+                    {visibleTours.map((t: any) => (
                       <label key={t.id} className="flex items-center gap-2 text-sm">
                         <Checkbox
                           checked={(editing.tour_ids || []).includes(t.id)}
@@ -529,11 +562,36 @@ export function LandingPagesTab() {
                             {format(new Date(t.start_date), "dd/MM/yyyy")}
                           </span>
                         )}
+                        {t.status && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {String(t.status).replace(/_/g, " ")}
+                          </Badge>
+                        )}
                       </label>
                     ))}
                   </div>
                 </ScrollArea>
+                <div className="space-y-1.5">
+                  <Label>
+                    Extra tours to offer{" "}
+                    <span className="text-xs text-muted-foreground">
+                      (one per line — for tours you're thinking about that aren't set up yet)
+                    </span>
+                  </Label>
+                  <Textarea
+                    rows={3}
+                    placeholder={"Royal Ascot 2028\nHong Kong 2028"}
+                    value={(editing.extra_tour_options || []).join("\n")}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        extra_tour_options: parseOptionLines(e.target.value),
+                      })
+                    }
+                  />
+                </div>
               </div>
+
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
