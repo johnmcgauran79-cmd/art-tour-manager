@@ -3357,6 +3357,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           default_priority: string
+          extra_tour_options: string[]
+          field_config: Json
           fields: Json
           followup_due_days: number
           form_type: string
@@ -3368,6 +3370,7 @@ export type Database = {
           lead_source: string | null
           lead_type: string
           notify_teams: boolean
+          room_type_options: string[]
           show_country: boolean
           show_preferred_contact: boolean
           show_previous_traveller: boolean
@@ -3397,6 +3400,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           default_priority?: string
+          extra_tour_options?: string[]
+          field_config?: Json
           fields?: Json
           followup_due_days?: number
           form_type?: string
@@ -3408,6 +3413,7 @@ export type Database = {
           lead_source?: string | null
           lead_type?: string
           notify_teams?: boolean
+          room_type_options?: string[]
           show_country?: boolean
           show_preferred_contact?: boolean
           show_previous_traveller?: boolean
@@ -3437,6 +3443,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           default_priority?: string
+          extra_tour_options?: string[]
+          field_config?: Json
           fields?: Json
           followup_due_days?: number
           form_type?: string
@@ -3448,6 +3456,7 @@ export type Database = {
           lead_source?: string | null
           lead_type?: string
           notify_teams?: boolean
+          room_type_options?: string[]
           show_country?: boolean
           show_preferred_contact?: boolean
           show_previous_traveller?: boolean
