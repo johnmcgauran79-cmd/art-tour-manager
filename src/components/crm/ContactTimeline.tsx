@@ -19,6 +19,7 @@ const ICONS: Record<TimelineEntry["kind"], any> = {
   task: MessageSquare,
   booking: CalendarCheck,
   email: Mail,
+  correspondence: Mail,
 };
 
 const LABELS: Record<TimelineEntry["kind"], string> = {
@@ -28,7 +29,9 @@ const LABELS: Record<TimelineEntry["kind"], string> = {
   task: "Task",
   booking: "Booking",
   email: "Campaign",
+  correspondence: "Email",
 };
+
 
 /** Everything that ever happened with this person, newest first. */
 export function ContactTimeline({
