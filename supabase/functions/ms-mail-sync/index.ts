@@ -234,11 +234,39 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Each historical run covers one month; the next month is queued only when
+    // months remain, so the chain always ends.
+    const chainNext = async (mb: any, cursor: string, remaining: number) => {
+      if (remaining <= 1) return;
+      try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ms-mail-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            mode: "historical",
+            mailboxId: mb.id,
+            months: remaining - 1,
+            before: cursor,
+          }),
+        });
+      } catch (e) {
+        console.error("history chain failed", mb.address, (e as Error).message);
+      }
+    };
+
     const work = async () => {
       const results = [];
       for (const mb of mailboxes) {
         try {
-          results.push(await syncMailbox(db, mb as any, mode, months));
+          const res = await syncMailbox(db, mb as any, mode, months, before);
+          results.push(res);
+          if (mode === "historical" && !res.error) {
+            const total = months ?? (mb as any).history_months ?? 12;
+            await chainNext(mb, res.windowStart, total);
+          }
         } catch (e) {
           console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
         }
@@ -251,6 +279,7 @@ Deno.serve(async (req) => {
           details: { mailboxId: mailboxId ?? "all", months, results },
         });
       }
+
       return results;
     };
 
