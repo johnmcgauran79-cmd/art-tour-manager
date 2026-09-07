@@ -783,29 +783,40 @@ export default function PublicForm() {
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="message">
-                    {isBooking ? "Anything else we should know?" : "Your message"}
-                  </Label>
-                  <Textarea
-                    id="message"
-                    rows={3}
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  />
-                </div>
+                {shows("message") && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="message">
+                      {label(
+                        "message",
+                        isBooking ? "Anything else we should know?" : "Your message"
+                      )}
+                    </Label>
+                    <Textarea
+                      id="message"
+                      rows={3}
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    />
+                  </div>
+                )}
 
+                {shows("consent") && (
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={form.consent}
+                      onCheckedChange={(v) => setForm({ ...form, consent: !!v })}
+                    />
+                    <span className="text-muted-foreground">
+                      {page.consent_text ||
+                        standardLabel(
+                          "consent",
+                          sf,
+                          "Yes, I'd like to receive tour news and offers. You can unsubscribe at any time."
+                        )}
+                    </span>
+                  </label>
+                )}
 
-                <label className="flex items-start gap-2 text-sm">
-                  <Checkbox
-                    checked={form.consent}
-                    onCheckedChange={(v) => setForm({ ...form, consent: !!v })}
-                  />
-                  <span className="text-muted-foreground">
-                    {page.consent_text ||
-                      "Yes, I'd like to receive tour news and offers. You can unsubscribe at any time."}
-                  </span>
-                </label>
 
                 {/* Honeypot — hidden from real visitors */}
                 <input
