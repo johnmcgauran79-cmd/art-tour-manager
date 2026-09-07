@@ -18,6 +18,15 @@ import {
 } from "@/components/ui/select";
 import { AU_STATES } from "@/lib/edm/audience";
 import { parseFormFields } from "@/lib/marketing/formFields";
+import {
+  CONTACT_METHOD_OPTIONS,
+  DEFAULT_BEDDING_OPTIONS,
+  DEFAULT_ROOM_TYPES,
+  resolveStandardFields,
+  standardLabel,
+  type StandardFieldKey,
+  type StandardFieldSetting,
+} from "@/lib/marketing/standardFields";
 
 
 interface PublicTour {
@@ -40,6 +49,9 @@ interface PublicPage {
   thank_you_heading: string | null;
   submit_button_text: string | null;
   fields: unknown;
+  field_config: unknown;
+  extra_tour_options: string[] | null;
+  room_type_options: string[] | null;
   form_type: "interest" | "booking";
   success_redirect_url: string | null;
   show_country: boolean | null;
@@ -65,8 +77,6 @@ interface PaxRow {
   dietary: string;
 }
 
-const ROOM_TYPES = ["Single", "Twin share", "Double", "Triple"];
-const CONTACT_METHODS = ["Email", "Phone call", "Text message"];
 
 /**
  * Public register-interest / booking form. No login required — reads the page
