@@ -1753,6 +1753,220 @@ export type Database = {
           },
         ]
       }
+      crm_email_contacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          email_id: string
+          id: string
+          link_source: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          email_id: string
+          id?: string
+          link_source?: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          email_id?: string
+          id?: string
+          link_source?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_contacts_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "crm_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_email_links: {
+        Row: {
+          booking_id: string | null
+          confidence: string
+          created_at: string
+          created_by: string | null
+          email_id: string
+          id: string
+          lead_id: string | null
+          link_source: string
+          tour_id: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          email_id: string
+          id?: string
+          lead_id?: string | null
+          link_source?: string
+          tour_id?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          email_id?: string
+          id?: string
+          lead_id?: string | null
+          link_source?: string
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_links_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "crm_emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_links_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_links_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_emails: {
+        Row: {
+          attachments: Json
+          bcc_recipients: Json
+          body_html: string | null
+          body_text: string | null
+          cc_recipients: Json
+          conversation_id: string | null
+          conversation_index: string | null
+          created_at: string
+          direction: string
+          folder: string | null
+          from_address: string | null
+          from_name: string | null
+          graph_message_id: string
+          has_attachments: boolean
+          id: string
+          internet_message_id: string | null
+          is_internal: boolean
+          mailbox_id: string
+          occurred_at: string
+          preview: string | null
+          received_at: string | null
+          sent_at: string | null
+          sent_from_art_admin: boolean
+          subject: string | null
+          sync_error: string | null
+          sync_status: string
+          to_recipients: Json
+          updated_at: string
+          web_link: string | null
+        }
+        Insert: {
+          attachments?: Json
+          bcc_recipients?: Json
+          body_html?: string | null
+          body_text?: string | null
+          cc_recipients?: Json
+          conversation_id?: string | null
+          conversation_index?: string | null
+          created_at?: string
+          direction?: string
+          folder?: string | null
+          from_address?: string | null
+          from_name?: string | null
+          graph_message_id: string
+          has_attachments?: boolean
+          id?: string
+          internet_message_id?: string | null
+          is_internal?: boolean
+          mailbox_id: string
+          occurred_at?: string
+          preview?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          sent_from_art_admin?: boolean
+          subject?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          to_recipients?: Json
+          updated_at?: string
+          web_link?: string | null
+        }
+        Update: {
+          attachments?: Json
+          bcc_recipients?: Json
+          body_html?: string | null
+          body_text?: string | null
+          cc_recipients?: Json
+          conversation_id?: string | null
+          conversation_index?: string | null
+          created_at?: string
+          direction?: string
+          folder?: string | null
+          from_address?: string | null
+          from_name?: string | null
+          graph_message_id?: string
+          has_attachments?: boolean
+          id?: string
+          internet_message_id?: string | null
+          is_internal?: boolean
+          mailbox_id?: string
+          occurred_at?: string
+          preview?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          sent_from_art_admin?: boolean
+          subject?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          to_recipients?: Json
+          updated_at?: string
+          web_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_emails_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_lead_sources: {
         Row: {
           category: string | null
@@ -2669,6 +2883,98 @@ export type Database = {
           },
         ]
       }
+      email_mailbox_access: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          mailbox_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          mailbox_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          mailbox_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_mailbox_access_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_mailboxes: {
+        Row: {
+          address: string
+          connected_at: string | null
+          created_at: string
+          delta_links: Json
+          display_name: string | null
+          history_months: number
+          id: string
+          is_enabled: boolean
+          kind: string
+          last_error: string | null
+          last_success_at: string | null
+          last_sync_at: string | null
+          last_sync_status: string
+          notes: string | null
+          owner_user_id: string | null
+          sync_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          connected_at?: string | null
+          created_at?: string
+          delta_links?: Json
+          display_name?: string | null
+          history_months?: number
+          id?: string
+          is_enabled?: boolean
+          kind?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          last_sync_at?: string | null
+          last_sync_status?: string
+          notes?: string | null
+          owner_user_id?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          connected_at?: string | null
+          created_at?: string
+          delta_links?: Json
+          display_name?: string | null
+          history_months?: number
+          id?: string
+          is_enabled?: boolean
+          kind?: string
+          last_error?: string | null
+          last_success_at?: string | null
+          last_sync_at?: string | null
+          last_sync_status?: string
+          notes?: string | null
+          owner_user_id?: string | null
+          sync_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_suppressions: {
         Row: {
           acknowledged_at: string | null
@@ -2710,6 +3016,68 @@ export type Database = {
           suppression_type?: string
         }
         Relationships: []
+      }
+      email_sync_runs: {
+        Row: {
+          contacts_matched: number
+          created_at: string
+          error_message: string | null
+          errors: number
+          finished_at: string | null
+          id: string
+          mailbox_id: string | null
+          messages_matched: number
+          messages_scanned: number
+          messages_stored: number
+          messages_unmatched: number
+          run_type: string
+          started_at: string
+          status: string
+          window_start: string | null
+        }
+        Insert: {
+          contacts_matched?: number
+          created_at?: string
+          error_message?: string | null
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          mailbox_id?: string | null
+          messages_matched?: number
+          messages_scanned?: number
+          messages_stored?: number
+          messages_unmatched?: number
+          run_type?: string
+          started_at?: string
+          status?: string
+          window_start?: string | null
+        }
+        Update: {
+          contacts_matched?: number
+          created_at?: string
+          error_message?: string | null
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          mailbox_id?: string | null
+          messages_matched?: number
+          messages_scanned?: number
+          messages_stored?: number
+          messages_unmatched?: number
+          run_type?: string
+          started_at?: string
+          status?: string
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_runs_mailbox_id_fkey"
+            columns: ["mailbox_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailboxes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_templates: {
         Row: {
@@ -7241,6 +7609,15 @@ export type Database = {
       calculate_nights: {
         Args: { check_in: string; check_out: string }
         Returns: number
+      }
+      can_manage_mailboxes: { Args: { _user_id: string }; Returns: boolean }
+      can_read_crm_email: {
+        Args: { _email_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_read_mailbox: {
+        Args: { _mailbox_id: string; _user_id: string }
+        Returns: boolean
       }
       can_write_attachments: { Args: { _user_id: string }; Returns: boolean }
       check_ai_rate_limit: {
