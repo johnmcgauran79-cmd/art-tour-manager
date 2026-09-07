@@ -175,9 +175,28 @@ export default function PublicForm() {
   const heading = useMemo(() => page?.headline || page?.title || "", [page]);
   const customFields = useMemo(() => parseFormFields(page?.fields), [page]);
 
+  /** Which built-in questions this form asks, and how they're worded. */
+  const sf = useMemo(
+    () => resolveStandardFields(page as any),
+    [page]
+  ) as Record<StandardFieldKey, StandardFieldSetting>;
+  const shows = (key: StandardFieldKey) => sf[key]?.enabled !== false;
+  const label = (key: StandardFieldKey, fallback?: string) =>
+    standardLabel(key, sf, fallback) + (sf[key]?.required ? " *" : "");
+
+  const roomTypes = page?.room_type_options?.length ? page.room_type_options : DEFAULT_ROOM_TYPES;
+  const extraTourOptions = page?.extra_tour_options || [];
+  const multipleTours = isBooking
+    ? page?.allow_multiple_tours === true
+    : page?.allow_multiple_tours !== false;
+
   const toggleTour = (id: string) =>
     setSelectedTours((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : isBooking ? [id] : [...prev, id]
+      prev.includes(id) ? prev.filter((t) => t !== id) : multipleTours ? [...prev, id] : [id]
+    );
+  const toggleExtraTour = (name: string) =>
+    setExtraTours((prev) =>
+      prev.includes(name) ? prev.filter((t) => t !== name) : multipleTours ? [...prev, name] : [name]
     );
 
   const submit = async (e: React.FormEvent) => {
@@ -187,7 +206,36 @@ export default function PublicForm() {
       setError("Please enter your name and email address.");
       return;
     }
-    if (isBooking && selectedTours.length === 0) {
+
+    /* Compulsory built-in questions, as configured on the form. */
+    const values: Partial<Record<StandardFieldKey, unknown>> = {
+      last_name: form.last_name,
+      phone: form.phone,
+      state: form.state,
+      country: form.country,
+      travellers: form.travellers,
+      previous_traveller: form.previous_traveller,
+      preferred_contact: form.preferred_contact,
+      tours: [...selectedTours, ...extraTours].length ? "yes" : "",
+      passengers: pax.some((p) => p.first_name.trim()) ? "yes" : "",
+      room_type: form.room_type,
+      bedding: form.bedding,
+      emergency_contact: form.emergency_contact,
+      special_requests: form.special_requests,
+      message: form.message,
+      consent: form.consent ? "yes" : "",
+    };
+    const missingStandard = (Object.keys(values) as StandardFieldKey[]).find(
+      (key) =>
+        sf[key]?.enabled &&
+        sf[key]?.required &&
+        !String(values[key] ?? "").trim()
+    );
+    if (missingStandard) {
+      setError(`Please complete "${standardLabel(missingStandard, sf)}".`);
+      return;
+    }
+    if (isBooking && shows("tours") && selectedTours.length === 0 && extraTours.length === 0) {
       setError("Please choose the tour you'd like to book.");
       return;
     }
@@ -201,6 +249,7 @@ export default function PublicForm() {
       setError(`Please complete "${missing.label}".`);
       return;
     }
+
     setSubmitting(true);
     const { data, error: fnError } = await supabase.functions.invoke("marketing-submit-lead", {
       body: {
