@@ -193,6 +193,8 @@ Deno.serve(async (req) => {
     const mode: "delta" | "historical" | "manual" = body.mode || "delta";
     const mailboxId: string | undefined = body.mailboxId;
     const months: number | undefined = body.months;
+    const before: string | undefined = body.before;
+
 
     // Staff-triggered runs must be an admin or manager; the cron job passes no JWT.
     const authHeader = req.headers.get("Authorization");
