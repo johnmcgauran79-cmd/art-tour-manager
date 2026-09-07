@@ -103,14 +103,30 @@ export async function ingestMessage(
   };
 
   // Idempotent upsert on the Microsoft message identity.
-  const { data: upserted, error } = await db
+  let { data: upserted, error } = await db
     .from("crm_emails")
     .upsert(row, { onConflict: "mailbox_id,graph_message_id" })
     .select("id, created_at")
     .single();
+
+  // The same Microsoft email can be visible from more than one mailbox
+  // (e.g. sent by one address, received by another). One email = one record,
+  // so fall back to the existing row instead of failing.
+  if (error && String(error.message || "").includes("crm_emails_internet_key")) {
+    const { data: existing } = await db
+      .from("crm_emails")
+      .select("id, created_at")
+      .eq("internet_message_id", row.internet_message_id)
+      .maybeSingle();
+    if (existing) {
+      upserted = existing;
+      error = null;
+    }
+  }
   if (error) throw error;
 
   const emailId = upserted.id as string;
+
   const created =
     !!upserted.created_at &&
     Math.abs(new Date(upserted.created_at).getTime() - Date.now()) < 60_000;
