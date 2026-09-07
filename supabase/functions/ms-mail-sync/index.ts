@@ -130,6 +130,8 @@ async function syncMailbox(
           }
         }
 
+        await saveProgress();
+
         if (page["@odata.deltaLink"]) {
           deltaLinks[folder] = page["@odata.deltaLink"];
           break;
@@ -137,6 +139,7 @@ async function syncMailbox(
         url = page["@odata.nextLink"] || "";
       }
     }
+
   } catch (e) {
     failure = (e as Error).message;
     counts.errors += 1;
