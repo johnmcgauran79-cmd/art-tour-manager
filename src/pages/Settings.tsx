@@ -60,7 +60,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : canManageBrands ? 'grid-cols-5' : 'grid-cols-4'} mb-8`}>
+        <TabsList className={`mb-8 flex w-full flex-wrap h-auto gap-1 md:grid ${isAdmin ? 'md:grid-cols-6' : canManageBrands ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           <TabsTrigger value="email-management">Email Management</TabsTrigger>
           <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
