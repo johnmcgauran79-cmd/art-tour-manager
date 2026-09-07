@@ -71,7 +71,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         <TabsContent value="email-management" className="space-y-6">
           <Tabs value={emailSubTab} onValueChange={setEmailSubTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="mb-6 flex w-full flex-wrap h-auto gap-1 md:grid md:grid-cols-5">
               <TabsTrigger value="templates">Email Templates</TabsTrigger>
               <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
               <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
