@@ -849,14 +849,14 @@ export const EmailTemplatesManagement = () => {
                 </div>
                 
                 <Tabs defaultValue="customer" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 mb-1">
+                  <TabsList className="flex w-full flex-wrap h-auto gap-1 mb-1">
                     <TabsTrigger value="customer">Recipient</TabsTrigger>
                     <TabsTrigger value="lead_passenger">Lead Pax</TabsTrigger>
                     <TabsTrigger value="passenger_2">Pax 2</TabsTrigger>
                     <TabsTrigger value="passenger_3">Pax 3</TabsTrigger>
                     <TabsTrigger value="tour">Tour</TabsTrigger>
                   </TabsList>
-                  <TabsList className="grid w-full grid-cols-5">
+                  <TabsList className="flex w-full flex-wrap h-auto gap-1">1
                     <TabsTrigger value="booking">Booking</TabsTrigger>
                     <TabsTrigger value="hotel">Hotel</TabsTrigger>
                     <TabsTrigger value="activity">Activity</TabsTrigger>
