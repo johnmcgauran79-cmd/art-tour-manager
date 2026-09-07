@@ -39,7 +39,9 @@ import { LeadDialog } from "@/components/crm/LeadDialog";
 import { LogActivityDialog } from "@/components/crm/LogActivityDialog";
 import { CrmActivityFeed } from "@/components/crm/CrmActivityFeed";
 import { SubmissionsList } from "@/components/crm/SubmissionsList";
+import { LeadEmailsPanel } from "@/components/crm/LeadEmailsPanel";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
+
 import {
   useCrmConfig,
   useDeleteLead,
@@ -227,6 +229,7 @@ export default function LeadDetail() {
       <Tabs defaultValue="activity">
         <TabsList>
           <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="emails">Emails</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="history">Stage history</TabsTrigger>
@@ -236,6 +239,16 @@ export default function LeadDetail() {
           <CrmActivityFeed leadId={lead.id} />
         </TabsContent>
 
+        <TabsContent value="emails" className="mt-4">
+          <LeadEmailsPanel
+            leadId={lead.id}
+            customerId={lead.customer_id}
+            contactEmail={lead.customer?.email || null}
+            tourId={lead.tour_id}
+            tourName={lead.tour?.name || null}
+          />
+        </TabsContent>
+
         <TabsContent value="tasks" className="mt-4">
           <RelatedTasksSection entityType="lead" entityId={lead.id} title="Tasks for this enquiry" />
         </TabsContent>
@@ -243,6 +256,7 @@ export default function LeadDetail() {
         <TabsContent value="forms" className="mt-4">
           <SubmissionsList leadId={lead.id} title="Forms behind this enquiry" />
         </TabsContent>
+
 
         <TabsContent value="history" className="mt-4">
           <ol className="space-y-2">

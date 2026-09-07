@@ -472,9 +472,16 @@ export default function ContactDetail() {
         </TabsContent>
 
         <TabsContent value="communications" className="space-y-4 mt-6">
+          {id && (
+            <ContactEmailsPanel
+              customerId={id}
+              contactEmail={contact.email || null}
+              contactName={`${contact.first_name || ""} ${contact.last_name || ""}`.trim()}
+            />
+          )}
           <Card>
             <CardHeader>
-              <CardTitle>Communications</CardTitle>
+              <CardTitle>Automated & marketing emails</CardTitle>
             </CardHeader>
             <CardContent>
               <CommunicationsTimeline
@@ -485,6 +492,7 @@ export default function ContactDetail() {
             </CardContent>
           </Card>
         </TabsContent>
+
 
         <TabsContent value="sales" className="space-y-4 mt-6">
           {id && <ContactCrmPanel customerId={id} />}
