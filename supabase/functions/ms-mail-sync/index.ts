@@ -25,14 +25,18 @@ async function syncMailbox(
   mailbox: MailboxRow & { delta_links: Record<string, string>; history_months: number },
   runType: "delta" | "historical" | "manual",
   monthsOverride?: number,
+  before?: string,
 ) {
   const counts = empty();
   // A manual "Sync now" is a light catch-up, not a full history import.
   const months = monthsOverride ?? (runType === "manual" ? 0 : mailbox.history_months ?? 12);
-  const windowStart = new Date();
-  if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
+  // History is imported one month at a time so a single run always finishes
+  // inside the function's time budget; the caller chains the next chunk.
+  const windowEnd = runType === "historical" && before ? new Date(before) : new Date();
+  const windowStart = new Date(windowEnd);
+  if (runType === "historical") windowStart.setMonth(windowStart.getMonth() - 1);
+  else if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
   else windowStart.setDate(windowStart.getDate() - 7);
-
 
   const { data: run } = await db
     .from("email_sync_runs")
@@ -53,6 +57,24 @@ async function syncMailbox(
   const deltaLinks: Record<string, string> = { ...(mailbox.delta_links || {}) };
   let failure: string | null = null;
 
+  // Counts are written after every page so the admin screen shows progress
+  // even while a long import is still running.
+  const saveProgress = async () => {
+    if (!run?.id) return;
+    await db
+      .from("email_sync_runs")
+      .update({
+        messages_scanned: counts.scanned,
+        messages_stored: counts.stored,
+        messages_matched: counts.matched,
+        contacts_matched: counts.contacts,
+        messages_unmatched: counts.unmatched,
+        errors: counts.errors,
+      })
+      .eq("id", run.id);
+  };
+
+
   try {
     for (const folder of FOLDERS) {
       let url: string;
@@ -63,11 +85,14 @@ async function syncMailbox(
         url = `/users/${encodeURIComponent(mailbox.address)}/mailFolders/${folder}/messages/delta?$select=${MESSAGE_FIELDS}&$top=50`;
       } else {
         const field = folder === "sentitems" ? "sentDateTime" : "receivedDateTime";
+        const upper =
+          runType === "historical" ? ` and ${field} lt ${windowEnd.toISOString()}` : "";
         url =
           `/users/${encodeURIComponent(mailbox.address)}/mailFolders/${folder}/messages` +
           `?$select=${MESSAGE_FIELDS}&$top=50&$orderby=${field} desc` +
-          `&$filter=${field} ge ${windowStart.toISOString()}`;
+          `&$filter=${field} ge ${windowStart.toISOString()}${upper}`;
       }
+
 
       let pages = 0;
       while (url && pages < 60) {
@@ -105,6 +130,8 @@ async function syncMailbox(
           }
         }
 
+        await saveProgress();
+
         if (page["@odata.deltaLink"]) {
           deltaLinks[folder] = page["@odata.deltaLink"];
           break;
@@ -112,6 +139,7 @@ async function syncMailbox(
         url = page["@odata.nextLink"] || "";
       }
     }
+
   } catch (e) {
     failure = (e as Error).message;
     counts.errors += 1;
@@ -143,8 +171,14 @@ async function syncMailbox(
     })
     .eq("id", mailbox.id);
 
-  return { mailbox: mailbox.address, ...counts, error: failure };
+  return {
+    mailbox: mailbox.address,
+    ...counts,
+    error: failure,
+    windowStart: windowStart.toISOString(),
+  };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -159,6 +193,8 @@ Deno.serve(async (req) => {
     const mode: "delta" | "historical" | "manual" = body.mode || "delta";
     const mailboxId: string | undefined = body.mailboxId;
     const months: number | undefined = body.months;
+    const before: string | undefined = body.before;
+
 
     // Staff-triggered runs must be an admin or manager; the cron job passes no JWT.
     const authHeader = req.headers.get("Authorization");
@@ -198,11 +234,39 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Each historical run covers one month; the next month is queued only when
+    // months remain, so the chain always ends.
+    const chainNext = async (mb: any, cursor: string, remaining: number) => {
+      if (remaining <= 1) return;
+      try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ms-mail-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            mode: "historical",
+            mailboxId: mb.id,
+            months: remaining - 1,
+            before: cursor,
+          }),
+        });
+      } catch (e) {
+        console.error("history chain failed", mb.address, (e as Error).message);
+      }
+    };
+
     const work = async () => {
       const results = [];
       for (const mb of mailboxes) {
         try {
-          results.push(await syncMailbox(db, mb as any, mode, months));
+          const res = await syncMailbox(db, mb as any, mode, months, before);
+          results.push(res);
+          if (mode === "historical" && !res.error) {
+            const total = months ?? (mb as any).history_months ?? 12;
+            await chainNext(mb, res.windowStart, total);
+          }
         } catch (e) {
           console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
         }
@@ -215,6 +279,7 @@ Deno.serve(async (req) => {
           details: { mailboxId: mailboxId ?? "all", months, results },
         });
       }
+
       return results;
     };
 
