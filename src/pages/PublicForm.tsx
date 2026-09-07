@@ -387,7 +387,7 @@ export default function PublicForm() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="first_name">First name *</Label>
+                    <Label htmlFor="first_name">{label("first_name", "First name")}</Label>
                     <Input
                       id="first_name"
                       value={form.first_name}
@@ -395,16 +395,18 @@ export default function PublicForm() {
                       required
                     />
                   </div>
+                  {shows("last_name") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="last_name">{label("last_name", "Surname")}</Label>
+                      <Input
+                        id="last_name"
+                        value={form.last_name}
+                        onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <Label htmlFor="last_name">Surname</Label>
-                    <Input
-                      id="last_name"
-                      value={form.last_name}
-                      onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{label("email", "Email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -413,36 +415,41 @@ export default function PublicForm() {
                       required
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="state">State</Label>
-                    <Select
-                      value={form.state}
-                      onValueChange={(state) => setForm({ ...form, state })}
-                    >
-                      <SelectTrigger id="state">
-                        <SelectValue placeholder="Select your state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AU_STATES.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="Overseas">Overseas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {page.show_country && (
+                  {shows("phone") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="country">Country</Label>
+                      <Label htmlFor="phone">{label("phone", "Phone")}</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  {shows("state") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="state">{label("state", "State")}</Label>
+                      <Select
+                        value={form.state}
+                        onValueChange={(state) => setForm({ ...form, state })}
+                      >
+                        <SelectTrigger id="state">
+                          <SelectValue placeholder="Select your state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AU_STATES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="Overseas">Overseas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {shows("country") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="country">{label("country", "Country")}</Label>
                       <Input
                         id="country"
                         value={form.country}
@@ -450,9 +457,11 @@ export default function PublicForm() {
                       />
                     </div>
                   )}
-                  {page.show_travellers !== false && (
+                  {shows("travellers") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="travellers">How many travelling?</Label>
+                      <Label htmlFor="travellers">
+                        {label("travellers", "How many travelling?")}
+                      </Label>
                       <Input
                         id="travellers"
                         type="number"
@@ -464,9 +473,11 @@ export default function PublicForm() {
                       />
                     </div>
                   )}
-                  {page.show_previous_traveller !== false && (
+                  {shows("previous_traveller") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="previous_traveller">Travelled with us before?</Label>
+                      <Label htmlFor="previous_traveller">
+                        {label("previous_traveller", "Travelled with us before?")}
+                      </Label>
                       <Select
                         value={form.previous_traveller}
                         onValueChange={(previous_traveller) =>
@@ -483,9 +494,11 @@ export default function PublicForm() {
                       </Select>
                     </div>
                   )}
-                  {page.show_preferred_contact && (
+                  {shows("preferred_contact") && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="preferred_contact">Preferred contact method</Label>
+                      <Label htmlFor="preferred_contact">
+                        {label("preferred_contact", "Preferred contact method")}
+                      </Label>
                       <Select
                         value={form.preferred_contact}
                         onValueChange={(preferred_contact) =>
@@ -496,8 +509,9 @@ export default function PublicForm() {
                           <SelectValue placeholder="Please choose" />
                         </SelectTrigger>
                         <SelectContent>
-                          {CONTACT_METHODS.map((m) => (
+                          {CONTACT_METHOD_OPTIONS.map((m) => (
                             <SelectItem key={m} value={m}>
+
                               {m}
                             </SelectItem>
                           ))}
