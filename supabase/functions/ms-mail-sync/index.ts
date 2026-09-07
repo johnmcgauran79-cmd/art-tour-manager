@@ -198,23 +198,42 @@ Deno.serve(async (req) => {
       });
     }
 
-    const results = [];
-    for (const mb of mailboxes) {
-      results.push(await syncMailbox(db, mb as any, mode, months));
+    const work = async () => {
+      const results = [];
+      for (const mb of mailboxes) {
+        try {
+          results.push(await syncMailbox(db, mb as any, mode, months));
+        } catch (e) {
+          console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
+        }
+      }
+      if (actorId && mode !== "delta") {
+        await db.from("audit_log").insert({
+          user_id: actorId,
+          operation_type: mode === "historical" ? "email_historical_import" : "email_manual_sync",
+          table_name: "crm_emails",
+          details: { mailboxId: mailboxId ?? "all", months, results },
+        });
+      }
+      return results;
+    };
+
+    // Long-running mail reads keep going after the response so the browser
+    // never waits (or times out) on a big mailbox.
+    const runtime = (globalThis as any).EdgeRuntime;
+    if (runtime?.waitUntil) {
+      runtime.waitUntil(work());
+      return new Response(
+        JSON.stringify({ success: true, started: mailboxes.length, background: true }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    if (actorId && mode !== "delta") {
-      await db.from("audit_log").insert({
-        user_id: actorId,
-        operation_type: mode === "historical" ? "email_historical_import" : "email_manual_sync",
-        table_name: "crm_emails",
-        details: { mailboxId: mailboxId ?? "all", months, results },
-      });
-    }
-
+    const results = await work();
     return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("ms-mail-sync failed", e);
     return new Response(JSON.stringify({ error: (e as Error).message }), {
