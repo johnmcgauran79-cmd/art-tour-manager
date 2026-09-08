@@ -153,7 +153,9 @@ export function LeadPipelineBoard() {
                       />
                       {stage.label}
                     </span>
-                    <Badge variant="secondary">{items.length}</Badge>
+                    <Badge variant="secondary">
+                      {items.length} · {items.reduce((n, l) => n + (l.passengers || 0), 0)} pax
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -161,8 +163,7 @@ export function LeadPipelineBoard() {
                     <LeadKanbanCard
                       key={lead.id}
                       lead={lead}
-                      needsNextAction={stage.requires_next_action && !lead.next_action_date}
-                      overdue={!!lead.next_action_date && lead.next_action_date < today}
+                      fact={facts?.get(lead.id)}
                       onDragStart={() => setDragging(lead.id)}
                     />
                   ))}
