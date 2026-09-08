@@ -18,6 +18,16 @@ import {
   type FormSubmission,
 } from "@/hooks/useFormSubmissions";
 import { useTours } from "@/hooks/useTours";
+import { useSaveTourMapping } from "@/hooks/useLeadIntegrations";
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Row = ({ label, value }: { label: string; value?: React.ReactNode }) =>
   value === null || value === undefined || value === "" ? null : (
@@ -40,6 +50,8 @@ export function SubmissionDetailDialog({
   const reprocess = useReprocessSubmission();
   const markReviewed = useMarkSubmissionReviewed();
   const { data: tours = [] } = useTours();
+  const saveMapping = useSaveTourMapping();
+  const [mapChoice, setMapChoice] = useState<Record<string, string>>({});
 
   if (!submission) return null;
 
@@ -144,7 +156,71 @@ export function SubmissionDetailDialog({
           <Row label="Referring page" value={submission.referrer} />
           <Row label="Page" value={submission.landing_page_url} />
           <Row label="Reference" value={submission.submission_uid} />
+          <Row label="Lead source" value={submission.integration?.name} />
+          <Row label="Platform" value={submission.platform} />
+          <Row label="Ad campaign" value={submission.campaign_id} />
+          <Row label="Ad set" value={submission.ad_set} />
+          <Row label="Partner" value={submission.partner} />
+          <Row label="Their form" value={submission.external_form_name} />
+          <Row label="Their reference" value={submission.external_lead_id} />
+          <Row
+            label="Sent at"
+            value={
+              submission.submitted_at
+                ? format(new Date(submission.submitted_at), "dd/MM/yyyy HH:mm")
+                : undefined
+            }
+          />
         </div>
+
+        {(submission.unmapped_tours || []).length > 0 && (
+          <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
+            <h4 className="text-sm font-semibold">Tour wording we didn't recognise</h4>
+            <p className="text-xs text-muted-foreground">
+              Tell us which tour each of these means. We'll remember it for next time — then press
+              Retry to finish this enquiry.
+            </p>
+            {(submission.unmapped_tours || []).map((wording) => (
+              <div key={wording} className="space-y-1">
+                <Label className="text-xs">{wording}</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={mapChoice[wording] || ""}
+                    onValueChange={(v) => setMapChoice({ ...mapChoice, [wording]: v })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Choose our tour" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(tours as any[])
+                        .filter(
+                          (t) => !["cancelled", "archived", "past"].includes(String(t.status || ""))
+                        )
+                        .map((t: any) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    disabled={!mapChoice[wording] || saveMapping.isPending}
+                    onClick={() =>
+                      saveMapping.mutate({
+                        integration_id: submission.integration_id,
+                        external_key: wording,
+                        tour_id: mapChoice[wording],
+                      })
+                    }
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <Separator />
 

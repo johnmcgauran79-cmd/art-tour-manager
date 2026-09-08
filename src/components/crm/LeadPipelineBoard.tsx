@@ -33,6 +33,7 @@ export function LeadPipelineBoard() {
   const [ownerId, setOwnerId] = useState(ALL);
   const [priority, setPriority] = useState(ALL);
   const [flag, setFlag] = useState(ALL);
+  const [channel, setChannel] = useState(ALL);
   const [dragging, setDragging] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -48,9 +49,13 @@ export function LeadPipelineBoard() {
       if (flag === "no_next_action" && l.next_action_date) return false;
       if (flag === "overdue" && !(l.next_action_date && l.next_action_date < today)) return false;
       if (flag === "unowned" && l.owner_id) return false;
+      if (channel !== ALL) {
+        const c = (l as any).source_channel || "website";
+        if (channel === "external" ? c === "website" : c !== channel) return false;
+      }
       return true;
     });
-  }, [leads, search, tourId, ownerId, priority, flag, today]);
+  }, [leads, search, tourId, ownerId, priority, flag, channel, today]);
 
   const stages = (config?.stages || []).filter((s) => s.is_active);
 
@@ -79,6 +84,18 @@ export function LeadPipelineBoard() {
             {users.map((u) => (
               <SelectItem key={u.id} value={u.id}>{u.first_name} {u.last_name}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={channel} onValueChange={setChannel}>
+          <SelectTrigger className="w-44"><SelectValue placeholder="Where from" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All sources</SelectItem>
+            <SelectItem value="website">Our website</SelectItem>
+            <SelectItem value="external">Anywhere else</SelectItem>
+            <SelectItem value="meta">Facebook / Instagram</SelectItem>
+            <SelectItem value="zapier">Zapier</SelectItem>
+            <SelectItem value="partner">Partners</SelectItem>
+            <SelectItem value="api">Other systems</SelectItem>
           </SelectContent>
         </Select>
         <Select value={priority} onValueChange={setPriority}>

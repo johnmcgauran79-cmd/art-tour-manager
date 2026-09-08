@@ -49,18 +49,39 @@ export interface FormSubmission {
   processed_at: string | null;
   ack_email_status: string | null;
   created_at: string;
+  /* External sources (Facebook, Zapier, partners, other systems) */
+  source_channel: string | null;
+  integration_id: string | null;
+  external_source: string | null;
+  external_lead_id: string | null;
+  external_form_name: string | null;
+  external_form_id: string | null;
+  submitted_at: string | null;
+  raw_payload: any;
+  platform: string | null;
+  campaign_id: string | null;
+  ad_set: string | null;
+  ad_name: string | null;
+  partner: string | null;
+  unmapped_tours: string[] | null;
+  tour_mapping: any;
+  processing_attempts: any;
   landing_page?: { title: string; slug: string } | null;
   customer?: { id: string; first_name: string | null; last_name: string | null } | null;
   tour?: { id: string; name: string } | null;
+  integration?: { id: string; name: string; provider: string; key: string } | null;
 }
 
 const SELECT =
-  "*, landing_page:landing_pages(title, slug), customer:customers(id, first_name, last_name), tour:tours(id, name)";
+  "*, landing_page:landing_pages(title, slug), customer:customers(id, first_name, last_name), tour:tours(id, name), integration:lead_integrations(id, name, provider, key)";
 
 export interface SubmissionFilters {
   status?: string;
   needsReview?: boolean;
   formType?: string;
+  /** "website" or an external channel such as meta / zapier / partner / api */
+  channel?: string;
+  integrationId?: string;
   search?: string;
 }
 
@@ -76,6 +97,9 @@ export const useFormSubmissions = (filters: SubmissionFilters = {}) =>
       if (filters.status) q = q.eq("processing_status", filters.status);
       if (filters.needsReview) q = q.eq("needs_review", true);
       if (filters.formType) q = q.eq("form_type", filters.formType);
+      if (filters.channel === "external") q = q.neq("source_channel", "website");
+      else if (filters.channel) q = q.eq("source_channel", filters.channel);
+      if (filters.integrationId) q = q.eq("integration_id", filters.integrationId);
       const { data, error } = await q;
       if (error) throw error;
       const rows = (data || []) as FormSubmission[];

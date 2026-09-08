@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { processSubmission, saveIntakeResult } from "../_shared/leadIntake.ts";
+import { runExternalIntake } from "../_shared/externalLeadIntake.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,6 +48,34 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (sErr) throw sErr;
     if (!submission) return json({ error: "Submission not found" }, 404);
+
+    /* External (Phase 4) submissions are processed with the integration's
+       configuration; website submissions use their landing page. Either way the
+       same Phase 2 pipeline runs. */
+    if (submission.integration_id) {
+      const { data: integration } = await admin
+        .from("lead_integrations")
+        .select("*")
+        .eq("id", submission.integration_id)
+        .maybeSingle();
+      if (!integration)
+        return json({ error: "The lead source for this submission no longer exists" }, 404);
+
+      const result = await runExternalIntake(
+        admin,
+        submission,
+        integration,
+        (submission.retry_count || 0) + 1
+      );
+      await admin.from("audit_log").insert({
+        user_id: userRes.user.id,
+        operation_type: "external_lead_reprocessed",
+        table_name: "landing_page_submissions",
+        record_id: submission.id,
+        details: { integration: integration.key, status: result.status },
+      });
+      return json({ ok: result.status === "processed" && !result.needs_review, result });
+    }
 
     const { data: page } = await admin
       .from("landing_pages")

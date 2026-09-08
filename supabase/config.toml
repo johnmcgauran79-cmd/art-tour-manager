@@ -194,3 +194,12 @@ verify_jwt = false
 
 [functions.ms-mail-attachment]
 verify_jwt = false
+
+[functions.lead-intake]
+verify_jwt = false
+
+[functions.lead-integration-keys]
+verify_jwt = false
+
+[functions.meta-leads-webhook]
+verify_jwt = false

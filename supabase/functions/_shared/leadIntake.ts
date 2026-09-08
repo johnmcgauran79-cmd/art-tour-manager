@@ -179,7 +179,7 @@ export async function processSubmission(
           .update({
             marketing_consent: true,
             marketing_consent_at: submission.created_at || nowIso(),
-            marketing_consent_source: `Form: ${page.slug}`,
+            marketing_consent_source: page.consent_source || `Form: ${page.slug}`,
           })
           .eq("id", result.customer_id);
         await supabase
@@ -245,7 +245,7 @@ export async function processSubmission(
             priority,
             owner_id: page.lead_owner_id || null,
             source: page.lead_source || `Form: ${page.slug}`,
-            medium: "website_form",
+            medium: page.medium || "website_form",
             campaign: submission.utm_campaign || null,
             utm_source: submission.utm_source || null,
             utm_medium: submission.utm_medium || null,
@@ -264,7 +264,10 @@ export async function processSubmission(
             ),
             next_action_note: isBooking
               ? "Booking request received — send invoice / confirm details"
-              : "Follow up on website enquiry",
+              : page.next_action_note || "Follow up on website enquiry",
+            // External integrations pass structured attribution (platform,
+            // campaign/ad ids, partner, lead form) through here.
+            ...(page.lead_extra && typeof page.lead_extra === "object" ? page.lead_extra : {}),
           })
           .select("id")
           .single();
@@ -282,7 +285,7 @@ export async function processSubmission(
         lead_id: result.lead_id,
         interest_level: isBooking ? "keen" : "interested",
         status: "interested",
-        source: `form:${page.slug}`,
+        source: page.interest_source || `form:${page.slug}`,
       }));
       const { error } = await supabase
         .from("tour_interests")
@@ -341,7 +344,9 @@ export async function processSubmission(
         lead_id: result.lead_id,
         activity_type: "form",
         direction: "inbound",
-        subject: `${isBooking ? "Booking form" : "Register interest form"} submitted — ${page.title}`,
+        subject: page.activity_label
+          ? `${page.activity_label} — ${page.title}`
+          : `${isBooking ? "Booking form" : "Register interest form"} submitted — ${page.title}`,
         body: activityLines.join("\n"),
         occurred_at: submission.created_at || nowIso(),
       });
@@ -361,7 +366,7 @@ export async function processSubmission(
               .join("\n- ")}`
           : "",
         ...activityLines.slice(1),
-        `Submitted via: ${page.title} (/f/${page.slug})`,
+        page.submitted_via || `Submitted via: ${page.title} (/f/${page.slug})`,
       ].filter(Boolean);
 
       const title = isBooking
