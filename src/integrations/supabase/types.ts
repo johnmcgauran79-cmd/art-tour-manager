@@ -8206,8 +8206,13 @@ export type Database = {
         Returns: string
       }
       crm_action_board: { Args: never; Returns: Json }
+      crm_attribution_performance: {
+        Args: { _from?: string; _to?: string }
+        Returns: Json
+      }
       crm_business_days: { Args: { _a: string; _b: string }; Returns: number }
       crm_business_hours: { Args: { _a: string; _b: string }; Returns: number }
+      crm_data_quality: { Args: never; Returns: Json }
       crm_funnel: {
         Args: { _from?: string; _to?: string; _tour_id?: string }
         Returns: Json
@@ -8218,6 +8223,10 @@ export type Database = {
       }
       crm_response_performance: {
         Args: { _from?: string; _to?: string }
+        Returns: Json
+      }
+      crm_tour_sales: {
+        Args: { _from?: string; _include_past?: boolean; _to?: string }
         Returns: Json
       }
       crm_weekend_days: { Args: { _a: string; _b: string }; Returns: number }
