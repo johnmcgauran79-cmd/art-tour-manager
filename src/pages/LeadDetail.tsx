@@ -41,6 +41,9 @@ import { CrmActivityFeed } from "@/components/crm/CrmActivityFeed";
 import { SubmissionsList } from "@/components/crm/SubmissionsList";
 import { LeadEmailsPanel } from "@/components/crm/LeadEmailsPanel";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
+import { LeadAttentionCard } from "@/components/crm/LeadAttentionCard";
+import { LeadOutcomeDialog } from "@/components/crm/LeadOutcomeDialog";
+import { useLeadFact } from "@/hooks/useCrmSales";
 
 import {
   useCrmConfig,
