@@ -27,6 +27,7 @@ export function LeadPipelineBoard() {
   const { data: leads = [], isLoading } = useCrmLeads();
   const { data: tours = [] } = useTours();
   const { data: users = [] } = useAssignableUsers();
+  const { data: facts } = useLeadFactsMap();
   const update = useUpdateLead();
 
   const [search, setSearch] = useState("");
