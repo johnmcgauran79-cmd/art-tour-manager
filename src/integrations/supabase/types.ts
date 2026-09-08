@@ -8874,7 +8874,20 @@ export type Database = {
         Returns: Json
       }
       crm_audience_field_kind: { Args: { _field: string }; Returns: string }
+      crm_audience_match: {
+        Args: { _limit?: number; _only_sendable?: boolean; _rules: Json }
+        Returns: {
+          customer_id: string
+          email: string
+          exclusion_reason: string
+          first_name: string
+          last_name: string
+          marketing_eligible: boolean
+          state: string
+        }[]
+      }
       crm_audience_predicate: { Args: { _node: Json }; Returns: string }
+      crm_audience_summary: { Args: { _rules: Json }; Returns: Json }
       crm_business_days: { Args: { _a: string; _b: string }; Returns: number }
       crm_business_hours: { Args: { _a: string; _b: string }; Returns: number }
       crm_data_quality: { Args: never; Returns: Json }
