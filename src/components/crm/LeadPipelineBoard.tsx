@@ -182,15 +182,20 @@ export function LeadPipelineBoard() {
 
 function LeadKanbanCard({
   lead,
-  needsNextAction,
-  overdue,
+  fact,
   onDragStart,
 }: {
   lead: Lead;
-  needsNextAction: boolean;
-  overdue: boolean;
+  fact?: LeadFact;
   onDragStart: () => void;
 }) {
+  const warnings: string[] = [];
+  if (fact?.awaiting_first_response) warnings.push("Never responded to");
+  if (fact?.no_next_action) warnings.push("No next action");
+  if (fact?.next_action_overdue) warnings.push("Follow-up overdue");
+  if (fact?.is_stale) warnings.push("Going cold");
+  if (fact?.client_replied) warnings.push("Client replied");
+
   return (
     <div
       draggable
@@ -219,23 +224,27 @@ function LeadKanbanCard({
             <Phone className="h-3 w-3" /> {lead.customer.phone}
           </div>
         )}
-        {!!lead.passengers && (
-          <div className="flex items-center gap-1.5">
-            <Users className="h-3 w-3" /> {lead.passengers} travelling
+        <div className="flex items-center gap-1.5">
+          <Users className="h-3 w-3" />
+          {lead.passengers ? `${lead.passengers} travelling` : "Number travelling unknown"}
+        </div>
+        {lead.next_action_date && (
+          <div className={`flex items-center gap-1.5 ${fact?.next_action_overdue ? "text-destructive" : ""}`}>
+            <CalendarClock className="h-3 w-3" /> {formatDateToDDMMYYYY(lead.next_action_date)}
           </div>
         )}
-        {lead.next_action_date && (
-          <div className={`flex items-center gap-1.5 ${overdue ? "text-destructive" : ""}`}>
-            <CalendarClock className="h-3 w-3" /> {formatDateToDDMMYYYY(lead.next_action_date)}
+        {fact && (
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3" /> {fact.business_days_in_stage} working days in stage
           </div>
         )}
       </div>
 
-      {needsNextAction && (
-        <div className="flex items-center gap-1.5 rounded bg-amber-100 px-2 py-1 text-amber-900">
-          <AlertTriangle className="h-3 w-3" /> No next action
+      {warnings.map((w) => (
+        <div key={w} className="flex items-center gap-1.5 rounded bg-amber-100 px-2 py-1 text-amber-900">
+          <AlertTriangle className="h-3 w-3" /> {w}
         </div>
-      )}
+      ))}
 
       <Button asChild variant="ghost" size="sm" className="h-7 w-full text-xs">
         <Link to={`/leads/${lead.id}`}>Open enquiry</Link>
