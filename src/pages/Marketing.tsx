@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, Inbox, LayoutTemplate, MailCheck, Megaphone, Plug, Send, Tag, Target } from "lucide-react";
+import { BarChart3, FileText, Inbox, LayoutTemplate, MailCheck, Megaphone, Plug, Send, Tag, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { CampaignsTab } from "@/components/marketing/CampaignsTab";
@@ -11,8 +11,9 @@ import { LandingPagesTab } from "@/components/marketing/LandingPagesTab";
 import { TagsTab } from "@/components/marketing/TagsTab";
 import { LeadSourcesTab } from "@/components/marketing/LeadSourcesTab";
 import { SubmissionsTab } from "@/components/marketing/SubmissionsTab";
+import { CampaignResultsTab } from "@/components/marketing/CampaignResultsTab";
 
-const TABS = ["campaigns", "sent", "templates", "audiences", "tags", "forms", "submissions", "sources"] as const;
+const TABS = ["campaigns", "sent", "results", "templates", "audiences", "tags", "forms", "submissions", "sources"] as const;
 
 export default function Marketing() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,12 +52,15 @@ export default function Marketing() {
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
-        <TabsList>
+        <TabsList className="flex h-auto w-full flex-wrap gap-1">
           <TabsTrigger value="campaigns" className="gap-1.5">
             <Send className="h-3.5 w-3.5" /> Campaigns
           </TabsTrigger>
           <TabsTrigger value="sent" className="gap-1.5">
             <MailCheck className="h-3.5 w-3.5" /> Emails sent
+          </TabsTrigger>
+          <TabsTrigger value="results" className="gap-1.5">
+            <BarChart3 className="h-3.5 w-3.5" /> Results
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-1.5">
             <LayoutTemplate className="h-3.5 w-3.5" /> Templates
@@ -92,6 +96,10 @@ export default function Marketing() {
               onTabChange("campaigns");
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="results" className="mt-4">
+          <CampaignResultsTab />
         </TabsContent>
 
         <TabsContent value="templates" className="mt-4">
