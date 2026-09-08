@@ -66,11 +66,14 @@ export default function LeadDetail() {
   const { data: users = [] } = useAssignableUsers();
   const update = useUpdateLead();
   const remove = useDeleteLead();
+  const { data: fact } = useLeadFact(id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [logType, setLogType] = useState("call");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [outcome, setOutcome] = useState<"lost" | "nurture" | null>(null);
+
 
   if (isLoading) {
     return <div className="p-6 text-sm text-muted-foreground">Loading enquiry…</div>;
