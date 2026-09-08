@@ -150,9 +150,43 @@ Deno.serve(async (req) => {
 
     const summary: Json[] = [];
 
+    /* Marketing clicks are only fetched when a rule actually watches them. */
+    let signalRows: Signal[] = [];
+    if ((active as Rule[]).some((r) => r.trigger_type === "marketing_signal")) {
+      const { data } = await supabase
+        .from("crm_lead_marketing_signals")
+        .select("event_id, lead_id, intent, occurred_at, campaign_id, link_url")
+        .not("lead_id", "is", null)
+        .gte("occurred_at", new Date(Date.now() - 60 * 86_400_000).toISOString())
+        .order("occurred_at", { ascending: false })
+        .limit(5000);
+      signalRows = (data || []) as Signal[];
+    }
+
     for (const rule of active as Rule[]) {
+      // Latest qualifying click per enquiry, for marketing-signal rules.
+      let signals: Map<string, Signal> | undefined;
+      if (rule.trigger_type === "marketing_signal") {
+        const cond = rule.conditions || {};
+        const wanted: string[] = Array.isArray(cond.intents) && cond.intents.length
+          ? cond.intents
+          : ["high_intent"];
+        const withinDays = Number(cond.signal_days ?? 14);
+        const cutoff = Date.now() - withinDays * 86_400_000;
+        signals = new Map();
+        for (const s of signalRows) {
+          if (!s.lead_id || signals.has(s.lead_id)) continue;
+          if (!wanted.includes(s.intent || "informational")) continue;
+          if (new Date(s.occurred_at).getTime() < cutoff) continue;
+          if (cond.campaign_ids?.length && !cond.campaign_ids.includes(s.campaign_id)) continue;
+          signals.set(s.lead_id, s);
+        }
+      }
+
       const matched = (leads || []).filter(
-        (l: Json) => matchesTrigger(l, rule.trigger_type, targetHours) && matchesConditions(l, rule.conditions || {}),
+        (l: Json) =>
+          matchesTrigger(l, rule.trigger_type, targetHours, signals) &&
+          matchesConditions(l, rule.conditions || {}),
       );
 
       let applied = 0;
