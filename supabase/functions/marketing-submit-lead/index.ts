@@ -127,6 +127,13 @@ Deno.serve(async (req) => {
         utm_term: clean((attribution as any).utm_term, 200) || null,
         referrer: cleanUrl((attribution as any).referrer) || null,
         landing_page_url: cleanUrl((attribution as any).landing_page_url) || null,
+        // Set when the visitor arrived from one of our marketing emails.
+        marketing_campaign_id:
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            String((attribution as any).art_campaign_id || ""),
+          )
+            ? String((attribution as any).art_campaign_id)
+            : null,
         processing_status: "pending",
       })
       .select("*")
