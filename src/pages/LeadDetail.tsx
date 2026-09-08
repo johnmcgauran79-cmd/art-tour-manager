@@ -10,6 +10,8 @@ import {
   PhoneCall,
   StickyNote,
   Trash2,
+  Clock,
+  XCircle,
   User,
 } from "lucide-react";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
@@ -294,6 +296,14 @@ export default function LeadDetail() {
       </Tabs>
 
       <LeadDialog open={editOpen} onOpenChange={setEditOpen} lead={lead} />
+      {outcome && (
+        <LeadOutcomeDialog
+          open={!!outcome}
+          onOpenChange={(v) => !v && setOutcome(null)}
+          leadId={lead.id}
+          outcome={outcome}
+        />
+      )}
       <LogActivityDialog
         open={logOpen}
         onOpenChange={setLogOpen}
