@@ -643,19 +643,31 @@ const ruleLabel = (
 ): string => {
   const meta = FIELD_META[rule.field];
   const not = rule.negate ? "NOT " : "";
+  const tourFields: RuleField[] = [
+    "interested_tour",
+    "booked_on_tour",
+    "travelled_on_tour",
+    "nurture_tour",
+  ];
+  const statusLabel = (v: string) =>
+    BOOKING_STATUS_OPTIONS.find((o) => o.value === v)?.label || v;
   const values = asArray(rule.value)
     .map((v) =>
       rule.field === "tag"
         ? lookup.tags?.[v] || "tag"
-        : rule.field === "interested_tour"
+        : tourFields.includes(rule.field)
           ? lookup.tours?.[v] || "tour"
-          : v
+          : rule.field === "booking_status"
+            ? statusLabel(v)
+            : v
     )
     .join(", ");
 
   if (rule.operator === "never") return `${not}${meta.label}: never`;
   if (rule.operator === "is_true") return `${not}${meta.label}: yes`;
   if (rule.operator === "is_false") return `${not}${meta.label}: no`;
+  if (["this_week", "this_month", "overdue"].includes(rule.operator))
+    return `${not}${meta.label} ${OPERATOR_LABELS[rule.operator]}`;
   return `${not}${meta.label} ${OPERATOR_LABELS[rule.operator]} ${values || (rule.value ?? "")}`.trim();
 };
 
