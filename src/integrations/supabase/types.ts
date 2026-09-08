@@ -9381,6 +9381,21 @@ export type Database = {
         Args: { _days?: number; _tour_id: string }
         Returns: Json
       }
+      crm_tour_marketing_people: {
+        Args: {
+          _days?: number
+          _limit?: number
+          _metric: string
+          _tour_id: string
+        }
+        Returns: {
+          customer_id: string
+          detail: string
+          email: string
+          name: string
+          occurred_at: string
+        }[]
+      }
       crm_tour_sales: {
         Args: { _from?: string; _include_past?: boolean; _to?: string }
         Returns: Json
