@@ -232,6 +232,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "activity_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
         ]
       }
       activity_discrepancy_acknowledgments: {
@@ -682,6 +689,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "automated_email_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "automated_email_log_email_log_id_fkey"
             columns: ["email_log_id"]
             isOneToOne: false
@@ -944,6 +958,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_assignments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
         ]
       }
       booking_comments: {
@@ -1013,6 +1034,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_tags_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "booking_tags_tag_id_fkey"
@@ -1087,6 +1115,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booking_travel_docs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "booking_travel_docs_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -1159,6 +1194,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_waivers_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "booking_waivers_customer_id_fkey"
@@ -1915,6 +1957,13 @@ export type Database = {
             foreignKeyName: "crm_activities_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "crm_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "crm_lead_activity_facts"
             referencedColumns: ["lead_id"]
           },
@@ -2080,6 +2129,13 @@ export type Database = {
             foreignKeyName: "crm_automation_runs_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "crm_lead_activity_facts"
             referencedColumns: ["lead_id"]
           },
@@ -2215,11 +2271,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crm_email_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "crm_email_links_email_id_fkey"
             columns: ["email_id"]
             isOneToOne: false
             referencedRelation: "crm_emails"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_links_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "crm_email_links_lead_id_fkey"
@@ -2833,6 +2903,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_access_tokens_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "customer_access_tokens_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -3336,6 +3413,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "email_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "email_logs_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
@@ -3768,6 +3852,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "hotel_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "hotel_bookings_hotel_id_fkey"
             columns: ["hotel_id"]
             isOneToOne: false
@@ -4011,6 +4102,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoice_sync_dismissals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
         ]
       }
       landing_page_submissions: {
@@ -4241,6 +4339,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "landing_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "landing_page_submissions_lead_id_fkey"
@@ -4641,6 +4746,13 @@ export type Database = {
             foreignKeyName: "lead_stage_history_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_stage_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "crm_lead_activity_facts"
             referencedColumns: ["lead_id"]
           },
@@ -4861,6 +4973,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "leads_customer_id_fkey"
@@ -5575,6 +5694,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "post_booking_email_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "post_booking_email_log_email_log_id_fkey"
             columns: ["email_log_id"]
             isOneToOne: false
@@ -5687,6 +5813,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "scheduled_emails_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "scheduled_emails_tour_id_fkey"
             columns: ["tour_id"]
             isOneToOne: false
@@ -5790,6 +5923,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_change_email_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "status_change_email_queue_email_log_id_fkey"
@@ -6629,6 +6769,13 @@ export type Database = {
             foreignKeyName: "tasks_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "crm_lead_activity_facts"
             referencedColumns: ["lead_id"]
           },
@@ -6863,6 +7010,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tour_alerts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
+          {
             foreignKeyName: "tour_alerts_hotel_id_fkey"
             columns: ["hotel_id"]
             isOneToOne: false
@@ -6954,6 +7108,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_custom_form_exemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "tour_custom_form_exemptions_form_id_fkey"
@@ -7058,6 +7219,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_custom_form_responses_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "tour_custom_form_responses_customer_id_fkey"
@@ -7403,6 +7571,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "marketing_contact_eligibility"
             referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "tour_interests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_nurture_facts"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "tour_interests_lead_id_fkey"
@@ -8474,6 +8649,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "xero_invoice_mappings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
         ]
       }
       xero_payment_receipts: {
@@ -8563,6 +8745,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "xero_payment_receipts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
+          },
         ]
       }
       xero_sync_log: {
@@ -8618,6 +8807,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "xero_sync_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "xero_sync_log_customer_id_fkey"
@@ -8712,6 +8908,28 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_contact_booking_facts: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          end_date: string | null
+          start_date: string | null
+          status: string | null
+          tour_id: string | null
+          tour_name: string | null
+          tour_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contact_marketing_facts: {
         Row: {
           attributed_campaign_ids: string[] | null
@@ -8766,6 +8984,65 @@ export type Database = {
           {
             foreignKeyName: "customers_interested_tour_id_fkey"
             columns: ["interested_tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contact_nurture_facts: {
+        Row: {
+          customer_id: string | null
+          lead_id: string | null
+          nurture_reason: string | null
+          nurture_review_date: string | null
+          stage: string | null
+          tour_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          lead_id?: string | null
+          nurture_reason?: string | null
+          nurture_review_date?: string | null
+          stage?: string | null
+          tour_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          lead_id?: string | null
+          nurture_reason?: string | null
+          nurture_review_date?: string | null
+          stage?: string | null
+          tour_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_marketing_facts"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "leads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "leads_tour_id_fkey"
+            columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
             referencedColumns: ["id"]
@@ -8869,6 +9146,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_booking_facts"
+            referencedColumns: ["booking_id"]
           },
           {
             foreignKeyName: "leads_customer_id_fkey"
