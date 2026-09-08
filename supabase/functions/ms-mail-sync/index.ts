@@ -9,6 +9,10 @@ const corsHeaders = {
 
 const FOLDERS = ["inbox", "sentitems"] as const;
 
+/** Days of mail pulled per historical run before chaining to the next chunk. */
+const CHUNK_DAYS = 7;
+
+
 interface Counts {
   scanned: number;
   stored: number;
