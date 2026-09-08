@@ -38,7 +38,6 @@ export function LeadPipelineBoard() {
   const [channel, setChannel] = useState(ALL);
   const [dragging, setDragging] = useState<string | null>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
