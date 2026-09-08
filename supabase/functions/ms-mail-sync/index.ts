@@ -285,10 +285,7 @@ Deno.serve(async (req) => {
         }
       }
 
-        } catch (e) {
-          console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
-        }
-      }
+
       if (actorId && mode !== "delta") {
         await db.from("audit_log").insert({
           user_id: actorId,
