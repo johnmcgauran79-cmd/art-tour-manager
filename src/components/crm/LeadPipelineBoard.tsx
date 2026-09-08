@@ -16,6 +16,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useTours } from "@/hooks/useTours";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import { useCrmConfig, useCrmLeads, useUpdateLead, type Lead } from "@/hooks/useCrm";
+import { useLeadFactsMap, type LeadFact } from "@/hooks/useCrmSales";
 import { LEAD_PRIORITIES, priorityBadgeClass } from "@/lib/crm/constants";
 
 const ALL = "all";
