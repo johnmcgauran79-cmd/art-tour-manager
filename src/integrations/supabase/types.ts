@@ -8598,6 +8598,7 @@ export type Database = {
         Row: {
           attributed_campaign_ids: string[] | null
           clicked_campaign_ids: string[] | null
+          clicked_link_urls: string[] | null
           contact_lead_source: string | null
           contact_lead_stage: Database["public"]["Enums"]["lead_stage"] | null
           country: string | null
@@ -8614,6 +8615,7 @@ export type Database = {
           has_nurture_lead: boolean | null
           has_travelled: boolean | null
           has_won_lead: boolean | null
+          interest_click_tour_ids: string[] | null
           interest_tour_ids: string[] | null
           interest_tour_years: number[] | null
           interested_tour_id: string | null
