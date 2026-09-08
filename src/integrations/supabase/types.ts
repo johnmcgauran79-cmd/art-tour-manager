@@ -8873,6 +8873,8 @@ export type Database = {
         Args: { _from?: string; _to?: string }
         Returns: Json
       }
+      crm_audience_field_kind: { Args: { _field: string }; Returns: string }
+      crm_audience_predicate: { Args: { _node: Json }; Returns: string }
       crm_business_days: { Args: { _a: string; _b: string }; Returns: number }
       crm_business_hours: { Args: { _a: string; _b: string }; Returns: number }
       crm_data_quality: { Args: never; Returns: Json }
