@@ -386,6 +386,7 @@ Deno.serve(async (req) => {
           lead_id: lead.id,
           customer_id: lead.customer_id,
           trigger_type: rule.trigger_type,
+          signal_event_id: signal?.event_id || null,
           actions_taken: taken,
           task_id: taskId,
           success: !error,
