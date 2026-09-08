@@ -199,6 +199,10 @@ Deno.serve(async (req) => {
     const mailboxId: string | undefined = body.mailboxId;
     const months: number | undefined = body.months;
     const before: string | undefined = body.before;
+    // Remaining weekly chunks for a history import; derived from months on the
+    // first call, then decremented down the chain.
+    const chunksIn: number | undefined = body.chunks;
+
 
 
     // Staff-triggered runs must be an admin or manager; the cron job passes no JWT.
