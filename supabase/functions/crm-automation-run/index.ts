@@ -53,8 +53,15 @@ interface Signal {
 }
 
 /** Which leads a trigger applies to, evaluated from the shared facts view. */
-function matchesTrigger(lead: Json, trigger: string, targetHours: number) {
+function matchesTrigger(
+  lead: Json,
+  trigger: string,
+  targetHours: number,
+  signals?: Map<string, Signal>,
+) {
   switch (trigger) {
+    case "marketing_signal":
+      return !!signals?.has(lead.id);
     case "no_next_action":
       return !!lead.no_next_action;
     case "stale_lead":
