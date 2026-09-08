@@ -16,6 +16,7 @@ const json = (body: unknown, status = 200) =>
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://art-tour-manager.lovable.app";
+const TRACK_BASE = `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketing-track`;
 
 const admin = () =>
   createClient(
