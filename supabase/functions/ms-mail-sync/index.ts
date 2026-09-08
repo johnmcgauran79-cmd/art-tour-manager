@@ -30,13 +30,14 @@ async function syncMailbox(
   const counts = empty();
   // A manual "Sync now" is a light catch-up, not a full history import.
   const months = monthsOverride ?? (runType === "manual" ? 0 : mailbox.history_months ?? 12);
-  // History is imported one month at a time so a single run always finishes
-  // inside the function's time budget; the caller chains the next chunk.
+  // History is imported one week at a time so even a very busy mailbox always
+  // finishes a chunk inside the function's time budget; the caller chains on.
   const windowEnd = runType === "historical" && before ? new Date(before) : new Date();
   const windowStart = new Date(windowEnd);
-  if (runType === "historical") windowStart.setMonth(windowStart.getMonth() - 1);
+  if (runType === "historical") windowStart.setDate(windowStart.getDate() - CHUNK_DAYS);
   else if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
   else windowStart.setDate(windowStart.getDate() - 7);
+
 
   const { data: run } = await db
     .from("email_sync_runs")
