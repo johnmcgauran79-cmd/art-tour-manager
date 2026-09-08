@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { BarChart3, ClipboardList, Inbox, KanbanSquare, Users } from "lucide-react";
+import { BarChart3, ClipboardList, Inbox, KanbanSquare, Settings2, Users, Zap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { LeadTasksTab } from "@/components/marketing/LeadTasksTab";
 import { LeadInbox } from "@/components/crm/LeadInbox";
 import { LeadPipelineBoard } from "@/components/crm/LeadPipelineBoard";
 import { CrmDashboard } from "@/components/crm/CrmDashboard";
+import { CrmAutomationTab } from "@/components/crm/CrmAutomationTab";
+import { CrmSalesSettings } from "@/components/crm/CrmSalesSettings";
+import { usePermissions } from "@/hooks/usePermissions";
 
-const TABS = ["inbox", "pipeline", "dashboard", "tasks"] as const;
+const TABS = ["inbox", "pipeline", "dashboard", "tasks", "automation", "settings"] as const;
 
 export default function Leads() {
   const [searchParams, setSearchParams] = useSearchParams();
