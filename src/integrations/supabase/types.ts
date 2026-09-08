@@ -9032,6 +9032,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      marketing_record_tracking_event: {
+        Args: { _event_type: string; _link_url?: string; _recipient_id: string }
+        Returns: undefined
+      }
       migrate_dietary_to_customer_profile: {
         Args: { p_customer_id: string; p_dietary_value: string }
         Returns: undefined

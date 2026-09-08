@@ -247,6 +247,7 @@ export async function processSubmission(
             source: page.lead_source || `Form: ${page.slug}`,
             medium: page.medium || "website_form",
             campaign: submission.utm_campaign || null,
+            marketing_campaign_id: submission.marketing_campaign_id || null,
             utm_source: submission.utm_source || null,
             utm_medium: submission.utm_medium || null,
             utm_campaign: submission.utm_campaign || null,
