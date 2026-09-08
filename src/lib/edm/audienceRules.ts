@@ -245,7 +245,64 @@ const evalEngagement = (
   return true;
 };
 
+/** Bookings that still count — cancelled bookings are never a booking. */
+const activeBookings = (list: BookingFact[]) => list.filter((b) => b.status !== "cancelled");
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+const startOfWeekIso = () => {
+  const d = new Date();
+  const dow = (d.getDay() + 6) % 7; // Monday-first
+  d.setDate(d.getDate() - dow);
+  return d.toISOString().slice(0, 10);
+};
+
+const endOfWeekIso = () => {
+  const d = new Date(startOfWeekIso());
+  d.setDate(d.getDate() + 6);
+  return d.toISOString().slice(0, 10);
+};
+
+const monthBoundsIso = () => {
+  const d = new Date();
+  const from = new Date(d.getFullYear(), d.getMonth(), 1);
+  const to = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const iso = (x: Date) =>
+    `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  return { from: iso(from), to: iso(to) };
+};
+
+const evalReviewDate = (dates: (string | null)[], rule: AudienceRule): boolean => {
+  const days = dates.filter(Boolean) as string[];
+  const today = todayIso();
+  switch (rule.operator) {
+    case "overdue":
+      return days.some((d) => d < today);
+    case "this_week": {
+      const from = startOfWeekIso();
+      const to = endOfWeekIso();
+      return days.some((d) => d >= from && d <= to);
+    }
+    case "this_month": {
+      const { from, to } = monthBoundsIso();
+      return days.some((d) => d >= from && d <= to);
+    }
+    case "before":
+      return days.some((d) => d < String(rule.value || ""));
+    case "after":
+      return days.some((d) => d > String(rule.value || ""));
+    case "within_days": {
+      const n = Number(rule.value) || 0;
+      const limit = new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+      return days.some((d) => d >= today && d <= limit);
+    }
+    default:
+      return days.length > 0;
+  }
+};
+
 const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean => {
+
   const email = (c.email || "").trim().toLowerCase();
   let result = true;
 
