@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { AU_STATES, LEAD_STAGES } from "@/lib/edm/audience";
 import {
+  BOOKING_STATUS_OPTIONS,
   FIELD_META,
   OPERATOR_LABELS,
   defaultRule,
@@ -29,6 +30,15 @@ import {
   type RuleField,
   type RuleOperator,
 } from "@/lib/edm/audienceRules";
+
+/** Fields whose value is a single tour. */
+const TOUR_FIELDS: RuleField[] = [
+  "interested_tour",
+  "booked_on_tour",
+  "travelled_on_tour",
+  "nurture_tour",
+];
+
 
 export interface RuleBuilderOptions {
   tags: { id: string; name: string }[];
