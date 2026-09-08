@@ -1773,6 +1773,147 @@ export type Database = {
           },
         ]
       }
+      crm_automation_rules: {
+        Row: {
+          action_count: number
+          actions: Json
+          conditions: Json
+          cooldown_days: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          failure_count: number
+          id: string
+          is_active: boolean
+          last_error: string | null
+          last_run_at: string | null
+          name: string
+          run_count: number
+          scope: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_count?: number
+          actions?: Json
+          conditions?: Json
+          cooldown_days?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          failure_count?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          name: string
+          run_count?: number
+          scope?: Json
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_count?: number
+          actions?: Json
+          conditions?: Json
+          cooldown_days?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          failure_count?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          name?: string
+          run_count?: number
+          scope?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_automation_runs: {
+        Row: {
+          actions_taken: Json
+          created_at: string
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          matched: boolean
+          rule_id: string | null
+          run_date: string
+          success: boolean
+          task_id: string | null
+          trigger_type: string | null
+        }
+        Insert: {
+          actions_taken?: Json
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          matched?: boolean
+          rule_id?: string | null
+          run_date?: string
+          success?: boolean
+          task_id?: string | null
+          trigger_type?: string | null
+        }
+        Update: {
+          actions_taken?: Json
+          created_at?: string
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          matched?: boolean
+          rule_id?: string | null
+          run_date?: string
+          success?: boolean
+          task_id?: string | null
+          trigger_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_automation_runs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_facts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "crm_automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_email_contacts: {
         Row: {
           created_at: string
@@ -8216,6 +8357,10 @@ export type Database = {
       crm_funnel: {
         Args: { _from?: string; _to?: string; _tour_id?: string }
         Returns: Json
+      }
+      crm_link_booking_to_lead: {
+        Args: { _booking_id: string; _lead_id: string }
+        Returns: undefined
       }
       crm_pipeline_summary: {
         Args: { _from?: string; _to?: string }
