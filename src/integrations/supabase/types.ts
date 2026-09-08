@@ -4008,6 +4008,7 @@ export type Database = {
           landing_page_url: string | null
           last_name: string | null
           lead_id: string | null
+          marketing_campaign_id: string | null
           match_method: string | null
           message: string | null
           needs_review: boolean
@@ -4071,6 +4072,7 @@ export type Database = {
           landing_page_url?: string | null
           last_name?: string | null
           lead_id?: string | null
+          marketing_campaign_id?: string | null
           match_method?: string | null
           message?: string | null
           needs_review?: boolean
@@ -4134,6 +4136,7 @@ export type Database = {
           landing_page_url?: string | null
           last_name?: string | null
           lead_id?: string | null
+          marketing_campaign_id?: string | null
           match_method?: string | null
           message?: string | null
           needs_review?: boolean
@@ -4223,6 +4226,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_marketing_campaign_id_fkey"
+            columns: ["marketing_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
             referencedColumns: ["id"]
           },
           {
