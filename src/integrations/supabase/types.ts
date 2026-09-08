@@ -1747,6 +1747,13 @@ export type Database = {
             foreignKeyName: "crm_activities_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "crm_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -1852,6 +1859,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_emails"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_links_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "crm_email_links_lead_id_fkey"
@@ -3812,6 +3826,13 @@ export type Database = {
             foreignKeyName: "landing_page_submissions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -4168,6 +4189,13 @@ export type Database = {
           to_stage?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_stage_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
+          },
           {
             foreignKeyName: "lead_stage_history_lead_id_fkey"
             columns: ["lead_id"]
@@ -6004,6 +6032,13 @@ export type Database = {
             foreignKeyName: "tasks_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -6729,6 +6764,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_interests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_activity_facts"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "tour_interests_lead_id_fkey"
@@ -7935,7 +7977,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      crm_lead_activity_facts: {
+        Row: {
+          first_outbound_at: string | null
+          last_inbound_at: string | null
+          last_meaningful_at: string | null
+          lead_id: string | null
+          meaningful_count: number | null
+          next_task_due: string | null
+          open_future_tasks: number | null
+          stage_entered_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       agent_assigned_to_booking: {
@@ -8001,6 +8055,9 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: string
       }
+      crm_business_days: { Args: { _a: string; _b: string }; Returns: number }
+      crm_business_hours: { Args: { _a: string; _b: string }; Returns: number }
+      crm_weekend_days: { Args: { _a: string; _b: string }; Returns: number }
       delete_automated_tour_tasks: {
         Args: { p_tour_id: string }
         Returns: number
