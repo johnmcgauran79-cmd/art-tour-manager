@@ -245,6 +245,8 @@ Deno.serve(async (req) => {
 
     // Each historical run covers one month; the next month is queued only when
     // months remain, so the chain always ends.
+    // Each historical run covers one week; the next week is queued only while
+    // chunks remain, so the chain always ends.
     const chainNext = async (mb: any, cursor: string, remaining: number) => {
       if (remaining <= 1) return;
       try {
@@ -257,7 +259,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             mode: "historical",
             mailboxId: mb.id,
-            months: remaining - 1,
+            chunks: remaining - 1,
             before: cursor,
           }),
         });
@@ -273,9 +275,16 @@ Deno.serve(async (req) => {
           const res = await syncMailbox(db, mb as any, mode, months, before);
           results.push(res);
           if (mode === "historical" && !res.error) {
-            const total = months ?? (mb as any).history_months ?? 12;
-            await chainNext(mb, res.windowStart, total);
+            const totalChunks =
+              chunksIn ??
+              Math.ceil(((months ?? (mb as any).history_months ?? 12) * 30) / CHUNK_DAYS);
+            await chainNext(mb, res.windowStart, totalChunks);
           }
+        } catch (e) {
+          console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
+        }
+      }
+
         } catch (e) {
           console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
         }
