@@ -48,8 +48,12 @@ export function LeadPipelineBoard() {
       if (tourId !== ALL && l.tour_id !== tourId) return false;
       if (ownerId !== ALL && l.owner_id !== ownerId) return false;
       if (priority !== ALL && l.priority !== priority) return false;
-      if (flag === "no_next_action" && l.next_action_date) return false;
-      if (flag === "overdue" && !(l.next_action_date && l.next_action_date < today)) return false;
+      const f = facts?.get(l.id);
+      if (flag === "no_next_action" && !f?.no_next_action) return false;
+      if (flag === "overdue" && !f?.next_action_overdue) return false;
+      if (flag === "stale" && !f?.is_stale) return false;
+      if (flag === "awaiting_response" && !f?.awaiting_first_response) return false;
+      if (flag === "client_replied" && !f?.client_replied) return false;
       if (flag === "unowned" && l.owner_id) return false;
       if (channel !== ALL) {
         const c = (l as any).source_channel || "website";
@@ -57,7 +61,7 @@ export function LeadPipelineBoard() {
       }
       return true;
     });
-  }, [leads, search, tourId, ownerId, priority, flag, channel, today]);
+  }, [leads, facts, search, tourId, ownerId, priority, flag, channel]);
 
   const stages = (config?.stages || []).filter((s) => s.is_active);
 
