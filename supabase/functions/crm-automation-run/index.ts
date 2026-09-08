@@ -194,6 +194,21 @@ Deno.serve(async (req) => {
       const skipped: string[] = [];
 
       for (const lead of matched.slice(0, 200)) {
+        const signal = signals?.get(lead.id) || null;
+
+        // The same click never triggers the same rule twice.
+        if (signal) {
+          const { count: seen } = await supabase
+            .from("crm_automation_runs")
+            .select("id", { count: "exact", head: true })
+            .eq("rule_id", rule.id)
+            .eq("signal_event_id", signal.event_id);
+          if ((seen ?? 0) > 0) {
+            skipped.push(lead.id);
+            continue;
+          }
+        }
+
         // Duplicate protection: one application of a rule per enquiry per cooldown.
         const since = new Date(Date.now() - (rule.cooldown_days ?? 3) * 86_400_000).toISOString();
         const { count } = await supabase
