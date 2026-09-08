@@ -540,16 +540,89 @@ const fetchEngagement = async () => {
   return { opens, clicks };
 };
 
+/** Every contact's real ART bookings, from the shared booking summary. */
+const fetchBookingFacts = async (): Promise<Map<string, BookingFact[]>> => {
+  const map = new Map<string, BookingFact[]>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("crm_contact_booking_facts" as any)
+      .select("customer_id, booking_id, tour_id, status, tour_type, start_date, end_date")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data || []) as any[];
+    rows.forEach((r) => {
+      const list = map.get(r.customer_id) || [];
+      list.push({
+        booking_id: r.booking_id,
+        tour_id: r.tour_id,
+        status: r.status,
+        tour_type: r.tour_type,
+        start_date: r.start_date,
+        end_date: r.end_date,
+      });
+      map.set(r.customer_id, list);
+    });
+    if (rows.length < PAGE) break;
+  }
+  return map;
+};
+
+/** Every contact's long-term nurture enquiries, from the existing lead records. */
+const fetchNurtureFacts = async (): Promise<Map<string, NurtureFact[]>> => {
+  const map = new Map<string, NurtureFact[]>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("crm_contact_nurture_facts" as any)
+      .select("customer_id, lead_id, tour_id, nurture_review_date, nurture_reason")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data || []) as any[];
+    rows.forEach((r) => {
+      const list = map.get(r.customer_id) || [];
+      list.push({
+        lead_id: r.lead_id,
+        tour_id: r.tour_id,
+        nurture_review_date: r.nurture_review_date,
+        nurture_reason: r.nurture_reason,
+      });
+      map.set(r.customer_id, list);
+    });
+    if (rows.length < PAGE) break;
+  }
+  return map;
+};
+
+const BOOKING_FIELDS: RuleField[] = [
+  "has_booking",
+  "booked_on_tour",
+  "has_future_booking",
+  "booking_status",
+  "travelled_on_tour",
+  "travelled_tour_type",
+];
+
+const NURTURE_FIELDS: RuleField[] = [
+  "is_nurture",
+  "nurture_tour",
+  "nurture_review_date",
+  "nurture_reason",
+];
+
 export const buildRuleContext = async (root: AudienceNode): Promise<RuleContext> => {
   const fields = usedFields(root);
   const needTags = fields.has("tag");
   const needEngagement = fields.has("last_opened") || fields.has("last_clicked");
-  const [tags, engagement] = await Promise.all([
+  const needBookings = BOOKING_FIELDS.some((f) => fields.has(f));
+  const needNurture = NURTURE_FIELDS.some((f) => fields.has(f));
+  const [tags, engagement, bookings, nurture] = await Promise.all([
     needTags ? fetchTagMap() : Promise.resolve(new Map<string, Set<string>>()),
     needEngagement ? fetchEngagement() : Promise.resolve({ opens: new Map(), clicks: new Map() }),
+    needBookings ? fetchBookingFacts() : Promise.resolve(new Map<string, BookingFact[]>()),
+    needNurture ? fetchNurtureFacts() : Promise.resolve(new Map<string, NurtureFact[]>()),
   ]);
-  return { tags, opens: engagement.opens, clicks: engagement.clicks };
+  return { tags, opens: engagement.opens, clicks: engagement.clicks, bookings, nurture };
 };
+
 
 /** Resolve a rule tree to the matching consented contacts (de-duped by email). */
 export const resolveRuleTree = async (root: AudienceGroup): Promise<RuleContact[]> => {
