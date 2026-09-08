@@ -43,11 +43,12 @@ export async function sha256Hex(value: string): Promise<string> {
 export async function resolveIntegrationByToken(db: any, token: string) {
   if (!token || token.length < 20) return { integration: null, reason: "missing_key" as const };
   const hash = await sha256Hex(token);
-  const { data } = await db
+  const { data, error } = await db
     .from("lead_integrations")
     .select("*")
     .eq("token_hash", hash)
     .maybeSingle();
+  if (error) console.error("resolveIntegrationByToken lookup failed:", error.message);
   if (!data) return { integration: null, reason: "invalid_key" as const };
   if (!data.is_enabled) return { integration: null, reason: "disabled" as const };
   return { integration: data, reason: null };
