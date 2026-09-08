@@ -35,6 +35,7 @@ import { TourDocumentImagesTab } from "@/components/tours/TourDocumentImagesTab"
 import { TourCommsSettingsTab } from "@/components/tours/TourCommsSettingsTab";
 import { TourCommsReport } from "@/components/communications/TourCommsReport";
 import { TourWebsiteSyncTab } from "@/components/tours/TourWebsiteSyncTab";
+import { TourMarketingTab } from "@/components/tours/TourMarketingTab";
 import { TourWaiverStatusSection } from "@/components/tours/TourWaiverStatusSection";
 import { Separator } from "@/components/ui/separator";
 import { TourAlertsModal } from "@/components/tours/TourAlertsModal";
@@ -469,6 +470,12 @@ export default function TourDetail() {
                 <span className="hidden sm:inline">Forms</span>
               </TabsTrigger>
               {isAdminOrManager && (
+                <TabsTrigger value="marketing" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Marketing</span>
+                </TabsTrigger>
+              )}
+              {isAdminOrManager && (
                 <TabsTrigger value="website" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                   <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Website</span>
@@ -477,6 +484,10 @@ export default function TourDetail() {
             </TabsList>
           )}
         </div>
+
+        <TabsContent value="marketing" className="space-y-4 mt-6">
+          <TourMarketingTab tourId={tour.id} tourName={tour.name} />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4 mt-6">
           {transformedTour && <TourOverviewTab 

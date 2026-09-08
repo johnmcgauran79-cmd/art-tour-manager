@@ -285,7 +285,7 @@ export function CampaignResultsTab() {
                   onClick={() => hasEditAccess && setEditing(r)}
                   type="button"
                 >
-                  <div className="truncate text-sm font-medium">{r.url_pattern}</div>
+                  <div className="truncate text-sm font-medium">{r.pattern}</div>
                   <div className="truncate text-xs text-muted-foreground">
                     {INTENTS.find((i) => i.value === r.intent)?.label || r.intent}
                     {r.label ? ` · ${r.label}` : ""}
@@ -323,9 +323,9 @@ export function CampaignResultsTab() {
               <div className="space-y-1.5">
                 <Label>Link contains</Label>
                 <Input
-                  value={editing.url_pattern || ""}
+                  value={editing.pattern || ""}
                   placeholder="/register-interest"
-                  onChange={(e) => setEditing({ ...editing, url_pattern: e.target.value })}
+                  onChange={(e) => setEditing({ ...editing, pattern: e.target.value })}
                 />
               </div>
               <div className="space-y-1.5">
@@ -387,7 +387,7 @@ export function CampaignResultsTab() {
               Cancel
             </Button>
             <Button
-              disabled={!editing?.url_pattern?.trim() || saveRule.isPending}
+              disabled={!editing?.pattern?.trim() || saveRule.isPending}
               onClick={async () => {
                 await saveRule.mutateAsync(editing!);
                 setEditing(null);

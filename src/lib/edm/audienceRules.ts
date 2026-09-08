@@ -23,7 +23,19 @@ export type RuleField =
   | "created_at"
   | "last_opened"
   | "last_clicked"
-  | "name_email";
+  | "name_email"
+  // Bookings (real ART booking records)
+  | "has_booking"
+  | "booked_on_tour"
+  | "has_future_booking"
+  | "booking_status"
+  | "travelled_on_tour"
+  | "travelled_tour_type"
+  // Long-term nurture (existing enquiry records)
+  | "is_nurture"
+  | "nurture_tour"
+  | "nurture_review_date"
+  | "nurture_reason";
 
 export type RuleOperator =
   | "in" // value: string[]
@@ -33,9 +45,26 @@ export type RuleOperator =
   | "after" // value: yyyy-MM-dd
   | "within_days" // value: number
   | "not_within_days" // value: number
+  | "this_week"
+  | "this_month"
+  | "overdue"
   | "never"
   | "is_true"
   | "is_false";
+
+/** Booking statuses as they exist in ART today. */
+export const BOOKING_STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "invoiced", label: "Invoiced" },
+  { value: "deposited", label: "Deposit paid" },
+  { value: "instalment_paid", label: "Instalment paid" },
+  { value: "fully_paid", label: "Fully paid" },
+  { value: "complimentary", label: "Complimentary" },
+  { value: "waitlisted", label: "Waitlisted" },
+  { value: "host", label: "Host" },
+  { value: "racing_breaks_invoice", label: "Racing Breaks invoice" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 export interface AudienceRule {
   id: string;
@@ -103,6 +132,34 @@ export const FIELD_META: Record<
     operators: ["within_days", "not_within_days", "never"],
   },
   name_email: { label: "Name or email", group: "Other", operators: ["contains"] },
+
+  has_booking: { label: "Has a booking", group: "Bookings", operators: ["is_true", "is_false"] },
+  booked_on_tour: { label: "Booked on tour", group: "Bookings", operators: ["eq"] },
+  has_future_booking: {
+    label: "Has a future booking",
+    group: "Bookings",
+    operators: ["is_true", "is_false"],
+  },
+  booking_status: { label: "Booking status", group: "Bookings", operators: ["in"] },
+  travelled_on_tour: { label: "Travelled on tour", group: "Bookings", operators: ["eq"] },
+  travelled_tour_type: {
+    label: "Travelled tour type",
+    group: "Bookings",
+    operators: ["eq", "contains"],
+  },
+
+  is_nurture: {
+    label: "Long-term nurture",
+    group: "Nurture",
+    operators: ["is_true", "is_false"],
+  },
+  nurture_tour: { label: "Nurture tour", group: "Nurture", operators: ["eq"] },
+  nurture_review_date: {
+    label: "Nurture review date",
+    group: "Nurture",
+    operators: ["this_week", "this_month", "overdue", "before", "after", "within_days"],
+  },
+  nurture_reason: { label: "Nurture reason", group: "Nurture", operators: ["contains"] },
 };
 
 export const OPERATOR_LABELS: Record<RuleOperator, string> = {
@@ -113,10 +170,14 @@ export const OPERATOR_LABELS: Record<RuleOperator, string> = {
   after: "after",
   within_days: "in the last (days)",
   not_within_days: "not in the last (days)",
+  this_week: "due this week",
+  this_month: "due this month",
+  overdue: "overdue",
   never: "never",
   is_true: "yes",
   is_false: "no",
 };
+
 
 export interface RuleContact {
   id: string;
@@ -133,6 +194,24 @@ export interface RuleContact {
   created_at: string | null;
 }
 
+/** One real ART booking a contact is a passenger on. */
+export interface BookingFact {
+  booking_id: string;
+  tour_id: string | null;
+  status: string;
+  tour_type: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+/** One long-term nurture enquiry a contact has. */
+export interface NurtureFact {
+  lead_id: string;
+  tour_id: string | null;
+  nurture_review_date: string | null;
+  nurture_reason: string | null;
+}
+
 export interface RuleContext {
   /** customer_id -> set of tag ids */
   tags: Map<string, Set<string>>;
@@ -140,7 +219,12 @@ export interface RuleContext {
   opens: Map<string, number>;
   /** lowercase email -> latest click timestamp (ms) */
   clicks: Map<string, number>;
+  /** customer_id -> their bookings (any status) */
+  bookings: Map<string, BookingFact[]>;
+  /** customer_id -> their long-term nurture enquiries */
+  nurture: Map<string, NurtureFact[]>;
 }
+
 
 const daysAgoMs = (days: number) => Date.now() - days * 86_400_000;
 
@@ -161,7 +245,64 @@ const evalEngagement = (
   return true;
 };
 
+/** Bookings that still count — cancelled bookings are never a booking. */
+const activeBookings = (list: BookingFact[]) => list.filter((b) => b.status !== "cancelled");
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+const startOfWeekIso = () => {
+  const d = new Date();
+  const dow = (d.getDay() + 6) % 7; // Monday-first
+  d.setDate(d.getDate() - dow);
+  return d.toISOString().slice(0, 10);
+};
+
+const endOfWeekIso = () => {
+  const d = new Date(startOfWeekIso());
+  d.setDate(d.getDate() + 6);
+  return d.toISOString().slice(0, 10);
+};
+
+const monthBoundsIso = () => {
+  const d = new Date();
+  const from = new Date(d.getFullYear(), d.getMonth(), 1);
+  const to = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const iso = (x: Date) =>
+    `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  return { from: iso(from), to: iso(to) };
+};
+
+const evalReviewDate = (dates: (string | null)[], rule: AudienceRule): boolean => {
+  const days = dates.filter(Boolean) as string[];
+  const today = todayIso();
+  switch (rule.operator) {
+    case "overdue":
+      return days.some((d) => d < today);
+    case "this_week": {
+      const from = startOfWeekIso();
+      const to = endOfWeekIso();
+      return days.some((d) => d >= from && d <= to);
+    }
+    case "this_month": {
+      const { from, to } = monthBoundsIso();
+      return days.some((d) => d >= from && d <= to);
+    }
+    case "before":
+      return days.some((d) => d < String(rule.value || ""));
+    case "after":
+      return days.some((d) => d > String(rule.value || ""));
+    case "within_days": {
+      const n = Number(rule.value) || 0;
+      const limit = new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+      return days.some((d) => d >= today && d <= limit);
+    }
+    default:
+      return days.length > 0;
+  }
+};
+
 const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean => {
+
   const email = (c.email || "").trim().toLowerCase();
   let result = true;
 
@@ -229,6 +370,86 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       const needle = String(rule.value || "").toLowerCase();
       const hay = `${c.first_name || ""} ${c.last_name || ""} ${c.email || ""}`.toLowerCase();
       result = !needle || hay.includes(needle);
+      break;
+    }
+
+    /* ---------------------------- Bookings ---------------------------- */
+    case "has_booking": {
+      const has = activeBookings(ctx.bookings.get(c.id) || []).length > 0;
+      result = rule.operator === "is_false" ? !has : has;
+      break;
+    }
+    case "booked_on_tour": {
+      const tour = String(rule.value || "");
+      result =
+        !!tour &&
+        activeBookings(ctx.bookings.get(c.id) || []).some((b) => b.tour_id === tour);
+      break;
+    }
+    case "has_future_booking": {
+      const today = todayIso();
+      const has = activeBookings(ctx.bookings.get(c.id) || []).some(
+        (b) => !!b.start_date && b.start_date >= today
+      );
+      result = rule.operator === "is_false" ? !has : has;
+      break;
+    }
+    case "booking_status": {
+      const list = asArray(rule.value);
+      const mine = ctx.bookings.get(c.id) || [];
+      result = !list.length || mine.some((b) => list.includes(b.status));
+      break;
+    }
+    case "travelled_on_tour": {
+      const tour = String(rule.value || "");
+      const today = todayIso();
+      result =
+        !!tour &&
+        activeBookings(ctx.bookings.get(c.id) || []).some(
+          (b) => b.tour_id === tour && !!b.end_date && b.end_date < today
+        );
+      break;
+    }
+    case "travelled_tour_type": {
+      const needle = String(rule.value || "").toLowerCase();
+      const today = todayIso();
+      const travelled = activeBookings(ctx.bookings.get(c.id) || []).filter(
+        (b) => !!b.end_date && b.end_date < today
+      );
+      result =
+        !needle ||
+        travelled.some((b) =>
+          rule.operator === "contains"
+            ? (b.tour_type || "").toLowerCase().includes(needle)
+            : (b.tour_type || "").toLowerCase() === needle
+        );
+      break;
+    }
+
+    /* ----------------------------- Nurture ---------------------------- */
+    case "is_nurture": {
+      const has = (ctx.nurture.get(c.id) || []).length > 0;
+      result = rule.operator === "is_false" ? !has : has;
+      break;
+    }
+    case "nurture_tour": {
+      const tour = String(rule.value || "");
+      result = !!tour && (ctx.nurture.get(c.id) || []).some((n) => n.tour_id === tour);
+      break;
+    }
+    case "nurture_review_date":
+      result = evalReviewDate(
+        (ctx.nurture.get(c.id) || []).map((n) => n.nurture_review_date),
+        rule
+      );
+      break;
+    case "nurture_reason": {
+      const needle = String(rule.value || "").toLowerCase();
+      result =
+        !needle ||
+        (ctx.nurture.get(c.id) || []).some((n) =>
+          (n.nurture_reason || "").toLowerCase().includes(needle)
+        );
       break;
     }
   }
@@ -319,16 +540,89 @@ const fetchEngagement = async () => {
   return { opens, clicks };
 };
 
+/** Every contact's real ART bookings, from the shared booking summary. */
+const fetchBookingFacts = async (): Promise<Map<string, BookingFact[]>> => {
+  const map = new Map<string, BookingFact[]>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("crm_contact_booking_facts" as any)
+      .select("customer_id, booking_id, tour_id, status, tour_type, start_date, end_date")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data || []) as any[];
+    rows.forEach((r) => {
+      const list = map.get(r.customer_id) || [];
+      list.push({
+        booking_id: r.booking_id,
+        tour_id: r.tour_id,
+        status: r.status,
+        tour_type: r.tour_type,
+        start_date: r.start_date,
+        end_date: r.end_date,
+      });
+      map.set(r.customer_id, list);
+    });
+    if (rows.length < PAGE) break;
+  }
+  return map;
+};
+
+/** Every contact's long-term nurture enquiries, from the existing lead records. */
+const fetchNurtureFacts = async (): Promise<Map<string, NurtureFact[]>> => {
+  const map = new Map<string, NurtureFact[]>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("crm_contact_nurture_facts" as any)
+      .select("customer_id, lead_id, tour_id, nurture_review_date, nurture_reason")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data || []) as any[];
+    rows.forEach((r) => {
+      const list = map.get(r.customer_id) || [];
+      list.push({
+        lead_id: r.lead_id,
+        tour_id: r.tour_id,
+        nurture_review_date: r.nurture_review_date,
+        nurture_reason: r.nurture_reason,
+      });
+      map.set(r.customer_id, list);
+    });
+    if (rows.length < PAGE) break;
+  }
+  return map;
+};
+
+const BOOKING_FIELDS: RuleField[] = [
+  "has_booking",
+  "booked_on_tour",
+  "has_future_booking",
+  "booking_status",
+  "travelled_on_tour",
+  "travelled_tour_type",
+];
+
+const NURTURE_FIELDS: RuleField[] = [
+  "is_nurture",
+  "nurture_tour",
+  "nurture_review_date",
+  "nurture_reason",
+];
+
 export const buildRuleContext = async (root: AudienceNode): Promise<RuleContext> => {
   const fields = usedFields(root);
   const needTags = fields.has("tag");
   const needEngagement = fields.has("last_opened") || fields.has("last_clicked");
-  const [tags, engagement] = await Promise.all([
+  const needBookings = BOOKING_FIELDS.some((f) => fields.has(f));
+  const needNurture = NURTURE_FIELDS.some((f) => fields.has(f));
+  const [tags, engagement, bookings, nurture] = await Promise.all([
     needTags ? fetchTagMap() : Promise.resolve(new Map<string, Set<string>>()),
     needEngagement ? fetchEngagement() : Promise.resolve({ opens: new Map(), clicks: new Map() }),
+    needBookings ? fetchBookingFacts() : Promise.resolve(new Map<string, BookingFact[]>()),
+    needNurture ? fetchNurtureFacts() : Promise.resolve(new Map<string, NurtureFact[]>()),
   ]);
-  return { tags, opens: engagement.opens, clicks: engagement.clicks };
+  return { tags, opens: engagement.opens, clicks: engagement.clicks, bookings, nurture };
 };
+
 
 /** Resolve a rule tree to the matching consented contacts (de-duped by email). */
 export const resolveRuleTree = async (root: AudienceGroup): Promise<RuleContact[]> => {
@@ -349,19 +643,31 @@ const ruleLabel = (
 ): string => {
   const meta = FIELD_META[rule.field];
   const not = rule.negate ? "NOT " : "";
+  const tourFields: RuleField[] = [
+    "interested_tour",
+    "booked_on_tour",
+    "travelled_on_tour",
+    "nurture_tour",
+  ];
+  const statusLabel = (v: string) =>
+    BOOKING_STATUS_OPTIONS.find((o) => o.value === v)?.label || v;
   const values = asArray(rule.value)
     .map((v) =>
       rule.field === "tag"
         ? lookup.tags?.[v] || "tag"
-        : rule.field === "interested_tour"
+        : tourFields.includes(rule.field)
           ? lookup.tours?.[v] || "tour"
-          : v
+          : rule.field === "booking_status"
+            ? statusLabel(v)
+            : v
     )
     .join(", ");
 
   if (rule.operator === "never") return `${not}${meta.label}: never`;
   if (rule.operator === "is_true") return `${not}${meta.label}: yes`;
   if (rule.operator === "is_false") return `${not}${meta.label}: no`;
+  if (["this_week", "this_month", "overdue"].includes(rule.operator))
+    return `${not}${meta.label} ${OPERATOR_LABELS[rule.operator]}`;
   return `${not}${meta.label} ${OPERATOR_LABELS[rule.operator]} ${values || (rule.value ?? "")}`.trim();
 };
 

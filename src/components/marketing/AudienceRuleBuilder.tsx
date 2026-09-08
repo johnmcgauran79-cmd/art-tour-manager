@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { AU_STATES, LEAD_STAGES } from "@/lib/edm/audience";
 import {
+  BOOKING_STATUS_OPTIONS,
   FIELD_META,
   OPERATOR_LABELS,
   defaultRule,
@@ -29,6 +30,15 @@ import {
   type RuleField,
   type RuleOperator,
 } from "@/lib/edm/audienceRules";
+
+/** Fields whose value is a single tour. */
+const TOUR_FIELDS: RuleField[] = [
+  "interested_tour",
+  "booked_on_tour",
+  "travelled_on_tour",
+  "nurture_tour",
+];
+
 
 export interface RuleBuilderOptions {
   tags: { id: string; name: string }[];
@@ -121,7 +131,8 @@ const RuleRow = ({
     });
 
   const valueControl = () => {
-    if (["never", "is_true", "is_false"].includes(rule.operator)) return null;
+    if (["never", "is_true", "is_false", "this_week", "this_month", "overdue"].includes(rule.operator))
+      return null;
 
     if (rule.operator === "in") {
       if (rule.field === "state")
@@ -149,6 +160,15 @@ const RuleRow = ({
             onToggle={toggle}
           />
         );
+      if (rule.field === "booking_status")
+        return (
+          <MultiSelect
+            label="booking statuses"
+            options={BOOKING_STATUS_OPTIONS}
+            selected={listValue}
+            onToggle={toggle}
+          />
+        );
       if (rule.field === "tag")
         return (
           <MultiSelect
@@ -169,7 +189,7 @@ const RuleRow = ({
         );
     }
 
-    if (rule.field === "interested_tour")
+    if (TOUR_FIELDS.includes(rule.field))
       return (
         <Select value={String(rule.value || "")} onValueChange={(v) => onChange({ ...rule, value: v })}>
           <SelectTrigger className="h-9 min-w-[12rem]">
@@ -184,6 +204,7 @@ const RuleRow = ({
           </SelectContent>
         </Select>
       );
+
 
     if (rule.operator === "before" || rule.operator === "after")
       return (

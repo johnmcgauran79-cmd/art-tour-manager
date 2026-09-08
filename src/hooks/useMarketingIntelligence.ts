@@ -103,7 +103,7 @@ export function useMarketingSignals(onlyHighIntent = true, limit = 100) {
 
 export interface LinkClassification {
   id: string;
-  url_pattern: string;
+  pattern: string;
   intent: string;
   label: string | null;
   tour_id: string | null;
@@ -118,7 +118,7 @@ export function useLinkClassifications() {
         .from("marketing_link_classifications" as any)
         .select("*")
         .order("intent")
-        .order("url_pattern");
+        .order("pattern");
       if (error) throw error;
       return (data || []) as unknown as LinkClassification[];
     },
@@ -131,7 +131,7 @@ export function useSaveLinkClassification() {
   return useMutation({
     mutationFn: async (row: Partial<LinkClassification>) => {
       const payload = {
-        url_pattern: row.url_pattern?.trim(),
+        pattern: row.pattern?.trim(),
         intent: row.intent,
         label: row.label || null,
         tour_id: row.tour_id || null,
