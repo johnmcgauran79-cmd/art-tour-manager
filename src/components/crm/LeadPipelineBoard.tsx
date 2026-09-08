@@ -119,6 +119,9 @@ export function LeadPipelineBoard() {
             <SelectItem value={ALL}>Everything</SelectItem>
             <SelectItem value="no_next_action">No next action</SelectItem>
             <SelectItem value="overdue">Overdue follow-up</SelectItem>
+            <SelectItem value="stale">Going cold</SelectItem>
+            <SelectItem value="awaiting_response">Never responded to</SelectItem>
+            <SelectItem value="client_replied">Client has replied</SelectItem>
             <SelectItem value="unowned">No owner</SelectItem>
           </SelectContent>
         </Select>
