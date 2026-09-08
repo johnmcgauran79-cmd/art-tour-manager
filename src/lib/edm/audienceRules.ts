@@ -23,7 +23,19 @@ export type RuleField =
   | "created_at"
   | "last_opened"
   | "last_clicked"
-  | "name_email";
+  | "name_email"
+  // Bookings (real ART booking records)
+  | "has_booking"
+  | "booked_on_tour"
+  | "has_future_booking"
+  | "booking_status"
+  | "travelled_on_tour"
+  | "travelled_tour_type"
+  // Long-term nurture (existing enquiry records)
+  | "is_nurture"
+  | "nurture_tour"
+  | "nurture_review_date"
+  | "nurture_reason";
 
 export type RuleOperator =
   | "in" // value: string[]
@@ -33,9 +45,26 @@ export type RuleOperator =
   | "after" // value: yyyy-MM-dd
   | "within_days" // value: number
   | "not_within_days" // value: number
+  | "this_week"
+  | "this_month"
+  | "overdue"
   | "never"
   | "is_true"
   | "is_false";
+
+/** Booking statuses as they exist in ART today. */
+export const BOOKING_STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "invoiced", label: "Invoiced" },
+  { value: "deposited", label: "Deposit paid" },
+  { value: "instalment_paid", label: "Instalment paid" },
+  { value: "fully_paid", label: "Fully paid" },
+  { value: "complimentary", label: "Complimentary" },
+  { value: "waitlisted", label: "Waitlisted" },
+  { value: "host", label: "Host" },
+  { value: "racing_breaks_invoice", label: "Racing Breaks invoice" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 export interface AudienceRule {
   id: string;
@@ -103,6 +132,34 @@ export const FIELD_META: Record<
     operators: ["within_days", "not_within_days", "never"],
   },
   name_email: { label: "Name or email", group: "Other", operators: ["contains"] },
+
+  has_booking: { label: "Has a booking", group: "Bookings", operators: ["is_true", "is_false"] },
+  booked_on_tour: { label: "Booked on tour", group: "Bookings", operators: ["eq"] },
+  has_future_booking: {
+    label: "Has a future booking",
+    group: "Bookings",
+    operators: ["is_true", "is_false"],
+  },
+  booking_status: { label: "Booking status", group: "Bookings", operators: ["in"] },
+  travelled_on_tour: { label: "Travelled on tour", group: "Bookings", operators: ["eq"] },
+  travelled_tour_type: {
+    label: "Travelled tour type",
+    group: "Bookings",
+    operators: ["eq", "contains"],
+  },
+
+  is_nurture: {
+    label: "Long-term nurture",
+    group: "Nurture",
+    operators: ["is_true", "is_false"],
+  },
+  nurture_tour: { label: "Nurture tour", group: "Nurture", operators: ["eq"] },
+  nurture_review_date: {
+    label: "Nurture review date",
+    group: "Nurture",
+    operators: ["this_week", "this_month", "overdue", "before", "after", "within_days"],
+  },
+  nurture_reason: { label: "Nurture reason", group: "Nurture", operators: ["contains"] },
 };
 
 export const OPERATOR_LABELS: Record<RuleOperator, string> = {
@@ -113,10 +170,14 @@ export const OPERATOR_LABELS: Record<RuleOperator, string> = {
   after: "after",
   within_days: "in the last (days)",
   not_within_days: "not in the last (days)",
+  this_week: "due this week",
+  this_month: "due this month",
+  overdue: "overdue",
   never: "never",
   is_true: "yes",
   is_false: "no",
 };
+
 
 export interface RuleContact {
   id: string;
