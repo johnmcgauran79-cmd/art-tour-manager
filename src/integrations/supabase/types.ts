@@ -8205,8 +8205,21 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: string
       }
+      crm_action_board: { Args: never; Returns: Json }
       crm_business_days: { Args: { _a: string; _b: string }; Returns: number }
       crm_business_hours: { Args: { _a: string; _b: string }; Returns: number }
+      crm_funnel: {
+        Args: { _from?: string; _to?: string; _tour_id?: string }
+        Returns: Json
+      }
+      crm_pipeline_summary: {
+        Args: { _from?: string; _to?: string }
+        Returns: Json
+      }
+      crm_response_performance: {
+        Args: { _from?: string; _to?: string }
+        Returns: Json
+      }
       crm_weekend_days: { Args: { _a: string; _b: string }; Returns: number }
       delete_automated_tour_tasks: {
         Args: { p_tour_id: string }
