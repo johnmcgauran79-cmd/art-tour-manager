@@ -372,6 +372,86 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       result = !needle || hay.includes(needle);
       break;
     }
+
+    /* ---------------------------- Bookings ---------------------------- */
+    case "has_booking": {
+      const has = activeBookings(ctx.bookings.get(c.id) || []).length > 0;
+      result = rule.operator === "is_false" ? !has : has;
+      break;
+    }
+    case "booked_on_tour": {
+      const tour = String(rule.value || "");
+      result =
+        !!tour &&
+        activeBookings(ctx.bookings.get(c.id) || []).some((b) => b.tour_id === tour);
+      break;
+    }
+    case "has_future_booking": {
+      const today = todayIso();
+      const has = activeBookings(ctx.bookings.get(c.id) || []).some(
+        (b) => !!b.start_date && b.start_date >= today
+      );
+      result = rule.operator === "is_false" ? !has : has;
+      break;
+    }
+    case "booking_status": {
+      const list = asArray(rule.value);
+      const mine = ctx.bookings.get(c.id) || [];
+      result = !list.length || mine.some((b) => list.includes(b.status));
+      break;
+    }
+    case "travelled_on_tour": {
+      const tour = String(rule.value || "");
+      const today = todayIso();
+      result =
+        !!tour &&
+        activeBookings(ctx.bookings.get(c.id) || []).some(
+          (b) => b.tour_id === tour && !!b.end_date && b.end_date < today
+        );
+      break;
+    }
+    case "travelled_tour_type": {
+      const needle = String(rule.value || "").toLowerCase();
+      const today = todayIso();
+      const travelled = activeBookings(ctx.bookings.get(c.id) || []).filter(
+        (b) => !!b.end_date && b.end_date < today
+      );
+      result =
+        !needle ||
+        travelled.some((b) =>
+          rule.operator === "contains"
+            ? (b.tour_type || "").toLowerCase().includes(needle)
+            : (b.tour_type || "").toLowerCase() === needle
+        );
+      break;
+    }
+
+    /* ----------------------------- Nurture ---------------------------- */
+    case "is_nurture": {
+      const has = (ctx.nurture.get(c.id) || []).length > 0;
+      result = rule.operator === "is_false" ? !has : has;
+      break;
+    }
+    case "nurture_tour": {
+      const tour = String(rule.value || "");
+      result = !!tour && (ctx.nurture.get(c.id) || []).some((n) => n.tour_id === tour);
+      break;
+    }
+    case "nurture_review_date":
+      result = evalReviewDate(
+        (ctx.nurture.get(c.id) || []).map((n) => n.nurture_review_date),
+        rule
+      );
+      break;
+    case "nurture_reason": {
+      const needle = String(rule.value || "").toLowerCase();
+      result =
+        !needle ||
+        (ctx.nurture.get(c.id) || []).some((n) =>
+          (n.nurture_reason || "").toLowerCase().includes(needle)
+        );
+      break;
+    }
   }
 
   return rule.negate ? !result : result;
