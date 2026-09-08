@@ -150,6 +150,7 @@ export default function PublicForm() {
       utm_campaign: searchParams.get("utm_campaign") || "",
       utm_content: searchParams.get("utm_content") || "",
       utm_term: searchParams.get("utm_term") || "",
+      art_campaign_id: searchParams.get("art_campaign_id") || "",
       referrer: searchParams.get("ref") || document.referrer || "",
       landing_page_url: window.location.href,
     }),
