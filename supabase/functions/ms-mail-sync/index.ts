@@ -9,6 +9,10 @@ const corsHeaders = {
 
 const FOLDERS = ["inbox", "sentitems"] as const;
 
+/** Days of mail pulled per historical run before chaining to the next chunk. */
+const CHUNK_DAYS = 7;
+
+
 interface Counts {
   scanned: number;
   stored: number;
@@ -30,13 +34,14 @@ async function syncMailbox(
   const counts = empty();
   // A manual "Sync now" is a light catch-up, not a full history import.
   const months = monthsOverride ?? (runType === "manual" ? 0 : mailbox.history_months ?? 12);
-  // History is imported one month at a time so a single run always finishes
-  // inside the function's time budget; the caller chains the next chunk.
+  // History is imported one week at a time so even a very busy mailbox always
+  // finishes a chunk inside the function's time budget; the caller chains on.
   const windowEnd = runType === "historical" && before ? new Date(before) : new Date();
   const windowStart = new Date(windowEnd);
-  if (runType === "historical") windowStart.setMonth(windowStart.getMonth() - 1);
+  if (runType === "historical") windowStart.setDate(windowStart.getDate() - CHUNK_DAYS);
   else if (months > 0) windowStart.setMonth(windowStart.getMonth() - months);
   else windowStart.setDate(windowStart.getDate() - 7);
+
 
   const { data: run } = await db
     .from("email_sync_runs")
@@ -194,6 +199,10 @@ Deno.serve(async (req) => {
     const mailboxId: string | undefined = body.mailboxId;
     const months: number | undefined = body.months;
     const before: string | undefined = body.before;
+    // Remaining weekly chunks for a history import; derived from months on the
+    // first call, then decremented down the chain.
+    const chunksIn: number | undefined = body.chunks;
+
 
 
     // Staff-triggered runs must be an admin or manager; the cron job passes no JWT.
@@ -236,6 +245,8 @@ Deno.serve(async (req) => {
 
     // Each historical run covers one month; the next month is queued only when
     // months remain, so the chain always ends.
+    // Each historical run covers one week; the next week is queued only while
+    // chunks remain, so the chain always ends.
     const chainNext = async (mb: any, cursor: string, remaining: number) => {
       if (remaining <= 1) return;
       try {
@@ -248,7 +259,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             mode: "historical",
             mailboxId: mb.id,
-            months: remaining - 1,
+            chunks: remaining - 1,
             before: cursor,
           }),
         });
@@ -264,13 +275,17 @@ Deno.serve(async (req) => {
           const res = await syncMailbox(db, mb as any, mode, months, before);
           results.push(res);
           if (mode === "historical" && !res.error) {
-            const total = months ?? (mb as any).history_months ?? 12;
-            await chainNext(mb, res.windowStart, total);
+            const totalChunks =
+              chunksIn ??
+              Math.ceil(((months ?? (mb as any).history_months ?? 12) * 30) / CHUNK_DAYS);
+            await chainNext(mb, res.windowStart, totalChunks);
           }
         } catch (e) {
           console.error("mailbox sync failed", (mb as any).address, (e as Error).message);
         }
       }
+
+
       if (actorId && mode !== "delta") {
         await db.from("audit_log").insert({
           user_id: actorId,
