@@ -203,3 +203,6 @@ verify_jwt = false
 
 [functions.meta-leads-webhook]
 verify_jwt = false
+
+[functions.crm-automation-run]
+verify_jwt = false
