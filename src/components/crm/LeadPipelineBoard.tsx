@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CalendarClock, Mail, Phone, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, Clock, Mail, Phone, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useTours } from "@/hooks/useTours";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import { useCrmConfig, useCrmLeads, useUpdateLead, type Lead } from "@/hooks/useCrm";
+import { useLeadFactsMap, type LeadFact } from "@/hooks/useCrmSales";
 import { LEAD_PRIORITIES, priorityBadgeClass } from "@/lib/crm/constants";
 
 const ALL = "all";
@@ -26,6 +27,7 @@ export function LeadPipelineBoard() {
   const { data: leads = [], isLoading } = useCrmLeads();
   const { data: tours = [] } = useTours();
   const { data: users = [] } = useAssignableUsers();
+  const { data: facts } = useLeadFactsMap();
   const update = useUpdateLead();
 
   const [search, setSearch] = useState("");
@@ -36,7 +38,6 @@ export function LeadPipelineBoard() {
   const [channel, setChannel] = useState(ALL);
   const [dragging, setDragging] = useState<string | null>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -46,8 +47,12 @@ export function LeadPipelineBoard() {
       if (tourId !== ALL && l.tour_id !== tourId) return false;
       if (ownerId !== ALL && l.owner_id !== ownerId) return false;
       if (priority !== ALL && l.priority !== priority) return false;
-      if (flag === "no_next_action" && l.next_action_date) return false;
-      if (flag === "overdue" && !(l.next_action_date && l.next_action_date < today)) return false;
+      const f = facts?.get(l.id);
+      if (flag === "no_next_action" && !f?.no_next_action) return false;
+      if (flag === "overdue" && !f?.next_action_overdue) return false;
+      if (flag === "stale" && !f?.is_stale) return false;
+      if (flag === "awaiting_response" && !f?.awaiting_first_response) return false;
+      if (flag === "client_replied" && !f?.client_replied) return false;
       if (flag === "unowned" && l.owner_id) return false;
       if (channel !== ALL) {
         const c = (l as any).source_channel || "website";
@@ -55,7 +60,7 @@ export function LeadPipelineBoard() {
       }
       return true;
     });
-  }, [leads, search, tourId, ownerId, priority, flag, channel, today]);
+  }, [leads, facts, search, tourId, ownerId, priority, flag, channel]);
 
   const stages = (config?.stages || []).filter((s) => s.is_active);
 
@@ -113,6 +118,9 @@ export function LeadPipelineBoard() {
             <SelectItem value={ALL}>Everything</SelectItem>
             <SelectItem value="no_next_action">No next action</SelectItem>
             <SelectItem value="overdue">Overdue follow-up</SelectItem>
+            <SelectItem value="stale">Going cold</SelectItem>
+            <SelectItem value="awaiting_response">Never responded to</SelectItem>
+            <SelectItem value="client_replied">Client has replied</SelectItem>
             <SelectItem value="unowned">No owner</SelectItem>
           </SelectContent>
         </Select>
@@ -144,7 +152,9 @@ export function LeadPipelineBoard() {
                       />
                       {stage.label}
                     </span>
-                    <Badge variant="secondary">{items.length}</Badge>
+                    <Badge variant="secondary">
+                      {items.length} · {items.reduce((n, l) => n + (l.passengers || 0), 0)} pax
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -152,8 +162,7 @@ export function LeadPipelineBoard() {
                     <LeadKanbanCard
                       key={lead.id}
                       lead={lead}
-                      needsNextAction={stage.requires_next_action && !lead.next_action_date}
-                      overdue={!!lead.next_action_date && lead.next_action_date < today}
+                      fact={facts?.get(lead.id)}
                       onDragStart={() => setDragging(lead.id)}
                     />
                   ))}
@@ -172,15 +181,20 @@ export function LeadPipelineBoard() {
 
 function LeadKanbanCard({
   lead,
-  needsNextAction,
-  overdue,
+  fact,
   onDragStart,
 }: {
   lead: Lead;
-  needsNextAction: boolean;
-  overdue: boolean;
+  fact?: LeadFact;
   onDragStart: () => void;
 }) {
+  const warnings: string[] = [];
+  if (fact?.awaiting_first_response) warnings.push("Never responded to");
+  if (fact?.no_next_action) warnings.push("No next action");
+  if (fact?.next_action_overdue) warnings.push("Follow-up overdue");
+  if (fact?.is_stale) warnings.push("Going cold");
+  if (fact?.client_replied) warnings.push("Client replied");
+
   return (
     <div
       draggable
@@ -209,23 +223,27 @@ function LeadKanbanCard({
             <Phone className="h-3 w-3" /> {lead.customer.phone}
           </div>
         )}
-        {!!lead.passengers && (
-          <div className="flex items-center gap-1.5">
-            <Users className="h-3 w-3" /> {lead.passengers} travelling
+        <div className="flex items-center gap-1.5">
+          <Users className="h-3 w-3" />
+          {lead.passengers ? `${lead.passengers} travelling` : "Number travelling unknown"}
+        </div>
+        {lead.next_action_date && (
+          <div className={`flex items-center gap-1.5 ${fact?.next_action_overdue ? "text-destructive" : ""}`}>
+            <CalendarClock className="h-3 w-3" /> {formatDateToDDMMYYYY(lead.next_action_date)}
           </div>
         )}
-        {lead.next_action_date && (
-          <div className={`flex items-center gap-1.5 ${overdue ? "text-destructive" : ""}`}>
-            <CalendarClock className="h-3 w-3" /> {formatDateToDDMMYYYY(lead.next_action_date)}
+        {fact && (
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3" /> {fact.business_days_in_stage} working days in stage
           </div>
         )}
       </div>
 
-      {needsNextAction && (
-        <div className="flex items-center gap-1.5 rounded bg-amber-100 px-2 py-1 text-amber-900">
-          <AlertTriangle className="h-3 w-3" /> No next action
+      {warnings.map((w) => (
+        <div key={w} className="flex items-center gap-1.5 rounded bg-amber-100 px-2 py-1 text-amber-900">
+          <AlertTriangle className="h-3 w-3" /> {w}
         </div>
-      )}
+      ))}
 
       <Button asChild variant="ghost" size="sm" className="h-7 w-full text-xs">
         <Link to={`/leads/${lead.id}`}>Open enquiry</Link>

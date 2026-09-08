@@ -10,6 +10,8 @@ import {
   PhoneCall,
   StickyNote,
   Trash2,
+  Clock,
+  XCircle,
   User,
 } from "lucide-react";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
@@ -41,6 +43,9 @@ import { CrmActivityFeed } from "@/components/crm/CrmActivityFeed";
 import { SubmissionsList } from "@/components/crm/SubmissionsList";
 import { LeadEmailsPanel } from "@/components/crm/LeadEmailsPanel";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
+import { LeadAttentionCard } from "@/components/crm/LeadAttentionCard";
+import { LeadOutcomeDialog } from "@/components/crm/LeadOutcomeDialog";
+import { useLeadFact } from "@/hooks/useCrmSales";
 
 import {
   useCrmConfig,
@@ -63,11 +68,14 @@ export default function LeadDetail() {
   const { data: users = [] } = useAssignableUsers();
   const update = useUpdateLead();
   const remove = useDeleteLead();
+  const { data: fact } = useLeadFact(id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [logType, setLogType] = useState("call");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [outcome, setOutcome] = useState<"lost" | "nurture" | null>(null);
+
 
   if (isLoading) {
     return <div className="p-6 text-sm text-muted-foreground">Loading enquiry…</div>;
@@ -124,11 +132,20 @@ export default function LeadDetail() {
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="mr-1 h-4 w-4" /> Edit
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setOutcome("nurture")}>
+            <Clock className="mr-1 h-4 w-4" /> Long-term nurture
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setOutcome("lost")}>
+            <XCircle className="mr-1 h-4 w-4" /> Close as lost
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setConfirmDelete(true)}>
             <Trash2 className="mr-1 h-4 w-4" /> Delete
           </Button>
         </div>
       </div>
+
+      <LeadAttentionCard fact={fact} />
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
@@ -279,6 +296,14 @@ export default function LeadDetail() {
       </Tabs>
 
       <LeadDialog open={editOpen} onOpenChange={setEditOpen} lead={lead} />
+      {outcome && (
+        <LeadOutcomeDialog
+          open={!!outcome}
+          onOpenChange={(v) => !v && setOutcome(null)}
+          leadId={lead.id}
+          outcome={outcome}
+        />
+      )}
       <LogActivityDialog
         open={logOpen}
         onOpenChange={setLogOpen}

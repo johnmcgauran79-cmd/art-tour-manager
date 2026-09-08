@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { BarChart3, ClipboardList, Inbox, KanbanSquare, Users } from "lucide-react";
+import { BarChart3, ClipboardList, Inbox, KanbanSquare, Settings2, Users, Zap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { LeadTasksTab } from "@/components/marketing/LeadTasksTab";
 import { LeadInbox } from "@/components/crm/LeadInbox";
 import { LeadPipelineBoard } from "@/components/crm/LeadPipelineBoard";
 import { CrmDashboard } from "@/components/crm/CrmDashboard";
+import { CrmAutomationTab } from "@/components/crm/CrmAutomationTab";
+import { CrmSalesSettings } from "@/components/crm/CrmSalesSettings";
+import { usePermissions } from "@/hooks/usePermissions";
 
-const TABS = ["inbox", "pipeline", "dashboard", "tasks"] as const;
+const TABS = ["inbox", "pipeline", "dashboard", "tasks", "automation", "settings"] as const;
 
 export default function Leads() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { hasEditAccess } = usePermissions();
   const initial = searchParams.get("ltab");
   const [tab, setTab] = useState<string>(
     TABS.includes(initial as any) ? (initial as string) : "inbox"
@@ -39,7 +43,7 @@ export default function Leads() {
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
-        <TabsList>
+        <TabsList className="flex w-full flex-wrap h-auto gap-1">
           <TabsTrigger value="inbox" className="gap-1.5">
             <Inbox className="h-3.5 w-3.5" /> Today
           </TabsTrigger>
@@ -52,6 +56,16 @@ export default function Leads() {
           <TabsTrigger value="tasks" className="gap-1.5">
             <ClipboardList className="h-3.5 w-3.5" /> Lead tasks
           </TabsTrigger>
+          {hasEditAccess && (
+            <>
+              <TabsTrigger value="automation" className="gap-1.5">
+                <Zap className="h-3.5 w-3.5" /> Automation
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1.5">
+                <Settings2 className="h-3.5 w-3.5" /> Sales settings
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="inbox" className="mt-4">
@@ -66,6 +80,16 @@ export default function Leads() {
         <TabsContent value="tasks" className="mt-4">
           <LeadTasksTab />
         </TabsContent>
+        {hasEditAccess && (
+          <>
+            <TabsContent value="automation" className="mt-4">
+              <CrmAutomationTab />
+            </TabsContent>
+            <TabsContent value="settings" className="mt-4">
+              <CrmSalesSettings />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );
