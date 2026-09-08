@@ -1998,6 +1998,7 @@ export type Database = {
           matched: boolean
           rule_id: string | null
           run_date: string
+          signal_event_id: string | null
           success: boolean
           task_id: string | null
           trigger_type: string | null
@@ -2012,6 +2013,7 @@ export type Database = {
           matched?: boolean
           rule_id?: string | null
           run_date?: string
+          signal_event_id?: string | null
           success?: boolean
           task_id?: string | null
           trigger_type?: string | null
@@ -2026,6 +2028,7 @@ export type Database = {
           matched?: boolean
           rule_id?: string | null
           run_date?: string
+          signal_event_id?: string | null
           success?: boolean
           task_id?: string | null
           trigger_type?: string | null
@@ -5098,6 +5101,53 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_link_classifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          intent: string
+          is_active: boolean
+          label: string
+          match_type: string
+          pattern: string
+          tour_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intent?: string
+          is_active?: boolean
+          label: string
+          match_type?: string
+          pattern: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intent?: string
+          is_active?: boolean
+          label?: string
+          match_type?: string
+          pattern?: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_link_classifications_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
             referencedColumns: ["id"]
           },
         ]
@@ -8507,6 +8557,43 @@ export type Database = {
       }
     }
     Views: {
+      campaign_event_intent: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          email: string | null
+          event_id: string | null
+          event_type: string | null
+          intent: string | null
+          intent_label: string | null
+          intent_tour_id: string | null
+          link_url: string | null
+          recipient_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_link_classifications_tour_id_fkey"
+            columns: ["intent_tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contact_marketing_facts: {
         Row: {
           attributed_campaign_ids: string[] | null
