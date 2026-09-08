@@ -15,6 +15,7 @@ const TABS = ["inbox", "pipeline", "dashboard", "tasks", "automation", "settings
 
 export default function Leads() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { hasEditAccess } = usePermissions();
   const initial = searchParams.get("ltab");
   const [tab, setTab] = useState<string>(
     TABS.includes(initial as any) ? (initial as string) : "inbox"
@@ -42,7 +43,7 @@ export default function Leads() {
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
-        <TabsList>
+        <TabsList className="flex w-full flex-wrap h-auto gap-1">
           <TabsTrigger value="inbox" className="gap-1.5">
             <Inbox className="h-3.5 w-3.5" /> Today
           </TabsTrigger>
@@ -55,6 +56,16 @@ export default function Leads() {
           <TabsTrigger value="tasks" className="gap-1.5">
             <ClipboardList className="h-3.5 w-3.5" /> Lead tasks
           </TabsTrigger>
+          {hasEditAccess && (
+            <>
+              <TabsTrigger value="automation" className="gap-1.5">
+                <Zap className="h-3.5 w-3.5" /> Automation
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1.5">
+                <Settings2 className="h-3.5 w-3.5" /> Sales settings
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="inbox" className="mt-4">
@@ -69,6 +80,16 @@ export default function Leads() {
         <TabsContent value="tasks" className="mt-4">
           <LeadTasksTab />
         </TabsContent>
+        {hasEditAccess && (
+          <>
+            <TabsContent value="automation" className="mt-4">
+              <CrmAutomationTab />
+            </TabsContent>
+            <TabsContent value="settings" className="mt-4">
+              <CrmSalesSettings />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );
