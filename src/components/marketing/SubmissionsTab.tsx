@@ -35,11 +35,13 @@ const ALL = "__all__";
 export function SubmissionsTab() {
   const [view, setView] = useState<"all" | "review">("all");
   const [formType, setFormType] = useState(ALL);
+  const [channel, setChannel] = useState(ALL);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<FormSubmission | null>(null);
 
   const { data: rows = [], isLoading } = useFormSubmissions({
     formType: formType === ALL ? undefined : formType,
+    channel: channel === ALL ? undefined : channel,
     search,
   });
   const reprocess = useReprocessSubmission();
@@ -54,7 +56,7 @@ export function SubmissionsTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          Every enquiry sent from the website, exactly as it arrived. Nothing is lost — anything that
+          Every enquiry we receive — from our own website, Facebook, Zapier or a partner — exactly as it arrived. Nothing is lost — anything that
           failed can be processed again from here.
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -67,6 +69,20 @@ export function SubmissionsTab() {
               className="w-56 pl-8"
             />
           </div>
+          <Select value={channel} onValueChange={setChannel}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All sources</SelectItem>
+              <SelectItem value="website">Our website</SelectItem>
+              <SelectItem value="external">Anywhere else</SelectItem>
+              <SelectItem value="meta">Facebook / Instagram</SelectItem>
+              <SelectItem value="zapier">Zapier</SelectItem>
+              <SelectItem value="partner">Partners</SelectItem>
+              <SelectItem value="api">Other systems</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={formType} onValueChange={setFormType}>
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -138,11 +154,13 @@ export function SubmissionsTab() {
                       {s.form_type === "booking" ? "Booking" : "Interest"}
                     </Badge>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {s.landing_page?.title}
+                      {s.integration?.name || s.landing_page?.title}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {s.utm_source || s.referrer || "direct"}
+                    {s.integration?.name
+                      ? `${s.integration.name}${s.platform ? ` · ${s.platform}` : ""}`
+                      : s.utm_source || s.referrer || "direct"}
                   </TableCell>
                   <TableCell className="text-sm">
                     {s.processing_status === "processed" && !s.needs_review ? (

@@ -3548,16 +3548,28 @@ export type Database = {
       landing_page_submissions: {
         Row: {
           ack_email_status: string | null
+          ad_id: string | null
+          ad_name: string | null
+          ad_set: string | null
+          ad_set_id: string | null
+          campaign_id: string | null
+          consent_at: string | null
           consent_given: boolean
           consent_text: string | null
+          consent_version: string | null
           country: string | null
           created_at: string
           customer_id: string | null
           email: string | null
+          external_form_id: string | null
+          external_form_name: string | null
+          external_lead_id: string | null
+          external_source: string | null
           external_submission_id: string | null
           first_name: string | null
           form_type: string
           id: string
+          integration_id: string | null
           ip_hash: string | null
           landing_page_id: string | null
           landing_page_url: string | null
@@ -3566,23 +3578,31 @@ export type Database = {
           match_method: string | null
           message: string | null
           needs_review: boolean
+          partner: string | null
           payload: Json
           phone: string | null
+          platform: string | null
           preferred_contact: string | null
           previous_traveller: boolean | null
           processed_at: string | null
+          processing_attempts: Json
           processing_error: string | null
           processing_status: string
           processing_step: string | null
+          raw_payload: Json | null
           referrer: string | null
           retry_count: number
           review_note: string | null
+          source_channel: string
           state: string | null
           submission_uid: string | null
+          submitted_at: string | null
           task_id: string | null
           tour_id: string | null
           tour_ids: string[]
+          tour_mapping: Json
           travellers: number | null
+          unmapped_tours: string[]
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -3591,16 +3611,28 @@ export type Database = {
         }
         Insert: {
           ack_email_status?: string | null
+          ad_id?: string | null
+          ad_name?: string | null
+          ad_set?: string | null
+          ad_set_id?: string | null
+          campaign_id?: string | null
+          consent_at?: string | null
           consent_given?: boolean
           consent_text?: string | null
+          consent_version?: string | null
           country?: string | null
           created_at?: string
           customer_id?: string | null
           email?: string | null
+          external_form_id?: string | null
+          external_form_name?: string | null
+          external_lead_id?: string | null
+          external_source?: string | null
           external_submission_id?: string | null
           first_name?: string | null
           form_type?: string
           id?: string
+          integration_id?: string | null
           ip_hash?: string | null
           landing_page_id?: string | null
           landing_page_url?: string | null
@@ -3609,23 +3641,31 @@ export type Database = {
           match_method?: string | null
           message?: string | null
           needs_review?: boolean
+          partner?: string | null
           payload?: Json
           phone?: string | null
+          platform?: string | null
           preferred_contact?: string | null
           previous_traveller?: boolean | null
           processed_at?: string | null
+          processing_attempts?: Json
           processing_error?: string | null
           processing_status?: string
           processing_step?: string | null
+          raw_payload?: Json | null
           referrer?: string | null
           retry_count?: number
           review_note?: string | null
+          source_channel?: string
           state?: string | null
           submission_uid?: string | null
+          submitted_at?: string | null
           task_id?: string | null
           tour_id?: string | null
           tour_ids?: string[]
+          tour_mapping?: Json
           travellers?: number | null
+          unmapped_tours?: string[]
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -3634,16 +3674,28 @@ export type Database = {
         }
         Update: {
           ack_email_status?: string | null
+          ad_id?: string | null
+          ad_name?: string | null
+          ad_set?: string | null
+          ad_set_id?: string | null
+          campaign_id?: string | null
+          consent_at?: string | null
           consent_given?: boolean
           consent_text?: string | null
+          consent_version?: string | null
           country?: string | null
           created_at?: string
           customer_id?: string | null
           email?: string | null
+          external_form_id?: string | null
+          external_form_name?: string | null
+          external_lead_id?: string | null
+          external_source?: string | null
           external_submission_id?: string | null
           first_name?: string | null
           form_type?: string
           id?: string
+          integration_id?: string | null
           ip_hash?: string | null
           landing_page_id?: string | null
           landing_page_url?: string | null
@@ -3652,23 +3704,31 @@ export type Database = {
           match_method?: string | null
           message?: string | null
           needs_review?: boolean
+          partner?: string | null
           payload?: Json
           phone?: string | null
+          platform?: string | null
           preferred_contact?: string | null
           previous_traveller?: boolean | null
           processed_at?: string | null
+          processing_attempts?: Json
           processing_error?: string | null
           processing_status?: string
           processing_step?: string | null
+          raw_payload?: Json | null
           referrer?: string | null
           retry_count?: number
           review_note?: string | null
+          source_channel?: string
           state?: string | null
           submission_uid?: string | null
+          submitted_at?: string | null
           task_id?: string | null
           tour_id?: string | null
           tour_ids?: string[]
+          tour_mapping?: Json
           travellers?: number | null
+          unmapped_tours?: string[]
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -3681,6 +3741,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "lead_integrations"
             referencedColumns: ["id"]
           },
           {
@@ -3860,6 +3927,167 @@ export type Database = {
           },
         ]
       }
+      lead_integration_tour_map: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          external_key: string
+          external_label: string | null
+          id: string
+          integration_id: string | null
+          tour_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          external_key: string
+          external_label?: string | null
+          id?: string
+          integration_id?: string | null
+          tour_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          external_key?: string
+          external_label?: string | null
+          id?: string
+          integration_id?: string | null
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_integration_tour_map_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "lead_integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_integration_tour_map_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_integrations: {
+        Row: {
+          ack_enabled: boolean
+          ack_template_id: string | null
+          allow_consent: boolean
+          auto_tag_ids: string[]
+          created_at: string
+          created_by: string | null
+          default_priority: string
+          default_tour_id: string | null
+          description: string | null
+          failed_count: number
+          followup_due_days: number
+          form_type: string
+          id: string
+          is_enabled: boolean
+          key: string
+          last_submission_at: string | null
+          lead_owner_id: string | null
+          lead_source: string | null
+          lead_type: string | null
+          medium: string | null
+          name: string
+          notify_teams: boolean
+          partner_name: string | null
+          provider: string
+          source_channel: string
+          success_count: number
+          task_assignee_ids: string[]
+          task_watcher_ids: string[]
+          token_hash: string | null
+          token_last_used_at: string | null
+          token_prefix: string | null
+          token_rotated_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ack_enabled?: boolean
+          ack_template_id?: string | null
+          allow_consent?: boolean
+          auto_tag_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          default_priority?: string
+          default_tour_id?: string | null
+          description?: string | null
+          failed_count?: number
+          followup_due_days?: number
+          form_type?: string
+          id?: string
+          is_enabled?: boolean
+          key: string
+          last_submission_at?: string | null
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          lead_type?: string | null
+          medium?: string | null
+          name: string
+          notify_teams?: boolean
+          partner_name?: string | null
+          provider?: string
+          source_channel?: string
+          success_count?: number
+          task_assignee_ids?: string[]
+          task_watcher_ids?: string[]
+          token_hash?: string | null
+          token_last_used_at?: string | null
+          token_prefix?: string | null
+          token_rotated_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ack_enabled?: boolean
+          ack_template_id?: string | null
+          allow_consent?: boolean
+          auto_tag_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          default_priority?: string
+          default_tour_id?: string | null
+          description?: string | null
+          failed_count?: number
+          followup_due_days?: number
+          form_type?: string
+          id?: string
+          is_enabled?: boolean
+          key?: string
+          last_submission_at?: string | null
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          lead_type?: string | null
+          medium?: string | null
+          name?: string
+          notify_teams?: boolean
+          partner_name?: string | null
+          provider?: string
+          source_channel?: string
+          success_count?: number
+          task_assignee_ids?: string[]
+          task_watcher_ids?: string[]
+          token_hash?: string | null
+          token_last_used_at?: string | null
+          token_prefix?: string | null
+          token_rotated_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_integrations_default_tour_id_fkey"
+            columns: ["default_tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_stage_history: {
         Row: {
           changed_at: string
@@ -3901,10 +4129,13 @@ export type Database = {
       leads: {
         Row: {
           ad_campaign: string | null
+          ad_id: string | null
           ad_name: string | null
           ad_set: string | null
+          ad_set_id: string | null
           booking_id: string | null
           campaign: string | null
+          campaign_id: string | null
           closed_at: string | null
           companions: string | null
           converted_at: string | null
@@ -3912,12 +4143,16 @@ export type Database = {
           created_by: string | null
           customer_id: string
           estimated_value: number | null
+          external_source: string | null
           external_submission_id: string | null
           first_response_at: string | null
           form_slug: string | null
           id: string
+          integration_id: string | null
           landing_page_url: string | null
           last_activity_at: string
+          lead_form: string | null
+          lead_form_id: string | null
           lead_type: string
           lost_notes: string | null
           lost_reason: string | null
@@ -3928,9 +4163,11 @@ export type Database = {
           owner_id: string | null
           partner: string | null
           passengers: number | null
+          platform: string | null
           priority: string
           referrer: string | null
           source: string | null
+          source_channel: string
           stage: string
           submission_id: string | null
           tour_id: string | null
@@ -3943,10 +4180,13 @@ export type Database = {
         }
         Insert: {
           ad_campaign?: string | null
+          ad_id?: string | null
           ad_name?: string | null
           ad_set?: string | null
+          ad_set_id?: string | null
           booking_id?: string | null
           campaign?: string | null
+          campaign_id?: string | null
           closed_at?: string | null
           companions?: string | null
           converted_at?: string | null
@@ -3954,12 +4194,16 @@ export type Database = {
           created_by?: string | null
           customer_id: string
           estimated_value?: number | null
+          external_source?: string | null
           external_submission_id?: string | null
           first_response_at?: string | null
           form_slug?: string | null
           id?: string
+          integration_id?: string | null
           landing_page_url?: string | null
           last_activity_at?: string
+          lead_form?: string | null
+          lead_form_id?: string | null
           lead_type?: string
           lost_notes?: string | null
           lost_reason?: string | null
@@ -3970,9 +4214,11 @@ export type Database = {
           owner_id?: string | null
           partner?: string | null
           passengers?: number | null
+          platform?: string | null
           priority?: string
           referrer?: string | null
           source?: string | null
+          source_channel?: string
           stage?: string
           submission_id?: string | null
           tour_id?: string | null
@@ -3985,10 +4231,13 @@ export type Database = {
         }
         Update: {
           ad_campaign?: string | null
+          ad_id?: string | null
           ad_name?: string | null
           ad_set?: string | null
+          ad_set_id?: string | null
           booking_id?: string | null
           campaign?: string | null
+          campaign_id?: string | null
           closed_at?: string | null
           companions?: string | null
           converted_at?: string | null
@@ -3996,12 +4245,16 @@ export type Database = {
           created_by?: string | null
           customer_id?: string
           estimated_value?: number | null
+          external_source?: string | null
           external_submission_id?: string | null
           first_response_at?: string | null
           form_slug?: string | null
           id?: string
+          integration_id?: string | null
           landing_page_url?: string | null
           last_activity_at?: string
+          lead_form?: string | null
+          lead_form_id?: string | null
           lead_type?: string
           lost_notes?: string | null
           lost_reason?: string | null
@@ -4012,9 +4265,11 @@ export type Database = {
           owner_id?: string | null
           partner?: string | null
           passengers?: number | null
+          platform?: string | null
           priority?: string
           referrer?: string | null
           source?: string | null
+          source_channel?: string
           stage?: string
           submission_id?: string | null
           tour_id?: string | null
@@ -4038,6 +4293,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "lead_integrations"
             referencedColumns: ["id"]
           },
           {

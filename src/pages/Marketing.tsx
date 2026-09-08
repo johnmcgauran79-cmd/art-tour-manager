@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, Inbox, LayoutTemplate, MailCheck, Megaphone, Send, Tag, Target } from "lucide-react";
+import { FileText, Inbox, LayoutTemplate, MailCheck, Megaphone, Plug, Send, Tag, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { CampaignsTab } from "@/components/marketing/CampaignsTab";
@@ -9,9 +9,10 @@ import { TemplatesTab } from "@/components/marketing/TemplatesTab";
 import { AudiencesTab } from "@/components/marketing/AudiencesTab";
 import { LandingPagesTab } from "@/components/marketing/LandingPagesTab";
 import { TagsTab } from "@/components/marketing/TagsTab";
+import { LeadSourcesTab } from "@/components/marketing/LeadSourcesTab";
 import { SubmissionsTab } from "@/components/marketing/SubmissionsTab";
 
-const TABS = ["campaigns", "sent", "templates", "audiences", "tags", "forms", "submissions"] as const;
+const TABS = ["campaigns", "sent", "templates", "audiences", "tags", "forms", "submissions", "sources"] as const;
 
 export default function Marketing() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -72,6 +73,9 @@ export default function Marketing() {
           <TabsTrigger value="submissions" className="gap-1.5">
             <Inbox className="h-3.5 w-3.5" /> Submissions
           </TabsTrigger>
+          <TabsTrigger value="sources" className="gap-1.5">
+            <Plug className="h-3.5 w-3.5" /> Lead sources
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="campaigns" className="mt-4">
@@ -109,6 +113,9 @@ export default function Marketing() {
         </TabsContent>
         <TabsContent value="submissions" className="mt-4">
           <SubmissionsTab />
+        </TabsContent>
+        <TabsContent value="sources" className="mt-4">
+          <LeadSourcesTab />
         </TabsContent>
       </Tabs>
     </div>
