@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { instrumentHtml } from "../_shared/marketingTracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,7 @@ const json = (body: unknown, status = 200) =>
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://art-tour-manager.lovable.app";
+const TRACK_BASE = `${Deno.env.get("SUPABASE_URL")}/functions/v1/marketing-track`;
 
 const admin = () =>
   createClient(
@@ -179,6 +181,7 @@ function serve_handler() {
         const { data: suppressed } = await supabase
           .from("email_suppressions")
           .select("email_address")
+          .eq("is_active", true)
           .in("email_address", emails);
         const blocked = new Set((suppressed || []).map((s: any) => s.email_address));
 
@@ -276,6 +279,16 @@ function serve_handler() {
               view_in_browser_url: `${APP_URL}/email-preferences/${token}`,
             });
 
+            // Track opens/clicks per recipient and tag ART links with the campaign.
+            const tracked = campaignId
+              ? instrumentHtml(rendered, {
+                  trackBase: TRACK_BASE,
+                  campaignId,
+                  recipientId: r.id,
+                  campaignName: campaign.name,
+                })
+              : rendered;
+
             const result = await resend.emails.send({
               from,
               to: [r.email],
@@ -283,7 +296,7 @@ function serve_handler() {
                 first_name: r.first_name || "",
                 last_name: r.last_name || "",
               }),
-              html: rendered,
+              html: tracked,
               reply_to: replyTo,
               headers: {
                 "List-Unsubscribe": `<${APP_URL}/email-preferences/${token}?unsubscribe=1>`,
