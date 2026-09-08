@@ -1093,6 +1093,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_travel_docs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
         ]
       }
       booking_waivers: {
@@ -1152,6 +1159,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_waivers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "booking_waivers_token_id_fkey"
@@ -1296,11 +1310,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_lead_passenger_id_fkey"
+            columns: ["lead_passenger_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "bookings_passenger_2_id_fkey"
             columns: ["passenger_2_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_passenger_2_id_fkey"
+            columns: ["passenger_2_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "bookings_passenger_3_id_fkey"
@@ -1310,11 +1338,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_passenger_3_id_fkey"
+            columns: ["passenger_3_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "bookings_secondary_contact_id_fkey"
             columns: ["secondary_contact_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_secondary_contact_id_fkey"
+            columns: ["secondary_contact_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "bookings_selected_pickup_option_id_fkey"
@@ -1558,6 +1600,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
         ]
       }
       capacity_monitoring_rules: {
@@ -1633,11 +1682,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contact_relationships_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "contact_relationships_related_customer_id_fkey"
             columns: ["related_customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_relationships_related_customer_id_fkey"
+            columns: ["related_customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
         ]
       }
@@ -1670,6 +1733,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_tags_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "contact_tags_tag_id_fkey"
@@ -1742,6 +1812,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "crm_activities_lead_id_fkey"
@@ -1885,6 +1962,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crm_automation_runs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "crm_automation_runs_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
@@ -1949,6 +2033,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "crm_email_contacts_email_id_fkey"
@@ -2620,6 +2711,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_access_tokens_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "customer_access_tokens_form_id_fkey"
             columns: ["form_id"]
             isOneToOne: false
@@ -2663,6 +2761,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_profile_updates_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "customer_profile_updates_token_id_fkey"
@@ -3964,6 +4069,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "landing_page_submissions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "landing_page_submissions_integration_id_fkey"
             columns: ["integration_id"]
             isOneToOne: false
@@ -4577,6 +4689,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "leads_integration_id_fkey"
             columns: ["integration_id"]
             isOneToOne: false
@@ -4692,6 +4811,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_automation_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "marketing_automation_log_rule_id_fkey"
@@ -4891,6 +5017,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_preferences_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
         ]
       }
@@ -6216,6 +6349,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "tasks_depends_on_task_id_fkey"
             columns: ["depends_on_task_id"]
             isOneToOne: false
@@ -6657,6 +6797,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tour_custom_form_responses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "tour_custom_form_responses_form_id_fkey"
             columns: ["form_id"]
             isOneToOne: false
@@ -6965,6 +7112,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_interests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "tour_interests_lead_id_fkey"
@@ -8181,6 +8335,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "xero_sync_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
         ]
       }
     }
@@ -8291,6 +8452,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
             foreignKeyName: "leads_integration_id_fkey"
             columns: ["integration_id"]
             isOneToOne: false
@@ -8305,6 +8473,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marketing_contact_eligibility: {
+        Row: {
+          consented: boolean | null
+          customer_id: string | null
+          email: string | null
+          exclusion_reason: string | null
+          has_valid_email: boolean | null
+          marketing_eligible: boolean | null
+          subscribed: boolean | null
+          suppressed: boolean | null
+          suppression_type: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
