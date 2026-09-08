@@ -4410,11 +4410,13 @@ export type Database = {
           lead_type: string
           lost_notes: string | null
           lost_reason: string | null
+          marketing_campaign_id: string | null
           medium: string | null
           needs_attention: boolean
           next_action_date: string | null
           next_action_note: string | null
           notes: string | null
+          nurture_reason: string | null
           nurture_review_date: string | null
           owner_id: string | null
           partner: string | null
@@ -4470,11 +4472,13 @@ export type Database = {
           lead_type?: string
           lost_notes?: string | null
           lost_reason?: string | null
+          marketing_campaign_id?: string | null
           medium?: string | null
           needs_attention?: boolean
           next_action_date?: string | null
           next_action_note?: string | null
           notes?: string | null
+          nurture_reason?: string | null
           nurture_review_date?: string | null
           owner_id?: string | null
           partner?: string | null
@@ -4530,11 +4534,13 @@ export type Database = {
           lead_type?: string
           lost_notes?: string | null
           lost_reason?: string | null
+          marketing_campaign_id?: string | null
           medium?: string | null
           needs_attention?: boolean
           next_action_date?: string | null
           next_action_note?: string | null
           notes?: string | null
+          nurture_reason?: string | null
           nurture_review_date?: string | null
           owner_id?: string | null
           partner?: string | null
@@ -4578,6 +4584,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leads_marketing_campaign_id_fkey"
+            columns: ["marketing_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leads_submission_id_fkey"
             columns: ["submission_id"]
             isOneToOne: false
@@ -4600,10 +4613,14 @@ export type Database = {
           description: string | null
           filters: Json
           id: string
+          is_active: boolean
           last_count: number | null
           last_counted_at: string | null
+          last_sendable_count: number | null
           name: string
+          owner_id: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           created_at?: string
@@ -4611,10 +4628,14 @@ export type Database = {
           description?: string | null
           filters?: Json
           id?: string
+          is_active?: boolean
           last_count?: number | null
           last_counted_at?: string | null
+          last_sendable_count?: number | null
           name: string
+          owner_id?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           created_at?: string
@@ -4622,10 +4643,14 @@ export type Database = {
           description?: string | null
           filters?: Json
           id?: string
+          is_active?: boolean
           last_count?: number | null
           last_counted_at?: string | null
+          last_sendable_count?: number | null
           name?: string
+          owner_id?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
