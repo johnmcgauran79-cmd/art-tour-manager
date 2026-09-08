@@ -1563,6 +1563,13 @@ export type Database = {
             foreignKeyName: "campaign_events_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "crm_campaign_attribution"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "marketing_campaigns"
             referencedColumns: ["id"]
           },
@@ -1628,6 +1635,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaign_attribution"
+            referencedColumns: ["campaign_id"]
+          },
           {
             foreignKeyName: "campaign_recipients_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -1915,6 +1929,13 @@ export type Database = {
             foreignKeyName: "crm_activities_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "crm_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -2073,6 +2094,13 @@ export type Database = {
             foreignKeyName: "crm_automation_runs_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -2206,6 +2234,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_lead_facts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_links_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "crm_email_links_lead_id_fkey"
@@ -4225,8 +4260,22 @@ export type Database = {
             foreignKeyName: "landing_page_submissions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_page_submissions_marketing_campaign_id_fkey"
+            columns: ["marketing_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaign_attribution"
+            referencedColumns: ["campaign_id"]
           },
           {
             foreignKeyName: "landing_page_submissions_marketing_campaign_id_fkey"
@@ -4606,6 +4655,13 @@ export type Database = {
             foreignKeyName: "lead_stage_history_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_stage_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -4833,6 +4889,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "lead_integrations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_marketing_campaign_id_fkey"
+            columns: ["marketing_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaign_attribution"
+            referencedColumns: ["campaign_id"]
           },
           {
             foreignKeyName: "leads_marketing_campaign_id_fkey"
@@ -6580,6 +6643,13 @@ export type Database = {
             foreignKeyName: "tasks_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -7347,6 +7417,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_lead_facts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_interests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_lead_marketing_signals"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "tour_interests_lead_id_fkey"
@@ -8585,6 +8662,13 @@ export type Database = {
             foreignKeyName: "campaign_events_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "crm_campaign_attribution"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "marketing_campaigns"
             referencedColumns: ["id"]
           },
@@ -8603,6 +8687,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_campaign_attribution: {
+        Row: {
+          attributed_bookings: number | null
+          attributed_enquiries: number | null
+          booked_passengers: number | null
+          booked_value: number | null
+          campaign_id: string | null
+          click_rate: number | null
+          clicked: number | null
+          failed: number | null
+          high_intent_clickers: number | null
+          name: string | null
+          open_rate: number | null
+          opened: number | null
+          prospective_passengers: number | null
+          recipients: number | null
+          send_completed_at: string | null
+          send_started_at: string | null
+          sent: number | null
+          status: string | null
+          subject: string | null
+        }
+        Relationships: []
       }
       crm_contact_marketing_facts: {
         Row: {
@@ -8793,6 +8901,74 @@ export type Database = {
           {
             foreignKeyName: "leads_tour_id_fkey"
             columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_lead_marketing_signals: {
+        Row: {
+          campaign_id: string | null
+          customer_id: string | null
+          event_id: string | null
+          event_type: string | null
+          intent: string | null
+          intent_label: string | null
+          intent_tour_id: string | null
+          lead_id: string | null
+          lead_stage: string | null
+          link_url: string | null
+          occurred_at: string | null
+          owner_id: string | null
+          recipient_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaign_attribution"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_marketing_facts"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_contact_eligibility"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "marketing_link_classifications_tour_id_fkey"
+            columns: ["intent_tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
             referencedColumns: ["id"]
