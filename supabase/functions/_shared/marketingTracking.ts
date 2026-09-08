@@ -29,8 +29,15 @@ const OWN_DOMAINS = [
   "art-tour-manager.lovable.app",
 ];
 
-const isOwnDomain = (url: string) =>
-  OWN_DOMAINS.some((d) => url.toLowerCase().includes(d));
+/** True only when the link's hostname really is one of ours. */
+const isOwnDomain = (url: string) => {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return OWN_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+  } catch {
+    return false;
+  }
+};
 
 /** Append campaign attribution parameters to links we own. */
 const withAttribution = (

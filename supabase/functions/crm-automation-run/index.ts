@@ -39,11 +39,29 @@ const TRIGGERS = [
   "awaiting_first_response",
   "nurture_review_due",
   "new_lead_unassigned",
+  "marketing_signal",
 ] as const;
 
+/** A recent, meaningful click in a marketing email, per enquiry. */
+interface Signal {
+  event_id: string;
+  lead_id: string;
+  intent: string | null;
+  occurred_at: string;
+  campaign_id: string | null;
+  link_url: string | null;
+}
+
 /** Which leads a trigger applies to, evaluated from the shared facts view. */
-function matchesTrigger(lead: Json, trigger: string, targetHours: number) {
+function matchesTrigger(
+  lead: Json,
+  trigger: string,
+  targetHours: number,
+  signals?: Map<string, Signal>,
+) {
   switch (trigger) {
+    case "marketing_signal":
+      return !!signals?.has(lead.id);
     case "no_next_action":
       return !!lead.no_next_action;
     case "stale_lead":
@@ -132,9 +150,43 @@ Deno.serve(async (req) => {
 
     const summary: Json[] = [];
 
+    /* Marketing clicks are only fetched when a rule actually watches them. */
+    let signalRows: Signal[] = [];
+    if ((active as Rule[]).some((r) => r.trigger_type === "marketing_signal")) {
+      const { data } = await supabase
+        .from("crm_lead_marketing_signals")
+        .select("event_id, lead_id, intent, occurred_at, campaign_id, link_url")
+        .not("lead_id", "is", null)
+        .gte("occurred_at", new Date(Date.now() - 60 * 86_400_000).toISOString())
+        .order("occurred_at", { ascending: false })
+        .limit(5000);
+      signalRows = (data || []) as Signal[];
+    }
+
     for (const rule of active as Rule[]) {
+      // Latest qualifying click per enquiry, for marketing-signal rules.
+      let signals: Map<string, Signal> | undefined;
+      if (rule.trigger_type === "marketing_signal") {
+        const cond = rule.conditions || {};
+        const wanted: string[] = Array.isArray(cond.intents) && cond.intents.length
+          ? cond.intents
+          : ["high_intent"];
+        const withinDays = Number(cond.signal_days ?? 14);
+        const cutoff = Date.now() - withinDays * 86_400_000;
+        signals = new Map();
+        for (const s of signalRows) {
+          if (!s.lead_id || signals.has(s.lead_id)) continue;
+          if (!wanted.includes(s.intent || "informational")) continue;
+          if (new Date(s.occurred_at).getTime() < cutoff) continue;
+          if (cond.campaign_ids?.length && !cond.campaign_ids.includes(s.campaign_id)) continue;
+          signals.set(s.lead_id, s);
+        }
+      }
+
       const matched = (leads || []).filter(
-        (l: Json) => matchesTrigger(l, rule.trigger_type, targetHours) && matchesConditions(l, rule.conditions || {}),
+        (l: Json) =>
+          matchesTrigger(l, rule.trigger_type, targetHours, signals) &&
+          matchesConditions(l, rule.conditions || {}),
       );
 
       let applied = 0;
@@ -142,6 +194,21 @@ Deno.serve(async (req) => {
       const skipped: string[] = [];
 
       for (const lead of matched.slice(0, 200)) {
+        const signal = signals?.get(lead.id) || null;
+
+        // The same click never triggers the same rule twice.
+        if (signal) {
+          const { count: seen } = await supabase
+            .from("crm_automation_runs")
+            .select("id", { count: "exact", head: true })
+            .eq("rule_id", rule.id)
+            .eq("signal_event_id", signal.event_id);
+          if ((seen ?? 0) > 0) {
+            skipped.push(lead.id);
+            continue;
+          }
+        }
+
         // Duplicate protection: one application of a rule per enquiry per cooldown.
         const since = new Date(Date.now() - (rule.cooldown_days ?? 3) * 86_400_000).toISOString();
         const { count } = await supabase
@@ -319,6 +386,7 @@ Deno.serve(async (req) => {
           lead_id: lead.id,
           customer_id: lead.customer_id,
           trigger_type: rule.trigger_type,
+          signal_event_id: signal?.event_id || null,
           actions_taken: taken,
           task_id: taskId,
           success: !error,

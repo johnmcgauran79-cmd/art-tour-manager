@@ -32,6 +32,7 @@ export const TRIGGERS = [
   { value: "awaiting_first_response", label: "Nobody has responded yet" },
   { value: "nurture_review_due", label: "A nurture enquiry is due for review" },
   { value: "new_lead_unassigned", label: "A new enquiry has nobody looking after it" },
+  { value: "marketing_signal", label: "Someone clicked an enquiry or booking link in an email" },
 ] as const;
 
 const ACTIONS = [

@@ -212,7 +212,7 @@ export async function processSubmission(
 
       let query = supabase
         .from("leads")
-        .select("id, tour_id, stage, priority, next_action_date, passengers")
+        .select("id, tour_id, stage, priority, next_action_date, passengers, marketing_campaign_id")
         .eq("customer_id", result.customer_id)
         .in("stage", openKeys.length ? openKeys : ["new"])
         .order("created_at", { ascending: false })
@@ -229,6 +229,9 @@ export async function processSubmission(
         const updates: Record<string, unknown> = { last_activity_at: nowIso() };
         if (isBooking) updates.priority = "high";
         if (submission.travellers) updates.passengers = submission.travellers;
+        // Keep the first campaign that earned the enquiry; never overwrite it.
+        if (submission.marketing_campaign_id && !reuse.marketing_campaign_id)
+          updates.marketing_campaign_id = submission.marketing_campaign_id;
         if (!reuse.next_action_date)
           updates.next_action_date = dateOnly(
             new Date(Date.now() + (Number(page.followup_due_days) || 2) * 86400000)
