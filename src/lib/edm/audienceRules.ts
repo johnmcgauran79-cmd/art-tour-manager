@@ -194,6 +194,24 @@ export interface RuleContact {
   created_at: string | null;
 }
 
+/** One real ART booking a contact is a passenger on. */
+export interface BookingFact {
+  booking_id: string;
+  tour_id: string | null;
+  status: string;
+  tour_type: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+/** One long-term nurture enquiry a contact has. */
+export interface NurtureFact {
+  lead_id: string;
+  tour_id: string | null;
+  nurture_review_date: string | null;
+  nurture_reason: string | null;
+}
+
 export interface RuleContext {
   /** customer_id -> set of tag ids */
   tags: Map<string, Set<string>>;
@@ -201,7 +219,12 @@ export interface RuleContext {
   opens: Map<string, number>;
   /** lowercase email -> latest click timestamp (ms) */
   clicks: Map<string, number>;
+  /** customer_id -> their bookings (any status) */
+  bookings: Map<string, BookingFact[]>;
+  /** customer_id -> their long-term nurture enquiries */
+  nurture: Map<string, NurtureFact[]>;
 }
+
 
 const daysAgoMs = (days: number) => Date.now() - days * 86_400_000;
 
