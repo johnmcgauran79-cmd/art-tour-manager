@@ -39,7 +39,18 @@ const TRIGGERS = [
   "awaiting_first_response",
   "nurture_review_due",
   "new_lead_unassigned",
+  "marketing_signal",
 ] as const;
+
+/** A recent, meaningful click in a marketing email, per enquiry. */
+interface Signal {
+  event_id: string;
+  lead_id: string;
+  intent: string | null;
+  occurred_at: string;
+  campaign_id: string | null;
+  link_url: string | null;
+}
 
 /** Which leads a trigger applies to, evaluated from the shared facts view. */
 function matchesTrigger(lead: Json, trigger: string, targetHours: number) {
