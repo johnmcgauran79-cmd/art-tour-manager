@@ -130,11 +130,20 @@ export default function LeadDetail() {
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="mr-1 h-4 w-4" /> Edit
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setOutcome("nurture")}>
+            <Clock className="mr-1 h-4 w-4" /> Long-term nurture
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setOutcome("lost")}>
+            <XCircle className="mr-1 h-4 w-4" /> Close as lost
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setConfirmDelete(true)}>
             <Trash2 className="mr-1 h-4 w-4" /> Delete
           </Button>
         </div>
       </div>
+
+      <LeadAttentionCard fact={fact} />
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
