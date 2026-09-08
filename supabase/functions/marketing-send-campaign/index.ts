@@ -181,6 +181,7 @@ function serve_handler() {
         const { data: suppressed } = await supabase
           .from("email_suppressions")
           .select("email_address")
+          .eq("is_active", true)
           .in("email_address", emails);
         const blocked = new Set((suppressed || []).map((s: any) => s.email_address));
 
