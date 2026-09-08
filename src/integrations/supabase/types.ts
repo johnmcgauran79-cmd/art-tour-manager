@@ -1689,6 +1689,8 @@ export type Database = {
           customer_id: string | null
           direction: string | null
           id: string
+          is_automated: boolean
+          is_meaningful: boolean
           lead_id: string | null
           occurred_at: string
           outcome: string | null
@@ -1705,6 +1707,8 @@ export type Database = {
           customer_id?: string | null
           direction?: string | null
           id?: string
+          is_automated?: boolean
+          is_meaningful?: boolean
           lead_id?: string | null
           occurred_at?: string
           outcome?: string | null
@@ -1721,6 +1725,8 @@ export type Database = {
           customer_id?: string | null
           direction?: string | null
           id?: string
+          is_automated?: boolean
+          is_meaningful?: boolean
           lead_id?: string | null
           occurred_at?: string
           outcome?: string | null
@@ -2000,7 +2006,9 @@ export type Database = {
       crm_lead_stages: {
         Row: {
           color: string
+          counts_as_active: boolean
           created_at: string
+          exempt_from_followup: boolean
           id: string
           is_active: boolean
           is_lost: boolean
@@ -2010,10 +2018,14 @@ export type Database = {
           label: string
           requires_next_action: boolean
           sort_order: number
+          stale_after_days: number | null
+          stale_basis: string
         }
         Insert: {
           color?: string
+          counts_as_active?: boolean
           created_at?: string
+          exempt_from_followup?: boolean
           id?: string
           is_active?: boolean
           is_lost?: boolean
@@ -2023,10 +2035,14 @@ export type Database = {
           label: string
           requires_next_action?: boolean
           sort_order?: number
+          stale_after_days?: number | null
+          stale_basis?: string
         }
         Update: {
           color?: string
+          counts_as_active?: boolean
           created_at?: string
+          exempt_from_followup?: boolean
           id?: string
           is_active?: boolean
           is_lost?: boolean
@@ -2036,6 +2052,8 @@ export type Database = {
           label?: string
           requires_next_action?: boolean
           sort_order?: number
+          stale_after_days?: number | null
+          stale_basis?: string
         }
         Relationships: []
       }
@@ -2257,6 +2275,39 @@ export type Database = {
           total_pushed?: number
           total_skipped?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_settings: {
+        Row: {
+          crm_era_start: string
+          first_response_basis: string
+          first_response_target_hours: number
+          id: boolean
+          manager_escalation_days: number
+          owner_warning_days: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          crm_era_start?: string
+          first_response_basis?: string
+          first_response_target_hours?: number
+          id?: boolean
+          manager_escalation_days?: number
+          owner_warning_days?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          crm_era_start?: string
+          first_response_basis?: string
+          first_response_target_hours?: number
+          id?: boolean
+          manager_escalation_days?: number
+          owner_warning_days?: number
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -4133,12 +4184,15 @@ export type Database = {
           ad_name: string | null
           ad_set: string | null
           ad_set_id: string | null
+          attention_checked_at: string | null
+          attention_reasons: string[]
           booking_id: string | null
           campaign: string | null
           campaign_id: string | null
           closed_at: string | null
           companions: string | null
           converted_at: string | null
+          converted_by: string | null
           created_at: string
           created_by: string | null
           customer_id: string
@@ -4146,20 +4200,25 @@ export type Database = {
           external_source: string | null
           external_submission_id: string | null
           first_response_at: string | null
+          first_response_by: string | null
           form_slug: string | null
+          future_interest_year: number | null
           id: string
           integration_id: string | null
           landing_page_url: string | null
           last_activity_at: string
+          last_meaningful_activity_at: string | null
           lead_form: string | null
           lead_form_id: string | null
           lead_type: string
           lost_notes: string | null
           lost_reason: string | null
           medium: string | null
+          needs_attention: boolean
           next_action_date: string | null
           next_action_note: string | null
           notes: string | null
+          nurture_review_date: string | null
           owner_id: string | null
           partner: string | null
           passengers: number | null
@@ -4177,6 +4236,7 @@ export type Database = {
           utm_medium: string | null
           utm_source: string | null
           utm_term: string | null
+          value_credited: boolean
         }
         Insert: {
           ad_campaign?: string | null
@@ -4184,12 +4244,15 @@ export type Database = {
           ad_name?: string | null
           ad_set?: string | null
           ad_set_id?: string | null
+          attention_checked_at?: string | null
+          attention_reasons?: string[]
           booking_id?: string | null
           campaign?: string | null
           campaign_id?: string | null
           closed_at?: string | null
           companions?: string | null
           converted_at?: string | null
+          converted_by?: string | null
           created_at?: string
           created_by?: string | null
           customer_id: string
@@ -4197,20 +4260,25 @@ export type Database = {
           external_source?: string | null
           external_submission_id?: string | null
           first_response_at?: string | null
+          first_response_by?: string | null
           form_slug?: string | null
+          future_interest_year?: number | null
           id?: string
           integration_id?: string | null
           landing_page_url?: string | null
           last_activity_at?: string
+          last_meaningful_activity_at?: string | null
           lead_form?: string | null
           lead_form_id?: string | null
           lead_type?: string
           lost_notes?: string | null
           lost_reason?: string | null
           medium?: string | null
+          needs_attention?: boolean
           next_action_date?: string | null
           next_action_note?: string | null
           notes?: string | null
+          nurture_review_date?: string | null
           owner_id?: string | null
           partner?: string | null
           passengers?: number | null
@@ -4228,6 +4296,7 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          value_credited?: boolean
         }
         Update: {
           ad_campaign?: string | null
@@ -4235,12 +4304,15 @@ export type Database = {
           ad_name?: string | null
           ad_set?: string | null
           ad_set_id?: string | null
+          attention_checked_at?: string | null
+          attention_reasons?: string[]
           booking_id?: string | null
           campaign?: string | null
           campaign_id?: string | null
           closed_at?: string | null
           companions?: string | null
           converted_at?: string | null
+          converted_by?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string
@@ -4248,20 +4320,25 @@ export type Database = {
           external_source?: string | null
           external_submission_id?: string | null
           first_response_at?: string | null
+          first_response_by?: string | null
           form_slug?: string | null
+          future_interest_year?: number | null
           id?: string
           integration_id?: string | null
           landing_page_url?: string | null
           last_activity_at?: string
+          last_meaningful_activity_at?: string | null
           lead_form?: string | null
           lead_form_id?: string | null
           lead_type?: string
           lost_notes?: string | null
           lost_reason?: string | null
           medium?: string | null
+          needs_attention?: boolean
           next_action_date?: string | null
           next_action_note?: string | null
           notes?: string | null
+          nurture_review_date?: string | null
           owner_id?: string | null
           partner?: string | null
           passengers?: number | null
@@ -4279,6 +4356,7 @@ export type Database = {
           utm_medium?: string | null
           utm_source?: string | null
           utm_term?: string | null
+          value_credited?: boolean
         }
         Relationships: [
           {
