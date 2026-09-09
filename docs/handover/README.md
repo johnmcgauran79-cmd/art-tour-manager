@@ -15,7 +15,7 @@ Everything here was written from the live repository and the live Supabase proje
 | Public tables | 145, all with row level security enabled, 405 policies |
 | Migrations in repo | 416 files under `supabase/migrations/` |
 | Edge functions | 88 functions plus a `_shared` library folder |
-| Scheduled jobs | 16 pg_cron jobs |
+| Scheduled jobs | 15 pg_cron jobs |
 | App pages | 38 under `src/pages/` |
 | MCP server | `art-tour-manager-wordpress-mcp` v2.6.0, 117 tool definitions |
 

@@ -41,7 +41,7 @@ Changing anything here changes several endpoints at once.
 
 **Platform / housekeeping:** `mcp`, `art-ai-chat`, `purge-ai-conversations`, `purge-passport-data`, `archive-completed-tours`, `refresh-tour-alerts`, `backup-report`, `delete-user`, `reset-user-password`.
 
-## Scheduled jobs (live `cron.job` rows, 16 total, UTC)
+## Scheduled jobs (live `cron.job` rows, 15 total, all active, UTC)
 
 | Job | Schedule (UTC) | Calls |
 | --- | --- | --- |
@@ -60,7 +60,6 @@ Changing anything here changes several endpoints at once.
 | `process-daily-automated-reports` | 20:00 daily | `process-scheduled-reports` |
 | `process-post-booking-emails-daily` | 20:00 daily | `process-post-booking-emails` |
 | `refresh-tour-alerts-weekly` | Sunday 00:00 | `refresh-tour-alerts` |
-| (one further job) | — | see `cron.job`; the table is the authoritative list |
 
 Notes and cautions:
 
