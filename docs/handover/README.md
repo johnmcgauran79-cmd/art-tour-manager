@@ -56,6 +56,7 @@ Everything here was written from the live repository and the live Supabase proje
 | [31-types-and-conventions.md](31-types-and-conventions.md) | Generated types and conventions |
 | [32-privacy.md](32-privacy.md) | Sensitive data locations and controls |
 | [33-codex-takeover-checklist.md](33-codex-takeover-checklist.md) | First session, trial changes, non-handovers |
+| [34-system-capability-summary.md](34-system-capability-summary.md) | Plain-English summary of everything the system does |
 
 ## Rules this handover follows
 
