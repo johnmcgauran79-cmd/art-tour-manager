@@ -7532,13 +7532,1140 @@ ${JSON.stringify(out)}`
   }
 });
 
+// src/lib/mcp/tools/list-leads.ts
+import { defineTool as defineTool117 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z113 } from "npm:zod@^3.25.76";
+var list_leads_default = defineTool117({
+  name: "list_leads",
+  title: "List leads (enquiries)",
+  description: "List CRM leads/enquiries with filters: stage key, owner_id, tour_id (tour of interest), source, lead_type, needs_attention, in_nurture, created_from/created_to (YYYY-MM-DD). Ordered by most recent activity.",
+  inputSchema: {
+    stage: z113.string().optional().describe("Stage key, e.g. new, contacted, qualified, proposal, won, lost."),
+    owner_id: z113.string().optional(),
+    tour_id: z113.string().optional(),
+    source: z113.string().optional(),
+    lead_type: z113.string().optional(),
+    needs_attention: z113.boolean().optional(),
+    in_nurture: z113.boolean().optional().describe("True returns leads with a nurture review date set."),
+    created_from: z113.string().optional(),
+    created_to: z113.string().optional(),
+    limit: z113.number().int().min(1).max(200).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    let q = supabase.from("leads").select(
+      "id, customer_id, lead_type, tour_id, stage, priority, owner_id, source, source_channel, passengers, estimated_value, next_action_date, next_action_note, notes, needs_attention, attention_reasons, nurture_review_date, nurture_reason, booking_id, converted_at, first_response_at, last_activity_at, closed_at, created_at, utm_source, utm_campaign, marketing_campaign_id"
+    ).order("last_activity_at", { ascending: false, nullsFirst: false }).limit(input.limit ?? 50);
+    if (input.stage) q = q.eq("stage", input.stage);
+    if (input.owner_id) q = q.eq("owner_id", input.owner_id);
+    if (input.tour_id) q = q.eq("tour_id", input.tour_id);
+    if (input.source) q = q.eq("source", input.source);
+    if (input.lead_type) q = q.eq("lead_type", input.lead_type);
+    if (input.needs_attention !== void 0) q = q.eq("needs_attention", input.needs_attention);
+    if (input.in_nurture === true) q = q.not("nurture_review_date", "is", null);
+    if (input.in_nurture === false) q = q.is("nurture_review_date", null);
+    if (input.created_from) q = q.gte("created_at", input.created_from);
+    if (input.created_to) q = q.lte("created_at", `${input.created_to}T23:59:59Z`);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} lead(s).` }],
+      structuredContent: { leads: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-lead.ts
+import { defineTool as defineTool118 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z114 } from "npm:zod@^3.25.76";
+var get_lead_default = defineTool118({
+  name: "get_lead",
+  title: "Get lead",
+  description: "Full detail for one lead/enquiry: the lead record, the linked contact, tour interests, stage history and recent CRM activity.",
+  inputSchema: { lead_id: z114.string() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ lead_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: lead, error } = await supabase.from("leads").select("*").eq("id", lead_id).maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!lead) return { content: [{ type: "text", text: "Lead not found" }], isError: true };
+    const [customer, interests, history, activities] = await Promise.all([
+      lead.customer_id ? supabase.from("customers").select("id, first_name, last_name, email, mobile, state, latest_tour_name, latest_tour_end_date").eq("id", lead.customer_id).maybeSingle() : Promise.resolve({ data: null }),
+      supabase.from("tour_interests").select("*").eq("lead_id", lead_id),
+      supabase.from("lead_stage_history").select("*").eq("lead_id", lead_id).order("changed_at", { ascending: false }),
+      supabase.from("crm_activities").select("id, activity_type, direction, outcome, subject, occurred_at, is_meaningful, is_automated, task_id").eq("lead_id", lead_id).order("occurred_at", { ascending: false }).limit(50)
+    ]);
+    const payload = {
+      lead,
+      customer: customer.data ?? null,
+      tour_interests: interests.data ?? [],
+      stage_history: history.data ?? [],
+      recent_activity: activities.data ?? []
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      structuredContent: payload
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-lead-activities.ts
+import { defineTool as defineTool119 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z115 } from "npm:zod@^3.25.76";
+var list_lead_activities_default = defineTool119({
+  name: "list_lead_activities",
+  title: "List CRM activity",
+  description: "Timeline of CRM activity (calls, emails, notes, stage changes, marketing signals) for a lead or a contact. Filter by activity_type, meaningful-only, and date range.",
+  inputSchema: {
+    lead_id: z115.string().optional(),
+    customer_id: z115.string().optional(),
+    activity_type: z115.string().optional(),
+    meaningful_only: z115.boolean().optional(),
+    from: z115.string().optional().describe("YYYY-MM-DD"),
+    to: z115.string().optional().describe("YYYY-MM-DD"),
+    limit: z115.number().int().min(1).max(200).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!input.lead_id && !input.customer_id)
+      return { content: [{ type: "text", text: "lead_id or customer_id is required" }], isError: true };
+    let q = supabaseForUser(ctx).from("crm_activities").select("*").order("occurred_at", { ascending: false }).limit(input.limit ?? 100);
+    if (input.lead_id) q = q.eq("lead_id", input.lead_id);
+    if (input.customer_id) q = q.eq("customer_id", input.customer_id);
+    if (input.activity_type) q = q.eq("activity_type", input.activity_type);
+    if (input.meaningful_only) q = q.eq("is_meaningful", true);
+    if (input.from) q = q.gte("occurred_at", input.from);
+    if (input.to) q = q.lte("occurred_at", `${input.to}T23:59:59Z`);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} activity record(s).` }],
+      structuredContent: { activities: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-crm-settings.ts
+import { defineTool as defineTool120 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_crm_settings_default = defineTool120({
+  name: "list_crm_settings",
+  title: "List CRM configuration",
+  description: "The CRM's configuration: lead stages (open/won/lost, cold thresholds), lead sources, lead types, lost reasons and the sales settings (response targets, escalation days).",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const [stages, sources, types, lost, settings] = await Promise.all([
+      supabase.from("crm_lead_stages").select("*").order("sort_order"),
+      supabase.from("crm_lead_sources").select("*").order("sort_order"),
+      supabase.from("crm_lead_types").select("*").order("sort_order"),
+      supabase.from("crm_lost_reasons").select("*").order("sort_order"),
+      supabase.from("crm_settings").select("*")
+    ]);
+    const payload = {
+      stages: stages.data ?? [],
+      sources: sources.data ?? [],
+      lead_types: types.data ?? [],
+      lost_reasons: lost.data ?? [],
+      settings: settings.data ?? []
+    };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/get-crm-reports.ts
+import { defineTool as defineTool121 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z116 } from "npm:zod@^3.25.76";
+var REPORTS = [
+  "pipeline_summary",
+  "funnel",
+  "response_performance",
+  "attribution_performance",
+  "tour_sales",
+  "action_board",
+  "data_quality"
+];
+var get_crm_reports_default = defineTool121({
+  name: "get_crm_report",
+  title: "Get CRM sales report",
+  description: "Run one of the CRM's own reports and return its real figures: pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality. Date range applies where the report supports it.",
+  inputSchema: {
+    report: z116.enum(REPORTS),
+    from: z116.string().optional().describe("YYYY-MM-DD, defaults to 90 days ago where supported."),
+    to: z116.string().optional().describe("YYYY-MM-DD, defaults to today where supported."),
+    tour_id: z116.string().optional().describe("Funnel only: limit to one tour."),
+    include_past: z116.boolean().optional().describe("tour_sales only: include departed tours.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ report, from, to, tour_id, include_past }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const today = /* @__PURE__ */ new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    const _to = to ?? iso(today);
+    const _from = from ?? iso(new Date(today.getTime() - 90 * 864e5));
+    let rpc = `crm_${report}`;
+    let args = { _from, _to };
+    if (report === "funnel") args = { _from, _to, _tour_id: tour_id ?? null };
+    if (report === "tour_sales") args = { _from, _to, _include_past: include_past ?? false };
+    if (report === "action_board" || report === "data_quality") args = {};
+    if (report === "pipeline_summary") rpc = "crm_pipeline_summary";
+    const { data, error } = await supabase.rpc(rpc, args);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? null) }],
+      structuredContent: { report, from: _from, to: _to, result: data ?? null }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-interests.ts
+import { defineTool as defineTool122 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z117 } from "npm:zod@^3.25.76";
+var list_tour_interests_default = defineTool122({
+  name: "list_tour_interests",
+  title: "List tour interests",
+  description: "Contacts who have registered interest in a tour (or the tours one contact is interested in), with interest level, status and source.",
+  inputSchema: {
+    tour_id: z117.string().optional(),
+    customer_id: z117.string().optional(),
+    status: z117.string().optional(),
+    limit: z117.number().int().min(1).max(500).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!input.tour_id && !input.customer_id)
+      return { content: [{ type: "text", text: "tour_id or customer_id is required" }], isError: true };
+    let q = supabaseForUser(ctx).from("tour_interests").select(
+      "id, customer_id, tour_id, lead_id, interest_level, status, source, notes, created_at, customers(first_name, last_name, email, mobile, state)"
+    ).order("created_at", { ascending: false }).limit(input.limit ?? 200);
+    if (input.tour_id) q = q.eq("tour_id", input.tour_id);
+    if (input.customer_id) q = q.eq("customer_id", input.customer_id);
+    if (input.status) q = q.eq("status", input.status);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} interest record(s).` }],
+      structuredContent: { interests: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-crm-automation.ts
+import { defineTool as defineTool123 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z118 } from "npm:zod@^3.25.76";
+var list_crm_automation_default = defineTool123({
+  name: "list_crm_automation",
+  title: "List CRM automation rules and runs",
+  description: "CRM automation rules (triggers, conditions, actions, cooldowns) and, optionally, their recent run log so you can see what fired and what failed.",
+  inputSchema: {
+    include_runs: z118.boolean().optional(),
+    rule_id: z118.string().optional(),
+    limit: z118.number().int().min(1).max(200).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ include_runs, rule_id, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    let rq = supabase.from("crm_automation_rules").select("*").order("created_at", { ascending: false });
+    if (rule_id) rq = rq.eq("id", rule_id);
+    const { data: rules, error } = await rq;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    let runs = [];
+    if (include_runs) {
+      let q = supabase.from("crm_automation_runs").select("*").order("created_at", { ascending: false }).limit(limit ?? 50);
+      if (rule_id) q = q.eq("rule_id", rule_id);
+      const { data } = await q;
+      runs = data ?? [];
+    }
+    const payload = { rules: rules ?? [], runs };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/list-form-submissions.ts
+import { defineTool as defineTool124 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z119 } from "npm:zod@^3.25.76";
+var list_form_submissions_default = defineTool124({
+  name: "list_form_submissions",
+  title: "List website form submissions",
+  description: "Register-Interest and Booking form submissions exactly as submitted, with processing status, matched contact/lead, tour(s) and campaign attribution (utm fields).",
+  inputSchema: {
+    form_type: z119.string().optional().describe("e.g. register_interest, booking"),
+    landing_page_id: z119.string().optional(),
+    tour_id: z119.string().optional(),
+    processing_status: z119.string().optional(),
+    needs_review: z119.boolean().optional(),
+    from: z119.string().optional().describe("YYYY-MM-DD"),
+    to: z119.string().optional().describe("YYYY-MM-DD"),
+    limit: z119.number().int().min(1).max(200).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("landing_page_submissions").select(
+      "id, landing_page_id, form_type, customer_id, lead_id, task_id, tour_id, tour_ids, first_name, last_name, email, phone, state, country, travellers, previous_traveller, preferred_contact, message, consent_given, processing_status, processing_error, needs_review, match_method, ack_email_status, source_channel, external_source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, referrer, landing_page_url, created_at, processed_at"
+    ).order("created_at", { ascending: false }).limit(input.limit ?? 50);
+    if (input.form_type) q = q.eq("form_type", input.form_type);
+    if (input.landing_page_id) q = q.eq("landing_page_id", input.landing_page_id);
+    if (input.tour_id) q = q.eq("tour_id", input.tour_id);
+    if (input.processing_status) q = q.eq("processing_status", input.processing_status);
+    if (input.needs_review !== void 0) q = q.eq("needs_review", input.needs_review);
+    if (input.from) q = q.gte("created_at", input.from);
+    if (input.to) q = q.lte("created_at", `${input.to}T23:59:59Z`);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} submission(s).` }],
+      structuredContent: { submissions: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-lead-forms.ts
+import { defineTool as defineTool125 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z120 } from "npm:zod@^3.25.76";
+var list_lead_forms_default = defineTool125({
+  name: "list_lead_forms",
+  title: "List public lead-capture forms",
+  description: "The public forms (Register Interest, Booking) including slug, form type, tour choices, field configuration, submission count and follow-up settings.",
+  inputSchema: { include_inactive: z120.boolean().optional() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ include_inactive }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("landing_pages").select(
+      "id, slug, title, form_type, tour_id, tour_ids, extra_tour_options, room_type_options, field_config, lead_source, lead_type, lead_owner_id, followup_due_days, default_priority, ack_enabled, ack_template_id, is_active, submission_count, created_at, updated_at"
+    ).order("created_at", { ascending: false });
+    if (!include_inactive) q = q.eq("is_active", true);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} form(s).` }],
+      structuredContent: { forms: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/update-lead.ts
+import { defineTool as defineTool126 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z121 } from "npm:zod@^3.25.76";
+var update_lead_default = defineTool126({
+  name: "update_lead",
+  title: "Update a lead",
+  description: "Update a lead's stage, owner, priority, notes, next action, estimated value, passenger count, nurture review date or lost reason. Only supplied fields change. Stage changes are recorded in the lead's history by the system.",
+  inputSchema: {
+    lead_id: z121.string(),
+    stage: z121.string().optional().describe("Stage key from list_crm_settings."),
+    owner_id: z121.string().nullable().optional(),
+    priority: z121.string().optional(),
+    passengers: z121.number().int().nullable().optional(),
+    estimated_value: z121.number().nullable().optional(),
+    next_action_date: z121.string().nullable().optional().describe("YYYY-MM-DD"),
+    next_action_note: z121.string().nullable().optional(),
+    notes: z121.string().optional(),
+    nurture_review_date: z121.string().nullable().optional().describe("YYYY-MM-DD"),
+    nurture_reason: z121.string().nullable().optional(),
+    lost_reason: z121.string().nullable().optional(),
+    lost_notes: z121.string().nullable().optional(),
+    tour_id: z121.string().nullable().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ lead_id, ...rest }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const updates = Object.fromEntries(
+      Object.entries(rest).filter(([, v]) => v !== void 0)
+    );
+    if (Object.keys(updates).length === 0)
+      return { content: [{ type: "text", text: "No fields to update" }], isError: true };
+    updates.last_activity_at = (/* @__PURE__ */ new Date()).toISOString();
+    const { data, error } = await supabaseForUser(ctx).from("leads").update(updates).eq("id", lead_id).select("id, stage, owner_id, priority, next_action_date, nurture_review_date, estimated_value, passengers").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Lead not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: `Updated lead ${lead_id}.` }],
+      structuredContent: { lead: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/log-lead-activity.ts
+import { defineTool as defineTool127 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z122 } from "npm:zod@^3.25.76";
+var log_lead_activity_default = defineTool127({
+  name: "log_lead_activity",
+  title: "Log CRM activity on a lead",
+  description: "Record a call, note, meeting or other activity on a lead or contact's timeline. This only writes history \u2014 it never sends anything.",
+  inputSchema: {
+    lead_id: z122.string().optional(),
+    customer_id: z122.string().optional(),
+    activity_type: z122.string().describe("e.g. call, note, meeting, email_manual"),
+    subject: z122.string().optional(),
+    body: z122.string().optional(),
+    direction: z122.enum(["inbound", "outbound"]).optional(),
+    outcome: z122.string().optional(),
+    occurred_at: z122.string().optional().describe("ISO timestamp; defaults to now."),
+    is_meaningful: z122.boolean().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!input.lead_id && !input.customer_id)
+      return { content: [{ type: "text", text: "lead_id or customer_id is required" }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    const userId = ctx.getUserId();
+    const { data, error } = await supabase.from("crm_activities").insert({
+      lead_id: input.lead_id ?? null,
+      customer_id: input.customer_id ?? null,
+      activity_type: input.activity_type,
+      subject: input.subject ?? null,
+      body: input.body ?? null,
+      direction: input.direction ?? null,
+      outcome: input.outcome ?? null,
+      occurred_at: input.occurred_at ?? (/* @__PURE__ */ new Date()).toISOString(),
+      is_meaningful: input.is_meaningful ?? true,
+      is_automated: false,
+      staff_id: userId,
+      created_by: userId
+    }).select("*").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (input.lead_id)
+      await supabase.from("leads").update({ last_activity_at: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", input.lead_id);
+    return {
+      content: [{ type: "text", text: "Activity logged." }],
+      structuredContent: { activity: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/upsert-tour-interest.ts
+import { defineTool as defineTool128 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z123 } from "npm:zod@^3.25.76";
+var upsert_tour_interest_default = defineTool128({
+  name: "upsert_tour_interest",
+  title: "Record or update a tour interest",
+  description: "Record that a contact is interested in a tour, or update the interest level/status/notes on an existing interest record.",
+  inputSchema: {
+    customer_id: z123.string(),
+    tour_id: z123.string(),
+    lead_id: z123.string().optional(),
+    interest_level: z123.string().optional(),
+    status: z123.string().optional(),
+    source: z123.string().optional(),
+    notes: z123.string().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: existing } = await supabase.from("tour_interests").select("id").eq("customer_id", input.customer_id).eq("tour_id", input.tour_id).maybeSingle();
+    const fields = {
+      lead_id: input.lead_id ?? void 0,
+      interest_level: input.interest_level ?? void 0,
+      status: input.status ?? void 0,
+      source: input.source ?? void 0,
+      notes: input.notes ?? void 0
+    };
+    const clean = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== void 0));
+    if (existing) {
+      const { data: data2, error: error2 } = await supabase.from("tour_interests").update(clean).eq("id", existing.id).select("*").maybeSingle();
+      if (error2) return { content: [{ type: "text", text: error2.message }], isError: true };
+      return { content: [{ type: "text", text: "Tour interest updated." }], structuredContent: { interest: data2 } };
+    }
+    const { data, error } = await supabase.from("tour_interests").insert({
+      customer_id: input.customer_id,
+      tour_id: input.tour_id,
+      created_by: ctx.getUserId(),
+      ...clean
+    }).select("*").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return { content: [{ type: "text", text: "Tour interest recorded." }], structuredContent: { interest: data } };
+  }
+});
+
+// src/lib/mcp/tools/list-marketing-campaigns.ts
+import { defineTool as defineTool129 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z124 } from "npm:zod@^3.25.76";
+var list_marketing_campaigns_default = defineTool129({
+  name: "list_marketing_campaigns",
+  title: "List marketing campaigns",
+  description: "Marketing campaigns (EDMs) with status, schedule and headline stats: recipients, sent, failed, opens, clicks, bounces, unsubscribes. Counts are events; use list_campaign_recipients for unique contacts.",
+  inputSchema: {
+    status: z124.string().optional().describe("draft, scheduled, sending, sent, failed"),
+    from: z124.string().optional().describe("YYYY-MM-DD, filters on send start / creation"),
+    to: z124.string().optional(),
+    limit: z124.number().int().min(1).max(200).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("marketing_campaigns").select(
+      "id, name, subject, preheader, status, audience_id, brand_id, from_name, from_email, reply_to, scheduled_send_at, send_started_at, send_completed_at, total_recipients, sent_count, failed_count, open_count, click_count, bounce_count, unsubscribe_count, created_at, updated_at"
+    ).order("created_at", { ascending: false }).limit(input.limit ?? 50);
+    if (input.status) q = q.eq("status", input.status);
+    if (input.from) q = q.gte("created_at", input.from);
+    if (input.to) q = q.lte("created_at", `${input.to}T23:59:59Z`);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} campaign(s).` }],
+      structuredContent: { campaigns: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-marketing-campaign.ts
+import { defineTool as defineTool130 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z125 } from "npm:zod@^3.25.76";
+var get_marketing_campaign_default = defineTool130({
+  name: "get_marketing_campaign",
+  title: "Get marketing campaign with real stats",
+  description: "One campaign plus reconciled results: unique contacts sent/delivered/opened/clicked, event totals, and the most-clicked links. Unique-contact figures never double-count a contact.",
+  inputSchema: {
+    campaign_id: z125.string(),
+    include_html: z125.boolean().optional().describe("Include the campaign HTML body (large).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ campaign_id, include_html }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: campaign, error } = await supabase.from("marketing_campaigns").select("*").eq("id", campaign_id).maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!campaign) return { content: [{ type: "text", text: "Campaign not found" }], isError: true };
+    if (!include_html) {
+      delete campaign.html_body;
+      delete campaign.blocks;
+    }
+    const { data: recips } = await supabase.from("campaign_recipients").select("customer_id, email, status, sent_at, opened_at, clicked_at, open_count, click_count").eq("campaign_id", campaign_id);
+    const { data: events } = await supabase.from("campaign_events").select("event_type, link_url, email").eq("campaign_id", campaign_id);
+    const rows = recips ?? [];
+    const uniq = (list) => new Set(list.filter(Boolean)).size;
+    const key = (r) => r.customer_id ?? r.email;
+    const linkCounts = /* @__PURE__ */ new Map();
+    for (const e of events ?? []) {
+      if (e.event_type === "click" && e.link_url)
+        linkCounts.set(e.link_url, (linkCounts.get(e.link_url) ?? 0) + 1);
+    }
+    const payload = {
+      campaign,
+      unique_contacts: {
+        recipients: uniq(rows.map(key)),
+        sent: uniq(rows.filter((r) => r.sent_at).map(key)),
+        failed: uniq(rows.filter((r) => r.status === "failed").map(key)),
+        opened: uniq(rows.filter((r) => r.opened_at).map(key)),
+        clicked: uniq(rows.filter((r) => r.clicked_at).map(key))
+      },
+      events: {
+        opens: (events ?? []).filter((e) => e.event_type === "open").length,
+        clicks: (events ?? []).filter((e) => e.event_type === "click").length
+      },
+      top_links: [...linkCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([url, clicks]) => ({ url, clicks })),
+      note: "Tracking exists only for campaigns sent after tracking was introduced; older campaigns legitimately show no opens or clicks."
+    };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/list-campaign-recipients.ts
+import { defineTool as defineTool131 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z126 } from "npm:zod@^3.25.76";
+var list_campaign_recipients_default = defineTool131({
+  name: "list_campaign_recipients",
+  title: "List campaign recipients (who opened or clicked)",
+  description: "Per-contact results for a campaign: status, sent/opened/clicked timestamps and counts. Filter to only openers, only clickers, only failures, or a status.",
+  inputSchema: {
+    campaign_id: z126.string(),
+    engagement: z126.enum(["all", "opened", "clicked", "not_opened", "failed"]).optional(),
+    status: z126.string().optional(),
+    limit: z126.number().int().min(1).max(500).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ campaign_id, engagement, status, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("campaign_recipients").select(
+      "id, customer_id, email, first_name, last_name, status, sent_at, opened_at, clicked_at, open_count, click_count, error_message"
+    ).eq("campaign_id", campaign_id).order("clicked_at", { ascending: false, nullsFirst: false }).limit(limit ?? 200);
+    if (status) q = q.eq("status", status);
+    if (engagement === "opened") q = q.not("opened_at", "is", null);
+    if (engagement === "clicked") q = q.not("clicked_at", "is", null);
+    if (engagement === "not_opened") q = q.is("opened_at", null);
+    if (engagement === "failed") q = q.eq("status", "failed");
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} recipient(s).` }],
+      structuredContent: { recipients: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-campaign-events.ts
+import { defineTool as defineTool132 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z127 } from "npm:zod@^3.25.76";
+var list_campaign_events_default = defineTool132({
+  name: "list_campaign_events",
+  title: "List campaign tracking events",
+  description: "Raw open and click events for a campaign, including the exact link clicked. These are events, not unique contacts.",
+  inputSchema: {
+    campaign_id: z127.string(),
+    event_type: z127.enum(["open", "click"]).optional(),
+    limit: z127.number().int().min(1).max(500).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ campaign_id, event_type, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("campaign_events").select("*").eq("campaign_id", campaign_id).order("created_at", { ascending: false }).limit(limit ?? 200);
+    if (event_type) q = q.eq("event_type", event_type);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} event(s).` }],
+      structuredContent: { events: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-marketing-audiences.ts
+import { defineTool as defineTool133 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z128 } from "npm:zod@^3.25.76";
+var list_marketing_audiences_default = defineTool133({
+  name: "list_marketing_audiences",
+  title: "List marketing audiences",
+  description: "Saved dynamic audiences with their filter rules and last counted sizes. Audiences resolve at send time, so counts here are the last calculation.",
+  inputSchema: { include_inactive: z128.boolean().optional() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ include_inactive }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("marketing_audiences").select("*").order("updated_at", { ascending: false });
+    if (!include_inactive) q = q.eq("is_active", true);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} audience(s).` }],
+      structuredContent: { audiences: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/count-marketing-audience.ts
+import { defineTool as defineTool134 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z129 } from "npm:zod@^3.25.76";
+var count_marketing_audience_default = defineTool134({
+  name: "count_marketing_audience",
+  title: "Count a marketing audience now",
+  description: "Resolve an audience live and return its size, using the saved audience (audience_id) or ad-hoc rules JSON in the same shape the audience builder uses. Consent, unsubscribes, bounces and suppressions always apply.",
+  inputSchema: {
+    audience_id: z129.string().optional(),
+    rules: z129.any().optional().describe("Audience rules JSON, same shape as marketing_audiences.filters."),
+    sample: z129.boolean().optional().describe("Also return up to 25 matching contacts.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ audience_id, rules, sample }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    let filters = rules;
+    if (audience_id) {
+      const { data, error } = await supabase.from("marketing_audiences").select("filters").eq("id", audience_id).maybeSingle();
+      if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+      if (!data) return { content: [{ type: "text", text: "Audience not found" }], isError: true };
+      filters = data.filters;
+    }
+    if (!filters) return { content: [{ type: "text", text: "audience_id or rules is required" }], isError: true };
+    const { data: summary, error: sErr } = await supabase.rpc("crm_audience_summary", {
+      _rules: filters
+    });
+    if (sErr) return { content: [{ type: "text", text: sErr.message }], isError: true };
+    let contacts = [];
+    if (sample) {
+      const { data } = await supabase.rpc("crm_audience_match", {
+        _rules: filters,
+        _only_sendable: true,
+        _limit: 25
+      });
+      contacts = data ?? [];
+    }
+    const payload = { summary, sample_contacts: contacts };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/get-tour-marketing-intelligence.ts
+import { defineTool as defineTool135 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z130 } from "npm:zod@^3.25.76";
+var get_tour_marketing_intelligence_default = defineTool135({
+  name: "get_tour_marketing_intelligence",
+  title: "Get tour marketing and sales intelligence",
+  description: "Per-tour marketing funnel: interested contacts, marketing-eligible, active and nurture leads, booked passengers, contacts emailed, opens, clicks, meaningful tour clicks, enquiries and bookings attributed, plus the previous comparable period. Unique-contact and event figures are labelled separately.",
+  inputSchema: {
+    tour_id: z130.string(),
+    days: z130.number().int().min(1).max(365).optional().describe("Window length, default 30.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, days }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).rpc("crm_tour_marketing_intelligence", {
+      _tour_id: tour_id,
+      _days: days ?? 30
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? null) }],
+      structuredContent: { intelligence: data ?? null }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-marketing-people.ts
+import { defineTool as defineTool136 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z131 } from "npm:zod@^3.25.76";
+var METRICS = [
+  "interested",
+  "interested_not_booked",
+  "nurture_leads",
+  "active_leads",
+  "emailed",
+  "opened",
+  "clicked",
+  "meaningful_clicks",
+  "enquiries",
+  "bookings"
+];
+var list_tour_marketing_people_default = defineTool136({
+  name: "list_tour_marketing_people",
+  title: "List the contacts behind a tour marketing number",
+  description: "Drill into a tour marketing figure and list the actual contacts: interested, interested_not_booked, nurture_leads, active_leads, emailed, opened, clicked, meaningful_clicks, enquiries, bookings.",
+  inputSchema: {
+    tour_id: z131.string(),
+    metric: z131.enum(METRICS),
+    days: z131.number().int().min(1).max(365).optional(),
+    limit: z131.number().int().min(1).max(500).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, metric, days, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).rpc("crm_tour_marketing_people", {
+      _tour_id: tour_id,
+      _metric: metric,
+      _days: days ?? 30,
+      _limit: limit ?? 200
+    });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const people = data ?? [];
+    return {
+      content: [{ type: "text", text: `Found ${people.length} contact(s) for ${metric}.` }],
+      structuredContent: { metric, people }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-marketing-link-rules.ts
+import { defineTool as defineTool137 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z132 } from "npm:zod@^3.25.76";
+var list_marketing_link_rules_default = defineTool137({
+  name: "list_marketing_link_rules",
+  title: "List 'what a click means' rules",
+  description: "Link classification rules that turn clicked URLs into meaning (high intent, register interest, tour-specific), including the tour each rule maps to.",
+  inputSchema: { include_inactive: z132.boolean().optional() },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ include_inactive }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("marketing_link_classifications").select("*").order("created_at", { ascending: false });
+    if (!include_inactive) q = q.eq("is_active", true);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} rule(s).` }],
+      structuredContent: { rules: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-contact-marketing-status.ts
+import { defineTool as defineTool138 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z133 } from "npm:zod@^3.25.76";
+var get_contact_marketing_status_default = defineTool138({
+  name: "get_contact_marketing_status",
+  title: "Get a contact's marketing status and history",
+  description: "Whether a contact can be marketed to (subscription, unsubscribe, bounce suppression) plus their campaign history with opens and clicks, their leads and their tour interests.",
+  inputSchema: {
+    customer_id: z133.string().optional(),
+    email: z133.string().optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ customer_id, email }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    let cust = null;
+    if (customer_id) {
+      const { data } = await supabase.from("customers").select("id, email").eq("id", customer_id).maybeSingle();
+      cust = data ?? null;
+    } else if (email) {
+      const { data } = await supabase.from("customers").select("id, email").ilike("email", email).limit(1).maybeSingle();
+      cust = data ?? null;
+    } else {
+      return { content: [{ type: "text", text: "customer_id or email is required" }], isError: true };
+    }
+    const addr = (cust?.email ?? email ?? "").toLowerCase();
+    if (!addr && !cust)
+      return { content: [{ type: "text", text: "Contact not found" }], isError: true };
+    const [prefs, suppression, recips, leads, interests] = await Promise.all([
+      addr ? supabase.from("marketing_preferences").select("email, subscribed, interests, unsubscribed_at, updated_at").ilike("email", addr).maybeSingle() : Promise.resolve({ data: null }),
+      addr ? supabase.from("email_suppressions").select("suppression_type, reason, bounce_count, is_active, last_bounced_at").ilike("email_address", addr) : Promise.resolve({ data: [] }),
+      cust ? supabase.from("campaign_recipients").select("campaign_id, status, sent_at, opened_at, clicked_at, open_count, click_count").eq("customer_id", cust.id).order("sent_at", { ascending: false }).limit(100) : Promise.resolve({ data: [] }),
+      cust ? supabase.from("leads").select("id, stage, tour_id, source, owner_id, nurture_review_date, last_activity_at, created_at").eq("customer_id", cust.id).order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      cust ? supabase.from("tour_interests").select("tour_id, interest_level, status, source, created_at").eq("customer_id", cust.id) : Promise.resolve({ data: [] })
+    ]);
+    const supp = suppression.data ?? [];
+    const pref = prefs.data;
+    const payload = {
+      customer_id: cust?.id ?? null,
+      email: addr || null,
+      marketing_eligible: (pref?.subscribed ?? true) && !supp.some((s) => s.is_active),
+      preferences: pref ?? null,
+      suppressions: supp,
+      campaign_history: recips.data ?? [],
+      leads: leads.data ?? [],
+      tour_interests: interests.data ?? []
+    };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/list-email-suppressions.ts
+import { defineTool as defineTool139 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z134 } from "npm:zod@^3.25.76";
+var list_email_suppressions_default = defineTool139({
+  name: "list_email_suppressions",
+  title: "List email suppressions (bounces and complaints)",
+  description: "Suppressed email addresses with type, reason and bounce counts. These addresses are always excluded from sending regardless of audience rules.",
+  inputSchema: {
+    suppression_type: z134.string().optional(),
+    active_only: z134.boolean().optional(),
+    search: z134.string().optional().describe("Substring of the email address."),
+    limit: z134.number().int().min(1).max(500).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ suppression_type, active_only, search, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    let q = supabaseForUser(ctx).from("email_suppressions").select("*").order("last_bounced_at", { ascending: false, nullsFirst: false }).limit(limit ?? 100);
+    if (suppression_type) q = q.eq("suppression_type", suppression_type);
+    if (active_only !== false) q = q.eq("is_active", true);
+    if (search) q = q.ilike("email_address", `%${search}%`);
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} suppression(s).` }],
+      structuredContent: { suppressions: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-mailboxes.ts
+import { defineTool as defineTool140 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_mailboxes_default = defineTool140({
+  name: "list_mailboxes",
+  title: "List connected mailboxes",
+  description: "Microsoft 365 mailboxes connected to the communications hub, with sync status, last successful sync, history depth and any error. Only mailboxes the signed-in user may read are returned.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("email_mailboxes").select(
+      "id, address, display_name, kind, is_enabled, sync_enabled, history_months, last_sync_at, last_success_at, last_sync_status, last_error, connected_at, notes"
+    ).order("address");
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} mailbox(es).` }],
+      structuredContent: { mailboxes: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/search-correspondence.ts
+import { defineTool as defineTool141 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z135 } from "npm:zod@^3.25.76";
+var search_correspondence_default = defineTool141({
+  name: "search_correspondence",
+  title: "Search individual correspondence",
+  description: "Search synced Microsoft 365 correspondence by text, contact, lead, tour, booking, mailbox, direction or date range. Returns subject, participants and a preview; set include_body for full text. Mailbox access rules apply.",
+  inputSchema: {
+    search: z135.string().optional().describe("Case-insensitive text in subject, preview or body."),
+    customer_id: z135.string().optional(),
+    lead_id: z135.string().optional(),
+    tour_id: z135.string().optional(),
+    booking_id: z135.string().optional(),
+    mailbox_id: z135.string().optional(),
+    direction: z135.enum(["inbound", "outbound"]).optional(),
+    from: z135.string().optional().describe("YYYY-MM-DD"),
+    to: z135.string().optional().describe("YYYY-MM-DD"),
+    include_body: z135.boolean().optional(),
+    limit: z135.number().int().min(1).max(100).optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    let ids = null;
+    if (input.customer_id) {
+      const { data: data2 } = await supabase.from("crm_email_contacts").select("email_id").eq("customer_id", input.customer_id);
+      ids = (data2 ?? []).map((r) => r.email_id);
+    }
+    if (input.lead_id || input.tour_id || input.booking_id) {
+      let lq = supabase.from("crm_email_links").select("email_id");
+      if (input.lead_id) lq = lq.eq("lead_id", input.lead_id);
+      if (input.tour_id) lq = lq.eq("tour_id", input.tour_id);
+      if (input.booking_id) lq = lq.eq("booking_id", input.booking_id);
+      const { data: data2 } = await lq;
+      const linked = (data2 ?? []).map((r) => r.email_id);
+      ids = ids ? ids.filter((id) => linked.includes(id)) : linked;
+    }
+    if (ids && ids.length === 0)
+      return { content: [{ type: "text", text: "No correspondence matched those links." }], structuredContent: { emails: [] } };
+    const cols = input.include_body ? "id, mailbox_id, subject, preview, body_text, from_name, from_address, to_recipients, cc_recipients, occurred_at, direction, folder, has_attachments, conversation_id, web_link" : "id, mailbox_id, subject, preview, from_name, from_address, to_recipients, occurred_at, direction, folder, has_attachments, conversation_id, web_link";
+    let q = supabase.from("crm_emails").select(cols).order("occurred_at", { ascending: false }).limit(input.limit ?? 25);
+    if (ids) q = q.in("id", ids);
+    if (input.mailbox_id) q = q.eq("mailbox_id", input.mailbox_id);
+    if (input.direction) q = q.eq("direction", input.direction);
+    if (input.from) q = q.gte("occurred_at", input.from);
+    if (input.to) q = q.lte("occurred_at", `${input.to}T23:59:59Z`);
+    if (input.search) {
+      const s = input.search.replace(/[%,]/g, " ");
+      q = q.or(`subject.ilike.%${s}%,preview.ilike.%${s}%,body_text.ilike.%${s}%`);
+    }
+    const { data, error } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Found ${data?.length ?? 0} message(s).` }],
+      structuredContent: { emails: data ?? [] }
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-correspondence-message.ts
+import { defineTool as defineTool142 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z136 } from "npm:zod@^3.25.76";
+var get_correspondence_message_default = defineTool142({
+  name: "get_correspondence_message",
+  title: "Get one message in full",
+  description: "Full content of one synced message (body text and HTML, recipients, attachments) plus the contacts, leads, tours and bookings it is matched to. Optionally include the whole conversation thread.",
+  inputSchema: {
+    email_id: z136.string(),
+    include_thread: z136.boolean().optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ email_id, include_thread }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const { data: email, error } = await supabase.from("crm_emails").select("*").eq("id", email_id).maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!email)
+      return { content: [{ type: "text", text: "Message not found, or you do not have access to that mailbox." }], isError: true };
+    const [contacts, links] = await Promise.all([
+      supabase.from("crm_email_contacts").select("customer_id, role, link_source").eq("email_id", email_id),
+      supabase.from("crm_email_links").select("lead_id, tour_id, booking_id, link_source, confidence").eq("email_id", email_id)
+    ]);
+    let thread = [];
+    if (include_thread && email.conversation_id) {
+      const { data } = await supabase.from("crm_emails").select("id, subject, from_address, from_name, occurred_at, direction, preview, body_text").eq("conversation_id", email.conversation_id).order("occurred_at", { ascending: true }).limit(50);
+      thread = data ?? [];
+    }
+    const payload = { email, contacts: contacts.data ?? [], links: links.data ?? [], thread };
+    return { content: [{ type: "text", text: JSON.stringify(payload) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/send-marketing-campaign.ts
+import { defineTool as defineTool143 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z137 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_sending.ts
+function sendingEnabled() {
+  return (process.env.MCP_SENDING_ENABLED ?? "").trim().toLowerCase() === "true";
+}
+function sendingDisabledResult() {
+  return {
+    content: [
+      {
+        type: "text",
+        text: "Sending is switched off. This tool exists but ART has not authorised AI-initiated sending yet. An admin can enable it by setting MCP_SENDING_ENABLED to true in the Supabase edge function secrets."
+      }
+    ],
+    isError: true
+  };
+}
+async function invokeFunction(ctx, name, body) {
+  const base = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+  const res = await fetch(`${base}/functions/v1/${name}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: key,
+      Authorization: `Bearer ${ctx.getToken()}`
+    },
+    body: JSON.stringify(body ?? {})
+  });
+  const text = await res.text();
+  let data = text;
+  try {
+    data = JSON.parse(text);
+  } catch {
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
+// src/lib/mcp/tools/send-marketing-campaign.ts
+var send_marketing_campaign_default = defineTool143({
+  name: "send_marketing_campaign",
+  title: "Send or test a marketing campaign (currently switched off)",
+  description: "Send a prepared marketing campaign, or send a test copy to one address. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing. Consent, unsubscribe and suppression rules always apply.",
+  inputSchema: {
+    campaign_id: z137.string(),
+    action: z137.enum(["send", "test"]).describe("send = full audience, test = single test address."),
+    test_email: z137.string().email().optional().describe("Required for action 'test'."),
+    confirm: z137.literal(true).describe("Must be true to confirm a real send.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+  handler: async ({ campaign_id, action, test_email, confirm }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!sendingEnabled()) return sendingDisabledResult();
+    if (confirm !== true)
+      return { content: [{ type: "text", text: "confirm must be true for a send." }], isError: true };
+    if (action === "test" && !test_email)
+      return { content: [{ type: "text", text: "test_email is required for a test send." }], isError: true };
+    const res = await invokeFunction(ctx, "marketing-send-campaign", {
+      action,
+      campaignId: campaign_id,
+      testEmail: test_email
+    });
+    if (!res.ok)
+      return { content: [{ type: "text", text: `Send failed (${res.status}): ${JSON.stringify(res.data)}` }], isError: true };
+    return {
+      content: [{ type: "text", text: `Campaign ${action} requested.` }],
+      structuredContent: { result: res.data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/schedule-marketing-campaign.ts
+import { defineTool as defineTool144 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z138 } from "npm:zod@^3.25.76";
+var schedule_marketing_campaign_default = defineTool144({
+  name: "schedule_marketing_campaign",
+  title: "Schedule a marketing campaign (currently switched off)",
+  description: "Schedule a prepared campaign for a future date and time, or clear an existing schedule. DISABLED until ART authorises AI-initiated sending; until then it changes nothing.",
+  inputSchema: {
+    campaign_id: z138.string(),
+    scheduled_send_at: z138.string().nullable().describe("ISO timestamp, or null to unschedule and return to draft."),
+    confirm: z138.literal(true)
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ campaign_id, scheduled_send_at, confirm }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!sendingEnabled()) return sendingDisabledResult();
+    if (confirm !== true)
+      return { content: [{ type: "text", text: "confirm must be true." }], isError: true };
+    const { data, error } = await supabaseForUser(ctx).from("marketing_campaigns").update({
+      scheduled_send_at,
+      status: scheduled_send_at ? "scheduled" : "draft"
+    }).eq("id", campaign_id).select("id, name, status, scheduled_send_at").maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Campaign not found or not permitted" }], isError: true };
+    return {
+      content: [{ type: "text", text: scheduled_send_at ? "Campaign scheduled." : "Schedule cleared." }],
+      structuredContent: { campaign: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/send-individual-email.ts
+import { defineTool as defineTool145 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z139 } from "npm:zod@^3.25.76";
+var send_individual_email_default = defineTool145({
+  name: "send_individual_email",
+  title: "Send an individual email from a shared mailbox (currently switched off)",
+  description: "Send or reply to an individual email from one of the connected Microsoft 365 mailboxes, optionally linked to a contact, lead, tour or booking. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing.",
+  inputSchema: {
+    mailbox_id: z139.string(),
+    to: z139.array(z139.string().email()).optional(),
+    cc: z139.array(z139.string().email()).optional(),
+    subject: z139.string().optional(),
+    html: z139.string().describe("Message body as HTML."),
+    reply_to_email_id: z139.string().optional().describe("Reply to this synced message instead of starting a new one."),
+    customer_id: z139.string().optional(),
+    lead_id: z139.string().optional(),
+    tour_id: z139.string().optional(),
+    booking_id: z139.string().optional(),
+    confirm: z139.literal(true)
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
+  handler: async (input, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (!sendingEnabled()) return sendingDisabledResult();
+    if (input.confirm !== true)
+      return { content: [{ type: "text", text: "confirm must be true for a send." }], isError: true };
+    if (!input.reply_to_email_id && !(input.to && input.to.length))
+      return { content: [{ type: "text", text: "Provide to addresses or a reply_to_email_id." }], isError: true };
+    const res = await invokeFunction(ctx, "ms-mail-send", {
+      mailboxId: input.mailbox_id,
+      mode: input.reply_to_email_id ? "reply" : "new",
+      replyToEmailId: input.reply_to_email_id,
+      to: input.to,
+      cc: input.cc,
+      subject: input.subject,
+      html: input.html,
+      customerId: input.customer_id ?? null,
+      leadId: input.lead_id ?? null,
+      tourId: input.tour_id ?? null,
+      bookingId: input.booking_id ?? null
+    });
+    if (!res.ok)
+      return { content: [{ type: "text", text: `Send failed (${res.status}): ${JSON.stringify(res.data)}` }], isError: true };
+    return { content: [{ type: "text", text: "Email sent." }], structuredContent: { result: res.data } };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.6.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_pull_itinerary_day_photos` (one-time backfill of the live website day galleries into ART; preview then confirm=true \u2014 skips days that already have ART photos), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD. Destructive tools cascade \u2014 confirm with the user before calling.",
+  version: "2.7.0",
+  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_pull_itinerary_day_photos` (one-time backfill of the live website day galleries into ART; preview then confirm=true \u2014 skips days that already have ART photos), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD.  CRM / Leads (admin/manager only): `list_leads` (filter by stage/owner/tour/source/attention/nurture/date), `get_lead` (lead + contact + tour interests + stage history + activity), `list_lead_activities`, `list_crm_settings` (stages, sources, lead types, lost reasons, sales settings), `get_crm_report` (pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality), `list_tour_interests`, `list_crm_automation` (rules and run log), `list_form_submissions` (Register Interest / Booking submissions exactly as submitted, with utm attribution), `list_lead_forms`. Safe lead writes: `update_lead` (stage, owner, priority, next action, nurture review date, value, lost reason), `log_lead_activity` (call/note/meeting \u2014 writes history only, never sends), `upsert_tour_interest`. Marketing (admin/manager only): `list_marketing_campaigns`, `get_marketing_campaign` (unique-contact figures deduplicated, event totals and top clicked links separately), `list_campaign_recipients` (who opened / clicked / failed), `list_campaign_events` (raw opens and clicks with link URLs), `list_marketing_audiences`, `count_marketing_audience` (resolve a saved or ad-hoc audience live; consent, unsubscribes and suppressions always apply), `get_tour_marketing_intelligence` (per-tour funnel with a comparable previous period), `list_tour_marketing_people` (the contacts behind any tour figure), `list_marketing_link_rules` ('what a click means'), `get_contact_marketing_status` (eligibility, suppressions, campaign history), `list_email_suppressions`. Engagement tracking exists only from Phase 6 onwards \u2014 never present older campaigns as having zero interest, they were untracked. Receiving an email is never attribution; only the tracked click -> form -> enquiry -> booking chain is. Communications hub (admin/manager only, per-mailbox access enforced): `list_mailboxes`, `search_correspondence` (text, contact, lead, tour, booking, mailbox, direction, dates; include_body for full text), `get_correspondence_message` (full message plus thread and matched records). Sending is BUILT BUT SWITCHED OFF: `send_marketing_campaign`, `schedule_marketing_campaign` and `send_individual_email` refuse to act until an admin sets MCP_SENDING_ENABLED=true. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -7665,7 +8792,40 @@ var mcp_default = defineMcp({
     wordpress_preview_tour_inclusions_default,
     wordpress_push_tour_inclusions_default,
     wordpress_pull_tour_inclusions_default,
-    wordpress_pull_itinerary_day_photos_default
+    wordpress_pull_itinerary_day_photos_default,
+    // CRM / Leads
+    list_leads_default,
+    get_lead_default,
+    list_lead_activities_default,
+    list_crm_settings_default,
+    get_crm_reports_default,
+    list_tour_interests_default,
+    list_crm_automation_default,
+    list_form_submissions_default,
+    list_lead_forms_default,
+    update_lead_default,
+    log_lead_activity_default,
+    upsert_tour_interest_default,
+    // Marketing
+    list_marketing_campaigns_default,
+    get_marketing_campaign_default,
+    list_campaign_recipients_default,
+    list_campaign_events_default,
+    list_marketing_audiences_default,
+    count_marketing_audience_default,
+    get_tour_marketing_intelligence_default,
+    list_tour_marketing_people_default,
+    list_marketing_link_rules_default,
+    get_contact_marketing_status_default,
+    list_email_suppressions_default,
+    // Communications hub
+    list_mailboxes_default,
+    search_correspondence_default,
+    get_correspondence_message_default,
+    // Sending (switched off until authorised)
+    send_marketing_campaign_default,
+    schedule_marketing_campaign_default,
+    send_individual_email_default
   ]
 });
 

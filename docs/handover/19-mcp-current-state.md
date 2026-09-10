@@ -1,6 +1,8 @@
 # 19 — MCP server, current state only
 
-`supabase/functions/mcp/index.ts` exposes ART Admin as an MCP server named `art-tour-manager-wordpress-mcp`, version **2.6.0**, with **117 tool definitions**. Helper implementations live in `src/lib/mcp/tools/` and `src/lib/mcp/wordpress/`.
+`supabase/functions/mcp/index.ts` exposes ART Admin as an MCP server named `art-tour-manager-wordpress-mcp`, version **2.7.0**, with **145 tool definitions**. Helper implementations live in `src/lib/mcp/tools/` and `src/lib/mcp/wordpress/`.
+
+v2.7.0 added CRM/leads, marketing and communications coverage: leads and their timelines, CRM configuration and reports (pipeline, funnel, response, attribution, tour sales, action board, data quality), tour interests, automation rules and runs, public form submissions; marketing campaigns with deduplicated unique-contact stats, recipients, raw open/click events, audiences (live counting), tour marketing intelligence and drill-downs, link classification rules, per-contact marketing status and suppressions; Microsoft 365 correspondence search and full-message reads with per-mailbox access enforced. Safe lead writes (`update_lead`, `log_lead_activity`, `upsert_tour_interest`) are enabled. Sending tools (`send_marketing_campaign`, `schedule_marketing_campaign`, `send_individual_email`) are implemented but refuse to act unless the edge-function secret `MCP_SENDING_ENABLED` is `true`.
 
 **Scope note: do not expand the MCP as part of this handover.** This chapter records what exists.
 
