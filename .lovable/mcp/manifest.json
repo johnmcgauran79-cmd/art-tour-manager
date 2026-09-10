@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -4232,6 +4232,1114 @@
           },
           "required": [
             "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_leads",
+        "title": "List leads (enquiries)",
+        "description": "List CRM leads/enquiries with filters: stage key, owner_id, tour_id (tour of interest), source, lead_type, needs_attention, in_nurture, created_from/created_to (YYYY-MM-DD). Ordered by most recent activity.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "stage": {
+              "type": "string",
+              "description": "Stage key, e.g. new, contacted, qualified, proposal, won, lost."
+            },
+            "owner_id": {
+              "type": "string"
+            },
+            "tour_id": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "lead_type": {
+              "type": "string"
+            },
+            "needs_attention": {
+              "type": "boolean"
+            },
+            "in_nurture": {
+              "type": "boolean",
+              "description": "True returns leads with a nurture review date set."
+            },
+            "created_from": {
+              "type": "string"
+            },
+            "created_to": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_lead",
+        "title": "Get lead",
+        "description": "Full detail for one lead/enquiry: the lead record, the linked contact, tour interests, stage history and recent CRM activity.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "lead_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_lead_activities",
+        "title": "List CRM activity",
+        "description": "Timeline of CRM activity (calls, emails, notes, stage changes, marketing signals) for a lead or a contact. Filter by activity_type, meaningful-only, and date range.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string"
+            },
+            "customer_id": {
+              "type": "string"
+            },
+            "activity_type": {
+              "type": "string"
+            },
+            "meaningful_only": {
+              "type": "boolean"
+            },
+            "from": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "to": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_crm_settings",
+        "title": "List CRM configuration",
+        "description": "The CRM's configuration: lead stages (open/won/lost, cold thresholds), lead sources, lead types, lost reasons and the sales settings (response targets, escalation days).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_crm_report",
+        "title": "Get CRM sales report",
+        "description": "Run one of the CRM's own reports and return its real figures: pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality. Date range applies where the report supports it.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "report": {
+              "type": "string",
+              "enum": [
+                "pipeline_summary",
+                "funnel",
+                "response_performance",
+                "attribution_performance",
+                "tour_sales",
+                "action_board",
+                "data_quality"
+              ]
+            },
+            "from": {
+              "type": "string",
+              "description": "YYYY-MM-DD, defaults to 90 days ago where supported."
+            },
+            "to": {
+              "type": "string",
+              "description": "YYYY-MM-DD, defaults to today where supported."
+            },
+            "tour_id": {
+              "type": "string",
+              "description": "Funnel only: limit to one tour."
+            },
+            "include_past": {
+              "type": "boolean",
+              "description": "tour_sales only: include departed tours."
+            }
+          },
+          "required": [
+            "report"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_interests",
+        "title": "List tour interests",
+        "description": "Contacts who have registered interest in a tour (or the tours one contact is interested in), with interest level, status and source.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "customer_id": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_crm_automation",
+        "title": "List CRM automation rules and runs",
+        "description": "CRM automation rules (triggers, conditions, actions, cooldowns) and, optionally, their recent run log so you can see what fired and what failed.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_runs": {
+              "type": "boolean"
+            },
+            "rule_id": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_form_submissions",
+        "title": "List website form submissions",
+        "description": "Register-Interest and Booking form submissions exactly as submitted, with processing status, matched contact/lead, tour(s) and campaign attribution (utm fields).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "form_type": {
+              "type": "string",
+              "description": "e.g. register_interest, booking"
+            },
+            "landing_page_id": {
+              "type": "string"
+            },
+            "tour_id": {
+              "type": "string"
+            },
+            "processing_status": {
+              "type": "string"
+            },
+            "needs_review": {
+              "type": "boolean"
+            },
+            "from": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "to": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_lead_forms",
+        "title": "List public lead-capture forms",
+        "description": "The public forms (Register Interest, Booking) including slug, form type, tour choices, field configuration, submission count and follow-up settings.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_inactive": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_lead",
+        "title": "Update a lead",
+        "description": "Update a lead's stage, owner, priority, notes, next action, estimated value, passenger count, nurture review date or lost reason. Only supplied fields change. Stage changes are recorded in the lead's history by the system.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string"
+            },
+            "stage": {
+              "type": "string",
+              "description": "Stage key from list_crm_settings."
+            },
+            "owner_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "priority": {
+              "type": "string"
+            },
+            "passengers": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "estimated_value": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "next_action_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "YYYY-MM-DD"
+            },
+            "next_action_note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "notes": {
+              "type": "string"
+            },
+            "nurture_review_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "YYYY-MM-DD"
+            },
+            "nurture_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lost_reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "lost_notes": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tour_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "lead_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_lead_activity",
+        "title": "Log CRM activity on a lead",
+        "description": "Record a call, note, meeting or other activity on a lead or contact's timeline. This only writes history — it never sends anything.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lead_id": {
+              "type": "string"
+            },
+            "customer_id": {
+              "type": "string"
+            },
+            "activity_type": {
+              "type": "string",
+              "description": "e.g. call, note, meeting, email_manual"
+            },
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "inbound",
+                "outbound"
+              ]
+            },
+            "outcome": {
+              "type": "string"
+            },
+            "occurred_at": {
+              "type": "string",
+              "description": "ISO timestamp; defaults to now."
+            },
+            "is_meaningful": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "activity_type"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upsert_tour_interest",
+        "title": "Record or update a tour interest",
+        "description": "Record that a contact is interested in a tour, or update the interest level/status/notes on an existing interest record.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string"
+            },
+            "tour_id": {
+              "type": "string"
+            },
+            "lead_id": {
+              "type": "string"
+            },
+            "interest_level": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "customer_id",
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_marketing_campaigns",
+        "title": "List marketing campaigns",
+        "description": "Marketing campaigns (EDMs) with status, schedule and headline stats: recipients, sent, failed, opens, clicks, bounces, unsubscribes. Counts are events; use list_campaign_recipients for unique contacts.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "draft, scheduled, sending, sent, failed"
+            },
+            "from": {
+              "type": "string",
+              "description": "YYYY-MM-DD, filters on send start / creation"
+            },
+            "to": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_marketing_campaign",
+        "title": "Get marketing campaign with real stats",
+        "description": "One campaign plus reconciled results: unique contacts sent/delivered/opened/clicked, event totals, and the most-clicked links. Unique-contact figures never double-count a contact.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string"
+            },
+            "include_html": {
+              "type": "boolean",
+              "description": "Include the campaign HTML body (large)."
+            }
+          },
+          "required": [
+            "campaign_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_campaign_recipients",
+        "title": "List campaign recipients (who opened or clicked)",
+        "description": "Per-contact results for a campaign: status, sent/opened/clicked timestamps and counts. Filter to only openers, only clickers, only failures, or a status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string"
+            },
+            "engagement": {
+              "type": "string",
+              "enum": [
+                "all",
+                "opened",
+                "clicked",
+                "not_opened",
+                "failed"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "required": [
+            "campaign_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_campaign_events",
+        "title": "List campaign tracking events",
+        "description": "Raw open and click events for a campaign, including the exact link clicked. These are events, not unique contacts.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string"
+            },
+            "event_type": {
+              "type": "string",
+              "enum": [
+                "open",
+                "click"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "required": [
+            "campaign_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_marketing_audiences",
+        "title": "List marketing audiences",
+        "description": "Saved dynamic audiences with their filter rules and last counted sizes. Audiences resolve at send time, so counts here are the last calculation.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_inactive": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "count_marketing_audience",
+        "title": "Count a marketing audience now",
+        "description": "Resolve an audience live and return its size, using the saved audience (audience_id) or ad-hoc rules JSON in the same shape the audience builder uses. Consent, unsubscribes, bounces and suppressions always apply.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "audience_id": {
+              "type": "string"
+            },
+            "rules": {
+              "description": "Audience rules JSON, same shape as marketing_audiences.filters."
+            },
+            "sample": {
+              "type": "boolean",
+              "description": "Also return up to 25 matching contacts."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_tour_marketing_intelligence",
+        "title": "Get tour marketing and sales intelligence",
+        "description": "Per-tour marketing funnel: interested contacts, marketing-eligible, active and nurture leads, booked passengers, contacts emailed, opens, clicks, meaningful tour clicks, enquiries and bookings attributed, plus the previous comparable period. Unique-contact and event figures are labelled separately.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "description": "Window length, default 30."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tour_marketing_people",
+        "title": "List the contacts behind a tour marketing number",
+        "description": "Drill into a tour marketing figure and list the actual contacts: interested, interested_not_booked, nurture_leads, active_leads, emailed, opened, clicked, meaningful_clicks, enquiries, bookings.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string"
+            },
+            "metric": {
+              "type": "string",
+              "enum": [
+                "interested",
+                "interested_not_booked",
+                "nurture_leads",
+                "active_leads",
+                "emailed",
+                "opened",
+                "clicked",
+                "meaningful_clicks",
+                "enquiries",
+                "bookings"
+              ]
+            },
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "required": [
+            "tour_id",
+            "metric"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_marketing_link_rules",
+        "title": "List 'what a click means' rules",
+        "description": "Link classification rules that turn clicked URLs into meaning (high intent, register interest, tour-specific), including the tour each rule maps to.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_inactive": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_contact_marketing_status",
+        "title": "Get a contact's marketing status and history",
+        "description": "Whether a contact can be marketed to (subscription, unsubscribe, bounce suppression) plus their campaign history with opens and clicks, their leads and their tour interests.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_email_suppressions",
+        "title": "List email suppressions (bounces and complaints)",
+        "description": "Suppressed email addresses with type, reason and bounce counts. These addresses are always excluded from sending regardless of audience rules.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "suppression_type": {
+              "type": "string"
+            },
+            "active_only": {
+              "type": "boolean"
+            },
+            "search": {
+              "type": "string",
+              "description": "Substring of the email address."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_mailboxes",
+        "title": "List connected mailboxes",
+        "description": "Microsoft 365 mailboxes connected to the communications hub, with sync status, last successful sync, history depth and any error. Only mailboxes the signed-in user may read are returned.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_correspondence",
+        "title": "Search individual correspondence",
+        "description": "Search synced Microsoft 365 correspondence by text, contact, lead, tour, booking, mailbox, direction or date range. Returns subject, participants and a preview; set include_body for full text. Mailbox access rules apply.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive text in subject, preview or body."
+            },
+            "customer_id": {
+              "type": "string"
+            },
+            "lead_id": {
+              "type": "string"
+            },
+            "tour_id": {
+              "type": "string"
+            },
+            "booking_id": {
+              "type": "string"
+            },
+            "mailbox_id": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "inbound",
+                "outbound"
+              ]
+            },
+            "from": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "to": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "include_body": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_correspondence_message",
+        "title": "Get one message in full",
+        "description": "Full content of one synced message (body text and HTML, recipients, attachments) plus the contacts, leads, tours and bookings it is matched to. Optionally include the whole conversation thread.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "email_id": {
+              "type": "string"
+            },
+            "include_thread": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "email_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "send_marketing_campaign",
+        "title": "Send or test a marketing campaign (currently switched off)",
+        "description": "Send a prepared marketing campaign, or send a test copy to one address. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing. Consent, unsubscribe and suppression rules always apply.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "send",
+                "test"
+              ],
+              "description": "send = full audience, test = single test address."
+            },
+            "test_email": {
+              "type": "string",
+              "format": "email",
+              "description": "Required for action 'test'."
+            },
+            "confirm": {
+              "type": "boolean",
+              "const": true,
+              "description": "Must be true to confirm a real send."
+            }
+          },
+          "required": [
+            "campaign_id",
+            "action",
+            "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "schedule_marketing_campaign",
+        "title": "Schedule a marketing campaign (currently switched off)",
+        "description": "Schedule a prepared campaign for a future date and time, or clear an existing schedule. DISABLED until ART authorises AI-initiated sending; until then it changes nothing.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string"
+            },
+            "scheduled_send_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "ISO timestamp, or null to unschedule and return to draft."
+            },
+            "confirm": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "campaign_id",
+            "scheduled_send_at",
+            "confirm"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "send_individual_email",
+        "title": "Send an individual email from a shared mailbox (currently switched off)",
+        "description": "Send or reply to an individual email from one of the connected Microsoft 365 mailboxes, optionally linked to a contact, lead, tour or booking. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "mailbox_id": {
+              "type": "string"
+            },
+            "to": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              }
+            },
+            "cc": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              }
+            },
+            "subject": {
+              "type": "string"
+            },
+            "html": {
+              "type": "string",
+              "description": "Message body as HTML."
+            },
+            "reply_to_email_id": {
+              "type": "string",
+              "description": "Reply to this synced message instead of starting a new one."
+            },
+            "customer_id": {
+              "type": "string"
+            },
+            "lead_id": {
+              "type": "string"
+            },
+            "tour_id": {
+              "type": "string"
+            },
+            "booking_id": {
+              "type": "string"
+            },
+            "confirm": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "mailbox_id",
+            "html",
+            "confirm"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
