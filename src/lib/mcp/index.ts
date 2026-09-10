@@ -123,6 +123,41 @@ import wordpressPreviewTourInclusionsTool from "./tools/wordpress-preview-tour-i
 import wordpressPushTourInclusionsTool from "./tools/wordpress-push-tour-inclusions";
 import wordpressPullTourInclusionsTool from "./tools/wordpress-pull-tour-inclusions";
 import wordpressPullItineraryDayPhotosTool from "./tools/wordpress-pull-itinerary-day-photos";
+// CRM / Leads (v2.7 — admin/manager gated)
+import listLeadsTool from "./tools/list-leads";
+import getLeadTool from "./tools/get-lead";
+import listLeadActivitiesTool from "./tools/list-lead-activities";
+import listCrmSettingsTool from "./tools/list-crm-settings";
+import getCrmReportTool from "./tools/get-crm-reports";
+import listTourInterestsTool from "./tools/list-tour-interests";
+import listCrmAutomationTool from "./tools/list-crm-automation";
+import listFormSubmissionsTool from "./tools/list-form-submissions";
+import listLeadFormsTool from "./tools/list-lead-forms";
+import updateLeadTool from "./tools/update-lead";
+import logLeadActivityTool from "./tools/log-lead-activity";
+import upsertTourInterestTool from "./tools/upsert-tour-interest";
+// Marketing (v2.7 — admin/manager gated)
+import listMarketingCampaignsTool from "./tools/list-marketing-campaigns";
+import getMarketingCampaignTool from "./tools/get-marketing-campaign";
+import listCampaignRecipientsTool from "./tools/list-campaign-recipients";
+import listCampaignEventsTool from "./tools/list-campaign-events";
+import listMarketingAudiencesTool from "./tools/list-marketing-audiences";
+import countMarketingAudienceTool from "./tools/count-marketing-audience";
+import getTourMarketingIntelligenceTool from "./tools/get-tour-marketing-intelligence";
+import listTourMarketingPeopleTool from "./tools/list-tour-marketing-people";
+import listMarketingLinkRulesTool from "./tools/list-marketing-link-rules";
+import getContactMarketingStatusTool from "./tools/get-contact-marketing-status";
+import listEmailSuppressionsTool from "./tools/list-email-suppressions";
+// Communications hub (v2.7 — admin/manager gated, mailbox access enforced)
+import listMailboxesTool from "./tools/list-mailboxes";
+import searchCorrespondenceTool from "./tools/search-correspondence";
+import getCorrespondenceMessageTool from "./tools/get-correspondence-message";
+// Sending — built but switched off until MCP_SENDING_ENABLED=true
+import sendMarketingCampaignTool from "./tools/send-marketing-campaign";
+import scheduleMarketingCampaignTool from "./tools/schedule-marketing-campaign";
+import sendIndividualEmailTool from "./tools/send-individual-email";
+
+
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
