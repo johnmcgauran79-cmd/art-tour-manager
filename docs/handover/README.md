@@ -57,6 +57,7 @@ Everything here was written from the live repository and the live Supabase proje
 | [32-privacy.md](32-privacy.md) | Sensitive data locations and controls |
 | [33-codex-takeover-checklist.md](33-codex-takeover-checklist.md) | First session, trial changes, non-handovers |
 | [34-system-capability-summary.md](34-system-capability-summary.md) | Plain-English summary of everything the system does |
+| [35-mcp-tool-reference.md](35-mcp-tool-reference.md) | Full reference for all 145 MCP tools (v2.7.0), grouped by area, for AI clients |
 
 ## Rules this handover follows
 
