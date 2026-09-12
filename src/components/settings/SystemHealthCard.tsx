@@ -52,6 +52,8 @@ export const SystemHealthCard = () => {
   const backupStale = backupHours === null || backupHours > (data?.backup.stale_after_hours ?? 36);
   const fileHours = data?.storage_backup?.hours_since_success ?? null;
   const fileStale = fileHours === null || fileHours > (data?.storage_backup?.stale_after_hours ?? 192);
+  const codeHours = data?.code_backup?.hours_since_success ?? null;
+  const codeStale = codeHours === null || codeHours > (data?.code_backup?.stale_after_hours ?? 48);
 
 
   const handleSend = async () => {
@@ -112,7 +114,7 @@ export const SystemHealthCard = () => {
           <Skeleton className="h-56 w-full" />
         ) : !data ? null : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-md border bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Last successful backup</div>
                 <div className={`text-sm font-semibold ${backupStale ? "text-destructive" : ""}`}>
@@ -126,6 +128,14 @@ export const SystemHealthCard = () => {
                 <div className={`text-sm font-semibold ${fileStale ? "text-destructive" : ""}`}>
                   {data.storage_backup?.last_run && fileHours !== null
                     ? `${Math.round(fileHours / 24)} day(s) ago`
+                    : "Never reported"}
+                </div>
+              </div>
+              <div className="rounded-md border bg-muted/40 p-3">
+                <div className="text-xs text-muted-foreground">Software code backup</div>
+                <div className={`text-sm font-semibold ${codeStale ? "text-destructive" : ""}`}>
+                  {data.code_backup?.last_run && codeHours !== null
+                    ? `${Math.round(codeHours)} hours ago`
                     : "Never reported"}
                 </div>
               </div>
