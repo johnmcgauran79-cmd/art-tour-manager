@@ -141,7 +141,7 @@ export const FIELD_META: Record<
     operators: ["is_true", "is_false"],
   },
   booking_status: { label: "Booking status", group: "Bookings", operators: ["in"] },
-  travelled_on_tour: { label: "Travelled on tour", group: "Bookings", operators: ["eq"] },
+  travelled_on_tour: { label: "Travelled on tour(s)", group: "Bookings", operators: ["in", "eq"] },
   travelled_tour_type: {
     label: "Travelled tour type",
     group: "Bookings",
