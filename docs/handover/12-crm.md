@@ -1,6 +1,6 @@
 # 12 — CRM as actually built (Phases 1–6)
 
-The CRM is native to ART Admin. It is not Keap, not Brevo, not HubSpot. Keap remains only as historical contact matching; Brevo remains only as a migration/contact-sync surface.
+The CRM is native to ART Admin. It is not Keap, not Brevo, not HubSpot. The Keap → Brevo migration console and both integrations were removed in the 2026 tidy-up; only historical identifier columns on `customers` remain.
 
 Vocabulary that matters: a **Contact** is a person (`customers`). An **Enquiry** is an interest in travelling (`leads`). They are distinct records; one contact can have several enquiries over time.
 

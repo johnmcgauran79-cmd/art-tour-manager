@@ -22,7 +22,7 @@ Failure mode: submission is kept; reprocess from Marketing → Submissions.
 
 ```text
 4-step wizard  →  bookings row (+ passenger contacts)
-   ├─ blocked if tour lacks Xero/Keap identifiers
+   ├─ blocked if tour lacks Xero identifiers
    ├─ xero-create-invoice → DRAFT invoice → xero_invoice_mappings
    ├─ sync-xero-payment-receipts (04:00 UTC daily) → xero_payment_receipts
    └─ status progresses: pending → invoiced → deposited → instalment_paid → fully_paid

@@ -12,8 +12,6 @@ Variable **names** only; no values. See [07-env-secrets.md](07-env-secrets.md).
 | **Meta / Facebook** | Lead ad intake webhook | `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PAGE_ACCESS_TOKEN` | Meta leads not received. Currently disabled anyway |
 | **Lovable** | Hosting, publish, AI gateway | `LOVABLE_API_KEY` | AI features stop; hosted app keeps serving |
 | **OpenAI** | Alternative/auxiliary AI | `OPENAI_API_KEY` | AI features degrade |
-| **Brevo** (legacy) | Contact sync / migration only | `BREVO_API_KEY` | No operational impact |
-| **Keap** (legacy) | Historical contact matching only | `KEAP_API_KEY` | No operational impact; tagging was deliberately removed |
 | **GitHub** | Repository and the backup workflow | Repo credentials, `BACKUP_WEBHOOK_SECRET` | Development and backup job affected, not the running app |
 
 ## Application URL variables

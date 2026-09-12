@@ -2675,7 +2675,7 @@ import { z as z33 } from "npm:zod@^3.25.76";
 var get_customer_default = defineTool33({
   name: "get_customer",
   title: "Get a customer overview",
-  description: "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location and created date. Excludes all passport, medical, emergency-contact, accessibility and dietary data, and internal external-CRM identifiers (e.g. Keap). Read-only; access is RLS-scoped to the signed-in user.",
+  description: "Fetch a minimised, non-sensitive customer/contact profile by id: name, email, phone, location and created date. Excludes all passport, medical, emergency-contact, accessibility and dietary data, and internal external-CRM identifiers. Read-only; access is RLS-scoped to the signed-in user.",
   inputSchema: {
     customer_id: z33.string().uuid().describe("The ART customer/contact id (uuid).")
   },

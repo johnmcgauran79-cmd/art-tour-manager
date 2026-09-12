@@ -47,7 +47,6 @@ A single functional overview of ART Admin as it stands in September 2026. Writte
 - Automation rules with previews, cooldowns, idempotency and run logs.
 - Conversion reporting: booked vs eligible enquiries, passenger conversion tracked separately, booking value from real booking records, one booking credits one enquiry.
 - Full activity timeline per lead and contact.
-- Keap is contact-matching only; Brevo migration console exists for historical data.
 
 ## 5. Lead capture and forms
 
@@ -57,7 +56,7 @@ A single functional overview of ART Admin as it stands in September 2026. Writte
 - Shared intake logic: match contact (email → mobile → name), create/reuse lead and tour interests, create a follow-up task by department, write timeline activity, capture consent only if ticked, send acknowledgement email, preserve attribution.
 - External lead sources: generic keyed endpoint, Meta Lead Ads webhook, Zapier/partner feeds with idempotency and tour-wording mapping (currently disabled).
 
-## 6. Marketing (ART's own system, not Brevo)
+## 6. Marketing (ART's own system)
 
 - Campaign/EDM builder with brand palettes, typography, custom cards and buttons, protected HTML blocks.
 - Dynamic audiences resolved at send time: tour interest, enquiry status, lead source, tags, location, travel history, engagement, plus booking conditions (has/has no booking, booked or not booked on a tour, future booking, payment status, past traveller) and nurture conditions (in nurture, nurture tour, review date windows).

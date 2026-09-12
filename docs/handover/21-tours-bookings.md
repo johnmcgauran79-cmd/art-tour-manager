@@ -4,7 +4,7 @@ This is the oldest and most business-critical part of the system. The CRM sits o
 
 ## Tours
 
-`tours` (72 columns) holds one departure: name, dates, capacity, status, pricing, payment schedule, integration identifiers (Xero, Keap), brand, DMC flag, provisional-dates flag and website description.
+`tours` (72 columns) holds one departure: name, dates, capacity, status, pricing, payment schedule, integration identifiers (Xero), brand, DMC flag, provisional-dates flag and website description.
 
 Status enum: `pending`, `available`, `limited_availability`, `closed`, `sold_out`, `past`, `archived`, `cancelled`.
 

@@ -23,9 +23,9 @@ Changing anything here changes several endpoints at once.
 
 **Reports and documents:** `generate-booking-changes-report`, `generate-rooming-list-report`, `generate-passenger-list-report`, `generate-activity-matrix-report`, `generate-payment-status-report`, `generate-itinerary-document`, `generate-guest-document-docx`.
 
-**Marketing:** `marketing-send-campaign`, `process-scheduled-campaigns`, `marketing-track`, `marketing-submit-lead`, `marketing-landing-page`, `marketing-preferences`, `brevo-sync`.
+**Marketing:** `marketing-send-campaign`, `process-scheduled-campaigns`, `marketing-track`, `marketing-submit-lead`, `marketing-landing-page`, `marketing-preferences`.
 
-**CRM:** `crm-automation-run`, `crm-reprocess-submission`, `crm-migrate-pull`, `crm-migrate-push`, `crm-migrate-report`, `keap-match-contacts-by-email`, `migrate-passenger-names`.
+**CRM:** `crm-automation-run`, `crm-reprocess-submission`, `migrate-passenger-names`.
 
 **Lead capture:** `lead-intake`, `lead-integration-keys`, `meta-leads-webhook`.
 
