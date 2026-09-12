@@ -243,6 +243,11 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups: inco
 
           <ScrollArea className="h-[450px] pr-4">
             <div className="space-y-3">
+              {duplicateGroups.length === 0 && (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  All duplicates here have been dealt with.
+                </div>
+              )}
               {duplicateGroups.map((group) => {
                 const primary = group.contacts[0];
                 const duplicates = group.contacts.slice(1);
