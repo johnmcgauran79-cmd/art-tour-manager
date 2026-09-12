@@ -91,3 +91,14 @@ app's migration role. Remove it once from the Supabase dashboard SQL editor:
 ```sql
 SELECT cron.unschedule(9);
 ```
+
+## Source-code backup
+
+`.github/workflows/code-backup.yml` runs daily (16:30 UTC = 02:30 Brisbane) and on demand from
+GitHub → Actions → "Source code backup" → Run workflow. It uses the same two secrets as the other
+backups (`SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_WEBHOOK_SECRET`), writes 40MB parts of a verified
+`git bundle --all` to `database-backups/code/<date>/`, and reports `kind = 'code'` to
+`backup-report`. Settings → System Health flags it after 48 hours.
+
+Verify: run the workflow, confirm green, confirm the parts exist in Storage, then rejoin them and
+run `git clone art-code-<date>.bundle art-restored` to prove the bundle opens.
