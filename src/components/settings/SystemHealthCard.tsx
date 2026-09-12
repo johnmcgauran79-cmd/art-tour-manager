@@ -50,6 +50,9 @@ export const SystemHealthCard = () => {
   const problems = data?.problem_count ?? 0;
   const backupHours = data?.backup.hours_since_success ?? null;
   const backupStale = backupHours === null || backupHours > (data?.backup.stale_after_hours ?? 36);
+  const fileHours = data?.storage_backup?.hours_since_success ?? null;
+  const fileStale = fileHours === null || fileHours > (data?.storage_backup?.stale_after_hours ?? 192);
+
 
   const handleSend = async () => {
     try {
@@ -109,7 +112,7 @@ export const SystemHealthCard = () => {
           <Skeleton className="h-56 w-full" />
         ) : !data ? null : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-md border bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Last successful backup</div>
                 <div className={`text-sm font-semibold ${backupStale ? "text-destructive" : ""}`}>
@@ -119,9 +122,18 @@ export const SystemHealthCard = () => {
                 </div>
               </div>
               <div className="rounded-md border bg-muted/40 p-3">
+                <div className="text-xs text-muted-foreground">Uploaded files backup</div>
+                <div className={`text-sm font-semibold ${fileStale ? "text-destructive" : ""}`}>
+                  {data.storage_backup?.last_run && fileHours !== null
+                    ? `${Math.round(fileHours / 24)} day(s) ago`
+                    : "Never reported"}
+                </div>
+              </div>
+              <div className="rounded-md border bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Failed emails (24h)</div>
                 <div className="text-sm font-semibold tabular-nums">{data.failures_24h.emails}</div>
               </div>
+
               <div className="rounded-md border bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Xero sync errors (24h)</div>
                 <div className="text-sm font-semibold tabular-nums">{data.failures_24h.xero_sync}</div>
