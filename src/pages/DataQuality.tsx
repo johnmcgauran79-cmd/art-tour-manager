@@ -27,7 +27,7 @@ import {
 import { downloadCsv, exportStamp } from "@/lib/csvExport";
 
 const AREAS: { id: DataQualityArea; Icon: typeof Users; hint: string }[] = [
-  { id: "contacts", Icon: Users, hint: "Duplicates, phone, email and location" },
+  { id: "contacts", Icon: Users, hint: "Duplicates, phone and email" },
   { id: "leads", Icon: UserPlus, hint: "Owner, tour, passengers, outcome and source" },
   { id: "finance", Icon: Receipt, hint: "Xero invoice links and references" },
 ];
