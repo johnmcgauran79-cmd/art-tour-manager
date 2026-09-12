@@ -15,8 +15,6 @@ import {
   Calculator,
   HardDriveDownload,
   Activity,
-  Megaphone,
-  RefreshCw,
   MessageSquare,
   Bot,
   HeartPulse,
@@ -46,8 +44,6 @@ type SectionKey =
   | "backups"
   | "health"
   | "integrations"
-  | "audiences"
-  | "crm"
   | "teams"
   | null;
 
@@ -167,7 +163,7 @@ export const SystemSettings = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-muted-foreground">
-              Live connection health for Xero, WordPress, Keap, email and Teams.
+              Live connection health for Xero, WordPress, email and Teams.
             </div>
             <Button variant="outline" size="sm" onClick={() => setSection("integrations")}>
               View Status
@@ -396,7 +392,7 @@ export const SystemSettings = () => {
         open={section === "integrations"}
         onOpenChange={closeSection}
         title="Integration Status"
-        description="Live connection health for Xero, WordPress, Keap, email and Teams."
+        description="Live connection health for Xero, WordPress, email and Teams."
       >
         <IntegrationStatusPanel />
       </SettingsSectionDialog>
