@@ -36,7 +36,7 @@ import {
   type AudienceNode,
 } from "@/lib/edm/audienceRules";
 import { AudienceRuleBuilder } from "./AudienceRuleBuilder";
-import { useContactStateCounts } from "@/hooks/useBrevoAudienceSync";
+import { useContactStateCounts } from "@/hooks/useContactStateCounts";
 
 import { useTags } from "@/hooks/useTags";
 import { useTours } from "@/hooks/useTours";

@@ -178,34 +178,3 @@ export const useRejectScheduledEmails = () => {
     },
   });
 };
-
-export const useRescheduleEmail = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ ids, newSendAt }: { ids: string[]; newSendAt: string }) => {
-      const { error } = await supabase
-        .from('scheduled_emails')
-        .update({ scheduled_send_at: newSendAt })
-        .in('id', ids);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scheduled-emails'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
-      toast({
-        title: "Emails Rescheduled",
-        description: "The scheduled send time has been updated.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to reschedule emails.",
-        variant: "destructive",
-      });
-    },
-  });
-};

@@ -227,22 +227,3 @@ export function useCustomFormDetail(formId: string | null) {
     deleteField,
   };
 }
-
-// Keep backward-compatible hook (returns first form)
-export function useCustomForm(tourId: string) {
-  const { forms, isLoading, createForm } = useCustomForms(tourId);
-  const firstForm = forms[0] || null;
-  const detail = useCustomFormDetail(firstForm?.id || null);
-
-  return {
-    form: firstForm,
-    fields: detail.fields,
-    responses: detail.responses,
-    isLoading: isLoading || detail.isLoading,
-    createForm,
-    updateForm: detail.updateForm,
-    addField: detail.addField,
-    updateField: detail.updateField,
-    deleteField: detail.deleteField,
-  };
-}

@@ -423,26 +423,3 @@ export const useCloseLead = () => {
       toast({ title: "Could not update the enquiry", description: e.message, variant: "destructive" }),
   });
 };
-
-/** Attach an enquiry to an existing ART booking (marks it booked, value counted once). */
-export const useLinkLeadToBooking = () => {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: async ({ leadId, bookingId }: { leadId: string; bookingId: string }) => {
-      const { error } = await db.rpc("crm_link_booking_to_lead", {
-        _booking_id: bookingId,
-        _lead_id: leadId,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["crm-lead"] });
-      qc.invalidateQueries({ queryKey: ["crm-lead-fact"] });
-      qc.invalidateQueries({ queryKey: ["crm-action-board"] });
-      toast({ title: "Enquiry linked to the booking" });
-    },
-    onError: (e: any) =>
-      toast({ title: "Could not link the booking", description: e.message, variant: "destructive" }),
-  });
-};

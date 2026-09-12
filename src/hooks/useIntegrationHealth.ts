@@ -59,11 +59,6 @@ export const useIntegrationHealth = () =>
         supabase.from("automated_report_log").select("status, error_message, sent_at").gte("sent_at", week).order("sent_at", { ascending: false }).limit(200),
       ]);
 
-      // Keap has no sync-log table; health is measured by contact match coverage.
-      const [keapMatched, keapTotal] = await Promise.all([
-        supabase.from("customers").select("id", { count: "exact", head: true }).not("keap_contact_id", "is", null),
-        supabase.from("customers").select("id", { count: "exact", head: true }),
-      ]);
 
       const results: IntegrationStatus[] = [];
 
@@ -200,24 +195,6 @@ export const useIntegrationHealth = () =>
         fixLink: { label: "Communications", to: "/communications" },
       });
 
-      // --- Keap -------------------------------------------------------------
-      const matched = keapMatched.count || 0;
-      const total = keapTotal.count || 0;
-      const coverage = total > 0 ? Math.round((matched / total) * 100) : 0;
-      results.push({
-        id: "keap",
-        name: "Keap",
-        state: total === 0 ? "unknown" : coverage >= 90 ? "connected" : coverage >= 50 ? "degraded" : "disconnected",
-        headline:
-          total === 0
-            ? "No contacts to sync"
-            : `${coverage}% of contacts matched to a Keap record`,
-        metrics: [
-          { label: "Matched contacts", value: matched },
-          { label: "Unmatched contacts", value: Math.max(0, total - matched) },
-        ],
-        fixLink: { label: "Contacts", to: "/?tab=contacts" },
-      });
 
       return results;
     },

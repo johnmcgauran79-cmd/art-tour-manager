@@ -26,24 +26,6 @@ export const useEmailTemplates = (type?: string) => {
     refetchOnWindowFocus: false,
   });
 };
-
-export const useEmailTemplate = (id: string) => {
-  return useQuery({
-    queryKey: ['email-template', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
-      return data as EmailTemplate;
-    },
-    enabled: !!id,
-  });
-};
-
 export const useCreateEmailTemplate = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();

@@ -129,22 +129,6 @@ export const useCampaigns = () =>
     },
     staleTime: 30000,
   });
-
-export const useCampaign = (id: string | undefined) =>
-  useQuery({
-    queryKey: ["marketing-campaign", id],
-    enabled: !!id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("marketing_campaigns")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as unknown as MarketingCampaign | null;
-    },
-  });
-
 export const useSaveCampaign = () => {
   const { toast } = useToast();
   const qc = useQueryClient();

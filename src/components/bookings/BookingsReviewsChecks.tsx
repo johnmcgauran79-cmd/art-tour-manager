@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Grid3X3, Tag, AlertTriangle, PhoneOff } from "lucide-react";
+import { ClipboardCheck, Grid3X3, Tag, AlertTriangle, PhoneOff, BedDouble } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +94,13 @@ export const BookingsReviewsChecks = () => {
       onClick: () => setBouncedEmailsOpen(true),
     },
     {
+      icon: BedDouble,
+      label: "Bedding Review",
+      description: "Check bedding choices against passenger numbers on upcoming tours",
+      count: 0,
+      onClick: () => navigate("/operations/bedding-review"),
+    },
+    {
       icon: Tag,
       label: "Name Tag Generator",
       description: "Generate first-name lists by tour for printing name tags",
@@ -101,6 +108,9 @@ export const BookingsReviewsChecks = () => {
       onClick: () => setNameTagOpen(true),
     },
   ];
+
+
+
 
   return (
     <div className="space-y-6">
