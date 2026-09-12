@@ -19,6 +19,7 @@ const json = (body: unknown, status = 200) =>
 interface Health {
   generated_at: string;
   stale_backup_hours: number | null;
+  stale_storage_backup_hours: number | null;
   failed_jobs_24h: Array<{ jobname: string; failures: number; message: string }>;
   http_failures_24h: number;
   mailbox_failures: Array<{ mailbox: string; status: string | null; error: string }>;
@@ -29,6 +30,7 @@ interface Health {
 }
 
 const STALE_BACKUP_HOURS = 36;
+const STALE_STORAGE_BACKUP_HOURS = 192; // 8 days
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -41,6 +43,15 @@ function buildProblems(h: Health): string[] {
   } else if (h.stale_backup_hours > STALE_BACKUP_HOURS) {
     out.push(`Last successful database backup was ${Math.round(h.stale_backup_hours)} hours ago.`);
   }
+
+  if (h.stale_storage_backup_hours === null) {
+    out.push("No backup of uploaded files has ever been reported.");
+  } else if (h.stale_storage_backup_hours > STALE_STORAGE_BACKUP_HOURS) {
+    out.push(
+      `Last successful backup of uploaded files was ${Math.round(h.stale_storage_backup_hours / 24)} day(s) ago.`,
+    );
+  }
+
 
   for (const j of h.failed_jobs_24h || []) {
     out.push(
