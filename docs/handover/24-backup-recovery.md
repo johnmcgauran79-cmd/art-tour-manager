@@ -6,8 +6,15 @@
 2. **Nightly database backup.** `.github/workflows/db-backup.yml` dumps roles/schema/data, uploads a split archive to the private `database-backups` bucket under `database/<date>/`, and reports to `backup-report`, which writes a `backup_runs` row (`kind = 'database'`). Authenticated with `BACKUP_WEBHOOK_SECRET`.
 3. **Weekly uploaded-files backup.** `.github/workflows/storage-backup.yml` runs Sunday 17:00 UTC (03:00 Monday Brisbane). `.github/scripts/storage_backup.py` downloads every object from every Storage bucket except `database-backups` (attachments, contact avatars, email assets/attachments, operations documents), writes `manifest.json`, tars it, splits into 40MB parts and uploads to `database-backups/storage/<date>/`. Reports `kind = 'storage'`.
 4. **Code history.** The GitHub repository is the frontend/function history. Reverting code is straightforward; reverting data is not.
+5. **Nightly source-code backup.** `.github/workflows/code-backup.yml` runs 16:30 UTC daily (02:30 Brisbane), creates a `git bundle ... --all` (full history, every branch and tag), verifies it, attaches it as a 90-day workflow artifact, and uploads 40MB parts to `database-backups/code/<date>/`. Reports `kind = 'code'`. This protects the software itself against repository deletion, corruption or loss of GitHub access.
 
-Settings → System Health shows both backups separately (`useBackupRuns.ts`, `get_system_health`): the database backup is flagged after 36 hours, the uploaded-files backup after 8 days. The daily digest email raises the same two checks.
+Settings → System Health shows all three backups separately (`useBackupRuns.ts`, `get_system_health`): the database backup is flagged after 36 hours, the uploaded-files backup after 8 days, the source-code backup after 48 hours. The daily digest email raises the same three checks.
+
+## Restoring the source code
+
+1. Download every `art-code-<date>.bundle.part-*` from `database-backups/code/<date>/` (or the single `.bundle` from the GitHub run artifact).
+2. `cat art-code-<date>.bundle.part-* > art-code-<date>.bundle`
+3. `git clone art-code-<date>.bundle art-restored` — this yields a full repository with all history; add a new remote and push to recreate the GitHub repository.
 
 
 ## Recovery expectations
