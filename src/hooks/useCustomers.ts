@@ -724,6 +724,7 @@ export const useDeleteSelectedContacts = () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['all-customers'] });
       queryClient.invalidateQueries({ queryKey: ['customer-ids-with-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['data-quality'] });
       let desc = `Deleted ${result.contactsDeleted} contacts.`;
       if (result.contactsSkipped > 0) {
         desc += ` ${result.contactsSkipped} skipped (have bookings).`;
