@@ -338,9 +338,11 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       result = !list.length || list.some((t) => owned?.has(t));
       break;
     }
-    case "interested_tour":
-      result = (c.interested_tour_id || "") === String(rule.value || "");
+    case "interested_tour": {
+      const tours = tourValues(rule.value);
+      result = tours.length > 0 && tours.includes(c.interested_tour_id || "");
       break;
+    }
     case "latest_tour_end_date": {
       const ts = dateMs(c.latest_tour_end_date);
       if (rule.operator === "before") result = !Number.isNaN(ts) && ts < dateMs(String(rule.value));
