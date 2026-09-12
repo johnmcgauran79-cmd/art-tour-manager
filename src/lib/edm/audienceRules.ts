@@ -134,7 +134,7 @@ export const FIELD_META: Record<
   name_email: { label: "Name or email", group: "Other", operators: ["contains"] },
 
   has_booking: { label: "Has a booking", group: "Bookings", operators: ["is_true", "is_false"] },
-  booked_on_tour: { label: "Booked on tour", group: "Bookings", operators: ["eq"] },
+  booked_on_tour: { label: "Booked on tour(s)", group: "Bookings", operators: ["in", "eq"] },
   has_future_booking: {
     label: "Has a future booking",
     group: "Bookings",
