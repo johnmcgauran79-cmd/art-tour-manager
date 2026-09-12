@@ -153,7 +153,7 @@ export const FIELD_META: Record<
     group: "Nurture",
     operators: ["is_true", "is_false"],
   },
-  nurture_tour: { label: "Nurture tour", group: "Nurture", operators: ["eq"] },
+  nurture_tour: { label: "Nurture tour(s)", group: "Nurture", operators: ["in", "eq"] },
   nurture_review_date: {
     label: "Nurture review date",
     group: "Nurture",
