@@ -102,3 +102,16 @@ backups (`SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_WEBHOOK_SECRET`), writes 40MB part
 
 Verify: run the workflow, confirm green, confirm the parts exist in Storage, then rejoin them and
 run `git clone art-code-<date>.bundle art-restored` to prove the bundle opens.
+
+## SharePoint and local copies
+
+Every backup workflow also copies its parts to a SharePoint document library
+(`ART Admin Backups/<kind>/<date>/`) via `.github/scripts/sharepoint_upload.py`. The step is
+optional and never fails a run: it skips when `SHAREPOINT_SITE_PATH`, `MS_GRAPH_TENANT_ID`,
+`MS_GRAPH_CLIENT_ID` or `MS_GRAPH_CLIENT_SECRET` is missing from the repository secrets, and is
+marked `continue-on-error`. Verify by running a workflow and confirming the dated folder appears
+in SharePoint; the reported destination in `backup_runs` lists both targets.
+
+An offline copy can be pulled at any time with `scripts/local-backup-pull.ps1` (Windows) or
+`scripts/local-backup-pull.sh` (mac/Linux) — see [24-backup-recovery.md](24-backup-recovery.md).
+Include a local pull in each quarterly restore drill so the fourth copy is exercised too.
