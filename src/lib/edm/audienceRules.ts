@@ -113,7 +113,7 @@ export const FIELD_META: Record<
   lead_stage: { label: "Lead stage", group: "Status", operators: ["in"] },
   lead_source: { label: "Lead source", group: "Status", operators: ["in", "contains"] },
   tag: { label: "Tag", group: "Tags", operators: ["in"] },
-  interested_tour: { label: "Interested tour", group: "Tours", operators: ["eq"] },
+  interested_tour: { label: "Interested tour", group: "Tours", operators: ["in", "eq"] },
   latest_tour_end_date: {
     label: "Last tour ended",
     group: "Tours",
@@ -134,14 +134,14 @@ export const FIELD_META: Record<
   name_email: { label: "Name or email", group: "Other", operators: ["contains"] },
 
   has_booking: { label: "Has a booking", group: "Bookings", operators: ["is_true", "is_false"] },
-  booked_on_tour: { label: "Booked on tour", group: "Bookings", operators: ["eq"] },
+  booked_on_tour: { label: "Booked on tour(s)", group: "Bookings", operators: ["in", "eq"] },
   has_future_booking: {
     label: "Has a future booking",
     group: "Bookings",
     operators: ["is_true", "is_false"],
   },
   booking_status: { label: "Booking status", group: "Bookings", operators: ["in"] },
-  travelled_on_tour: { label: "Travelled on tour", group: "Bookings", operators: ["eq"] },
+  travelled_on_tour: { label: "Travelled on tour(s)", group: "Bookings", operators: ["in", "eq"] },
   travelled_tour_type: {
     label: "Travelled tour type",
     group: "Bookings",
@@ -153,7 +153,7 @@ export const FIELD_META: Record<
     group: "Nurture",
     operators: ["is_true", "is_false"],
   },
-  nurture_tour: { label: "Nurture tour", group: "Nurture", operators: ["eq"] },
+  nurture_tour: { label: "Nurture tour(s)", group: "Nurture", operators: ["in", "eq"] },
   nurture_review_date: {
     label: "Nurture review date",
     group: "Nurture",
@@ -248,6 +248,10 @@ const evalEngagement = (
 /** Bookings that still count — cancelled bookings are never a booking. */
 const activeBookings = (list: BookingFact[]) => list.filter((b) => b.status !== "cancelled");
 
+/** Tour rules accept one tour or a list of tours. */
+const tourValues = (value: unknown): string[] =>
+  (Array.isArray(value) ? value : [value]).map((v) => String(v ?? "")).filter(Boolean);
+
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const startOfWeekIso = () => {
@@ -338,9 +342,11 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       result = !list.length || list.some((t) => owned?.has(t));
       break;
     }
-    case "interested_tour":
-      result = (c.interested_tour_id || "") === String(rule.value || "");
+    case "interested_tour": {
+      const tours = tourValues(rule.value);
+      result = tours.length > 0 && tours.includes(c.interested_tour_id || "");
       break;
+    }
     case "latest_tour_end_date": {
       const ts = dateMs(c.latest_tour_end_date);
       if (rule.operator === "before") result = !Number.isNaN(ts) && ts < dateMs(String(rule.value));
@@ -380,10 +386,12 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       break;
     }
     case "booked_on_tour": {
-      const tour = String(rule.value || "");
+      const tours = tourValues(rule.value);
       result =
-        !!tour &&
-        activeBookings(ctx.bookings.get(c.id) || []).some((b) => b.tour_id === tour);
+        tours.length > 0 &&
+        activeBookings(ctx.bookings.get(c.id) || []).some(
+          (b) => !!b.tour_id && tours.includes(b.tour_id)
+        );
       break;
     }
     case "has_future_booking": {
@@ -401,12 +409,12 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       break;
     }
     case "travelled_on_tour": {
-      const tour = String(rule.value || "");
+      const tours = tourValues(rule.value);
       const today = todayIso();
       result =
-        !!tour &&
+        tours.length > 0 &&
         activeBookings(ctx.bookings.get(c.id) || []).some(
-          (b) => b.tour_id === tour && !!b.end_date && b.end_date < today
+          (b) => !!b.tour_id && tours.includes(b.tour_id) && !!b.end_date && b.end_date < today
         );
       break;
     }
@@ -433,8 +441,10 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       break;
     }
     case "nurture_tour": {
-      const tour = String(rule.value || "");
-      result = !!tour && (ctx.nurture.get(c.id) || []).some((n) => n.tour_id === tour);
+      const tours = tourValues(rule.value);
+      result =
+        tours.length > 0 &&
+        (ctx.nurture.get(c.id) || []).some((n) => !!n.tour_id && tours.includes(n.tour_id));
       break;
     }
     case "nurture_review_date":
