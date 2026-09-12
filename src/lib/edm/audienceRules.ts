@@ -437,8 +437,10 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       break;
     }
     case "nurture_tour": {
-      const tour = String(rule.value || "");
-      result = !!tour && (ctx.nurture.get(c.id) || []).some((n) => n.tour_id === tour);
+      const tours = tourValues(rule.value);
+      result =
+        tours.length > 0 &&
+        (ctx.nurture.get(c.id) || []).some((n) => !!n.tour_id && tours.includes(n.tour_id));
       break;
     }
     case "nurture_review_date":
