@@ -127,9 +127,21 @@ export const DataQualityTable = ({ issues }: Props) => {
                   {issue.extra?.tour && <div className="text-xs">Tour: {issue.extra.tour}</div>}
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-right">
-                  <Button variant="ghost" size="sm" onClick={() => navigate(target.path)}>
-                    {target.label}
-                  </Button>
+                  {target.label === "Merge" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={loadingMerge === issue.issueKey}
+                      onClick={() => openMerge(issue)}
+                    >
+                      {loadingMerge === issue.issueKey ? "Loading…" : "Merge"}
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => navigate(target.path)}>
+                      {target.label}
+                    </Button>
+                  )}
+
                   <Button
                     variant="ghost"
                     size="sm"
