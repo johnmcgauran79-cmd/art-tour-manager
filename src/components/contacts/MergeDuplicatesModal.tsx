@@ -120,8 +120,10 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups: inco
         ...group,
         contacts: [group.contacts[0], ...group.contacts.slice(1).filter(c => selectedDuplicateIds.has(c.id))],
       }));
+      const mergedIds = filteredGroups.flatMap(g => g.contacts.slice(1).map(c => c.id));
       mergeDuplicates.mutate(filteredGroups, {
         onSuccess: () => {
+          markResolved(mergedIds);
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
         },
