@@ -9469,6 +9469,8 @@ export type Database = {
           tour_start_date: string
         }[]
       }
+      get_system_health: { Args: never; Returns: Json }
+      get_system_health_service: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
