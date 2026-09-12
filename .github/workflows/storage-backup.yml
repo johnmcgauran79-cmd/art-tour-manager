@@ -27,6 +27,8 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/checkout@v4
+
       # Downloads every object from every bucket except the backup bucket itself.
       - name: Download storage objects
         id: dump
@@ -34,79 +36,13 @@ jobs:
           SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json, os, pathlib, urllib.request
-
-          PROJECT = "https://upqvgtuxfzsrwjahklij.supabase.co"
-          KEY = os.environ["SERVICE_KEY"]
-          SKIP = {"database-backups"}
-          ROOT = pathlib.Path("storage-dump")
-
-          def api(path, body=None, raw=False):
-              req = urllib.request.Request(
-                  f"{PROJECT}/storage/v1/{path}",
-                  data=json.dumps(body).encode() if body is not None else None,
-                  headers={
-                      "Authorization": f"Bearer {KEY}",
-                      "Content-Type": "application/json",
-                  },
-                  method="POST" if body is not None else "GET",
-              )
-              with urllib.request.urlopen(req, timeout=300) as r:
-                  return r.read() if raw else json.loads(r.read())
-
-          def download(bucket, key, dest):
-              req = urllib.request.Request(
-                  f"{PROJECT}/storage/v1/object/{bucket}/{urllib.parse.quote(key)}",
-                  headers={"Authorization": f"Bearer {KEY}"},
-              )
-              dest.parent.mkdir(parents=True, exist_ok=True)
-              with urllib.request.urlopen(req, timeout=600) as r, open(dest, "wb") as f:
-                  while chunk := r.read(1 << 20):
-                      f.write(chunk)
-
-          import urllib.parse
-
-          def walk(bucket, prefix=""):
-              offset = 0
-              while True:
-                  items = api(
-                      f"object/list/{bucket}",
-                      {"prefix": prefix, "limit": 1000, "offset": offset,
-                       "sortBy": {"column": "name", "order": "asc"}},
-                  )
-                  if not items:
-                      return
-                  for it in items:
-                      name = f"{prefix}{it['name']}"
-                      if it.get("id") is None and it.get("metadata") is None:
-                          yield from walk(bucket, name + "/")
-                      else:
-                          yield name
-                  if len(items) < 1000:
-                      return
-                  offset += len(items)
-
-          buckets = [b["name"] for b in api("bucket") if b["name"] not in SKIP]
-          count = 0
-          manifest = []
-          for bucket in buckets:
-              for key in walk(bucket):
-                  dest = ROOT / bucket / key
-                  download(bucket, key, dest)
-                  manifest.append({"bucket": bucket, "key": key, "bytes": dest.stat().st_size})
-                  count += 1
-          ROOT.mkdir(exist_ok=True)
-          (ROOT / "manifest.json").write_text(json.dumps(manifest, indent=1))
-          print(f"Downloaded {count} object(s) from {len(buckets)} bucket(s).")
-          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
-              out.write(f"files={count}\n")
-          PY
+          python3 .github/scripts/storage_backup.py
           STAMP=$(date -u +%Y-%m-%d)
           ARTIFACT="art-storage-$STAMP.tar.gz"
           tar czf "$ARTIFACT" storage-dump
           echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
           echo "size=$(stat -c%s "$ARTIFACT")" >> "$GITHUB_OUTPUT"
+
 
       # Off-site copy in the private "database-backups" bucket, split into 40MB
       # parts so each upload stays under the project-wide file size limit.

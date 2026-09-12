@@ -36,6 +36,19 @@ export interface SystemHealth {
     hours_since_success: number | null;
     stale_after_hours: number;
   };
+  /** Weekly backup of uploaded files (Storage buckets). */
+  storage_backup?: {
+    last_run: {
+      status: string;
+      finished_at: string;
+      size_bytes: number | null;
+      destination: string | null;
+      error_message: string | null;
+    } | null;
+    hours_since_success: number | null;
+    stale_after_hours: number;
+  };
+
   mailboxes: SystemHealthMailbox[];
   failures_24h: {
     xero_sync: number;
