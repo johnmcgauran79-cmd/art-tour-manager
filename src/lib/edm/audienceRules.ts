@@ -405,12 +405,12 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       break;
     }
     case "travelled_on_tour": {
-      const tour = String(rule.value || "");
+      const tours = tourValues(rule.value);
       const today = todayIso();
       result =
-        !!tour &&
+        tours.length > 0 &&
         activeBookings(ctx.bookings.get(c.id) || []).some(
-          (b) => b.tour_id === tour && !!b.end_date && b.end_date < today
+          (b) => !!b.tour_id && tours.includes(b.tour_id) && !!b.end_date && b.end_date < today
         );
       break;
     }
