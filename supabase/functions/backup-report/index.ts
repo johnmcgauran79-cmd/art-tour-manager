@@ -44,8 +44,8 @@ Deno.serve(async (req) => {
     }
 
     const kind = String(body.kind ?? "database").toLowerCase();
-    if (!["database", "storage", "full"].includes(kind)) {
-      return json({ error: "kind must be one of: database, storage, full" }, 400);
+    if (!["database", "storage", "code", "full"].includes(kind)) {
+      return json({ error: "kind must be one of: database, storage, code, full" }, 400);
     }
 
     const startedAt = asIso(body.started_at);
