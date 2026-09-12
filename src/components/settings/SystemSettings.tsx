@@ -36,8 +36,6 @@ import { TeamsChannelNotifyCard } from "@/components/settings/TeamsChannelNotify
 import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
 import { SystemHealthCard } from "@/components/settings/SystemHealthCard";
-import { CrmMigrationConsole } from "@/components/settings/CrmMigrationConsole";
-import { BrevoAudienceSyncPanel } from "@/components/settings/BrevoAudienceSyncPanel";
 import { SettingsSectionDialog } from "@/components/settings/SettingsSectionDialog";
 
 type SectionKey =
@@ -177,41 +175,6 @@ export const SystemSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Marketing Audiences */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Megaphone className="h-5 w-5" />
-              Marketing Audiences
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Bring Brevo lists into ART as tags, fill contact states and honour unsubscribes.
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setSection("audiences")}>
-              Manage Audiences
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* CRM migration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5" />
-              CRM (Keap → Brevo)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Move contacts, tags and notes from Keap into Brevo and keep Brevo connected.
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setSection("crm")}>
-              Open Console
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Teams notifications */}
         <Card>
@@ -436,24 +399,6 @@ export const SystemSettings = () => {
         description="Live connection health for Xero, WordPress, Keap, email and Teams."
       >
         <IntegrationStatusPanel />
-      </SettingsSectionDialog>
-
-      <SettingsSectionDialog
-        open={section === "audiences"}
-        onOpenChange={closeSection}
-        title="Marketing Audiences"
-        description="Bring Brevo lists into ART as tags, fill in contact states and honour Brevo unsubscribes."
-      >
-        <BrevoAudienceSyncPanel />
-      </SettingsSectionDialog>
-
-      <SettingsSectionDialog
-        open={section === "crm"}
-        onOpenChange={closeSection}
-        title="CRM (Keap → Brevo)"
-        description="Move contacts, tags and notes from Keap into Brevo, then keep Brevo connected for marketing."
-      >
-        <CrmMigrationConsole />
       </SettingsSectionDialog>
 
       <SettingsSectionDialog
