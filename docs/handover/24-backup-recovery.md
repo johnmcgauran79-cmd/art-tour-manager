@@ -7,8 +7,39 @@
 3. **Weekly uploaded-files backup.** `.github/workflows/storage-backup.yml` runs Sunday 17:00 UTC (03:00 Monday Brisbane). `.github/scripts/storage_backup.py` downloads every object from every Storage bucket except `database-backups` (attachments, contact avatars, email assets/attachments, operations documents), writes `manifest.json`, tars it, splits into 40MB parts and uploads to `database-backups/storage/<date>/`. Reports `kind = 'storage'`.
 4. **Code history.** The GitHub repository is the frontend/function history. Reverting code is straightforward; reverting data is not.
 5. **Nightly source-code backup.** `.github/workflows/code-backup.yml` runs 16:30 UTC daily (02:30 Brisbane), creates a `git bundle ... --all` (full history, every branch and tag), verifies it, attaches it as a 90-day workflow artifact, and uploads 40MB parts to `database-backups/code/<date>/`. Reports `kind = 'code'`. This protects the software itself against repository deletion, corruption or loss of GitHub access.
+6. **SharePoint copy (third cloud location).** All three workflows end with a `Copy backup to SharePoint` step running `.github/scripts/sharepoint_upload.py`, which uploads the same split parts to `<site>/ART Admin Backups/<kind>/<date>/` in a SharePoint document library via Microsoft Graph. The step is `continue-on-error` and skips itself when the SharePoint secrets are absent, so it can never break the primary copies. The target is reported to `backup-report` appended to the Supabase destination.
+7. **Local/offline copy (manual, on demand).** `scripts/local-backup-pull.ps1` (Windows) and `scripts/local-backup-pull.sh` (mac/Linux) download the newest database, storage and code backups from `database-backups`, rejoin the split parts, verify the code bundle and write them to a dated folder on any local or external drive.
 
-Settings → System Health shows all three backups separately (`useBackupRuns.ts`, `get_system_health`): the database backup is flagged after 36 hours, the uploaded-files backup after 8 days, the source-code backup after 48 hours. The daily digest email raises the same three checks.
+Settings → System Health shows all three backups separately (`useBackupRuns.ts`, `get_system_health`): the database backup is flagged after 36 hours, the uploaded-files backup after 8 days, the source-code backup after 48 hours. The daily digest email raises the same three checks. Health tracking follows the backup *run*, not each destination; a SharePoint-only failure appears as a warning in the workflow log.
+
+## SharePoint copy — setup
+
+1. Microsoft Entra admin centre → App registrations → **Australian Racing Tours - Teams Notifications** → API permissions → add the Microsoft Graph **application** permission `Sites.ReadWrite.All` (or `Sites.Selected` plus a per-site grant), then **Grant admin consent**.
+2. GitHub → repository → Settings → Secrets and variables → Actions, add:
+
+| Secret | Value |
+| --- | --- |
+| `MS_GRAPH_TENANT_ID` | Directory (tenant) ID of the app registration |
+| `MS_GRAPH_CLIENT_ID` | Application (client) ID |
+| `MS_GRAPH_CLIENT_SECRET` | A client secret for that app |
+| `SHAREPOINT_SITE_PATH` | e.g. `australianracingtours.sharepoint.com:/sites/Operations` |
+
+   Optional repository **variable** `SHAREPOINT_FOLDER` overrides the default folder name `ART Admin Backups`.
+3. Run any backup workflow manually and confirm the dated folders appear in the SharePoint library.
+
+## Local copy — how to run
+
+```powershell
+$env:SUPABASE_SERVICE_ROLE_KEY = "<service role key>"
+.\scripts\local-backup-pull.ps1 -Destination "D:\ART-Backups" -KeepDays 90
+```
+
+```bash
+export SUPABASE_SERVICE_ROLE_KEY="<service role key>"
+./scripts/local-backup-pull.sh /Volumes/ART-Backups 90
+```
+
+Both write `<destination>/<date>/art-backup-<date>.tar.gz`, `art-storage-<date>.tar.gz` and `art-code-<date>.bundle`, print sizes and verify the code bundle. Weekly is sufficient; Windows Task Scheduler can run it unattended. Treat the drive as sensitive — it holds a full copy of customer data.
 
 ## Restoring the source code
 
@@ -44,6 +75,7 @@ Settings → System Health shows all three backups separately (`useBackupRuns.ts
 ## Honest limitations
 
 - The full "rebuild everything" restore has **not been rehearsed end to end**; RTO and RPO are estimates. See [36-system-health-and-backup-verification.md](36-system-health-and-backup-verification.md) for the drill procedure and log.
-- There is no second region or independent copy of the database outside Supabase's own backups and this project's own Storage bucket.
+- Copies outside Supabase (GitHub artifacts, SharePoint, the local drive) depend on their own retention and on someone running the local script; only the Supabase bucket copy is fully automatic and unlimited.
+- Restoring from a SharePoint copy is identical to restoring from Storage: download every part from the dated folder, `cat`/join them, then follow the restore steps above.
 - `backup_runs` failures surface in Settings → System Health and the daily digest email; nothing else alerts.
 
