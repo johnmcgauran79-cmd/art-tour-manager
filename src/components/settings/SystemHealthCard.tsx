@@ -179,7 +179,10 @@ export const SystemHealthCard = () => {
               </h4>
               <div className="grid gap-2 sm:grid-cols-2">
                 {data.mailboxes.map((m) => {
-                  const bad = m.enabled && !["success", "completed"].includes(m.last_status || "");
+                  const ok = ["success", "completed", "ok", "running", "in_progress"].includes(
+                    (m.last_status || "").toLowerCase(),
+                  );
+                  const bad = m.enabled && !ok;
                   return (
                     <div key={m.mailbox} className="rounded-md border p-3 text-sm">
                       <div className="flex items-center justify-between gap-2">
