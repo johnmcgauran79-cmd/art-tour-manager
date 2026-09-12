@@ -382,10 +382,12 @@ const evalRule = (rule: AudienceRule, c: RuleContact, ctx: RuleContext): boolean
       break;
     }
     case "booked_on_tour": {
-      const tour = String(rule.value || "");
+      const tours = tourValues(rule.value);
       result =
-        !!tour &&
-        activeBookings(ctx.bookings.get(c.id) || []).some((b) => b.tour_id === tour);
+        tours.length > 0 &&
+        activeBookings(ctx.bookings.get(c.id) || []).some(
+          (b) => !!b.tour_id && tours.includes(b.tour_id)
+        );
       break;
     }
     case "has_future_booking": {
