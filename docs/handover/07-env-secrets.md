@@ -67,6 +67,8 @@ Other:
 | Name | Purpose |
 | --- | --- |
 | `BACKUP_WEBHOOK_SECRET` | Authenticates backup reporting into `backup_runs` |
+
+GitHub repository secrets (backups only, not edge-function secrets): `SUPABASE_DB_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_WEBHOOK_SECRET`, and for the SharePoint copy `MS_GRAPH_TENANT_ID`, `MS_GRAPH_CLIENT_ID`, `MS_GRAPH_CLIENT_SECRET`, `SHAREPOINT_SITE_PATH` (optional variable `SHAREPOINT_FOLDER`). See [24-backup-recovery.md](24-backup-recovery.md).
 | `APP_URL`, `PUBLIC_APP_URL`, `PUBLIC_SITE_URL`, `SITE_URL` | Base URLs used when building customer links and tracked URLs |
 
 Note the four overlapping base-URL names. They are historical; see [25-known-issues-debt.md](25-known-issues-debt.md).
