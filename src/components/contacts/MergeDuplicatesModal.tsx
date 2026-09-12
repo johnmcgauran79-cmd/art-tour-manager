@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,13 +42,35 @@ const ContactInfoGrid = ({ contact, compact = false }: { contact: any; compact?:
   );
 };
 
-export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: MergeDuplicatesModalProps) => {
+export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups: incomingGroups }: MergeDuplicatesModalProps) => {
   // Track individual selected duplicate contact IDs
   const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<Set<string>>(new Set());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(duplicateGroups.slice(0, 3).map(g => g.key)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(incomingGroups.slice(0, 3).map(g => g.key)));
   const [confirmAction, setConfirmAction] = useState<'merge' | 'delete' | 'merge-empty' | null>(null);
+  // Contacts already merged/deleted in this session — dropped from the list so it stays accurate
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
   const mergeDuplicates = useMergeDuplicateContacts();
   const deleteSelected = useDeleteSelectedContacts();
+
+  useEffect(() => {
+    if (!open) setResolvedIds(new Set());
+  }, [open]);
+
+  const duplicateGroups = useMemo(
+    () =>
+      incomingGroups
+        .map(g => ({ ...g, contacts: g.contacts.filter(c => !resolvedIds.has(c.id)) }))
+        .filter(g => g.contacts.length > 1),
+    [incomingGroups, resolvedIds]
+  );
+
+  const markResolved = (ids: string[]) => {
+    setResolvedIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => next.add(id));
+      return next;
+    });
+  };
 
   const isPending = mergeDuplicates.isPending || deleteSelected.isPending;
 
@@ -98,8 +120,10 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
         ...group,
         contacts: [group.contacts[0], ...group.contacts.slice(1).filter(c => selectedDuplicateIds.has(c.id))],
       }));
+      const mergedIds = filteredGroups.flatMap(g => g.contacts.slice(1).map(c => c.id));
       mergeDuplicates.mutate(filteredGroups, {
         onSuccess: () => {
+          markResolved(mergedIds);
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
         },
@@ -112,7 +136,9 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
     const ids = Array.from(selectedDuplicateIds);
     if (ids.length > 0) {
       deleteSelected.mutate(ids, {
-        onSuccess: () => {
+        onSuccess: (result: any) => {
+          // Only drop rows from the list when nothing was skipped (skipped ones still exist)
+          if (!result || !result.contactsSkipped) markResolved(ids);
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
         },
@@ -132,8 +158,10 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
 
   const handleMergeAllEmpty = () => {
     if (emptyDuplicateGroups.length > 0) {
+      const mergedIds = emptyDuplicateGroups.flatMap(g => g.contacts.slice(1).map(c => c.id));
       mergeDuplicates.mutate(emptyDuplicateGroups, {
         onSuccess: () => {
+          markResolved(mergedIds);
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
         },
@@ -215,6 +243,11 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
 
           <ScrollArea className="h-[450px] pr-4">
             <div className="space-y-3">
+              {duplicateGroups.length === 0 && (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  All duplicates here have been dealt with.
+                </div>
+              )}
               {duplicateGroups.map((group) => {
                 const primary = group.contacts[0];
                 const duplicates = group.contacts.slice(1);
