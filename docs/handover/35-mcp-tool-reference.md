@@ -1,6 +1,6 @@
 # ART Admin MCP — Tool Reference
 
-Version: **2.7.0** — **145 tools**.
+Version: **2.8.0** — **146 tools**.
 
 Server: the `mcp` Edge Function of the ART Tour Manager (Supabase project `upqvgtuxfzsrwjahklij`).
 
@@ -133,6 +133,7 @@ Server: the `mcp` Edge Function of the ART Tour Manager (Supabase project `upqvg
 | `list_lead_activities` | Timeline of CRM activity (calls, emails, notes, stage changes, marketing signals) for a lead or a contact. Filter by activity_type, meaningful-only, and date range. |
 | `list_tour_interests` | Contacts who have registered interest in a tour (or the tours one contact is interested in), with interest level, status and source. |
 | `list_crm_settings` | The CRM's configuration: lead stages (open/won/lost, cold thresholds), lead sources, lead types, lost reasons and the sales settings (response targets, escalation days). |
+| `get_data_quality` | List data problems that distort reports and AI answers: duplicate contacts (email or name), missing phone on upcoming travellers, missing/invalid email, missing state/country, enquiry hygiene gaps (no owner, no tour, unknown passengers, lost without reason, won without booking, no source) and unhealthy Xero invoice links (deleted/voided, reference mismatch, invoiced but unlinked). Mirrors the Data Quality dashboard; items staff marked 'not a problem' are excluded by default. |
 | `get_crm_report` | Run one of the CRM's own reports and return its real figures: pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality. Date range applies where the report supports it. |
 | `list_crm_automation` | CRM automation rules (triggers, conditions, actions, cooldowns) and, optionally, their recent run log so you can see what fired and what failed. |
 | `list_form_submissions` | Register-Interest and Booking form submissions exactly as submitted, with processing status, matched contact/lead, tour(s) and campaign attribution (utm fields). |

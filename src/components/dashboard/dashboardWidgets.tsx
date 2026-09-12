@@ -12,6 +12,7 @@ import { UpcomingCommsWidget } from "@/components/dashboard/UpcomingCommsWidget"
 import { WebsiteChangesWidget } from "@/components/dashboard/WebsiteChangesWidget";
 import { DataHealthWidget } from "@/components/dashboard/DataHealthWidget";
 import { IntegrationStatusWidget } from "@/components/dashboard/IntegrationStatusWidget";
+import { DataQualityWidget } from "@/components/dashboard/DataQualityWidget";
 import type { LayoutItem } from "react-grid-layout/legacy";
 
 export interface DashboardWidgetDef {
@@ -104,6 +105,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetDef[] = [
     title: "Integration Status",
     Component: IntegrationStatusWidget,
     default: { i: "integration_status", x: 0, y: 40, w: 4, h: 10, minW: 3, minH: 3 },
+  },
+  {
+    id: "data_quality",
+    title: "Data Quality",
+    Component: DataQualityWidget,
+    default: { i: "data_quality", x: 4, y: 40, w: 4, h: 10, minW: 3, minH: 3 },
   },
 ];
 

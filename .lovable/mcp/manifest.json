@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.7.0",
+      "version": "2.8.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -4417,6 +4417,45 @@
           "required": [
             "report"
           ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_data_quality",
+        "title": "Get data quality issues",
+        "description": "List the data problems that distort reports and AI answers. Areas: contacts (duplicate contacts by email or name, missing phone on upcoming travellers, missing/invalid email, missing state/country), leads (active enquiries with no owner, no tour or unknown passenger numbers; lost without reason; won without booking; no lead source) and finance (Xero invoice links that are deleted/voided, invoice reference mismatches, invoiced bookings with no Xero link). Items staff marked 'not a problem' are excluded unless include_dismissed is true. Read-only; changes nothing. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "area": {
+              "type": "string",
+              "enum": [
+                "contacts",
+                "leads",
+                "finance"
+              ],
+              "description": "Limit to one area. Defaults to all three."
+            },
+            "issue_type": {
+              "type": "string",
+              "description": "Limit to one issue type, e.g. duplicate_email."
+            },
+            "include_dismissed": {
+              "type": "boolean",
+              "description": "Include items marked as not a problem."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max rows per area (default 200, max 1000)."
+            }
+          },
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },

@@ -53,6 +53,7 @@ const PaymentStatus = lazy(() => import("./pages/operations/PaymentStatus"));
 const MissingPhoneNumbers = lazy(() => import("./pages/operations/MissingPhoneNumbers"));
 const WordpressContent = lazy(() => import("./pages/WordpressContent"));
 const DataHealth = lazy(() => import("./pages/DataHealth"));
+const DataQuality = lazy(() => import("./pages/DataQuality"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const Leads = lazy(() => import("./pages/Leads"));
 const LeadDetail = lazy(() => import("./pages/LeadDetail"));
@@ -455,6 +456,16 @@ function App() {
                   <TaskRoute>
                     <AppLayout>
                       <DataHealth />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/data-quality"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <DataQuality />
                     </AppLayout>
                   </TaskRoute>
                 }

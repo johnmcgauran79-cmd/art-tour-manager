@@ -7729,18 +7729,79 @@ var get_crm_reports_default = defineTool121({
   }
 });
 
-// src/lib/mcp/tools/list-tour-interests.ts
+// src/lib/mcp/tools/get-data-quality.ts
 import { defineTool as defineTool122 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z117 } from "npm:zod@^3.25.76";
-var list_tour_interests_default = defineTool122({
+var AREAS = ["contacts", "leads", "finance"];
+var RPC = {
+  contacts: "dq_contact_issues",
+  leads: "dq_lead_issues",
+  finance: "dq_finance_issues"
+};
+var get_data_quality_default = defineTool122({
+  name: "get_data_quality",
+  title: "Get data quality issues",
+  description: "List the data problems that distort reports and AI answers. Areas: contacts (duplicate contacts by email or name, missing phone on upcoming travellers, missing/invalid email, missing state/country), leads (active enquiries with no owner, no tour or unknown passenger numbers; lost without reason; won without booking; no lead source) and finance (Xero invoice links that are deleted/voided, invoice reference mismatches, invoiced bookings with no Xero link). Items staff marked 'not a problem' are excluded unless include_dismissed is true. Read-only; changes nothing. Restricted to admin/manager.",
+  inputSchema: {
+    area: z117.enum(AREAS).optional().describe("Limit to one area. Defaults to all three."),
+    issue_type: z117.string().optional().describe("Limit to one issue type, e.g. duplicate_email."),
+    include_dismissed: z117.boolean().optional().describe("Include items marked as not a problem."),
+    limit: z117.number().int().optional().describe("Max rows per area (default 200, max 1000).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ area, issue_type, include_dismissed, limit }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const supabase = supabaseForUser(ctx);
+    const capped = Math.min(Math.max(limit ?? 200, 1), 1e3);
+    const areas = area ? [area] : [...AREAS];
+    const { data: dismissals } = await supabase.from("data_quality_dismissals").select("issue_key");
+    const dismissed = new Set((dismissals ?? []).map((d) => d.issue_key));
+    const result = { areas: {}, dismissed_count: dismissed.size };
+    for (const a of areas) {
+      const { data, error } = await supabase.rpc(RPC[a]);
+      if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+      let rows = data ?? [];
+      if (!include_dismissed) rows = rows.filter((r) => !dismissed.has(r.issue_key));
+      if (issue_type) rows = rows.filter((r) => r.issue_type === issue_type);
+      const truncated = rows.length > capped;
+      result.areas[a] = {
+        count: rows.length,
+        truncated,
+        by_issue_type: rows.reduce((acc, r) => {
+          acc[r.issue_type] = (acc[r.issue_type] ?? 0) + 1;
+          return acc;
+        }, {}),
+        issues: rows.slice(0, capped).map((r) => ({
+          issue_key: r.issue_key,
+          issue_type: r.issue_type,
+          entity_id: r.entity_id,
+          subject: r.subject,
+          detail: r.detail,
+          extra: r.extra,
+          dismissed: dismissed.has(r.issue_key)
+        }))
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-tour-interests.ts
+import { defineTool as defineTool123 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z118 } from "npm:zod@^3.25.76";
+var list_tour_interests_default = defineTool123({
   name: "list_tour_interests",
   title: "List tour interests",
   description: "Contacts who have registered interest in a tour (or the tours one contact is interested in), with interest level, status and source.",
   inputSchema: {
-    tour_id: z117.string().optional(),
-    customer_id: z117.string().optional(),
-    status: z117.string().optional(),
-    limit: z117.number().int().min(1).max(500).optional()
+    tour_id: z118.string().optional(),
+    customer_id: z118.string().optional(),
+    status: z118.string().optional(),
+    limit: z118.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7764,16 +7825,16 @@ var list_tour_interests_default = defineTool122({
 });
 
 // src/lib/mcp/tools/list-crm-automation.ts
-import { defineTool as defineTool123 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z118 } from "npm:zod@^3.25.76";
-var list_crm_automation_default = defineTool123({
+import { defineTool as defineTool124 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z119 } from "npm:zod@^3.25.76";
+var list_crm_automation_default = defineTool124({
   name: "list_crm_automation",
   title: "List CRM automation rules and runs",
   description: "CRM automation rules (triggers, conditions, actions, cooldowns) and, optionally, their recent run log so you can see what fired and what failed.",
   inputSchema: {
-    include_runs: z118.boolean().optional(),
-    rule_id: z118.string().optional(),
-    limit: z118.number().int().min(1).max(200).optional()
+    include_runs: z119.boolean().optional(),
+    rule_id: z119.string().optional(),
+    limit: z119.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_runs, rule_id, limit }, ctx) => {
@@ -7797,21 +7858,21 @@ var list_crm_automation_default = defineTool123({
 });
 
 // src/lib/mcp/tools/list-form-submissions.ts
-import { defineTool as defineTool124 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z119 } from "npm:zod@^3.25.76";
-var list_form_submissions_default = defineTool124({
+import { defineTool as defineTool125 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z120 } from "npm:zod@^3.25.76";
+var list_form_submissions_default = defineTool125({
   name: "list_form_submissions",
   title: "List website form submissions",
   description: "Register-Interest and Booking form submissions exactly as submitted, with processing status, matched contact/lead, tour(s) and campaign attribution (utm fields).",
   inputSchema: {
-    form_type: z119.string().optional().describe("e.g. register_interest, booking"),
-    landing_page_id: z119.string().optional(),
-    tour_id: z119.string().optional(),
-    processing_status: z119.string().optional(),
-    needs_review: z119.boolean().optional(),
-    from: z119.string().optional().describe("YYYY-MM-DD"),
-    to: z119.string().optional().describe("YYYY-MM-DD"),
-    limit: z119.number().int().min(1).max(200).optional()
+    form_type: z120.string().optional().describe("e.g. register_interest, booking"),
+    landing_page_id: z120.string().optional(),
+    tour_id: z120.string().optional(),
+    processing_status: z120.string().optional(),
+    needs_review: z120.boolean().optional(),
+    from: z120.string().optional().describe("YYYY-MM-DD"),
+    to: z120.string().optional().describe("YYYY-MM-DD"),
+    limit: z120.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7837,13 +7898,13 @@ var list_form_submissions_default = defineTool124({
 });
 
 // src/lib/mcp/tools/list-lead-forms.ts
-import { defineTool as defineTool125 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z120 } from "npm:zod@^3.25.76";
-var list_lead_forms_default = defineTool125({
+import { defineTool as defineTool126 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z121 } from "npm:zod@^3.25.76";
+var list_lead_forms_default = defineTool126({
   name: "list_lead_forms",
   title: "List public lead-capture forms",
   description: "The public forms (Register Interest, Booking) including slug, form type, tour choices, field configuration, submission count and follow-up settings.",
-  inputSchema: { include_inactive: z120.boolean().optional() },
+  inputSchema: { include_inactive: z121.boolean().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_inactive }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -7862,27 +7923,27 @@ var list_lead_forms_default = defineTool125({
 });
 
 // src/lib/mcp/tools/update-lead.ts
-import { defineTool as defineTool126 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z121 } from "npm:zod@^3.25.76";
-var update_lead_default = defineTool126({
+import { defineTool as defineTool127 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z122 } from "npm:zod@^3.25.76";
+var update_lead_default = defineTool127({
   name: "update_lead",
   title: "Update a lead",
   description: "Update a lead's stage, owner, priority, notes, next action, estimated value, passenger count, nurture review date or lost reason. Only supplied fields change. Stage changes are recorded in the lead's history by the system.",
   inputSchema: {
-    lead_id: z121.string(),
-    stage: z121.string().optional().describe("Stage key from list_crm_settings."),
-    owner_id: z121.string().nullable().optional(),
-    priority: z121.string().optional(),
-    passengers: z121.number().int().nullable().optional(),
-    estimated_value: z121.number().nullable().optional(),
-    next_action_date: z121.string().nullable().optional().describe("YYYY-MM-DD"),
-    next_action_note: z121.string().nullable().optional(),
-    notes: z121.string().optional(),
-    nurture_review_date: z121.string().nullable().optional().describe("YYYY-MM-DD"),
-    nurture_reason: z121.string().nullable().optional(),
-    lost_reason: z121.string().nullable().optional(),
-    lost_notes: z121.string().nullable().optional(),
-    tour_id: z121.string().nullable().optional()
+    lead_id: z122.string(),
+    stage: z122.string().optional().describe("Stage key from list_crm_settings."),
+    owner_id: z122.string().nullable().optional(),
+    priority: z122.string().optional(),
+    passengers: z122.number().int().nullable().optional(),
+    estimated_value: z122.number().nullable().optional(),
+    next_action_date: z122.string().nullable().optional().describe("YYYY-MM-DD"),
+    next_action_note: z122.string().nullable().optional(),
+    notes: z122.string().optional(),
+    nurture_review_date: z122.string().nullable().optional().describe("YYYY-MM-DD"),
+    nurture_reason: z122.string().nullable().optional(),
+    lost_reason: z122.string().nullable().optional(),
+    lost_notes: z122.string().nullable().optional(),
+    tour_id: z122.string().nullable().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ lead_id, ...rest }, ctx) => {
@@ -7905,22 +7966,22 @@ var update_lead_default = defineTool126({
 });
 
 // src/lib/mcp/tools/log-lead-activity.ts
-import { defineTool as defineTool127 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z122 } from "npm:zod@^3.25.76";
-var log_lead_activity_default = defineTool127({
+import { defineTool as defineTool128 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z123 } from "npm:zod@^3.25.76";
+var log_lead_activity_default = defineTool128({
   name: "log_lead_activity",
   title: "Log CRM activity on a lead",
   description: "Record a call, note, meeting or other activity on a lead or contact's timeline. This only writes history \u2014 it never sends anything.",
   inputSchema: {
-    lead_id: z122.string().optional(),
-    customer_id: z122.string().optional(),
-    activity_type: z122.string().describe("e.g. call, note, meeting, email_manual"),
-    subject: z122.string().optional(),
-    body: z122.string().optional(),
-    direction: z122.enum(["inbound", "outbound"]).optional(),
-    outcome: z122.string().optional(),
-    occurred_at: z122.string().optional().describe("ISO timestamp; defaults to now."),
-    is_meaningful: z122.boolean().optional()
+    lead_id: z123.string().optional(),
+    customer_id: z123.string().optional(),
+    activity_type: z123.string().describe("e.g. call, note, meeting, email_manual"),
+    subject: z123.string().optional(),
+    body: z123.string().optional(),
+    direction: z123.enum(["inbound", "outbound"]).optional(),
+    outcome: z123.string().optional(),
+    occurred_at: z123.string().optional().describe("ISO timestamp; defaults to now."),
+    is_meaningful: z123.boolean().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7955,20 +8016,20 @@ var log_lead_activity_default = defineTool127({
 });
 
 // src/lib/mcp/tools/upsert-tour-interest.ts
-import { defineTool as defineTool128 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z123 } from "npm:zod@^3.25.76";
-var upsert_tour_interest_default = defineTool128({
+import { defineTool as defineTool129 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z124 } from "npm:zod@^3.25.76";
+var upsert_tour_interest_default = defineTool129({
   name: "upsert_tour_interest",
   title: "Record or update a tour interest",
   description: "Record that a contact is interested in a tour, or update the interest level/status/notes on an existing interest record.",
   inputSchema: {
-    customer_id: z123.string(),
-    tour_id: z123.string(),
-    lead_id: z123.string().optional(),
-    interest_level: z123.string().optional(),
-    status: z123.string().optional(),
-    source: z123.string().optional(),
-    notes: z123.string().optional()
+    customer_id: z124.string(),
+    tour_id: z124.string(),
+    lead_id: z124.string().optional(),
+    interest_level: z124.string().optional(),
+    status: z124.string().optional(),
+    source: z124.string().optional(),
+    notes: z124.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8001,17 +8062,17 @@ var upsert_tour_interest_default = defineTool128({
 });
 
 // src/lib/mcp/tools/list-marketing-campaigns.ts
-import { defineTool as defineTool129 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z124 } from "npm:zod@^3.25.76";
-var list_marketing_campaigns_default = defineTool129({
+import { defineTool as defineTool130 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z125 } from "npm:zod@^3.25.76";
+var list_marketing_campaigns_default = defineTool130({
   name: "list_marketing_campaigns",
   title: "List marketing campaigns",
   description: "Marketing campaigns (EDMs) with status, schedule and headline stats: recipients, sent, failed, opens, clicks, bounces, unsubscribes. Counts are events; use list_campaign_recipients for unique contacts.",
   inputSchema: {
-    status: z124.string().optional().describe("draft, scheduled, sending, sent, failed"),
-    from: z124.string().optional().describe("YYYY-MM-DD, filters on send start / creation"),
-    to: z124.string().optional(),
-    limit: z124.number().int().min(1).max(200).optional()
+    status: z125.string().optional().describe("draft, scheduled, sending, sent, failed"),
+    from: z125.string().optional().describe("YYYY-MM-DD, filters on send start / creation"),
+    to: z125.string().optional(),
+    limit: z125.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8033,15 +8094,15 @@ var list_marketing_campaigns_default = defineTool129({
 });
 
 // src/lib/mcp/tools/get-marketing-campaign.ts
-import { defineTool as defineTool130 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z125 } from "npm:zod@^3.25.76";
-var get_marketing_campaign_default = defineTool130({
+import { defineTool as defineTool131 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z126 } from "npm:zod@^3.25.76";
+var get_marketing_campaign_default = defineTool131({
   name: "get_marketing_campaign",
   title: "Get marketing campaign with real stats",
   description: "One campaign plus reconciled results: unique contacts sent/delivered/opened/clicked, event totals, and the most-clicked links. Unique-contact figures never double-count a contact.",
   inputSchema: {
-    campaign_id: z125.string(),
-    include_html: z125.boolean().optional().describe("Include the campaign HTML body (large).")
+    campaign_id: z126.string(),
+    include_html: z126.boolean().optional().describe("Include the campaign HTML body (large).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ campaign_id, include_html }, ctx) => {
@@ -8086,17 +8147,17 @@ var get_marketing_campaign_default = defineTool130({
 });
 
 // src/lib/mcp/tools/list-campaign-recipients.ts
-import { defineTool as defineTool131 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z126 } from "npm:zod@^3.25.76";
-var list_campaign_recipients_default = defineTool131({
+import { defineTool as defineTool132 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z127 } from "npm:zod@^3.25.76";
+var list_campaign_recipients_default = defineTool132({
   name: "list_campaign_recipients",
   title: "List campaign recipients (who opened or clicked)",
   description: "Per-contact results for a campaign: status, sent/opened/clicked timestamps and counts. Filter to only openers, only clickers, only failures, or a status.",
   inputSchema: {
-    campaign_id: z126.string(),
-    engagement: z126.enum(["all", "opened", "clicked", "not_opened", "failed"]).optional(),
-    status: z126.string().optional(),
-    limit: z126.number().int().min(1).max(500).optional()
+    campaign_id: z127.string(),
+    engagement: z127.enum(["all", "opened", "clicked", "not_opened", "failed"]).optional(),
+    status: z127.string().optional(),
+    limit: z127.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ campaign_id, engagement, status, limit }, ctx) => {
@@ -8120,16 +8181,16 @@ var list_campaign_recipients_default = defineTool131({
 });
 
 // src/lib/mcp/tools/list-campaign-events.ts
-import { defineTool as defineTool132 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z127 } from "npm:zod@^3.25.76";
-var list_campaign_events_default = defineTool132({
+import { defineTool as defineTool133 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z128 } from "npm:zod@^3.25.76";
+var list_campaign_events_default = defineTool133({
   name: "list_campaign_events",
   title: "List campaign tracking events",
   description: "Raw open and click events for a campaign, including the exact link clicked. These are events, not unique contacts.",
   inputSchema: {
-    campaign_id: z127.string(),
-    event_type: z127.enum(["open", "click"]).optional(),
-    limit: z127.number().int().min(1).max(500).optional()
+    campaign_id: z128.string(),
+    event_type: z128.enum(["open", "click"]).optional(),
+    limit: z128.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ campaign_id, event_type, limit }, ctx) => {
@@ -8147,13 +8208,13 @@ var list_campaign_events_default = defineTool132({
 });
 
 // src/lib/mcp/tools/list-marketing-audiences.ts
-import { defineTool as defineTool133 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z128 } from "npm:zod@^3.25.76";
-var list_marketing_audiences_default = defineTool133({
+import { defineTool as defineTool134 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z129 } from "npm:zod@^3.25.76";
+var list_marketing_audiences_default = defineTool134({
   name: "list_marketing_audiences",
   title: "List marketing audiences",
   description: "Saved dynamic audiences with their filter rules and last counted sizes. Audiences resolve at send time, so counts here are the last calculation.",
-  inputSchema: { include_inactive: z128.boolean().optional() },
+  inputSchema: { include_inactive: z129.boolean().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_inactive }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -8170,16 +8231,16 @@ var list_marketing_audiences_default = defineTool133({
 });
 
 // src/lib/mcp/tools/count-marketing-audience.ts
-import { defineTool as defineTool134 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z129 } from "npm:zod@^3.25.76";
-var count_marketing_audience_default = defineTool134({
+import { defineTool as defineTool135 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z130 } from "npm:zod@^3.25.76";
+var count_marketing_audience_default = defineTool135({
   name: "count_marketing_audience",
   title: "Count a marketing audience now",
   description: "Resolve an audience live and return its size, using the saved audience (audience_id) or ad-hoc rules JSON in the same shape the audience builder uses. Consent, unsubscribes, bounces and suppressions always apply.",
   inputSchema: {
-    audience_id: z129.string().optional(),
-    rules: z129.any().optional().describe("Audience rules JSON, same shape as marketing_audiences.filters."),
-    sample: z129.boolean().optional().describe("Also return up to 25 matching contacts.")
+    audience_id: z130.string().optional(),
+    rules: z130.any().optional().describe("Audience rules JSON, same shape as marketing_audiences.filters."),
+    sample: z130.boolean().optional().describe("Also return up to 25 matching contacts.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ audience_id, rules, sample }, ctx) => {
@@ -8213,15 +8274,15 @@ var count_marketing_audience_default = defineTool134({
 });
 
 // src/lib/mcp/tools/get-tour-marketing-intelligence.ts
-import { defineTool as defineTool135 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z130 } from "npm:zod@^3.25.76";
-var get_tour_marketing_intelligence_default = defineTool135({
+import { defineTool as defineTool136 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z131 } from "npm:zod@^3.25.76";
+var get_tour_marketing_intelligence_default = defineTool136({
   name: "get_tour_marketing_intelligence",
   title: "Get tour marketing and sales intelligence",
   description: "Per-tour marketing funnel: interested contacts, marketing-eligible, active and nurture leads, booked passengers, contacts emailed, opens, clicks, meaningful tour clicks, enquiries and bookings attributed, plus the previous comparable period. Unique-contact and event figures are labelled separately.",
   inputSchema: {
-    tour_id: z130.string(),
-    days: z130.number().int().min(1).max(365).optional().describe("Window length, default 30.")
+    tour_id: z131.string(),
+    days: z131.number().int().min(1).max(365).optional().describe("Window length, default 30.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, days }, ctx) => {
@@ -8240,8 +8301,8 @@ var get_tour_marketing_intelligence_default = defineTool135({
 });
 
 // src/lib/mcp/tools/list-tour-marketing-people.ts
-import { defineTool as defineTool136 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z131 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool137 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z132 } from "npm:zod@^3.25.76";
 var METRICS = [
   "interested",
   "interested_not_booked",
@@ -8254,15 +8315,15 @@ var METRICS = [
   "enquiries",
   "bookings"
 ];
-var list_tour_marketing_people_default = defineTool136({
+var list_tour_marketing_people_default = defineTool137({
   name: "list_tour_marketing_people",
   title: "List the contacts behind a tour marketing number",
   description: "Drill into a tour marketing figure and list the actual contacts: interested, interested_not_booked, nurture_leads, active_leads, emailed, opened, clicked, meaningful_clicks, enquiries, bookings.",
   inputSchema: {
-    tour_id: z131.string(),
-    metric: z131.enum(METRICS),
-    days: z131.number().int().min(1).max(365).optional(),
-    limit: z131.number().int().min(1).max(500).optional()
+    tour_id: z132.string(),
+    metric: z132.enum(METRICS),
+    days: z132.number().int().min(1).max(365).optional(),
+    limit: z132.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, metric, days, limit }, ctx) => {
@@ -8284,13 +8345,13 @@ var list_tour_marketing_people_default = defineTool136({
 });
 
 // src/lib/mcp/tools/list-marketing-link-rules.ts
-import { defineTool as defineTool137 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z132 } from "npm:zod@^3.25.76";
-var list_marketing_link_rules_default = defineTool137({
+import { defineTool as defineTool138 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z133 } from "npm:zod@^3.25.76";
+var list_marketing_link_rules_default = defineTool138({
   name: "list_marketing_link_rules",
   title: "List 'what a click means' rules",
   description: "Link classification rules that turn clicked URLs into meaning (high intent, register interest, tour-specific), including the tour each rule maps to.",
-  inputSchema: { include_inactive: z132.boolean().optional() },
+  inputSchema: { include_inactive: z133.boolean().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_inactive }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -8307,15 +8368,15 @@ var list_marketing_link_rules_default = defineTool137({
 });
 
 // src/lib/mcp/tools/get-contact-marketing-status.ts
-import { defineTool as defineTool138 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z133 } from "npm:zod@^3.25.76";
-var get_contact_marketing_status_default = defineTool138({
+import { defineTool as defineTool139 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z134 } from "npm:zod@^3.25.76";
+var get_contact_marketing_status_default = defineTool139({
   name: "get_contact_marketing_status",
   title: "Get a contact's marketing status and history",
   description: "Whether a contact can be marketed to (subscription, unsubscribe, bounce suppression) plus their campaign history with opens and clicks, their leads and their tour interests.",
   inputSchema: {
-    customer_id: z133.string().optional(),
-    email: z133.string().optional()
+    customer_id: z134.string().optional(),
+    email: z134.string().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ customer_id, email }, ctx) => {
@@ -8359,17 +8420,17 @@ var get_contact_marketing_status_default = defineTool138({
 });
 
 // src/lib/mcp/tools/list-email-suppressions.ts
-import { defineTool as defineTool139 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z134 } from "npm:zod@^3.25.76";
-var list_email_suppressions_default = defineTool139({
+import { defineTool as defineTool140 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z135 } from "npm:zod@^3.25.76";
+var list_email_suppressions_default = defineTool140({
   name: "list_email_suppressions",
   title: "List email suppressions (bounces and complaints)",
   description: "Suppressed email addresses with type, reason and bounce counts. These addresses are always excluded from sending regardless of audience rules.",
   inputSchema: {
-    suppression_type: z134.string().optional(),
-    active_only: z134.boolean().optional(),
-    search: z134.string().optional().describe("Substring of the email address."),
-    limit: z134.number().int().min(1).max(500).optional()
+    suppression_type: z135.string().optional(),
+    active_only: z135.boolean().optional(),
+    search: z135.string().optional().describe("Substring of the email address."),
+    limit: z135.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ suppression_type, active_only, search, limit }, ctx) => {
@@ -8389,8 +8450,8 @@ var list_email_suppressions_default = defineTool139({
 });
 
 // src/lib/mcp/tools/list-mailboxes.ts
-import { defineTool as defineTool140 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var list_mailboxes_default = defineTool140({
+import { defineTool as defineTool141 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_mailboxes_default = defineTool141({
   name: "list_mailboxes",
   title: "List connected mailboxes",
   description: "Microsoft 365 mailboxes connected to the communications hub, with sync status, last successful sync, history depth and any error. Only mailboxes the signed-in user may read are returned.",
@@ -8411,24 +8472,24 @@ var list_mailboxes_default = defineTool140({
 });
 
 // src/lib/mcp/tools/search-correspondence.ts
-import { defineTool as defineTool141 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z135 } from "npm:zod@^3.25.76";
-var search_correspondence_default = defineTool141({
+import { defineTool as defineTool142 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z136 } from "npm:zod@^3.25.76";
+var search_correspondence_default = defineTool142({
   name: "search_correspondence",
   title: "Search individual correspondence",
   description: "Search synced Microsoft 365 correspondence by text, contact, lead, tour, booking, mailbox, direction or date range. Returns subject, participants and a preview; set include_body for full text. Mailbox access rules apply.",
   inputSchema: {
-    search: z135.string().optional().describe("Case-insensitive text in subject, preview or body."),
-    customer_id: z135.string().optional(),
-    lead_id: z135.string().optional(),
-    tour_id: z135.string().optional(),
-    booking_id: z135.string().optional(),
-    mailbox_id: z135.string().optional(),
-    direction: z135.enum(["inbound", "outbound"]).optional(),
-    from: z135.string().optional().describe("YYYY-MM-DD"),
-    to: z135.string().optional().describe("YYYY-MM-DD"),
-    include_body: z135.boolean().optional(),
-    limit: z135.number().int().min(1).max(100).optional()
+    search: z136.string().optional().describe("Case-insensitive text in subject, preview or body."),
+    customer_id: z136.string().optional(),
+    lead_id: z136.string().optional(),
+    tour_id: z136.string().optional(),
+    booking_id: z136.string().optional(),
+    mailbox_id: z136.string().optional(),
+    direction: z136.enum(["inbound", "outbound"]).optional(),
+    from: z136.string().optional().describe("YYYY-MM-DD"),
+    to: z136.string().optional().describe("YYYY-MM-DD"),
+    include_body: z136.boolean().optional(),
+    limit: z136.number().int().min(1).max(100).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8472,15 +8533,15 @@ var search_correspondence_default = defineTool141({
 });
 
 // src/lib/mcp/tools/get-correspondence-message.ts
-import { defineTool as defineTool142 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z136 } from "npm:zod@^3.25.76";
-var get_correspondence_message_default = defineTool142({
+import { defineTool as defineTool143 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z137 } from "npm:zod@^3.25.76";
+var get_correspondence_message_default = defineTool143({
   name: "get_correspondence_message",
   title: "Get one message in full",
   description: "Full content of one synced message (body text and HTML, recipients, attachments) plus the contacts, leads, tours and bookings it is matched to. Optionally include the whole conversation thread.",
   inputSchema: {
-    email_id: z136.string(),
-    include_thread: z136.boolean().optional()
+    email_id: z137.string(),
+    include_thread: z137.boolean().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ email_id, include_thread }, ctx) => {
@@ -8506,8 +8567,8 @@ var get_correspondence_message_default = defineTool142({
 });
 
 // src/lib/mcp/tools/send-marketing-campaign.ts
-import { defineTool as defineTool143 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z137 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool144 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z138 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_sending.ts
 function sendingEnabled() {
@@ -8546,15 +8607,15 @@ async function invokeFunction(ctx, name, body) {
 }
 
 // src/lib/mcp/tools/send-marketing-campaign.ts
-var send_marketing_campaign_default = defineTool143({
+var send_marketing_campaign_default = defineTool144({
   name: "send_marketing_campaign",
   title: "Send or test a marketing campaign (currently switched off)",
   description: "Send a prepared marketing campaign, or send a test copy to one address. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing. Consent, unsubscribe and suppression rules always apply.",
   inputSchema: {
-    campaign_id: z137.string(),
-    action: z137.enum(["send", "test"]).describe("send = full audience, test = single test address."),
-    test_email: z137.string().email().optional().describe("Required for action 'test'."),
-    confirm: z137.literal(true).describe("Must be true to confirm a real send.")
+    campaign_id: z138.string(),
+    action: z138.enum(["send", "test"]).describe("send = full audience, test = single test address."),
+    test_email: z138.string().email().optional().describe("Required for action 'test'."),
+    confirm: z138.literal(true).describe("Must be true to confirm a real send.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   handler: async ({ campaign_id, action, test_email, confirm }, ctx) => {
@@ -8580,16 +8641,16 @@ var send_marketing_campaign_default = defineTool143({
 });
 
 // src/lib/mcp/tools/schedule-marketing-campaign.ts
-import { defineTool as defineTool144 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z138 } from "npm:zod@^3.25.76";
-var schedule_marketing_campaign_default = defineTool144({
+import { defineTool as defineTool145 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z139 } from "npm:zod@^3.25.76";
+var schedule_marketing_campaign_default = defineTool145({
   name: "schedule_marketing_campaign",
   title: "Schedule a marketing campaign (currently switched off)",
   description: "Schedule a prepared campaign for a future date and time, or clear an existing schedule. DISABLED until ART authorises AI-initiated sending; until then it changes nothing.",
   inputSchema: {
-    campaign_id: z138.string(),
-    scheduled_send_at: z138.string().nullable().describe("ISO timestamp, or null to unschedule and return to draft."),
-    confirm: z138.literal(true)
+    campaign_id: z139.string(),
+    scheduled_send_at: z139.string().nullable().describe("ISO timestamp, or null to unschedule and return to draft."),
+    confirm: z139.literal(true)
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ campaign_id, scheduled_send_at, confirm }, ctx) => {
@@ -8612,24 +8673,24 @@ var schedule_marketing_campaign_default = defineTool144({
 });
 
 // src/lib/mcp/tools/send-individual-email.ts
-import { defineTool as defineTool145 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z139 } from "npm:zod@^3.25.76";
-var send_individual_email_default = defineTool145({
+import { defineTool as defineTool146 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z140 } from "npm:zod@^3.25.76";
+var send_individual_email_default = defineTool146({
   name: "send_individual_email",
   title: "Send an individual email from a shared mailbox (currently switched off)",
   description: "Send or reply to an individual email from one of the connected Microsoft 365 mailboxes, optionally linked to a contact, lead, tour or booking. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing.",
   inputSchema: {
-    mailbox_id: z139.string(),
-    to: z139.array(z139.string().email()).optional(),
-    cc: z139.array(z139.string().email()).optional(),
-    subject: z139.string().optional(),
-    html: z139.string().describe("Message body as HTML."),
-    reply_to_email_id: z139.string().optional().describe("Reply to this synced message instead of starting a new one."),
-    customer_id: z139.string().optional(),
-    lead_id: z139.string().optional(),
-    tour_id: z139.string().optional(),
-    booking_id: z139.string().optional(),
-    confirm: z139.literal(true)
+    mailbox_id: z140.string(),
+    to: z140.array(z140.string().email()).optional(),
+    cc: z140.array(z140.string().email()).optional(),
+    subject: z140.string().optional(),
+    html: z140.string().describe("Message body as HTML."),
+    reply_to_email_id: z140.string().optional().describe("Reply to this synced message instead of starting a new one."),
+    customer_id: z140.string().optional(),
+    lead_id: z140.string().optional(),
+    tour_id: z140.string().optional(),
+    booking_id: z140.string().optional(),
+    confirm: z140.literal(true)
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -8664,8 +8725,8 @@ var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.7.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_pull_itinerary_day_photos` (one-time backfill of the live website day galleries into ART; preview then confirm=true \u2014 skips days that already have ART photos), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD.  CRM / Leads (admin/manager only): `list_leads` (filter by stage/owner/tour/source/attention/nurture/date), `get_lead` (lead + contact + tour interests + stage history + activity), `list_lead_activities`, `list_crm_settings` (stages, sources, lead types, lost reasons, sales settings), `get_crm_report` (pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality), `list_tour_interests`, `list_crm_automation` (rules and run log), `list_form_submissions` (Register Interest / Booking submissions exactly as submitted, with utm attribution), `list_lead_forms`. Safe lead writes: `update_lead` (stage, owner, priority, next action, nurture review date, value, lost reason), `log_lead_activity` (call/note/meeting \u2014 writes history only, never sends), `upsert_tour_interest`. Marketing (admin/manager only): `list_marketing_campaigns`, `get_marketing_campaign` (unique-contact figures deduplicated, event totals and top clicked links separately), `list_campaign_recipients` (who opened / clicked / failed), `list_campaign_events` (raw opens and clicks with link URLs), `list_marketing_audiences`, `count_marketing_audience` (resolve a saved or ad-hoc audience live; consent, unsubscribes and suppressions always apply), `get_tour_marketing_intelligence` (per-tour funnel with a comparable previous period), `list_tour_marketing_people` (the contacts behind any tour figure), `list_marketing_link_rules` ('what a click means'), `get_contact_marketing_status` (eligibility, suppressions, campaign history), `list_email_suppressions`. Engagement tracking exists only from Phase 6 onwards \u2014 never present older campaigns as having zero interest, they were untracked. Receiving an email is never attribution; only the tracked click -> form -> enquiry -> booking chain is. Communications hub (admin/manager only, per-mailbox access enforced): `list_mailboxes`, `search_correspondence` (text, contact, lead, tour, booking, mailbox, direction, dates; include_body for full text), `get_correspondence_message` (full message plus thread and matched records). Sending is BUILT BUT SWITCHED OFF: `send_marketing_campaign`, `schedule_marketing_campaign` and `send_individual_email` refuse to act until an admin sets MCP_SENDING_ENABLED=true. Destructive tools cascade \u2014 confirm with the user before calling.",
+  version: "2.8.0",
+  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_pull_itinerary_day_photos` (one-time backfill of the live website day galleries into ART; preview then confirm=true \u2014 skips days that already have ART photos), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD.  CRM / Leads (admin/manager only): `list_leads` (filter by stage/owner/tour/source/attention/nurture/date), `get_lead` (lead + contact + tour interests + stage history + activity), `list_lead_activities`, `list_crm_settings` (stages, sources, lead types, lost reasons, sales settings), `get_crm_report` (pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality), `get_data_quality` (duplicate contacts, missing phone/email/location, enquiry hygiene gaps and unhealthy Xero invoice links \u2014 the Data Quality dashboard's own figures), `list_tour_interests`, `list_crm_automation` (rules and run log), `list_form_submissions` (Register Interest / Booking submissions exactly as submitted, with utm attribution), `list_lead_forms`. Safe lead writes: `update_lead` (stage, owner, priority, next action, nurture review date, value, lost reason), `log_lead_activity` (call/note/meeting \u2014 writes history only, never sends), `upsert_tour_interest`. Marketing (admin/manager only): `list_marketing_campaigns`, `get_marketing_campaign` (unique-contact figures deduplicated, event totals and top clicked links separately), `list_campaign_recipients` (who opened / clicked / failed), `list_campaign_events` (raw opens and clicks with link URLs), `list_marketing_audiences`, `count_marketing_audience` (resolve a saved or ad-hoc audience live; consent, unsubscribes and suppressions always apply), `get_tour_marketing_intelligence` (per-tour funnel with a comparable previous period), `list_tour_marketing_people` (the contacts behind any tour figure), `list_marketing_link_rules` ('what a click means'), `get_contact_marketing_status` (eligibility, suppressions, campaign history), `list_email_suppressions`. Engagement tracking exists only from Phase 6 onwards \u2014 never present older campaigns as having zero interest, they were untracked. Receiving an email is never attribution; only the tracked click -> form -> enquiry -> booking chain is. Communications hub (admin/manager only, per-mailbox access enforced): `list_mailboxes`, `search_correspondence` (text, contact, lead, tour, booking, mailbox, direction, dates; include_body for full text), `get_correspondence_message` (full message plus thread and matched records). Sending is BUILT BUT SWITCHED OFF: `send_marketing_campaign`, `schedule_marketing_campaign` and `send_individual_email` refuse to act until an admin sets MCP_SENDING_ENABLED=true. Destructive tools cascade \u2014 confirm with the user before calling.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -8799,6 +8860,7 @@ var mcp_default = defineMcp({
     list_lead_activities_default,
     list_crm_settings_default,
     get_crm_reports_default,
+    get_data_quality_default,
     list_tour_interests_default,
     list_crm_automation_default,
     list_form_submissions_default,
