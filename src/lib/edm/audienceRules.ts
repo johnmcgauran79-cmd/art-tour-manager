@@ -248,6 +248,10 @@ const evalEngagement = (
 /** Bookings that still count — cancelled bookings are never a booking. */
 const activeBookings = (list: BookingFact[]) => list.filter((b) => b.status !== "cancelled");
 
+/** Tour rules accept one tour or a list of tours. */
+const tourValues = (value: unknown): string[] =>
+  (Array.isArray(value) ? value : [value]).map((v) => String(v ?? "")).filter(Boolean);
+
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const startOfWeekIso = () => {
