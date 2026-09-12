@@ -51,7 +51,7 @@ export const AREA_LABELS: Record<DataQualityArea, string> = {
 };
 
 const AREA_TYPES: Record<DataQualityArea, string[]> = {
-  contacts: ["duplicate_email", "duplicate_name", "missing_phone", "invalid_email", "missing_location"],
+  contacts: ["duplicate_email", "duplicate_name", "missing_phone", "invalid_email"],
   leads: [
     "lead_no_owner",
     "lead_no_tour",
