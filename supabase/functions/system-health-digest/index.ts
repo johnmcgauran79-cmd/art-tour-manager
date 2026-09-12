@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
     }
 
     const brand = await getDefaultBrand(supabase).catch(() => null);
-    const fromName = brand?.name || "Australian Racing Tours";
-    const fromEmail = Deno.env.get("SYSTEM_FROM_EMAIL") || "bookings@australianracingtours.com.au";
+    const fromName = brand?.senderName || brand?.name || "Australian Racing Tours";
+    const fromEmail = brand?.fromEmailOperational || "info@australianracingtours.com.au";
 
     const stamp = new Date().toLocaleString("en-AU", {
       timeZone: TZ,
