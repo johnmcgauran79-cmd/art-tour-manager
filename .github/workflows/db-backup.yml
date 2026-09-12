@@ -14,6 +14,9 @@ jobs:
         id: start
         run: echo "at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
+      # Needed for .github/scripts/sharepoint_upload.py later in the job.
+      - uses: actions/checkout@v4
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -79,6 +82,19 @@ jobs:
           echo "destination=supabase://database-backups/database/$STAMP/ ($COUNT parts)" >> "$GITHUB_OUTPUT"
 
 
+      # Third cloud copy: SharePoint document library. Skipped silently when the
+      # SharePoint secrets are absent, and never fails the run.
+      - name: Copy backup to SharePoint
+        id: sharepoint
+        continue-on-error: true
+        env:
+          MS_GRAPH_TENANT_ID: ${{ secrets.MS_GRAPH_TENANT_ID }}
+          MS_GRAPH_CLIENT_ID: ${{ secrets.MS_GRAPH_CLIENT_ID }}
+          MS_GRAPH_CLIENT_SECRET: ${{ secrets.MS_GRAPH_CLIENT_SECRET }}
+          SHAREPOINT_SITE_PATH: ${{ secrets.SHAREPOINT_SITE_PATH }}
+          SHAREPOINT_FOLDER: ${{ vars.SHAREPOINT_FOLDER }}
+        run: python3 .github/scripts/sharepoint_upload.py database "${{ steps.dump.outputs.artifact }}"
+
       # Also keep a 30-day copy attached to the workflow run itself
       - name: Attach backup to workflow run
         if: always() && steps.dump.outputs.artifact != ''
@@ -108,7 +124,7 @@ jobs:
             "finished_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "size_bytes": ${{ steps.dump.outputs.size || 0 }},
             "artifact_name": "${{ steps.dump.outputs.artifact }}",
-            "destination": "${{ steps.upload.outputs.destination }}",
+            "destination": "${{ steps.upload.outputs.destination }}${{ steps.sharepoint.outputs.destination && format(' + {0}', steps.sharepoint.outputs.destination) || '' }}",
             "metadata": { "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
           }
           JSON

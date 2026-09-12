@@ -82,6 +82,19 @@ jobs:
           echo "Uploaded $COUNT part(s)."
           echo "destination=supabase://database-backups/code/$STAMP/ ($COUNT parts)" >> "$GITHUB_OUTPUT"
 
+      # Third cloud copy: SharePoint document library. Skipped silently when the
+      # SharePoint secrets are absent, and never fails the run.
+      - name: Copy backup to SharePoint
+        id: sharepoint
+        continue-on-error: true
+        env:
+          MS_GRAPH_TENANT_ID: ${{ secrets.MS_GRAPH_TENANT_ID }}
+          MS_GRAPH_CLIENT_ID: ${{ secrets.MS_GRAPH_CLIENT_ID }}
+          MS_GRAPH_CLIENT_SECRET: ${{ secrets.MS_GRAPH_CLIENT_SECRET }}
+          SHAREPOINT_SITE_PATH: ${{ secrets.SHAREPOINT_SITE_PATH }}
+          SHAREPOINT_FOLDER: ${{ vars.SHAREPOINT_FOLDER }}
+        run: python3 .github/scripts/sharepoint_upload.py code "${{ steps.bundle.outputs.artifact }}"
+
       - name: Report result to the app
         if: always()
         env:
@@ -102,7 +115,7 @@ jobs:
             "finished_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "size_bytes": ${{ steps.bundle.outputs.size || 0 }},
             "artifact_name": "${{ steps.bundle.outputs.artifact }}",
-            "destination": "${{ steps.upload.outputs.destination }}",
+            "destination": "${{ steps.upload.outputs.destination }}${{ steps.sharepoint.outputs.destination && format(' + {0}', steps.sharepoint.outputs.destination) || '' }}",
             "metadata": { "commits": "${{ steps.bundle.outputs.commits }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
           }
           JSON
