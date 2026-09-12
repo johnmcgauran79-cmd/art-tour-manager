@@ -25,11 +25,18 @@ Settings → System Health shows both backups separately (`useBackupRuns.ts`, `g
 
 - **Secrets are not in backups you control.** Keep an offline record of *which* variables must exist (see [07-env-secrets.md](07-env-secrets.md)); the values must come from each provider.
 - **`pg_cron` job rows contain their own authorisation headers.** After any key rotation or restore, verify all job rows.
-- **Storage buckets** (attachments, avatars, documents) are separate from the database; confirm they are included in whatever backup regime is relied upon.
+- **Storage buckets** (attachments, avatars, email assets, operations documents) are separate from the database; they are covered by the weekly uploaded-files backup, and restoring them is a separate step from restoring the database.
 - **Microsoft mailbox history** can be re-imported from Graph, so `crm_emails` is recoverable in principle — but only for the window Microsoft retains.
+
+## Restoring uploaded files
+
+1. Download every `art-storage-<date>.tar.gz.part-*` from `database-backups/storage/<date>/`.
+2. `cat art-storage-<date>.tar.gz.part-* > art-storage-<date>.tar.gz && tar xzf art-storage-<date>.tar.gz`
+3. `storage-dump/<bucket>/<original path>` mirrors the live layout, so files can be re-uploaded to the same bucket and path. `storage-dump/manifest.json` lists every object and its size for verification.
 
 ## Honest limitations
 
-- Restore procedure has **not been rehearsed**; RTO and RPO are unmeasured.
-- There is no second region or independent copy of the database outside Supabase's own backups.
-- `backup_runs` should be checked periodically because nothing alerts on a failed backup.
+- The full "rebuild everything" restore has **not been rehearsed end to end**; RTO and RPO are estimates. See [36-system-health-and-backup-verification.md](36-system-health-and-backup-verification.md) for the drill procedure and log.
+- There is no second region or independent copy of the database outside Supabase's own backups and this project's own Storage bucket.
+- `backup_runs` failures surface in Settings → System Health and the daily digest email; nothing else alerts.
+
