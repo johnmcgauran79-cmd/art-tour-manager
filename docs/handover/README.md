@@ -58,6 +58,7 @@ Everything here was written from the live repository and the live Supabase proje
 | [33-codex-takeover-checklist.md](33-codex-takeover-checklist.md) | First session, trial changes, non-handovers |
 | [34-system-capability-summary.md](34-system-capability-summary.md) | Plain-English summary of everything the system does |
 | [35-mcp-tool-reference.md](35-mcp-tool-reference.md) | Full reference for all 145 MCP tools (v2.7.0), grouped by area, for AI clients |
+| [36-system-health-and-backup-verification.md](36-system-health-and-backup-verification.md) | System Health panel, daily failure digest, backup verification and restore rehearsal |
 
 ## Rules this handover follows
 
