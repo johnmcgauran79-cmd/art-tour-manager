@@ -32,6 +32,7 @@ export const ISSUE_LABELS: Record<string, string> = {
   missing_phone: "Missing phone number",
   invalid_email: "Missing or invalid email",
   missing_location: "Missing state / country",
+
   lead_no_owner: "Enquiry with no owner",
   lead_no_tour: "Enquiry with no tour",
   lead_no_pax: "Passenger numbers unknown",
