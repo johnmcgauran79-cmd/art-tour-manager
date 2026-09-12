@@ -52,6 +52,39 @@ const memberNames = (issue: DataQualityIssue): string => {
 export const DataQualityTable = ({ issues }: Props) => {
   const navigate = useNavigate();
   const dismiss = useDismissDataQualityIssue();
+  const { toast } = useToast();
+  const [mergeGroup, setMergeGroup] = useState<DuplicateGroup | null>(null);
+  const [loadingMerge, setLoadingMerge] = useState<string | null>(null);
+
+  /** Load the actual contact records behind a duplicate row and open the merge dialog. */
+  const openMerge = async (issue: DataQualityIssue) => {
+    const ids = Array.isArray(issue.extra?.members)
+      ? issue.extra.members.map((m: any) => m?.id).filter(Boolean)
+      : [];
+    if (ids.length < 2) {
+      navigate("/?tab=contacts");
+      return;
+    }
+    setLoadingMerge(issue.issueKey);
+    const { data, error } = await supabase.from("customers").select("*").in("id", ids);
+    setLoadingMerge(null);
+    if (error || !data || data.length < 2) {
+      toast({
+        title: "Could not open merge",
+        description: error?.message || "These contacts could not be loaded.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const sorted = [...(data as any[])].sort((a, b) => countFilledFields(b) - countFilledFields(a));
+    setMergeGroup({
+      key: issue.issueKey,
+      contacts: sorted as any,
+      mergedContact: mergeContactData(sorted as any),
+    });
+  };
+
+
 
   if (issues.length === 0) {
     return <div className="py-10 text-center text-muted-foreground">Nothing outstanding here 🎉</div>;
