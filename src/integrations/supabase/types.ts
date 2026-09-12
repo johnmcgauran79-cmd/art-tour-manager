@@ -3156,6 +3156,39 @@ export type Database = {
           },
         ]
       }
+      data_quality_dismissals: {
+        Row: {
+          created_at: string
+          dismissed_by: string | null
+          entity_id: string | null
+          id: string
+          issue_key: string
+          issue_type: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_by?: string | null
+          entity_id?: string | null
+          id?: string
+          issue_key: string
+          issue_type: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_by?: string | null
+          entity_id?: string | null
+          id?: string
+          issue_key?: string
+          issue_type?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       edm_templates: {
         Row: {
           blocks: Json
@@ -9416,6 +9449,40 @@ export type Database = {
       delete_tour_with_cascade: {
         Args: { p_tour_id: string }
         Returns: undefined
+      }
+      dq_contact_issues: {
+        Args: never
+        Returns: {
+          detail: string
+          entity_id: string
+          extra: Json
+          issue_key: string
+          issue_type: string
+          subject: string
+        }[]
+      }
+      dq_finance_issues: {
+        Args: never
+        Returns: {
+          detail: string
+          entity_id: string
+          extra: Json
+          issue_key: string
+          issue_type: string
+          subject: string
+        }[]
+      }
+      dq_is_staff: { Args: never; Returns: boolean }
+      dq_lead_issues: {
+        Args: never
+        Returns: {
+          detail: string
+          entity_id: string
+          extra: Json
+          issue_key: string
+          issue_type: string
+          subject: string
+        }[]
       }
       evaluate_trigger_conditions:
         | {
