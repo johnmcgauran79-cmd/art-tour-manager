@@ -19,6 +19,7 @@ import {
   RefreshCw,
   MessageSquare,
   Bot,
+  HeartPulse,
 } from "lucide-react";
 import { XeroIntegrationSettings } from "@/components/settings/XeroIntegrationSettings";
 import { GeneralSettingsModal } from "@/components/settings/GeneralSettingsModal";
@@ -34,6 +35,7 @@ import { AiRetentionSettingsCard } from "@/components/settings/AiRetentionSettin
 import { TeamsChannelNotifyCard } from "@/components/settings/TeamsChannelNotifyCard";
 import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatusPanel";
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
+import { SystemHealthCard } from "@/components/settings/SystemHealthCard";
 import { CrmMigrationConsole } from "@/components/settings/CrmMigrationConsole";
 import { BrevoAudienceSyncPanel } from "@/components/settings/BrevoAudienceSyncPanel";
 import { SettingsSectionDialog } from "@/components/settings/SettingsSectionDialog";
@@ -44,6 +46,7 @@ type SectionKey =
   | "waiver"
   | "xero"
   | "backups"
+  | "health"
   | "integrations"
   | "audiences"
   | "crm"
@@ -134,6 +137,24 @@ export const SystemSettings = () => {
             </div>
             <Button variant="outline" size="sm" onClick={() => setSection("xero")}>
               Manage Xero
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* System Health */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HeartPulse className="h-5 w-5" />
+              System Health
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Background jobs, mailbox syncing, backups and failed emails, all in one place.
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setSection("health")}>
+              View Health
             </Button>
           </CardContent>
         </Card>
@@ -441,6 +462,15 @@ export const SystemSettings = () => {
         title="Microsoft Teams Notifications"
       >
         <TeamsChannelNotifyCard />
+      </SettingsSectionDialog>
+
+      <SettingsSectionDialog
+        open={section === "health"}
+        onOpenChange={closeSection}
+        title="System Health"
+        description="What is running, what has failed recently, and whether backups are up to date."
+      >
+        <SystemHealthCard />
       </SettingsSectionDialog>
 
       <SettingsSectionDialog
