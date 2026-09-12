@@ -53,8 +53,12 @@ the Supabase side; the same value must exist as a GitHub repository secret.
 ### Restore rehearsal (recommended quarterly)
 
 1. Download the latest artifact and extract `roles.sql`, `schema.sql`, `data.sql`.
+   (From Storage instead: download every `art-backup-<date>.tar.gz.part-*` file from
+   `database/<date>/` and rejoin them with `cat art-backup-<date>.tar.gz.part-* > art-backup-<date>.tar.gz`,
+   then `tar xzf` it. The archive is split into 40MB parts because Storage caps single-file size.)
 2. Restore into a **throwaway** Supabase project or local Postgres, never production:
    `psql "$TARGET" -f roles.sql && psql "$TARGET" -f schema.sql && psql "$TARGET" -f data.sql`
+
 3. Spot-check row counts for `tours`, `bookings`, `customers`, `leads`, `crm_emails`.
 4. Record the date and outcome below.
 
