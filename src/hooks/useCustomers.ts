@@ -49,7 +49,7 @@ export const formatAustralianMobile = (phone: string | null): string | null => {
 };
 
 // Function to merge contact data, preferring non-null values
-const mergeContactData = (contacts: Customer[]): Customer => {
+export const mergeContactData = (contacts: Customer[]): Customer => {
   const merged = { ...contacts[0] }; // Start with first contact
   
   contacts.forEach(contact => {
