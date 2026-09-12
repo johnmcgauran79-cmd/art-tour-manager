@@ -54,60 +54,6 @@ export const useTaskDependencies = (taskId?: string) => {
     enabled: !!taskId,
   });
 };
-
-export const useUpdateTaskDependency = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async (data: {
-      taskId: string;
-      dependsOnTaskId: string | null;
-    }) => {
-      // Check for circular dependencies
-      if (data.dependsOnTaskId) {
-        const { data: potentialCircular } = await supabase
-          .from('tasks')
-          .select('depends_on_task_id')
-          .eq('id', data.dependsOnTaskId)
-          .single();
-
-        if (potentialCircular?.depends_on_task_id === data.taskId) {
-          throw new Error('Circular dependency detected');
-        }
-      }
-
-      const { data: task, error } = await supabase
-        .from('tasks')
-        .update({ depends_on_task_id: data.dependsOnTaskId })
-        .eq('id', data.taskId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return task;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task-dependencies', variables.taskId] });
-      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      
-      toast({
-        title: "Dependency Updated",
-        description: "Task dependency has been successfully updated.",
-      });
-    },
-    onError: (error) => {
-      console.error('Error updating task dependency:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update task dependency.",
-        variant: "destructive",
-      });
-    },
-  });
-};
-
 export const useAutoUnblockTasks = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();

@@ -93,58 +93,6 @@ export const useTours = () => {
     enabled: !!user, // Wait for authentication
   });
 };
-
-export const useCreateTour = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const { logOperation } = useAuditLog();
-  
-
-  return useMutation({
-    mutationFn: async (tourData: Omit<Tour, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('tours')
-        .insert([tourData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Log the tour creation
-      logOperation({
-        operation_type: 'CREATE',
-        table_name: 'tours',
-        record_id: data.id,
-        details: {
-          tour_name: tourData.name,
-          start_date: tourData.start_date,
-          location: tourData.location,
-          capacity: tourData.capacity,
-          minimum_passengers_required: tourData.minimum_passengers_required
-        }
-      });
-      
-      return data;
-    },
-    onSuccess: async (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tours'] });
-      
-      toast({
-        title: "Tour Created",
-        description: `${data.name} has been successfully created.`,
-      });
-      
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error Creating Tour",
-        description: error.message || "Failed to create tour. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-};
-
 export const useUpdateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
