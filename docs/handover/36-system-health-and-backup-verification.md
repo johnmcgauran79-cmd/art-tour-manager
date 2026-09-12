@@ -50,21 +50,37 @@ the Supabase side; the same value must exist as a GitHub repository secret.
 4. ART Admin → Settings → System Health — "Last successful backup" should show hours, not
    "Never reported".
 
-### Restore rehearsal (recommended quarterly)
+## Uploaded-files backup
 
-1. Download the latest artifact and extract `roles.sql`, `schema.sql`, `data.sql`.
-   (From Storage instead: download every `art-backup-<date>.tar.gz.part-*` file from
-   `database/<date>/` and rejoin them with `cat art-backup-<date>.tar.gz.part-* > art-backup-<date>.tar.gz`,
-   then `tar xzf` it. The archive is split into 40MB parts because Storage caps single-file size.)
-2. Restore into a **throwaway** Supabase project or local Postgres, never production:
+`.github/workflows/storage-backup.yml` runs weekly (Sunday 17:00 UTC = 03:00 Monday Brisbane) and
+can be run on demand from GitHub → Actions → "Supabase storage backup" → Run workflow. It uses the
+same two secrets as the database backup (`SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_WEBHOOK_SECRET`) and
+writes to `database-backups/storage/<date>/`, reporting `kind = 'storage'` to `backup-report`.
+
+Verify: run the workflow, confirm it is green, confirm the parts exist in Storage, then check
+Settings → System Health — "Uploaded files backup" should show days, not "Never reported".
+
+## Restore drill (recommended quarterly)
+
+Timebox: about 60–90 minutes. Never restore into production.
+
+1. **Prepare.** Create a throwaway Supabase project (or local Postgres) and note the start time.
+2. **Database.** Download the latest `art-backup-<date>.tar.gz` (workflow artifact, or rejoin the
+   Storage parts as described above) and run:
    `psql "$TARGET" -f roles.sql && psql "$TARGET" -f schema.sql && psql "$TARGET" -f data.sql`
+3. **Files.** Rejoin and extract the latest `art-storage-<date>.tar.gz.part-*`, then upload a sample
+   of at least five objects from `storage-dump/<bucket>/...` into a scratch bucket and open them.
+4. **Spot-check.** Compare row counts against production for `tours`, `bookings`, `customers`,
+   `leads`, `crm_emails`, and confirm `storage-dump/manifest.json` object count matches Storage.
+5. **Secrets and jobs.** Confirm the list in [07-env-secrets.md](07-env-secrets.md) is complete and
+   that every `pg_cron` job in the restored database is present (their headers must be re-checked
+   after any key rotation).
+6. **Record** the elapsed time and outcome below, then delete the throwaway project.
 
-3. Spot-check row counts for `tours`, `bookings`, `customers`, `leads`, `crm_emails`.
-4. Record the date and outcome below.
+| Date | Artifacts | Elapsed | Outcome | By |
+| --- | --- | --- | --- | --- |
+| — | — | — | Not yet rehearsed | — |
 
-| Date | Artifact | Outcome | By |
-| --- | --- | --- | --- |
-| — | — | Not yet rehearsed | — |
 
 ## Known outstanding item
 
