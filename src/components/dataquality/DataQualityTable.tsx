@@ -157,6 +157,13 @@ export const DataQualityTable = ({ issues }: Props) => {
           })}
         </TableBody>
       </Table>
+
+      <MergeDuplicatesModal
+        open={!!mergeGroup}
+        onOpenChange={(open) => !open && setMergeGroup(null)}
+        duplicateGroups={mergeGroup ? [mergeGroup] : []}
+      />
     </div>
+
   );
 };
