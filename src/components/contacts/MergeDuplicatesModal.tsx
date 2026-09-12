@@ -42,13 +42,35 @@ const ContactInfoGrid = ({ contact, compact = false }: { contact: any; compact?:
   );
 };
 
-export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: MergeDuplicatesModalProps) => {
+export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups: incomingGroups }: MergeDuplicatesModalProps) => {
   // Track individual selected duplicate contact IDs
   const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<Set<string>>(new Set());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(duplicateGroups.slice(0, 3).map(g => g.key)));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(incomingGroups.slice(0, 3).map(g => g.key)));
   const [confirmAction, setConfirmAction] = useState<'merge' | 'delete' | 'merge-empty' | null>(null);
+  // Contacts already merged/deleted in this session — dropped from the list so it stays accurate
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
   const mergeDuplicates = useMergeDuplicateContacts();
   const deleteSelected = useDeleteSelectedContacts();
+
+  useEffect(() => {
+    if (!open) setResolvedIds(new Set());
+  }, [open]);
+
+  const duplicateGroups = useMemo(
+    () =>
+      incomingGroups
+        .map(g => ({ ...g, contacts: g.contacts.filter(c => !resolvedIds.has(c.id)) }))
+        .filter(g => g.contacts.length > 1),
+    [incomingGroups, resolvedIds]
+  );
+
+  const markResolved = (ids: string[]) => {
+    setResolvedIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => next.add(id));
+      return next;
+    });
+  };
 
   const isPending = mergeDuplicates.isPending || deleteSelected.isPending;
 
