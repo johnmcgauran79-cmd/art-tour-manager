@@ -158,8 +158,10 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups: inco
 
   const handleMergeAllEmpty = () => {
     if (emptyDuplicateGroups.length > 0) {
+      const mergedIds = emptyDuplicateGroups.flatMap(g => g.contacts.slice(1).map(c => c.id));
       mergeDuplicates.mutate(emptyDuplicateGroups, {
         onSuccess: () => {
+          markResolved(mergedIds);
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
         },
