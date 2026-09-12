@@ -113,7 +113,7 @@ export const FIELD_META: Record<
   lead_stage: { label: "Lead stage", group: "Status", operators: ["in"] },
   lead_source: { label: "Lead source", group: "Status", operators: ["in", "contains"] },
   tag: { label: "Tag", group: "Tags", operators: ["in"] },
-  interested_tour: { label: "Interested tour", group: "Tours", operators: ["eq"] },
+  interested_tour: { label: "Interested tour", group: "Tours", operators: ["in", "eq"] },
   latest_tour_end_date: {
     label: "Last tour ended",
     group: "Tours",
