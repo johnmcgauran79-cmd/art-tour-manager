@@ -1,4 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { MergeDuplicatesModal } from "@/components/contacts/MergeDuplicatesModal";
+import { countFilledFields, mergeContactData, type DuplicateGroup } from "@/hooks/useCustomers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
