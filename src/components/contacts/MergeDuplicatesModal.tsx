@@ -136,7 +136,9 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups: inco
     const ids = Array.from(selectedDuplicateIds);
     if (ids.length > 0) {
       deleteSelected.mutate(ids, {
-        onSuccess: () => {
+        onSuccess: (result: any) => {
+          // Only drop rows from the list when nothing was skipped (skipped ones still exist)
+          if (!result || !result.contactsSkipped) markResolved(ids);
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
         },
