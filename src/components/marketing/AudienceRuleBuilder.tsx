@@ -187,6 +187,15 @@ const RuleRow = ({
             onToggle={toggle}
           />
         );
+      if (TOUR_FIELDS.includes(rule.field))
+        return (
+          <MultiSelect
+            label="tours"
+            options={options.tours.map((t) => ({ value: t.id, label: t.name }))}
+            selected={listValue}
+            onToggle={toggle}
+          />
+        );
     }
 
     if (TOUR_FIELDS.includes(rule.field))
