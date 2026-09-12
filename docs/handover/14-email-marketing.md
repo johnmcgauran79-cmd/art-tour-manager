@@ -1,6 +1,6 @@
 # 14 — ART Email Marketing (in-house)
 
-ART's marketing system is built inside ART Admin. It is **not** Brevo, Mailchimp or Keap. Delivery is via Resend; everything else — audiences, templates, sending, tracking, attribution, reporting — is ART's own.
+ART's marketing system is built inside ART Admin. It is **not** a third-party ESP. Delivery is via Resend; everything else — audiences, templates, sending, tracking, attribution, reporting — is ART's own.
 
 ## Pieces
 
@@ -60,4 +60,4 @@ An enquiry or booking is credited to a campaign only when the person arrived thr
 
 ## Legacy surfaces still present
 
-`brevo-sync` and `BREVO_API_KEY` remain for contact sync/migration; `keap-match-contacts-by-email` and `KEAP_API_KEY` remain for historical matching only. All Keap tour/client tagging was removed deliberately and must not be reintroduced.
+The Keap → Brevo migration console, the `brevo-sync` and `crm-migrate-*` functions and the Keap contact-matching function were removed in the 2026 tidy-up. Brevo and Keap are no longer part of the system and must not be reintroduced. Historical `customers.keap_contact_id` / `brevo_contact_id` values are retained as read-only history.

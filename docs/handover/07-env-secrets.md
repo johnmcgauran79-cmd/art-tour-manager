@@ -67,8 +67,6 @@ Other:
 | Name | Purpose |
 | --- | --- |
 | `BACKUP_WEBHOOK_SECRET` | Authenticates backup reporting into `backup_runs` |
-| `BREVO_API_KEY` | Retained for the Brevo contact-sync/migration surface |
-| `KEAP_API_KEY` | Retained for historical Keap contact matching only |
 | `APP_URL`, `PUBLIC_APP_URL`, `PUBLIC_SITE_URL`, `SITE_URL` | Base URLs used when building customer links and tracked URLs |
 
 Note the four overlapping base-URL names. They are historical; see [25-known-issues-debt.md](25-known-issues-debt.md).

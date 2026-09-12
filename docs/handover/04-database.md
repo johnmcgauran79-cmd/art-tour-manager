@@ -29,7 +29,6 @@ No client data or personal values appear in this chapter.
 | `tour_interests` | Contact ↔ tour interest, the basis of tour-level audiences |
 | `crm_automation_rules`, `crm_automation_runs` | Nudge/automation rules with cooldowns and run log |
 | `crm_emails`, `crm_email_contacts`, `crm_email_links`, `email_mailboxes`, `email_mailbox_access`, `email_sync_runs` | Microsoft 365 correspondence |
-| `crm_migration_runs`, `crm_migration_contacts`, `crm_tag_map` | Keap → Brevo/ART migration console |
 
 ## Marketing tables
 
