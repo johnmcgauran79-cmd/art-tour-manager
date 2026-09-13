@@ -13,8 +13,8 @@ Everything here was written from the live repository and the live Supabase proje
 | Supabase project ref | `upqvgtuxfzsrwjahklij` |
 | Public admin URLs | `https://admin.australianracingtours.com.au`, `https://art-tour-manager.lovable.app` |
 | Public tables | 145, all with row level security enabled, 405 policies |
-| Migrations in repo | 416 files under `supabase/migrations/` |
-| Edge functions | 88 functions plus a `_shared` library folder |
+| Migrations in repo | 427 files under `supabase/migrations/` |
+| Edge functions | 84 functions plus a `_shared` library folder |
 | Scheduled jobs | 15 pg_cron jobs |
 | App pages | 38 under `src/pages/` |
 | MCP server | `art-tour-manager-wordpress-mcp` v2.6.0, 117 tool definitions |
