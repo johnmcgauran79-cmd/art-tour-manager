@@ -44,6 +44,7 @@ All customer tokens are single-purpose, stored in `customer_access_tokens` (or t
 | `/operations/missing-phone-numbers` (alias `/bookings/missing-phone-numbers`) | Data gap report | |
 | `/wordpress-content` | Website content sync | Admin/Manager |
 | `/data-health` | Integration and data health | Admin/Manager |
+| `/data-quality` | CRM data-quality dashboard | Admin/Manager; duplicate contacts, missing phones, invalid emails, enquiry hygiene, unhealthy Xero invoice links (upcoming tours only). Fix links open the record or the merge dialog; issues can be dismissed (`data_quality_dismissals`). Backed by `dq_contact_issues`, `dq_lead_issues`, `dq_finance_issues` |
 | `/art-ai` | In-app assistant | `art-ai-chat`; conversations purged on a retention schedule |
 | `*` | Not found | |
 
