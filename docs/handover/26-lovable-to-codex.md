@@ -22,7 +22,7 @@
 
 ## What is *not* dependent on Lovable
 
-Everything that matters operationally: the Supabase database, all 88 edge functions, all cron jobs, all integrations (Resend, Microsoft Graph, Xero, WordPress, Meta, Teams), all business logic in Postgres functions, and the entire repository.
+Everything that matters operationally: the Supabase database, all 84 edge functions, all cron jobs, all integrations (Resend, Microsoft Graph, Xero, WordPress, Meta, Teams), all business logic in Postgres functions, and the entire repository.
 
 ## Takeover assessment
 

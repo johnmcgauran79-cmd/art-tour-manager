@@ -17,10 +17,10 @@ Evidence-backed only. Nothing here was fixed as part of this handover.
 | --- | --- | --- |
 | Almost every edge function is `verify_jwt = false` | `supabase/config.toml` | Correct for public/token/cron endpoints, but it means each function's own authorisation is the only guard. One missed check is a data exposure |
 | No automated tests | No `test` script; no test suite in repo | Regressions are caught only by typecheck and manual checking |
-| Migration/live drift unverified | 416 migration files; no reconciliation performed | Cannot assume the repository fully describes live schema. Always read live schema before changing it |
+| Migration/live drift unverified | 427 migration files; no reconciliation performed | Cannot assume the repository fully describes live schema. Always read live schema before changing it |
 | Public forms have no CAPTCHA or rate limit | `marketing-submit-lead` validates shape only | Vulnerable to spam once the forms are promoted publicly |
 | Config shape inconsistency | `crm_settings` uses typed columns, not key/value, contrary to what its name suggests; `crm_settings.id` presented as boolean in live output | Confuses anyone assuming a settings key/value table |
-| Function count and duplication | 88 edge functions, several with overlapping responsibilities (multiple email processors, multiple report generators) | Hard to know which path a given email actually took |
+| Function count and duplication | 84 edge functions, several with overlapping responsibilities (multiple email processors, multiple report generators) | Hard to know which path a given email actually took |
 | Cron times are UTC | `cron.job` schedules | Daily jobs at 19:00/20:00 UTC read as evening but run in the Australian morning; easy to misconfigure |
 
 ## Low / informational
