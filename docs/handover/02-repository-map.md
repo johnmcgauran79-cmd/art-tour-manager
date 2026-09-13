@@ -6,12 +6,13 @@
 | --- | --- |
 | `index.html` | SPA shell and head metadata |
 | `src/` | The whole frontend |
-| `supabase/functions/` | 88 edge functions plus `_shared/` |
-| `supabase/migrations/` | 416 SQL migrations (managed by the migration tooling) |
+| `supabase/functions/` | 84 edge functions plus `_shared/` |
+| `supabase/migrations/` | 427 SQL migrations (managed by the migration tooling) |
 | `supabase/config.toml` | Project ref and per-function `verify_jwt` settings |
 | `docs/` | User and technical documentation, including this handover |
 | `.lovable/plan/` | Archived approved build plans — useful history for "why is it like this" |
-| `.github/workflows/db-backup.yml` | Scheduled database backup workflow |
+| `.github/workflows/` | `db-backup.yml` (nightly database), `storage-backup.yml` (weekly uploaded files), `code-backup.yml` (nightly source code); each also copies to SharePoint via `.github/scripts/sharepoint_upload.py` |
+| `scripts/local-backup-pull.ps1`, `scripts/local-backup-pull.sh` | Manual pull of the newest database/files/code backups to a local drive |
 | `tailwind.config.ts`, `src/index.css` | Design tokens, brand fonts, theme variables |
 | `drizzle.config.ts` | Present for schema tooling only; the app does not use Drizzle at runtime |
 | `ACCESSIBILITY.md`, `EMAIL_TRACKING_SETUP.md`, `TEST_EMAIL_INSTRUCTIONS.md` | Standalone notes |

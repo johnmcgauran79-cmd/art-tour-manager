@@ -1,6 +1,6 @@
 # 11 — Edge functions and scheduled jobs
 
-88 functions live in `supabase/functions/`, plus a `_shared/` library. Nearly all are configured `verify_jwt = false` and authorise their own callers — see [06-security-rls.md](06-security-rls.md).
+84 functions live in `supabase/functions/`, plus a `_shared/` library. Nearly all are configured `verify_jwt = false` and authorise their own callers — see [06-security-rls.md](06-security-rls.md).
 
 ## Shared library — `supabase/functions/_shared/`
 

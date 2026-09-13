@@ -2,7 +2,7 @@
 
 ## Where migrations live
 
-`supabase/migrations/` holds **416** timestamped SQL files. They are the full history of the schema from first build to now, including CRM Phases 1–6.
+`supabase/migrations/` holds **427** timestamped SQL files. They are the full history of the schema from first build to now, including CRM Phases 1–6.
 
 These files are written by the migration tooling. Treat them as append-only history:
 

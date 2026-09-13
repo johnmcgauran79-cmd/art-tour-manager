@@ -24,10 +24,12 @@ Audiences are a nested rule tree (`and`/`or` groups) evaluated at send time by `
 
 - Contact facts: state, location, tags, travel history, lifetime value, latest completed tour
 - Engagement: emailed/opened/clicked, meaningful clicks, recency
-- Tour interest: interested in a specific tour
+- Tour interest: interested in a specific tour (single or several)
 - Enquiry/lead: stage, source, owner
 - **Booking (Phase 6):** has/has no booking, booked or not booked on a specific tour, has/has no future booking, booking status (real enum values), past traveller on a tour — via `crm_contact_booking_facts`, cancelled bookings excluded
 - **Nurture (Phase 6):** is Long-Term Nurture, nurture tour, review date before/after/between, due this week/month, overdue, nurture reason — via `crm_contact_nurture_facts`
+
+Tour conditions accept **multiple tours**: the `in` ("is any of") operator plus a multi-select tour picker in `AudienceRuleBuilder.tsx`, resolved by `tourValues()` in `audienceRules.ts`. This covers interested-in, booked-on, travelled-on and nurture-tour conditions, so one campaign can target a single tour's booking list or several tours at once (e.g. first-refusal rebooking offers). `eq` (single tour) still works on existing audiences.
 
 Because membership resolves at send time, a contact who books automatically stops qualifying for a "not booked" audience, and a contact who leaves nurture automatically leaves a nurture-only audience. There is no separate marketing database to keep in step.
 
