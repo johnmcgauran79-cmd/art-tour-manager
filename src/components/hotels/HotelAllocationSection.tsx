@@ -142,7 +142,7 @@ export const HotelAllocationSection = ({
           check_in_date: hotel?.default_check_in || defaultCheckIn || null,
           check_out_date: hotel?.default_check_out || defaultCheckOut || null,
           room_type: hotel?.default_room_type || bookingToUpdate.room_type,
-          bedding: defaultBedding(passengerCount),
+          bedding: defaultBedding(passengerCount) as "single" | "double" | "twin",
           required: true,
         }, {
           onSuccess: async () => {
@@ -173,7 +173,7 @@ export const HotelAllocationSection = ({
           check_in_date: hotel?.default_check_in || defaultCheckIn || null,
           check_out_date: hotel?.default_check_out || defaultCheckOut || null,
           room_type: hotel?.default_room_type,
-          bedding: defaultBedding(passengerCount),
+          bedding: defaultBedding(passengerCount) as "single" | "double" | "twin",
           required: true,
         }, {
           onSuccess: async () => {

@@ -235,7 +235,7 @@ export default function BookingEdit() {
                   allocated: true,
                   check_in_date: hotel.default_check_in || tour?.start_date,
                   check_out_date: hotel.default_check_out || tour?.end_date,
-                  bedding: defaultBedding(formData.passenger_count),
+                  bedding: defaultBedding(formData.passenger_count) as "single" | "double" | "twin",
                   room_type: hotel.default_room_type,
                   required: true,
                 });
