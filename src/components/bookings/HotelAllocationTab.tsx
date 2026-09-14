@@ -108,7 +108,7 @@ export const HotelAllocationTab = ({
               allocated: false,
               check_in_date: hotel.default_check_in || '',
               check_out_date: hotel.default_check_out || '',
-              bedding: 'double',
+              bedding: defaultBedding(passengerCount),
               room_type: hotel.default_room_type || '',
             };
 
