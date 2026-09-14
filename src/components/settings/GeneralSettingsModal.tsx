@@ -106,52 +106,8 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
           </DialogHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Email Sender Settings */}
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  Email Sender Defaults
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-2">
-                  Default sender name and email addresses used across all outgoing emails.
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Sender Name</Label>
-                    <Input
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      placeholder="Australian Racing Tours"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Displayed as "From" name</p>
-                  </div>
-                  <div>
-                    <Label>Client Email (From)</Label>
-                    <Input
-                      value={fromEmailClient}
-                      onChange={(e) => setFromEmailClient(e.target.value)}
-                      placeholder="bookings@example.com"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">For client-facing emails</p>
-                  </div>
-                  <div>
-                    <Label>Internal/Auto Email (From)</Label>
-                    <Input
-                      value={fromEmailInternal}
-                      onChange={(e) => setFromEmailInternal(e.target.value)}
-                      placeholder="info@example.com"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">For automated/internal emails</p>
-                  </div>
-                </div>
-                <Button size="sm" onClick={handleSaveEmail} disabled={updateSetting.isPending}>
-                  <Save className="h-4 w-4 mr-1" /> Save Email Settings
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Sender defaults now live in Email Management → Email Settings */}
+
 
             {/* Token Expiry Settings */}
             <Card>
@@ -274,62 +230,6 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
               </CardContent>
             </Card>
 
-            {/* Theme Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Theme & Appearance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm text-muted-foreground">
-                  Customize the application theme, colors, and display preferences.
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Configure Theme
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Language & Localization */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Language & Region
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm text-muted-foreground">
-                  Set language, date formats, currency, and regional preferences.
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Configure Language
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Notification Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm text-muted-foreground">
-                  Manage notification preferences and alert settings.
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  Configure Notifications
-                  <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </DialogContent>
       </Dialog>
