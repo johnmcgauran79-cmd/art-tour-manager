@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 
 export interface HotelAllocation {
   allocated: boolean;
