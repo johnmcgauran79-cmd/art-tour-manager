@@ -145,31 +145,25 @@ export const HotelAllocationTab = ({
                       <div>
                         <Label>Bedding Type</Label>
                         <Select 
-                          value={allocation.bedding} 
-                          onValueChange={(value) => handleBeddingChange(hotel.id, value, allocation)}
+                          value={beddingOptions.includes(allocation.bedding) ? allocation.bedding : ''} 
+                          onValueChange={(value) => handleBeddingChange(hotel.id, value)}
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder={`Select ${beddingRuleText(passengerCount)}`} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="single">
-                              Single
-                            </SelectItem>
-                            <SelectItem value="double">
-                              Double
-                            </SelectItem>
-                            <SelectItem value="twin">
-                              Twin
-                            </SelectItem>
-                            <SelectItem value="triple">
-                              Triple
-                            </SelectItem>
-                            <SelectItem value="family">
-                              Family
-                            </SelectItem>
+                            {beddingOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {BEDDING_LABELS[option]}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {passengerCount} passenger{passengerCount === 1 ? '' : 's'} — {beddingRuleText(passengerCount)} only
+                        </p>
                       </div>
+
                       <div>
                         <Label>Room Type</Label>
                         <Input
