@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Bot,
   HeartPulse,
+  Sparkles,
 } from "lucide-react";
 import { XeroIntegrationSettings } from "@/components/settings/XeroIntegrationSettings";
 import { GeneralSettingsModal } from "@/components/settings/GeneralSettingsModal";
@@ -35,6 +36,7 @@ import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatu
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
 import { SystemHealthCard } from "@/components/settings/SystemHealthCard";
 import { SettingsSectionDialog } from "@/components/settings/SettingsSectionDialog";
+import DataQuality from "@/pages/DataQuality";
 
 type SectionKey =
   | "ai"
@@ -45,6 +47,7 @@ type SectionKey =
   | "health"
   | "integrations"
   | "teams"
+  | "dataquality"
   | null;
 
 export const SystemSettings = () => {
@@ -149,6 +152,24 @@ export const SystemSettings = () => {
             </div>
             <Button variant="outline" size="sm" onClick={() => setSection("health")}>
               View Health
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Data Quality */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Data Quality
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Duplicate contacts, missing phone numbers, enquiry gaps and invoice mismatches, each with a link to fix.
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setSection("dataquality")}>
+              Review Data
             </Button>
           </CardContent>
         </Card>
@@ -429,6 +450,15 @@ export const SystemSettings = () => {
         description="Conversation retention for ART AI."
       >
         <AiRetentionSettingsCard />
+      </SettingsSectionDialog>
+
+      <SettingsSectionDialog
+        open={section === "dataquality"}
+        onOpenChange={closeSection}
+        title="Data Quality"
+        description="Contact, enquiry and invoice problems that distort reports and AI answers."
+      >
+        <DataQuality embedded />
       </SettingsSectionDialog>
 
       <GeneralSettingsModal open={generalSettingsOpen} onOpenChange={setGeneralSettingsOpen} />

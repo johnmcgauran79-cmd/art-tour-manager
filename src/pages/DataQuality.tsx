@@ -32,7 +32,7 @@ const AREAS: { id: DataQualityArea; Icon: typeof Users; hint: string }[] = [
   { id: "finance", Icon: Receipt, hint: "Xero invoice links and references" },
 ];
 
-export default function DataQuality() {
+export default function DataQuality({ embedded = false }: { embedded?: boolean } = {}) {
   const { data, isLoading, isFetching, refetch } = useDataQuality();
   const [area, setArea] = useState<DataQualityArea>("contacts");
   const [search, setSearch] = useState("");
@@ -66,20 +66,25 @@ export default function DataQuality() {
 
   return (
     <div className="space-y-6">
-      <AppBreadcrumbs items={[{ label: "Home", href: "/" }, { label: "Data Quality" }]} />
+      {!embedded && (
+        <AppBreadcrumbs items={[{ label: "Home", href: "/" }, { label: "Data Quality" }]} />
+      )}
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Data Quality</h1>
-          <p className="text-muted-foreground">
-            Contact, enquiry and invoice problems that distort reports and AI answers — each with a link to fix it.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+        {!embedded && (
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Data Quality</h1>
+            <p className="text-muted-foreground">
+              Contact, enquiry and invoice problems that distort reports and AI answers — each with a link to fix it.
+            </p>
+          </div>
+        )}
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="ml-auto">
           <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
+
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
