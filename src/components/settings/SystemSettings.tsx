@@ -1,33 +1,22 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Settings,
-  Database,
-  Mail,
-  Shield,
   Users,
   FileText,
   ListChecks,
-  Palette,
   FileSignature,
   Calculator,
   HardDriveDownload,
-  Activity,
   MessageSquare,
   Bot,
   HeartPulse,
-  Sparkles,
 } from "lucide-react";
 import { XeroIntegrationSettings } from "@/components/settings/XeroIntegrationSettings";
 import { GeneralSettingsModal } from "@/components/settings/GeneralSettingsModal";
 import { UserManagementModal } from "@/components/users/UserManagementModal";
 import { SystemLogModal } from "@/components/settings/SystemLogModal";
-import { ThemeAppearanceSettings } from "@/components/settings/ThemeAppearanceSettings";
-import { BrandPaletteSettings } from "@/components/settings/BrandPaletteSettings";
-
-import { EmergencyContactImportModal } from "@/components/contacts/EmergencyContactImportModal";
 import { WaiverSettingsCard } from "@/components/settings/WaiverSettingsCard";
 import { TaskStatusManagementModal } from "@/components/tasks/TaskStatusManagementModal";
 import { AiRetentionSettingsCard } from "@/components/settings/AiRetentionSettingsCard";
@@ -36,25 +25,20 @@ import { IntegrationStatusPanel } from "@/components/datahealth/IntegrationStatu
 import { BackupStatusCard } from "@/components/settings/BackupStatusCard";
 import { SystemHealthCard } from "@/components/settings/SystemHealthCard";
 import { SettingsSectionDialog } from "@/components/settings/SettingsSectionDialog";
-import DataQuality from "@/pages/DataQuality";
 
 type SectionKey =
   | "ai"
-  | "branding"
   | "waiver"
   | "xero"
   | "backups"
   | "health"
-  | "integrations"
   | "teams"
-  | "dataquality"
   | null;
 
 export const SystemSettings = () => {
   const [generalSettingsOpen, setGeneralSettingsOpen] = useState(false);
   const [userManagementOpen, setUserManagementOpen] = useState(false);
   const [systemLogOpen, setSystemLogOpen] = useState(false);
-  const [emergencyContactImportOpen, setEmergencyContactImportOpen] = useState(false);
   const [taskStatusesOpen, setTaskStatusesOpen] = useState(false);
   const [section, setSection] = useState<SectionKey>(null);
 
@@ -76,27 +60,9 @@ export const SystemSettings = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-muted-foreground">
-              Configure global application settings, timezones, and default preferences.
+              Customer link expiry, timezone display and instalment wording.
             </div>
             <Button variant="outline" size="sm" onClick={() => setGeneralSettingsOpen(true)}>
-              Configure
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Branding & Appearance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Branding &amp; Appearance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Theme colours, logos and appearance used across the app and documents.
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setSection("branding")}>
               Configure
             </Button>
           </CardContent>
@@ -138,7 +104,7 @@ export const SystemSettings = () => {
           </CardContent>
         </Card>
 
-        {/* System Health */}
+        {/* System Health (now includes integration status) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -148,50 +114,13 @@ export const SystemSettings = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-muted-foreground">
-              Background jobs, mailbox syncing, backups and failed emails, all in one place.
+              Background jobs, mailbox syncing, backups, failed emails and live connection status.
             </div>
             <Button variant="outline" size="sm" onClick={() => setSection("health")}>
               View Health
             </Button>
           </CardContent>
         </Card>
-
-        {/* Data Quality */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              Data Quality
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Duplicate contacts, missing phone numbers, enquiry gaps and invoice mismatches, each with a link to fix.
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setSection("dataquality")}>
-              Review Data
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Integration Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Integration Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Live connection health for Xero, WordPress, email and Teams.
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setSection("integrations")}>
-              View Status
-            </Button>
-          </CardContent>
-        </Card>
-
 
         {/* Teams notifications */}
         <Card>
@@ -301,96 +230,9 @@ export const SystemSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Database */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Database
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Database maintenance and performance monitoring.
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Manage
-              <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Email Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Email Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              SMTP settings, email providers, and delivery configuration.
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Configure
-              <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Security */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security &amp; Access
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Password policies, session management, and security audit logs.
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Configure
-              <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-            </Button>
-          </CardContent>
-        </Card>
-
       </div>
 
-      {/* System Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>System Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {["Database", "Email Service", "Authentication", "Storage"].map((label) => (
-              <div key={label} className="text-center">
-                <div className="text-2xl font-bold text-green-600">✓</div>
-                <div className="text-sm text-muted-foreground">{label}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Section pop-ups */}
-      <SettingsSectionDialog
-        open={section === "branding"}
-        onOpenChange={closeSection}
-        title="Branding & Appearance"
-        description="Theme colours, logos and appearance across the app, emails and documents."
-      >
-        <div className="space-y-6">
-          <ThemeAppearanceSettings />
-          <BrandPaletteSettings />
-        </div>
-
-      </SettingsSectionDialog>
-
       <SettingsSectionDialog
         open={section === "waiver"}
         onOpenChange={closeSection}
@@ -410,15 +252,6 @@ export const SystemSettings = () => {
       </SettingsSectionDialog>
 
       <SettingsSectionDialog
-        open={section === "integrations"}
-        onOpenChange={closeSection}
-        title="Integration Status"
-        description="Live connection health for Xero, WordPress, email and Teams."
-      >
-        <IntegrationStatusPanel />
-      </SettingsSectionDialog>
-
-      <SettingsSectionDialog
         open={section === "teams"}
         onOpenChange={closeSection}
         title="Microsoft Teams Notifications"
@@ -430,9 +263,12 @@ export const SystemSettings = () => {
         open={section === "health"}
         onOpenChange={closeSection}
         title="System Health"
-        description="What is running, what has failed recently, and whether backups are up to date."
+        description="What is running, what has failed recently, whether backups are up to date, and live connection status."
       >
-        <SystemHealthCard />
+        <div className="space-y-6">
+          <SystemHealthCard />
+          <IntegrationStatusPanel />
+        </div>
       </SettingsSectionDialog>
 
       <SettingsSectionDialog
@@ -452,25 +288,11 @@ export const SystemSettings = () => {
         <AiRetentionSettingsCard />
       </SettingsSectionDialog>
 
-      <SettingsSectionDialog
-        open={section === "dataquality"}
-        onOpenChange={closeSection}
-        title="Data Quality"
-        description="Contact, enquiry and invoice problems that distort reports and AI answers."
-      >
-        <DataQuality embedded />
-      </SettingsSectionDialog>
-
       <GeneralSettingsModal open={generalSettingsOpen} onOpenChange={setGeneralSettingsOpen} />
 
       <UserManagementModal open={userManagementOpen} onOpenChange={setUserManagementOpen} />
 
       <SystemLogModal open={systemLogOpen} onOpenChange={setSystemLogOpen} />
-
-      <EmergencyContactImportModal
-        open={emergencyContactImportOpen}
-        onOpenChange={setEmergencyContactImportOpen}
-      />
 
       <TaskStatusManagementModal open={taskStatusesOpen} onOpenChange={setTaskStatusesOpen} />
     </div>
