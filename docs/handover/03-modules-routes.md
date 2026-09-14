@@ -43,12 +43,26 @@ All customer tokens are single-purpose, stored in `customer_access_tokens` (or t
 | `/operations/payment-status` | Consolidated payment position | |
 | `/operations/missing-phone-numbers` (alias `/bookings/missing-phone-numbers`) | Data gap report | |
 | `/wordpress-content` | Website content sync | Admin/Manager |
-| `/data-health` | Integration and data health | Admin/Manager |
-| `/data-quality` | CRM data-quality dashboard | Admin/Manager; duplicate contacts, missing phones, invalid emails, enquiry hygiene, unhealthy Xero invoice links (upcoming tours only). Fix links open the record or the merge dialog; issues can be dismissed (`data_quality_dismissals`). Backed by `dq_contact_issues`, `dq_lead_issues`, `dq_finance_issues` |
+| `/data-health` | Integration and data health | Admin/Manager; tabs include Integration Status (folded in from Settings) and **Data quality** — duplicate contacts, missing phones, invalid emails, enquiry hygiene, unhealthy Xero invoice links (upcoming tours only), with fix links, dismissals (`data_quality_dismissals`) and CSV export. Backed by `dq_contact_issues`, `dq_lead_issues`, `dq_finance_issues` |
+| `/data-quality` | Legacy standalone data-quality page | Still routable; the primary entry point is now the Data quality tab on `/data-health` and the Settings "Review Data" card |
 | `/art-ai` | In-app assistant | `art-ai-chat`; conversations purged on a retention schedule |
 | `*` | Not found | |
 
-Settings live inside `/` → Settings (`src/pages/Settings.tsx`) with tabbed sections: users and roles, departments, email templates and rules, automated reports, brands and theme, integrations (Xero, WordPress, Teams, Microsoft mailboxes, lead integrations), CRM configuration, backups, and general parameters.
+Settings live inside `/` → Settings (`src/pages/Settings.tsx`) with tabbed sections: users and roles, departments, email templates and rules, automated reports, **Branding & Appearance** (theme, brand palette and Brands management in one tab), integrations (Xero, WordPress, Teams, Microsoft mailboxes, lead integrations), CRM configuration, backups, and general parameters.
+
+Settings cleanup (Sept 2026):
+- Removed the non-functional "Coming Soon" cards (Database, Email Configuration, Security & Access, Theme & Appearance, Language & Region, Notifications).
+- Removed the hard-coded "System Status" tick strip (it always reported healthy).
+- Integration Status now lives as a section inside System Health / `/data-health`.
+- Removed the unreachable emergency contact CSV import.
+- Sender name and From addresses live only in Email Management → Email Settings; General Settings keeps link expiry, timezones and instalment wording.
+- Brands moved under the single "Branding & Appearance" tab.
+- Data quality is reachable from Settings → System Settings → "Review Data" (deep link via the `ssec` search param) and as the Data quality tab on `/data-health`.
+
+## Global search
+
+`src/lib/appDestinations.ts` holds `APP_DESTINATIONS` and `searchAppDestinations()`: a role-filtered registry (all / staff / adminManager / admin) of pages, functions and settings sections with keywords. `GlobalSearchDialog.tsx` renders these under a "Features & settings" group, so searching "backup", "waiver", "Xero", "mailboxes", "branding", "users", "logs" or "data quality" jumps straight to the feature. Settings destinations deep-link via `SystemSettings.tsx`'s `ssec` param.
+
 
 ## Permissions summary
 
