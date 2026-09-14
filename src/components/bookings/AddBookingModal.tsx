@@ -381,7 +381,7 @@ export const AddBookingModal = ({
             check_in_date: checkIn || null,
             check_out_date: checkOut || null,
             nights: nights,
-            bedding: (allocation.bedding || 'double') as 'single' | 'double' | 'twin',
+            bedding: (isBeddingValid(allocation.bedding, formData.passenger_count) ? allocation.bedding : defaultBedding(formData.passenger_count)) as 'single' | 'double' | 'twin',
             room_type: allocation.room_type || null,
             room_upgrade: allocation.room_upgrade || null,
             confirmation_number: allocation.confirmation_number || null,
