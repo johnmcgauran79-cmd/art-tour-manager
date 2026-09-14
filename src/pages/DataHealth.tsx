@@ -36,6 +36,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
+import DataQuality from "@/pages/DataQuality";
+
 import { HealthScoreBadge } from "@/components/datahealth/HealthScoreBadge";
 import { TourHealthPanel } from "@/components/datahealth/TourHealthPanel";
 import {
@@ -197,6 +199,8 @@ export default function DataHealth() {
         <TabsList>
           <TabsTrigger value="tours">By tour</TabsTrigger>
           <TabsTrigger value="category">By check</TabsTrigger>
+          <TabsTrigger value="quality">Data quality</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="tours" className="space-y-4">
@@ -316,7 +320,12 @@ export default function DataHealth() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="quality" className="space-y-4">
+          <DataQuality embedded />
+        </TabsContent>
+
       </Tabs>
+
     </div>
   );
 }
