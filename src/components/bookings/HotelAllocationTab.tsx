@@ -5,6 +5,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { BEDDING_LABELS, allowedBedding, beddingRuleText, defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 
 interface HotelAllocation {
   allocated: boolean;
