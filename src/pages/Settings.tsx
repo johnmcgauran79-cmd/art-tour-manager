@@ -27,8 +27,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
-  const isManager = userRole === 'manager';
-  const canManageBrands = isAdmin || isManager;
+
 
   // Persist the active settings tab + email sub-tab in the URL so links
   // can be shared and reflect exactly what the user is viewing.
