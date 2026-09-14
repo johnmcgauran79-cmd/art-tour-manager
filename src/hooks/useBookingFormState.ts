@@ -250,21 +250,28 @@ export const useBookingFormState = ({
     setActivityAllocations(initialAllocations);
   };
 
-  // Update bedding when passenger count changes
+  // Keep bedding valid for the passenger count whenever it changes
   useEffect(() => {
     if (Object.keys(hotelAllocations).length === 0) return;
-    
-    const needsBeddingUpdate = formData.passenger_count === 1 && 
-      Object.values(hotelAllocations).some(a => a.bedding !== 'single');
-    
+
+    const needsBeddingUpdate = Object.values(hotelAllocations).some(
+      a => !isBeddingValid(a.bedding, formData.passenger_count)
+    );
+
     if (needsBeddingUpdate) {
       const updatedAllocations = { ...hotelAllocations };
       Object.keys(updatedAllocations).forEach(hotelId => {
-        updatedAllocations[hotelId] = { ...updatedAllocations[hotelId], bedding: 'single' };
+        if (!isBeddingValid(updatedAllocations[hotelId].bedding, formData.passenger_count)) {
+          updatedAllocations[hotelId] = {
+            ...updatedAllocations[hotelId],
+            bedding: defaultBedding(formData.passenger_count),
+          };
+        }
       });
       setHotelAllocations(updatedAllocations);
     }
   }, [formData.passenger_count]);
+
 
   // Pre-fill medical form data from contact
   const prefillMedicalFromContact = (contact: {
