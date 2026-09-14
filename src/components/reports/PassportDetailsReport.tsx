@@ -2,6 +2,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO, differenceInMonths } from "date-fns";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { maskPassportNumber } from "@/lib/passportPrivacy";
+
 
 interface PassportDetailsReportProps {
   data: Array<{
@@ -23,6 +26,10 @@ interface PassportDetailsReportProps {
 }
 
 export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
+  const { userRole } = useAuth();
+  const canSeeFullPassport = userRole === 'admin' || userRole === 'manager';
+
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-';
     try {
@@ -101,7 +108,7 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
             <TableCell>{passenger.passportFirstName || '-'}</TableCell>
             <TableCell>{passenger.passportMiddleName || '-'}</TableCell>
             <TableCell>{passenger.passportSurname || '-'}</TableCell>
-            <TableCell className="font-mono text-sm">{passenger.passportNumber || '-'}</TableCell>
+            <TableCell className="font-mono text-sm">{maskPassportNumber(passenger.passportNumber, canSeeFullPassport)}</TableCell>
             <TableCell>{passenger.passportCountry || '-'}</TableCell>
             <TableCell>{passenger.nationality || '-'}</TableCell>
             <TableCell>{formatDate(passenger.dateOfBirth)}</TableCell>

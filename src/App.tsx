@@ -12,6 +12,8 @@ import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ErrorBoundary } from "@/components/system/ErrorBoundary";
 import { RouteFallback } from "@/components/system/RouteFallback";
+import { AccessDenied } from "@/components/system/AccessDenied";
+
 
 // Route-level code splitting: each page ships as its own chunk so the initial
 // load no longer pulls the entire admin portal (reports, editors, PDF and
@@ -104,8 +106,13 @@ const TaskRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!isAdminOrManager) {
-    return <Navigate to="/" replace />;
+    return (
+      <AppLayout>
+        <AccessDenied />
+      </AppLayout>
+    );
   }
+
 
   return <>{children}</>;
 };
@@ -129,8 +136,13 @@ const WorkspaceRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!isAdminOrManager && userRole !== "host") {
-    return <Navigate to="/" replace />;
+    return (
+      <AppLayout>
+        <AccessDenied />
+      </AppLayout>
+    );
   }
+
 
   return <>{children}</>;
 };

@@ -51,14 +51,14 @@ export const APP_DESTINATIONS: AppDestination[] = [
   { id: "set-email-templates", label: "Email Templates", group: "Settings", keywords: "templates merge fields wording emails", path: S("email-management", "&ssub=templates"), access: "adminManager" },
   { id: "set-automated-emails", label: "Automated Emails", group: "Settings", keywords: "automation rules triggers approvals scheduled", path: S("email-management", "&ssub=automated-emails"), access: "adminManager" },
   { id: "set-automated-reports", label: "Automated Reports", group: "Settings", keywords: "scheduled reports distribution", path: S("email-management", "&ssub=automated-reports"), access: "adminManager" },
-  { id: "set-email-settings", label: "Email Settings (sender, reply-to)", group: "Settings", keywords: "from address sender name reply to suppressions bounces headers", path: S("email-management", "&ssub=email-settings"), access: "adminManager" },
-  { id: "set-mailboxes", label: "Outlook Mailboxes", group: "Settings", keywords: "microsoft 365 outlook sync mailbox history", path: S("email-management", "&ssub=mailboxes"), access: "adminManager" },
+  { id: "set-email-settings", label: "Email Settings (sender, reply-to)", group: "Settings", keywords: "from address sender name reply to suppressions bounces headers", path: S("email-management", "&ssub=email-settings"), access: "admin" },
+  { id: "set-mailboxes", label: "Outlook Mailboxes", group: "Settings", keywords: "microsoft 365 outlook sync mailbox history", path: S("email-management", "&ssub=mailboxes"), access: "admin" },
 
   // ---- Settings: other tabs ----
-  { id: "set-invoices", label: "Invoice Management", group: "Settings", keywords: "invoice line items payment schedule xero wording", path: S("invoice-management"), access: "adminManager" },
+  { id: "set-invoices", label: "Invoice Management", group: "Settings", keywords: "invoice line items payment schedule xero wording", path: S("invoice-management"), access: "admin" },
   { id: "set-task-templates", label: "Task Templates", group: "Settings", keywords: "task templates automation checklists", path: S("task-templates"), access: "adminManager" },
   { id: "set-additional-info", label: "Additional Info & Cancellation Policy", group: "Settings", keywords: "additional information blocks cancellation policy terms", path: S("additional-info"), access: "adminManager" },
-  { id: "set-branding", label: "Branding & Appearance (brands, themes, colours)", group: "Settings", keywords: "brand logo colours palette theme fonts sidebar racing breaks", path: S("brands"), access: "adminManager" },
+  { id: "set-branding", label: "Branding & Appearance (brands, themes, colours)", group: "Settings", keywords: "brand logo colours palette theme fonts sidebar racing breaks", path: S("brands"), access: "admin" },
 
   // ---- Settings: system cards (admin only) ----
   { id: "set-general", label: "General Settings", group: "Settings", keywords: "link expiry timezone instalment wording tokens", path: S("system", "&ssec=general"), access: "admin" },
