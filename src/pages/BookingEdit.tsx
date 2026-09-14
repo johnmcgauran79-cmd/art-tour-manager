@@ -999,6 +999,8 @@ export default function BookingEdit() {
                 tourId={booking.tour_id}
                 bookingId={booking.id}
                 accommodationRequired={formData.accommodation_required}
+                passengerCount={formData.passenger_count}
+
                 defaultCheckIn={formData.check_in_date}
                 defaultCheckOut={formData.check_out_date}
                 onDatesChange={(checkIn, checkOut) => {
