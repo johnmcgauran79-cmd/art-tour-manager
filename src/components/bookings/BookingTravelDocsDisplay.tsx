@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { CheckCircle2, AlertCircle, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
+import { maskPassportNumber } from "@/lib/passportPrivacy";
+
 
 interface BookingTravelDocsDisplayProps {
   bookingId: string;
@@ -32,6 +35,9 @@ export const BookingTravelDocsDisplay = ({
   passenger3,
 }: BookingTravelDocsDisplayProps) => {
   const { data: travelDocs = [], isLoading } = useBookingTravelDocs(bookingId);
+  const { userRole } = useAuth();
+  const canSeeFullPassport = userRole === 'admin' || userRole === 'manager';
+
 
   const getPassengerName = (slot: number): string => {
     switch (slot) {
@@ -157,8 +163,9 @@ export const BookingTravelDocsDisplay = ({
                     {doc?.date_of_birth ? formatDateToDDMMYYYY(doc.date_of_birth) : '—'}
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {doc?.passport_number || '—'}
+                    {maskPassportNumber(doc?.passport_number, canSeeFullPassport)}
                   </TableCell>
+
                   <TableCell className="text-sm">
                     {doc?.passport_expiry_date ? (
                       <span className={expiringSoon ? 'text-destructive font-medium' : ''}>

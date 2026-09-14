@@ -101,7 +101,7 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
             <TableCell>{passenger.passportFirstName || '-'}</TableCell>
             <TableCell>{passenger.passportMiddleName || '-'}</TableCell>
             <TableCell>{passenger.passportSurname || '-'}</TableCell>
-            <TableCell className="font-mono text-sm">{passenger.passportNumber || '-'}</TableCell>
+            <TableCell className="font-mono text-sm">{maskPassportNumber(passenger.passportNumber, canSeeFullPassport)}</TableCell>
             <TableCell>{passenger.passportCountry || '-'}</TableCell>
             <TableCell>{passenger.nationality || '-'}</TableCell>
             <TableCell>{formatDate(passenger.dateOfBirth)}</TableCell>
