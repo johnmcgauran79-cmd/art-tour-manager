@@ -256,22 +256,18 @@ export default function BookingEdit() {
           console.log('No hotels on tour - will use tour dates for check-in/check-out');
         }
 
-        // Bedding vs passenger count mismatches are flagged as a warning only —
-        // guests legitimately move between twin and two singles, so saving is never blocked.
+        // Bedding must match the passenger count — saving is blocked otherwise.
         if (hotelBookings && hotelBookings.length > 0) {
-          const mismatch = formData.passenger_count === 1
-            ? hotelBookings.find(hb => hb.bedding !== 'single')
-            : hotelBookings.find(hb => hb.bedding === 'single');
+          const mismatch = hotelBookings.find(hb => !isBeddingValid(hb.bedding, formData.passenger_count));
 
           if (mismatch) {
-            toast({
-              title: "Check bedding type",
-              description: formData.passenger_count === 1
-                ? "This booking has 1 passenger but the room is not set to Single. Saved anyway — update it in the Hotels tab if needed."
-                : `This booking has ${formData.passenger_count} passengers with Single bedding. Saved anyway — update it in the Hotels tab if needed.`,
-            });
+            setValidationError(
+              `This booking has ${formData.passenger_count} passenger${formData.passenger_count === 1 ? '' : 's'}, so the bedding must be ${beddingRuleText(formData.passenger_count)}. Please update it in the Hotels tab before saving.`
+            );
+            return;
           }
         }
+
       }
     }
 
