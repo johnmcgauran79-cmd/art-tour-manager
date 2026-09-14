@@ -53,17 +53,28 @@ export const HotelAllocationTab = ({
     }));
   };
 
-  const handleBeddingChange = (hotelId: string, value: string, allocation: HotelAllocation) => {
-    // Any bedding type can be chosen for any passenger count — guests move between
-    // twin and two singles regularly. Unusual combinations only get a gentle note.
-    if ((passengerCount === 1 && value !== 'single') || (passengerCount >= 2 && value === 'single')) {
-      toast({
-        title: "Unusual bedding choice",
-        description: `${passengerCount} passenger${passengerCount === 1 ? '' : 's'} with ${value} bedding — saved, just double-check it's correct.`,
-      });
-    }
+  const beddingOptions = allowedBedding(passengerCount);
+
+  const handleBeddingChange = (hotelId: string, value: string) => {
     handleAllocationChange(hotelId, 'bedding', value);
   };
+
+  const invalidAllocations = Object.entries(hotelAllocations).filter(
+    ([, allocation]) => allocation?.allocated && !isBeddingValid(allocation.bedding, passengerCount)
+  );
+
+  const handleContinue = () => {
+    if (accommodationRequired && invalidAllocations.length > 0) {
+      toast({
+        title: "Bedding must match passenger numbers",
+        description: `${passengerCount} passenger${passengerCount === 1 ? '' : 's'} requires ${beddingRuleText(passengerCount)} bedding. Please update the allocated hotels.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    onContinue();
+  };
+
 
   if (!accommodationRequired) {
     return (
