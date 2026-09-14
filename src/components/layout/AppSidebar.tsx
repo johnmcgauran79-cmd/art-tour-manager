@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   Megaphone,
   UserPlus,
-  Sparkles,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
