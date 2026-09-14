@@ -72,10 +72,23 @@ Both write `<destination>/<date>/art-backup-<date>.tar.gz`, `art-storage-<date>.
 2. `cat art-storage-<date>.tar.gz.part-* > art-storage-<date>.tar.gz && tar xzf art-storage-<date>.tar.gz`
 3. `storage-dump/<bucket>/<original path>` mirrors the live layout, so files can be re-uploaded to the same bucket and path. `storage-dump/manifest.json` lists every object and its size for verification.
 
+## Retention in the Supabase bucket
+
+Each workflow prunes its own prefix after a successful upload via `.github/scripts/prune_backups.py <kind> <keep>`:
+
+| Prefix | Copies kept |
+| --- | --- |
+| `database-backups/database/` | 5 newest dated folders |
+| `database-backups/code/` | 5 newest dated folders |
+| `database-backups/storage/` | 3 newest dated folders (~334MB each) |
+
+Dated folder names sort chronologically (`YYYY-MM-DD`), so pruning is a lexical sort and delete of everything before the last N. The step is `continue-on-error` and the script swallows API errors, so retention never breaks a backup. SharePoint and GitHub artifact copies are not pruned by this script.
+
 ## Honest limitations
 
 - The full "rebuild everything" restore has **not been rehearsed end to end**; RTO and RPO are estimates. See [36-system-health-and-backup-verification.md](36-system-health-and-backup-verification.md) for the drill procedure and log.
-- Copies outside Supabase (GitHub artifacts, SharePoint, the local drive) depend on their own retention and on someone running the local script; only the Supabase bucket copy is fully automatic and unlimited.
+- Copies outside Supabase (GitHub artifacts, SharePoint, the local drive) depend on their own retention and on someone running the local script.
+
 - Restoring from a SharePoint copy is identical to restoring from Storage: download every part from the dated folder, `cat`/join them, then follow the restore steps above.
 - `backup_runs` failures surface in Settings → System Health and the daily digest email; nothing else alerts.
 
