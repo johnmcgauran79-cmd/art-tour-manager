@@ -209,7 +209,8 @@ export const HotelAllocationTab = ({
         </Button>
         <Button 
           type="button"
-          onClick={onContinue}
+          onClick={handleContinue}
+
           className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
         >
           Continue to Activities
