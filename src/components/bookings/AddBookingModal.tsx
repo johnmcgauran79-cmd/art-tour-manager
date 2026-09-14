@@ -6,6 +6,8 @@ import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
+import { beddingRuleText, defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useRecalculateBookingDates } from "@/hooks/useRecalculateBookingDates";
 import { useBookingFormState } from "@/hooks/useBookingFormState";
