@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, TrendingUp, FileText, RefreshCw, Loader2, Download } from "lucide-react";
+import { Plus, Search, TrendingUp, RefreshCw, Loader2, Download } from "lucide-react";
 import { InvoiceSyncProgressModal } from "@/components/finance/InvoiceSyncProgressModal";
 import { useBookings, useFilterCounts } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -16,7 +16,6 @@ import { BookingCard } from "@/components/cards/BookingCard";
 import { ViewToggle } from "@/components/shared/ViewToggle";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
-import { BulkInvoiceReferenceModal } from "@/components/bookings/BulkInvoiceReferenceModal";
 import { InvoiceSyncReviewModal } from "@/components/finance/InvoiceSyncReviewModal";
 import { useToast } from "@/hooks/use-toast";
 import { useBrands } from "@/hooks/useBrands";
@@ -38,7 +37,6 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
   const { isViewOnly, hasEditAccess } = usePermissions();
-  const [invoiceRefModalOpen, setInvoiceRefModalOpen] = useState(false);
   const [isSyncingInvoices, setIsSyncingInvoices] = useState(false);
   const [showSyncReviewModal, setShowSyncReviewModal] = useState(false);
   const [invoiceProposals, setInvoiceProposals] = useState<any[]>([]);
@@ -214,20 +212,6 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                 <PermissionButton
                   resource="booking"
                   action="edit"
-                  onClick={() => setInvoiceRefModalOpen(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5 text-xs sm:text-sm"
-                >
-                  <FileText className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">Update Invoice</span>
-                  <span className="sm:hidden">Invoice</span>
-                </PermissionButton>
-              )}
-              {!isViewOnly && (
-                <PermissionButton
-                  resource="booking"
-                  action="edit"
                   onClick={handleSyncInvoices}
                   variant="outline"
                   size="sm"
@@ -386,11 +370,6 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
           )}
         </CardContent>
       </Card>
-
-      <BulkInvoiceReferenceModal
-        open={invoiceRefModalOpen}
-        onOpenChange={setInvoiceRefModalOpen}
-      />
 
       <InvoiceSyncProgressModal open={isSyncingInvoices} />
 
