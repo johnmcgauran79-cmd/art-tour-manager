@@ -82,6 +82,14 @@ jobs:
           echo "destination=supabase://database-backups/database/$STAMP/ ($COUNT parts)" >> "$GITHUB_OUTPUT"
 
 
+      # Retention: keep only the newest 5 dated copies in the bucket.
+      - name: Remove old backups from Supabase Storage
+        if: always() && steps.upload.outcome == 'success'
+        continue-on-error: true
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 .github/scripts/prune_backups.py database 5
+
       # Third cloud copy: SharePoint document library. Skipped silently when the
       # SharePoint secrets are absent, and never fails the run.
       - name: Copy backup to SharePoint
