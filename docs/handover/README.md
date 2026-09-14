@@ -17,7 +17,7 @@ Everything here was written from the live repository and the live Supabase proje
 | Edge functions | 84 functions plus a `_shared` library folder |
 | Scheduled jobs | 15 pg_cron jobs |
 | App pages | 38 under `src/pages/` |
-| MCP server | `art-tour-manager-wordpress-mcp` v2.6.0, 117 tool definitions |
+| MCP server | `art-tour-manager-wordpress-mcp` v2.8.0, 146 tool definitions (outbound sending gated by `MCP_SENDING_ENABLED`) |
 
 ## Chapters
 
