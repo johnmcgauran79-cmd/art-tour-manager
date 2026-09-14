@@ -85,6 +85,12 @@ export const BackupStatusCard = () => {
               <meta.Icon className="mr-1 h-3 w-3" />
               {meta.label}
             </Badge>
+            <Button variant="outline" size="sm" asChild>
+              <a href={SHAREPOINT_BACKUP_URL} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                SharePoint copies
+              </a>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               Refresh
