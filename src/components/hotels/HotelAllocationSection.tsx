@@ -15,6 +15,7 @@ interface HotelAllocationSectionProps {
   tourId: string;
   bookingId: string;
   accommodationRequired: boolean;
+  passengerCount?: number;
   defaultCheckIn?: string;
   defaultCheckOut?: string;
   autoEnableHotels?: boolean;
@@ -27,6 +28,7 @@ export const HotelAllocationSection = ({
   tourId, 
   bookingId, 
   accommodationRequired, 
+  passengerCount = 1,
   defaultCheckIn, 
   defaultCheckOut,
   autoEnableHotels = false,
@@ -41,6 +43,8 @@ export const HotelAllocationSection = ({
   const removeHotelAllocation = useRemoveHotelAllocation();
   const cleanupDuplicates = useCleanupDuplicateHotelBookings();
   const updateBooking = useUpdateBooking();
+  const beddingOptions = allowedBedding(passengerCount);
+
 
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{[key: string]: boolean}>({});
