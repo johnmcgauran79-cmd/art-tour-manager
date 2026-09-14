@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { useHotels } from "@/hooks/useHotels";
 import { useHotelBookings, useCreateHotelBooking, useUpdateHotelBooking, useRemoveHotelAllocation, useCleanupDuplicateHotelBookings } from "@/hooks/useHotelBookings";
 import { useUpdateBooking } from "@/hooks/useBookings";
+import { BEDDING_LABELS, allowedBedding, beddingRuleText, defaultBedding } from "@/lib/beddingRules";
+
 
 interface HotelAllocationSectionProps {
   tourId: string;
