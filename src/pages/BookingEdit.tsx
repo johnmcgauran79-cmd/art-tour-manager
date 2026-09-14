@@ -403,10 +403,17 @@ export default function BookingEdit() {
   };
 
   const handleSecondaryContactSelect = (contact: any) => {
+    if (!contact) {
+      setSelectedSecondaryContact(null);
+      setSecondaryContactName('');
+      setFormData(prev => ({ ...prev, secondary_contact_id: '' }));
+      return;
+    }
     setSelectedSecondaryContact(contact);
     setSecondaryContactName(`${contact.first_name} ${contact.last_name}`);
     setFormData(prev => ({ ...prev, secondary_contact_id: contact.id }));
   };
+
 
   const handleContactCreated = (newContact: any) => {
     setSelectedSecondaryContact(newContact);
