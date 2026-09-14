@@ -67,3 +67,9 @@ Functions run with `SUPABASE_SERVICE_ROLE_KEY`, which bypasses RLS. The service 
 
 - Passport data is purged on a schedule (`purge_passport_data`, `purge-passport-data` function).
 - AI conversations are purged nightly with a retention window (`ai_retention_days`, `purge-ai-conversations`).
+
+## Frontend role visibility (September 2026 hardening)
+
+- Restricted routes (`/marketing`, `/leads`, `/communications`, `/data-health`, `/data-quality`, `/wordpress-content`, `/calendar`, task routes, `/todos`, `/notes`) no longer silently redirect: `TaskRoute` / `WorkspaceRoute` in `src/App.tsx` render `src/components/system/AccessDenied.tsx` for roles without access, so direct links are blocked rather than merely hidden.
+- Admin-only Settings areas: Email Settings (sender identity / reply-to), Outlook Mailboxes, Invoice Management, Branding & Appearance, plus the existing System Settings tab. Managers keep Email Templates, Automated Emails, Automated Reports, Task Templates and Additional Info. Guards live in `src/pages/Settings.tsx` (tab + `ssub` sub-tab redirects) and the search registry access levels in `src/lib/appDestinations.ts`.
+- Passport numbers are masked to "Supplied" for anyone other than Admin/Manager via `src/lib/passportPrivacy.ts` (used by `BookingTravelDocsDisplay` and `PassportDetailsReport`).
