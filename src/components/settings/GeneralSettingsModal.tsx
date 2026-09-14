@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Clock, Palette, Globe, Bell, Mail, Link2, Save, FileText } from "lucide-react";
+import { Settings, Clock, Link2, Save, FileText } from "lucide-react";
+
 import { TimezoneSettingsModal } from "@/components/settings/TimezoneSettingsModal";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,18 +38,12 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
     return Number(s.setting_value) || fallback;
   };
 
-  const [senderName, setSenderName] = useState('');
-  const [fromEmailClient, setFromEmailClient] = useState('');
-  const [fromEmailInternal, setFromEmailInternal] = useState('');
   const [tokenExpiry, setTokenExpiry] = useState(168);
   const [instalmentTemplate, setInstalmentTemplate] = useState(DEFAULT_INSTALMENT_TEMPLATE);
   const [noInstalmentTemplate, setNoInstalmentTemplate] = useState(DEFAULT_NO_INSTALMENT_TEMPLATE);
 
   useEffect(() => {
     if (settings) {
-      setSenderName(getSetting('default_sender_name', 'Australian Racing Tours'));
-      setFromEmailClient(getSetting('default_from_email_client', 'bookings@australianracingtours.com.au'));
-      setFromEmailInternal(getSetting('default_from_email_internal', 'info@australianracingtours.com.au'));
       setTokenExpiry(getNumSetting('token_expiry_hours', 168));
       setInstalmentTemplate(getSetting('instalment_details_template', DEFAULT_INSTALMENT_TEMPLATE));
       setNoInstalmentTemplate(
@@ -58,13 +52,7 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
     }
   }, [settings]);
 
-  const handleSaveEmail = async () => {
-    await Promise.all([
-      updateSetting.mutateAsync({ settingKey: 'default_sender_name', value: senderName }),
-      updateSetting.mutateAsync({ settingKey: 'default_from_email_client', value: fromEmailClient }),
-      updateSetting.mutateAsync({ settingKey: 'default_from_email_internal', value: fromEmailInternal }),
-    ]);
-  };
+
 
   const handleSaveToken = async () => {
     await updateSetting.mutateAsync({ settingKey: 'token_expiry_hours', value: tokenExpiry });
