@@ -142,7 +142,7 @@ export const HotelAllocationSection = ({
           check_in_date: hotel?.default_check_in || defaultCheckIn || null,
           check_out_date: hotel?.default_check_out || defaultCheckOut || null,
           room_type: hotel?.default_room_type || bookingToUpdate.room_type,
-          bedding: bookingToUpdate.bedding || 'double',
+          bedding: defaultBedding(passengerCount),
           required: true,
         }, {
           onSuccess: async () => {
