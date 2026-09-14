@@ -27,7 +27,7 @@
 | `pages/` | 38 route-level screens (Index dashboard, TourDetail, Leads, Marketing, Settings, Communications, operations/* reports, public token pages) |
 | `components/` | Feature folders: `tours/`, `bookings/`, `contacts/`, `crm/`, `marketing/`, `email/`, `tasks/`, `hotels/`, `activities/`, `itinerary/`, `reports/`, `operations/`, `settings/`, `dashboard/`, `finance/`, `wordpress/`, `layout/`, `shared/`, `ui/` (shadcn primitives) |
 | `hooks/` | ~180 data hooks, one per domain concern (`useTours`, `useTourBookings`, `useCrmSales`, `useTourMarketingIntelligence`, `usePermissions`, …). This is the data-access layer — screens rarely call Supabase directly |
-| `lib/` | Pure logic: `edm/` (audience rules, palette, templates), `mcp/` (MCP tool implementations and WordPress mapping), `typography.ts`, `brandFonts.ts`, `statusColors.ts`, `cancellationPolicy.ts`, `mergeFields`-adjacent helpers |
+| `lib/` | Pure logic: `edm/` (audience rules, palette, templates), `mcp/` (MCP tool implementations and WordPress mapping), `typography.ts`, `brandFonts.ts`, `statusColors.ts`, `cancellationPolicy.ts`, `appDestinations.ts` (role-aware registry of pages/functions/settings powering feature search), `mergeFields`-adjacent helpers |
 | `utils/` | Formatting and processing helpers (`phoneFormatter`, `csvParser`, `mergeFields`, `inputSanitizer`, `bookingQueries`) |
 | `integrations/supabase/` | **Generated** client and `types.ts` |
 | `contexts/` | `AiContext` for the in-app assistant |

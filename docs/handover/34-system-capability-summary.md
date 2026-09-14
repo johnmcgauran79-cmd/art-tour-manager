@@ -111,14 +111,17 @@ Read and write integration with the public site: find/get tours and pages, media
 ## 13. AI surfaces
 
 - ART AI assistant (`/art-ai`) with deterministic skills for common questions (next departing tour, payment exceptions) and standardised date grounding.
-- MCP server `art-tour-manager-wordpress-mcp` v2.6.0 with 117 tools covering tours, bookings, contacts, hotels, activities, tasks, finance, email and WordPress. Role-based access enforced; destructive tools require confirmation. Not expanded as part of the handover.
+- MCP server `art-tour-manager-wordpress-mcp` v2.8.0 with 146 tools covering tours, bookings, contacts, hotels, activities, tasks, finance, email marketing, CRM/leads, Outlook correspondence, tour marketing intelligence, data quality and WordPress. Role-based access enforced; destructive tools require confirmation; outbound sending tools stay disabled unless `MCP_SENDING_ENABLED=true`. Full list: [35-mcp-tool-reference.md](35-mcp-tool-reference.md).
 
 ## 14. Administration
 
 - Users created by admins only (no public sign-up), default role booking agent.
 - Roles: admin, manager, booking agent (view-only), host (view-only, assigned tours). Permissions centralised.
-- Settings: sender identity, timezone, loyalty, offsets, integrations, email rules, templates, task statuses, brands and theme, mailbox access, form settings, lead integration keys.
-- Audit logging, backup reporting, data purges (AI conversations, passport data).
+- Settings: sender identity (Email Management only), link expiry, timezones, instalment wording, loyalty, offsets, integrations, email rules, templates, task statuses, Branding & Appearance (theme, palette, Brands), mailbox access, form settings, lead integration keys.
+- Data quality checks (duplicates, missing phones, invalid emails, enquiry hygiene, Xero invoice links on upcoming tours) live as a tab on Data Health with fix links, dismissals and CSV export.
+- Global search covers records **and** features/settings, so searching a function name (e.g. "backup") opens it directly.
+- Audit logging, backup reporting with enforced retention (5 database, 5 code, 3 storage copies), data purges (AI conversations, passport data).
+
 
 ---
 
