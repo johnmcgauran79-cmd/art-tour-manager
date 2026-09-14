@@ -60,8 +60,21 @@ Everything here was written from the live repository and the live Supabase proje
 | [35-mcp-tool-reference.md](35-mcp-tool-reference.md) | Full reference for all 146 MCP tools (v2.8.0), grouped by area, for AI clients |
 | [36-system-health-and-backup-verification.md](36-system-health-and-backup-verification.md) | System Health panel, daily failure digest, backup verification and restore rehearsal |
 
+## Recent changes (September 2026)
+
+- Settings cleaned up: placeholder cards and the fake "System Status" strip removed; Integration Status folded into Data Health; unreachable emergency contact import removed; sender identity lives only in Email Settings; single "Branding & Appearance" tab now holds theme, palette and Brands.
+- Data quality moved from its own side-menu tab to a tab on `/data-health` plus a Settings "Review Data" card; duplicate-contact Merge opens the merge dialog; Xero invoice checks cover upcoming tours only and accept multi-invoice bookings.
+- Global search now finds features and settings, not just records (`src/lib/appDestinations.ts`).
+- Marketing audiences accept multiple tours (`in` / "is any of") for booking-list and rebooking campaigns.
+- Backups: nightly database, code and storage copies to Supabase, GitHub artifacts and SharePoint, with retention of 5 / 5 / 3 dated folders.
+- Keap and Brevo removed entirely; historical IDs retained read-only. Do not reintroduce.
+- Bookings can have a secondary contact removed and saved.
+- MCP expanded to v2.8.0 / 146 tools with CRM, marketing, correspondence and data-quality coverage; outbound sending disabled unless `MCP_SENDING_ENABLED=true`.
+
+Details live in [03-modules-routes.md](03-modules-routes.md), [14-email-marketing.md](14-email-marketing.md), [24-backup-recovery.md](24-backup-recovery.md), [25-known-issues-debt.md](25-known-issues-debt.md) and [35-mcp-tool-reference.md](35-mcp-tool-reference.md).
+
 ## Rules this handover follows
 
 - No secret values, tokens, passwords, client data or private correspondence appear anywhere in this folder — only variable names.
-- Nothing described here was "improved" while documenting it. Problems are recorded in [25-known-issues-debt.md](25-known-issues-debt.md), not fixed.
+- Documentation records the system as built; fixes made in the app are listed under Recent changes and in the resolved table in [25-known-issues-debt.md](25-known-issues-debt.md).
 - Phase 7 and MCP expansion are explicitly **not** started. See [19-mcp-current-state.md](19-mcp-current-state.md).
