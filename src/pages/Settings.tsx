@@ -129,19 +129,22 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         </TabsContent>
 
-        <TabsContent value="invoice-management" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice Management</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Configure the line items, payment schedule, and additional information that appear on Xero invoices.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <InvoiceLineTemplatesManagement />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="invoice-management" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Management</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure the line items, payment schedule, and additional information that appear on Xero invoices.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <InvoiceLineTemplatesManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
 
         <TabsContent value="task-templates" className="space-y-6">
           <TaskTemplatesManagement />
@@ -168,7 +171,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
           </TabsContent>
         )}
 
-        {canManageBrands && (
+        {isAdmin && (
           <TabsContent value="brands" className="space-y-6">
             <ThemeAppearanceSettings />
             <BrandPaletteSettings />
