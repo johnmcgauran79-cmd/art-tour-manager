@@ -18,6 +18,8 @@ import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useRestoreBooking } from "@/hooks/useRestoreBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/hotels/HotelAllocationSection";
+import { beddingRuleText, defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 import { ActivityAllocationSection } from "@/components/activities/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/bookings/CancelBookingDialog";
 import { EditContactModal } from "@/components/contacts/EditContactModal";
@@ -233,7 +235,7 @@ export default function BookingEdit() {
                   allocated: true,
                   check_in_date: hotel.default_check_in || tour?.start_date,
                   check_out_date: hotel.default_check_out || tour?.end_date,
-                  bedding: formData.passenger_count === 1 ? 'single' : 'double',
+                  bedding: defaultBedding(formData.passenger_count) as "single" | "double" | "twin",
                   room_type: hotel.default_room_type,
                   required: true,
                 });
@@ -256,22 +258,18 @@ export default function BookingEdit() {
           console.log('No hotels on tour - will use tour dates for check-in/check-out');
         }
 
-        // Bedding vs passenger count mismatches are flagged as a warning only —
-        // guests legitimately move between twin and two singles, so saving is never blocked.
+        // Bedding must match the passenger count — saving is blocked otherwise.
         if (hotelBookings && hotelBookings.length > 0) {
-          const mismatch = formData.passenger_count === 1
-            ? hotelBookings.find(hb => hb.bedding !== 'single')
-            : hotelBookings.find(hb => hb.bedding === 'single');
+          const mismatch = hotelBookings.find(hb => !isBeddingValid(hb.bedding, formData.passenger_count));
 
           if (mismatch) {
-            toast({
-              title: "Check bedding type",
-              description: formData.passenger_count === 1
-                ? "This booking has 1 passenger but the room is not set to Single. Saved anyway — update it in the Hotels tab if needed."
-                : `This booking has ${formData.passenger_count} passengers with Single bedding. Saved anyway — update it in the Hotels tab if needed.`,
-            });
+            setValidationError(
+              `This booking has ${formData.passenger_count} passenger${formData.passenger_count === 1 ? '' : 's'}, so the bedding must be ${beddingRuleText(formData.passenger_count)}. Please update it in the Hotels tab before saving.`
+            );
+            return;
           }
         }
+
       }
     }
 
@@ -1001,6 +999,8 @@ export default function BookingEdit() {
                 tourId={booking.tour_id}
                 bookingId={booking.id}
                 accommodationRequired={formData.accommodation_required}
+                passengerCount={formData.passenger_count}
+
                 defaultCheckIn={formData.check_in_date}
                 defaultCheckOut={formData.check_out_date}
                 onDatesChange={(checkIn, checkOut) => {

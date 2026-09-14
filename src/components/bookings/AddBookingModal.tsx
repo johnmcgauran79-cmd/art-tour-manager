@@ -6,6 +6,8 @@ import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
+import { beddingRuleText, defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useRecalculateBookingDates } from "@/hooks/useRecalculateBookingDates";
 import { useBookingFormState } from "@/hooks/useBookingFormState";
@@ -298,21 +300,17 @@ export const AddBookingModal = ({
         return;
       }
       
-      if (formData.passenger_count === 1) {
-        const invalidBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding !== 'single');
-        if (invalidBedding) {
-          setValidationError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before creating this booking.");
-          setActiveTab("hotels");
-          return;
-        }
-      } else if (formData.passenger_count >= 2) {
-        const singleBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding === 'single');
-        if (singleBedding) {
-          setValidationError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before creating this booking.`);
-          setActiveTab("hotels");
-          return;
-        }
+      const invalidBedding = allocatedHotels.find(
+        ([_, allocation]) => !isBeddingValid(allocation.bedding, formData.passenger_count)
+      );
+      if (invalidBedding) {
+        setValidationError(
+          `This booking has ${formData.passenger_count} passenger${formData.passenger_count === 1 ? '' : 's'}, so the bedding must be ${beddingRuleText(formData.passenger_count)}. Please update the Hotels tab before creating this booking.`
+        );
+        setActiveTab("hotels");
+        return;
       }
+
     }
 
     // Validate second passenger name is filled when passenger count is 2 or more
@@ -383,7 +381,7 @@ export const AddBookingModal = ({
             check_in_date: checkIn || null,
             check_out_date: checkOut || null,
             nights: nights,
-            bedding: (allocation.bedding || 'double') as 'single' | 'double' | 'twin',
+            bedding: (isBeddingValid(allocation.bedding, formData.passenger_count) ? allocation.bedding : defaultBedding(formData.passenger_count)) as 'single' | 'double' | 'twin',
             room_type: allocation.room_type || null,
             room_upgrade: allocation.room_upgrade || null,
             confirmation_number: allocation.confirmation_number || null,

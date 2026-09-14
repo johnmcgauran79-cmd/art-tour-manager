@@ -40,7 +40,6 @@ export const APP_DESTINATIONS: AppDestination[] = [
   { id: "data-quality", label: "Data Quality (duplicates, missing details)", group: "Tools", keywords: "duplicates missing phone numbers invoices clean up review data", path: "/data-quality", access: "adminManager" },
 
   // ---- Operations tools ----
-  { id: "ops-bedding", label: "Bedding Review", group: "Operations", keywords: "beds twin double king rooms", path: "/operations/bedding-review", access: "staff" },
   { id: "ops-activities", label: "Activity Bookings", group: "Operations", keywords: "activities allocations experiences", path: "/operations/activity-bookings", access: "staff" },
   { id: "ops-hotels", label: "Hotel Allocations", group: "Operations", keywords: "hotels rooming list accommodation", path: "/operations/hotel-allocations", access: "staff" },
   { id: "ops-changes", label: "Booking Changes", group: "Operations", keywords: "amendments changes log", path: "/operations/booking-changes", access: "staff" },

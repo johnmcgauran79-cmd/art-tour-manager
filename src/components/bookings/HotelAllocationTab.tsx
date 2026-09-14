@@ -5,6 +5,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { BEDDING_LABELS, allowedBedding, beddingRuleText, defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 
 interface HotelAllocation {
   allocated: boolean;
@@ -53,17 +55,28 @@ export const HotelAllocationTab = ({
     }));
   };
 
-  const handleBeddingChange = (hotelId: string, value: string, allocation: HotelAllocation) => {
-    // Any bedding type can be chosen for any passenger count — guests move between
-    // twin and two singles regularly. Unusual combinations only get a gentle note.
-    if ((passengerCount === 1 && value !== 'single') || (passengerCount >= 2 && value === 'single')) {
-      toast({
-        title: "Unusual bedding choice",
-        description: `${passengerCount} passenger${passengerCount === 1 ? '' : 's'} with ${value} bedding — saved, just double-check it's correct.`,
-      });
-    }
+  const beddingOptions = allowedBedding(passengerCount);
+
+  const handleBeddingChange = (hotelId: string, value: string) => {
     handleAllocationChange(hotelId, 'bedding', value);
   };
+
+  const invalidAllocations = Object.entries(hotelAllocations).filter(
+    ([, allocation]) => allocation?.allocated && !isBeddingValid(allocation.bedding, passengerCount)
+  );
+
+  const handleContinue = () => {
+    if (accommodationRequired && invalidAllocations.length > 0) {
+      toast({
+        title: "Bedding must match passenger numbers",
+        description: `${passengerCount} passenger${passengerCount === 1 ? '' : 's'} requires ${beddingRuleText(passengerCount)} bedding. Please update the allocated hotels.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    onContinue();
+  };
+
 
   if (!accommodationRequired) {
     return (
@@ -97,7 +110,7 @@ export const HotelAllocationTab = ({
               allocated: false,
               check_in_date: hotel.default_check_in || '',
               check_out_date: hotel.default_check_out || '',
-              bedding: 'double',
+              bedding: defaultBedding(passengerCount),
               room_type: hotel.default_room_type || '',
             };
 
@@ -134,31 +147,25 @@ export const HotelAllocationTab = ({
                       <div>
                         <Label>Bedding Type</Label>
                         <Select 
-                          value={allocation.bedding} 
-                          onValueChange={(value) => handleBeddingChange(hotel.id, value, allocation)}
+                          value={beddingOptions.includes(allocation.bedding) ? allocation.bedding : ''} 
+                          onValueChange={(value) => handleBeddingChange(hotel.id, value)}
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder={`Select ${beddingRuleText(passengerCount)}`} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="single">
-                              Single
-                            </SelectItem>
-                            <SelectItem value="double">
-                              Double
-                            </SelectItem>
-                            <SelectItem value="twin">
-                              Twin
-                            </SelectItem>
-                            <SelectItem value="triple">
-                              Triple
-                            </SelectItem>
-                            <SelectItem value="family">
-                              Family
-                            </SelectItem>
+                            {beddingOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {BEDDING_LABELS[option]}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {passengerCount} passenger{passengerCount === 1 ? '' : 's'} — {beddingRuleText(passengerCount)} only
+                        </p>
                       </div>
+
                       <div>
                         <Label>Room Type</Label>
                         <Input
@@ -202,7 +209,8 @@ export const HotelAllocationTab = ({
         </Button>
         <Button 
           type="button"
-          onClick={onContinue}
+          onClick={handleContinue}
+
           className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
         >
           Continue to Activities

@@ -47,7 +47,6 @@ const ViewItinerary = lazy(() => import("./pages/ViewItinerary"));
 const TeamsOAuthComplete = lazy(() => import("./pages/TeamsOAuthComplete"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const HostReport = lazy(() => import("./pages/HostReport"));
-const BeddingReview = lazy(() => import("./pages/operations/BeddingReview"));
 const ActivityBookings = lazy(() => import("./pages/operations/ActivityBookings"));
 const HotelAllocations = lazy(() => import("./pages/operations/HotelAllocations"));
 const BookingChanges = lazy(() => import("./pages/operations/BookingChanges"));
@@ -376,16 +375,6 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <TourItinerary />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/operations/bedding-review"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <BeddingReview />
                     </AppLayout>
                   </ProtectedRoute>
                 }

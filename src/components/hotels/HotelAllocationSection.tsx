@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/button";
 import { useHotels } from "@/hooks/useHotels";
 import { useHotelBookings, useCreateHotelBooking, useUpdateHotelBooking, useRemoveHotelAllocation, useCleanupDuplicateHotelBookings } from "@/hooks/useHotelBookings";
 import { useUpdateBooking } from "@/hooks/useBookings";
+import { BEDDING_LABELS, allowedBedding, beddingRuleText, defaultBedding } from "@/lib/beddingRules";
+
 
 interface HotelAllocationSectionProps {
   tourId: string;
   bookingId: string;
   accommodationRequired: boolean;
+  passengerCount?: number;
   defaultCheckIn?: string;
   defaultCheckOut?: string;
   autoEnableHotels?: boolean;
@@ -27,6 +30,7 @@ export const HotelAllocationSection = ({
   tourId, 
   bookingId, 
   accommodationRequired, 
+  passengerCount = 1,
   defaultCheckIn, 
   defaultCheckOut,
   autoEnableHotels = false,
@@ -41,6 +45,8 @@ export const HotelAllocationSection = ({
   const removeHotelAllocation = useRemoveHotelAllocation();
   const cleanupDuplicates = useCleanupDuplicateHotelBookings();
   const updateBooking = useUpdateBooking();
+  const beddingOptions = allowedBedding(passengerCount);
+
 
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{[key: string]: boolean}>({});
@@ -136,7 +142,7 @@ export const HotelAllocationSection = ({
           check_in_date: hotel?.default_check_in || defaultCheckIn || null,
           check_out_date: hotel?.default_check_out || defaultCheckOut || null,
           room_type: hotel?.default_room_type || bookingToUpdate.room_type,
-          bedding: bookingToUpdate.bedding || 'double',
+          bedding: defaultBedding(passengerCount) as "single" | "double" | "twin",
           required: true,
         }, {
           onSuccess: async () => {
@@ -167,7 +173,7 @@ export const HotelAllocationSection = ({
           check_in_date: hotel?.default_check_in || defaultCheckIn || null,
           check_out_date: hotel?.default_check_out || defaultCheckOut || null,
           room_type: hotel?.default_room_type,
-          bedding: 'single',
+          bedding: defaultBedding(passengerCount) as "single" | "double" | "twin",
           required: true,
         }, {
           onSuccess: async () => {
@@ -302,21 +308,23 @@ export const HotelAllocationSection = ({
                   <div>
                     <Label>Bedding Type</Label>
                     <Select 
-                      value={getFieldValue(hotelBooking, 'bedding')} 
+                      value={beddingOptions.includes(getFieldValue(hotelBooking, 'bedding')) ? getFieldValue(hotelBooking, 'bedding') : ''} 
                       onValueChange={(value) => handleFieldChange(hotelBooking.id, 'bedding', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder={`Select ${beddingRuleText(passengerCount)}`} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="single">Single</SelectItem>
-                        <SelectItem value="double">Double</SelectItem>
-                        <SelectItem value="twin">Twin</SelectItem>
-                        <SelectItem value="triple">Triple</SelectItem>
-                        <SelectItem value="family">Family</SelectItem>
+                        {beddingOptions.map((option) => (
+                          <SelectItem key={option} value={option}>{BEDDING_LABELS[option]}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {passengerCount} passenger{passengerCount === 1 ? '' : 's'} — {beddingRuleText(passengerCount)} only
+                    </p>
                   </div>
+
                   <div>
                     <Label>Room Type</Label>
                     <Input
