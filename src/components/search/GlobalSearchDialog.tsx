@@ -19,12 +19,15 @@ import {
   Loader2,
   Mail,
   Map,
+  SlidersHorizontal,
   StickyNote,
   Users,
 } from "lucide-react";
 import { useGlobalSearch, type GlobalSearchKind } from "@/hooks/useGlobalSearch";
+import { searchAppDestinations } from "@/lib/appDestinations";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+
 
 interface GlobalSearchDialogProps {
   open: boolean;
@@ -102,10 +105,22 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: GlobalSearchDialogPro
     return items;
   }, [isAgent, isHost, isAdminOrManager]);
 
+  // Features, pages and settings cards matching what the user typed.
+  const destinations = useMemo(
+    () =>
+      searchAppDestinations(debounced, {
+        isAgent,
+        isHost,
+        isAdmin: userRole === "admin",
+        isAdminOrManager,
+      }),
+    [debounced, isAgent, isHost, userRole, isAdminOrManager],
+  );
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder="Search tours, bookings, contacts, tasks…"
+        placeholder="Search tours, bookings, contacts, tasks, settings…"
         value={term}
         onValueChange={setTerm}
       />
@@ -117,7 +132,7 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: GlobalSearchDialogPro
           </div>
         )}
 
-        {debounced.length >= 2 && !isFetching && grouped.length === 0 && (
+        {debounced.length >= 2 && !isFetching && grouped.length === 0 && destinations.length === 0 && (
           <CommandEmpty>No matches for “{debounced}”.</CommandEmpty>
         )}
 
@@ -148,7 +163,29 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: GlobalSearchDialogPro
           );
         })}
 
-        {grouped.length > 0 && <CommandSeparator />}
+        {destinations.length > 0 && (
+          <>
+            {grouped.length > 0 && <CommandSeparator />}
+            <CommandGroup heading="Features & settings">
+              {destinations.map((d) => (
+                <CommandItem
+                  key={d.id}
+                  value={`dest ${d.id} ${d.label} ${d.keywords} ${debounced}`}
+                  onSelect={() => go(d.path)}
+                  className="gap-2"
+                >
+                  <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{d.label}</span>
+                  <span className="ml-auto truncate pl-3 text-xs text-muted-foreground">
+                    {d.group}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+
+        {(grouped.length > 0 || destinations.length > 0) && <CommandSeparator />}
 
         <CommandGroup heading="Go to">
           {navItems.map((item) => (
@@ -167,3 +204,4 @@ export const GlobalSearchDialog = ({ open, onOpenChange }: GlobalSearchDialogPro
     </CommandDialog>
   );
 };
+
