@@ -14,6 +14,9 @@ import { InvoiceLineTemplatesManagement } from "@/components/settings/InvoiceLin
 import { EmailSettingsTab } from "@/components/email/EmailSettingsTab";
 import { BrandsManagement } from "@/components/settings/BrandsManagement";
 import { MailboxIntegrationSettings } from "@/components/settings/MailboxIntegrationSettings";
+import { ThemeAppearanceSettings } from "@/components/settings/ThemeAppearanceSettings";
+import { BrandPaletteSettings } from "@/components/settings/BrandPaletteSettings";
+
 
 
 interface SettingsProps {
@@ -65,7 +68,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
           <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
-          {canManageBrands && <TabsTrigger value="brands">Brands</TabsTrigger>}
+          {canManageBrands && <TabsTrigger value="brands">Branding &amp; Appearance</TabsTrigger>}
           {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
         </TabsList>
 
@@ -154,9 +157,12 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         {canManageBrands && (
           <TabsContent value="brands" className="space-y-6">
+            <ThemeAppearanceSettings />
+            <BrandPaletteSettings />
             <BrandsManagement />
           </TabsContent>
         )}
+
       </Tabs>
     </div>
   );
