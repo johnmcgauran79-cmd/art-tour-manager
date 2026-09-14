@@ -51,35 +51,43 @@ export const Settings = ({ onBack }: SettingsProps) => {
     setSearchParams(next, { replace: true });
   };
 
-  // If a non-admin lands on the admin-only system tab via a shared link,
-  // silently redirect them to the default tab.
+  // If a non-admin lands on an admin-only tab via a shared link, silently
+  // redirect them to the default tab.
   useEffect(() => {
-    if ((activeTab === 'system' && !isAdmin) || (activeTab === 'brands' && !canManageBrands)) {
+    if (!isAdmin && ['system', 'brands', 'invoice-management'].includes(activeTab)) {
       setActiveTab('email-management');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, isAdmin, canManageBrands]);
+  }, [activeTab, isAdmin]);
+
+  // Email sender identity and staff mailbox syncing are admin-only.
+  useEffect(() => {
+    if (!isAdmin && ['email-settings', 'mailboxes'].includes(emailSubTab)) {
+      setEmailSubTab('templates');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailSubTab, isAdmin]);
 
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`mb-8 flex w-full flex-wrap h-auto gap-1 md:grid ${isAdmin ? 'md:grid-cols-6' : canManageBrands ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
+        <TabsList className={`mb-8 flex w-full flex-wrap h-auto gap-1 md:grid ${isAdmin ? 'md:grid-cols-6' : 'md:grid-cols-3'}`}>
           <TabsTrigger value="email-management">Email Management</TabsTrigger>
-          <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>
+          {isAdmin && <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>}
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
-          {canManageBrands && <TabsTrigger value="brands">Branding &amp; Appearance</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="brands">Branding &amp; Appearance</TabsTrigger>}
           {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="email-management" className="space-y-6">
           <Tabs value={emailSubTab} onValueChange={setEmailSubTab} className="w-full">
-            <TabsList className="mb-6 flex w-full flex-wrap h-auto gap-1 md:grid md:grid-cols-5">
+            <TabsList className={`mb-6 flex w-full flex-wrap h-auto gap-1 md:grid ${isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-3'}`}>
               <TabsTrigger value="templates">Email Templates</TabsTrigger>
               <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
               <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
-              <TabsTrigger value="email-settings">Email Settings</TabsTrigger>
-              <TabsTrigger value="mailboxes">Outlook Mailboxes</TabsTrigger>
+              {isAdmin && <TabsTrigger value="email-settings">Email Settings</TabsTrigger>}
+              {isAdmin && <TabsTrigger value="mailboxes">Outlook Mailboxes</TabsTrigger>}
             </TabsList>
 
 
@@ -105,14 +113,19 @@ export const Settings = ({ onBack }: SettingsProps) => {
               <AutomatedReportRulesManagement />
             </TabsContent>
 
-            <TabsContent value="email-settings" className="space-y-6">
-              <EmailSettingsTab />
-            </TabsContent>
+            {isAdmin && (
+              <TabsContent value="email-settings" className="space-y-6">
+                <EmailSettingsTab />
+              </TabsContent>
+            )}
 
-            <TabsContent value="mailboxes" className="space-y-6">
-              <MailboxIntegrationSettings />
-            </TabsContent>
+            {isAdmin && (
+              <TabsContent value="mailboxes" className="space-y-6">
+                <MailboxIntegrationSettings />
+              </TabsContent>
+            )}
           </Tabs>
+
 
         </TabsContent>
 
