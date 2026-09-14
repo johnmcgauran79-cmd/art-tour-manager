@@ -206,7 +206,7 @@ export const useBookingFormState = ({
         allocated: accommodationRequired,
         check_in_date: existing?.check_in_date || hotel.default_check_in || preSelectedTourStartDate || '',
         check_out_date: existing?.check_out_date || hotel.default_check_out || preSelectedTourEndDate || '',
-        bedding: passengerCount === 1 ? 'single' : (existing?.bedding || 'double'),
+        bedding: isBeddingValid(existing?.bedding, passengerCount) ? existing!.bedding : defaultBedding(passengerCount),
         room_type: existing?.room_type || hotel.default_room_type || '',
         room_upgrade: existing?.room_upgrade || '',
         confirmation_number: existing?.confirmation_number || '',
