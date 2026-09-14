@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,15 +38,34 @@ type SectionKey =
   | null;
 
 export const SystemSettings = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [generalSettingsOpen, setGeneralSettingsOpen] = useState(false);
   const [userManagementOpen, setUserManagementOpen] = useState(false);
   const [systemLogOpen, setSystemLogOpen] = useState(false);
   const [taskStatusesOpen, setTaskStatusesOpen] = useState(false);
   const [section, setSection] = useState<SectionKey>(null);
 
+  // Deep links from the global search palette (…&ssec=backups) open the
+  // matching card straight away.
+  const deepLink = searchParams.get("ssec");
+  useEffect(() => {
+    if (!deepLink) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("ssec");
+    setSearchParams(next, { replace: true });
+
+    if (deepLink === "general") setGeneralSettingsOpen(true);
+    else if (deepLink === "users") setUserManagementOpen(true);
+    else if (deepLink === "logs") setSystemLogOpen(true);
+    else if (deepLink === "task-statuses") setTaskStatusesOpen(true);
+    else setSection(deepLink as SectionKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLink]);
+
   const closeSection = (open: boolean) => {
     if (!open) setSection(null);
   };
+
 
   return (
     <div className="space-y-6">
