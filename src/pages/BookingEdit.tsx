@@ -18,6 +18,8 @@ import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useRestoreBooking } from "@/hooks/useRestoreBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/hotels/HotelAllocationSection";
+import { beddingRuleText, defaultBedding, isBeddingValid } from "@/lib/beddingRules";
+
 import { ActivityAllocationSection } from "@/components/activities/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/bookings/CancelBookingDialog";
 import { EditContactModal } from "@/components/contacts/EditContactModal";
