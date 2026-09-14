@@ -94,13 +94,7 @@ export const BookingsReviewsChecks = () => {
       onClick: () => setBouncedEmailsOpen(true),
     },
     {
-      icon: BedDouble,
-      label: "Bedding Review",
-      description: "Check bedding choices against passenger numbers on upcoming tours",
-      count: 0,
-      onClick: () => navigate("/operations/bedding-review"),
-    },
-    {
+
       icon: Tag,
       label: "Name Tag Generator",
       description: "Generate first-name lists by tour for printing name tags",
