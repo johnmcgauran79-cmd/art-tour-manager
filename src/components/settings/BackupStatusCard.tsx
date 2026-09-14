@@ -10,7 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertTriangle, CheckCircle2, DatabaseBackup, HelpCircle, RefreshCw, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, DatabaseBackup, ExternalLink, HelpCircle, RefreshCw, XCircle } from "lucide-react";
+
+const SHAREPOINT_BACKUP_URL =
+  "https://australianracingtours22.sharepoint.com/sites/AustralianRacingTours/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FAustralianRacingTours%2FShared%20Documents%2FART%20Admin%20Backups";
 import {
   BACKUP_STALE_HOURS,
   backupHealth,
