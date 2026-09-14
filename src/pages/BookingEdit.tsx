@@ -403,10 +403,17 @@ export default function BookingEdit() {
   };
 
   const handleSecondaryContactSelect = (contact: any) => {
+    if (!contact) {
+      setSelectedSecondaryContact(null);
+      setSecondaryContactName('');
+      setFormData(prev => ({ ...prev, secondary_contact_id: '' }));
+      return;
+    }
     setSelectedSecondaryContact(contact);
     setSecondaryContactName(`${contact.first_name} ${contact.last_name}`);
     setFormData(prev => ({ ...prev, secondary_contact_id: contact.id }));
   };
+
 
   const handleContactCreated = (newContact: any) => {
     setSelectedSecondaryContact(newContact);
@@ -666,27 +673,39 @@ export default function BookingEdit() {
                 </Button>
               </div>
 
-              <ContactSearch
-                value={secondaryContactName}
-                onValueChange={setSecondaryContactName}
-                onContactSelect={handleSecondaryContactSelect}
-                selectedContactId={selectedSecondaryContact?.id || ''}
-                placeholder="Search for secondary contact..."
-                required={false}
-                label="Secondary Contact Name"
-              />
-              
-              {selectedSecondaryContact && (
-                <div className="bg-muted p-3 rounded-md">
-                  <p className="text-sm font-medium">
-                    {selectedSecondaryContact.first_name} {selectedSecondaryContact.last_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{selectedSecondaryContact.email}</p>
-                  {selectedSecondaryContact.phone && (
-                    <p className="text-sm text-muted-foreground">{selectedSecondaryContact.phone}</p>
-                  )}
+              {selectedSecondaryContact ? (
+                <div className="bg-muted p-3 rounded-md flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {selectedSecondaryContact.first_name} {selectedSecondaryContact.last_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{selectedSecondaryContact.email}</p>
+                    {selectedSecondaryContact.phone && (
+                      <p className="text-sm text-muted-foreground">{selectedSecondaryContact.phone}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleSecondaryContactSelect(null)}
+                  >
+                    Remove
+                  </Button>
                 </div>
+              ) : (
+                <ContactSearch
+                  value={secondaryContactName}
+                  onValueChange={setSecondaryContactName}
+                  onContactSelect={handleSecondaryContactSelect}
+                  selectedContactId=""
+                  placeholder="Search for secondary contact..."
+                  required={false}
+                  label="Secondary Contact Name"
+                />
               )}
+
             </div>
 
             <div className="bg-card border rounded-lg p-6 space-y-4">
