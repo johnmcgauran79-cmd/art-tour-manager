@@ -194,6 +194,28 @@ export const SystemHealthCard = () => {
               </div>
             </div>
 
+            {(() => {
+              // pg_net stops waiting after 5 seconds; those rows have no status code
+              // and are not real failures, so only genuine error responses are shown.
+              const calls = (data.recent_http_failures || []).filter(
+                (f) => (f.status_code ?? 0) >= 400,
+              );
+              if (calls.length === 0) return null;
+              return (
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold">Background service calls with errors (24h)</h4>
+                  <div className="space-y-1 rounded-md border p-3">
+                    {calls.map((f, i) => (
+                      <div key={i} className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{formatWhen(f.created)}</span>{" "}
+                        — {f.status_code ?? "no response"} {f.error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                 <Mail className="h-4 w-4" />
