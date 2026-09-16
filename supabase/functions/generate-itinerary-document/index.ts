@@ -312,6 +312,15 @@ serve(async (req) => {
 
 function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null, brandBorder?: string, typography?: BrandTypography | null): string {
   const TYPO = typography || buildBrandTypography(null);
+  // Only treat the welcome message as present when it actually has content, so an
+  // empty/unselected welcome doesn't leave a blank cover page in the printed PDF.
+  const welcomeBodyText = String(welcomeMessage?.body || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .trim();
+  const hasWelcome = Boolean(
+    welcomeMessage && (welcomeBodyText || welcomeMessage.signoff || welcomeMessage.imageUrl)
+  );
   // Pool of filler images, consumed as blank spaces are filled
   const fillerPool: any[] = [...(documentImages || [])];
   const GOLD_FILLER = '#c79a2e';
