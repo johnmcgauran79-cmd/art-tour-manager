@@ -87,6 +87,7 @@ import {
   updateBlockById,
   type EdmBlock,
   newPaletteBlock,
+  newTopLevelPaletteBlock,
   paletteLabel,
   type EdmBlockType,
   type EdmPaletteType,
