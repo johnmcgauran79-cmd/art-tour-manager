@@ -624,7 +624,7 @@ ${TYPO.headHtml}
 
   html += `<div class="cover-rule"></div>`;
 
-  if (welcomeMessage) {
+  if (hasWelcome) {
     const rawBody = welcomeMessage.body || '';
     // New content is rich-text HTML; legacy content is plain text with newlines.
     const isHtmlBody = /<[a-z][\s\S]*>/i.test(rawBody);
