@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link2, Unlink, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { getRecentColors, rememberColor } from "@/lib/edm/palette";
 import { useLiveBrandColors } from "@/hooks/useBrandPalette";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -334,13 +335,13 @@ export function ColorField({
     <div className="space-y-1.5">
       <Label>{label}</Label>
       <div className="flex gap-2">
-        <Input
-          type="color"
-          className="h-9 w-14 p-1"
-          value={value || fallback}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={(e) => rememberColor(e.target.value)}
-          aria-label={`${label} colour picker`}
+        <ColorPickerPopover
+          value={value}
+          fallback={fallback}
+          colors={brandColors}
+          clearable={clearable}
+          onChange={(hex) => pick(hex)}
+          onClear={() => onChange(undefined)}
         />
         <Input
           value={value || ""}

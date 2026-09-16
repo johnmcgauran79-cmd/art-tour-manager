@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { plainEdmText, sanitizeEdmHtml } from "@/lib/edm/sanitizeHtml";
 import { blockLabel, type EdmBlock, type EdmBlockType } from "@/lib/edm/blocks";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 type EditField = "text" | "html" | "subtitle" | "meta";
 
@@ -389,10 +390,30 @@ export function EdmCanvas({
     return () => cancelAnimationFrame(raf);
   }, [selectedId, html, rectOf]);
 
+  /** Remembers the text selection while a popover (e.g. the colour picker) is open. */
+  const savedRangeRef = useRef<Range | null>(null);
+
+  const saveRange = () => {
+    const sel = doc()?.getSelection();
+    savedRangeRef.current = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  };
+
+  const restoreRange = () => {
+    const d = doc();
+    const range = savedRangeRef.current;
+    if (!d || !range) return;
+    d.defaultView?.focus();
+    editingRef.current?.el?.focus();
+    const sel = d.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  };
+
   /** Run a formatting command inside the iframe without losing the selection. */
   const exec = (command: string, value?: string) => {
     const d = doc();
     if (!d) return;
+    if (savedRangeRef.current) restoreRange();
     d.execCommand(command, false, value);
     const el = editingRef.current?.el;
     if (el) setTextRect(rectOf(el));
@@ -499,17 +520,24 @@ export function EdmCanvas({
               >
                 <Strikethrough className="h-3.5 w-3.5" />
               </Button>
-              <label
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-accent"
-                title="Text colour"
+              <ColorPickerPopover
+                fallback="#000000"
+                align="center"
+                onOpenChange={(open) => {
+                  if (open) saveRange();
+                  else savedRangeRef.current = null;
+                }}
+                onChange={(hex) => exec("foreColor", hex)}
               >
-                <Palette className="h-3.5 w-3.5" />
-                <input
-                  type="color"
-                  className="sr-only"
-                  onChange={(e) => exec("foreColor", e.target.value)}
-                />
-              </label>
+                <button
+                  type="button"
+                  className="flex h-6 w-6 items-center justify-center rounded hover:bg-accent"
+                  title="Text colour"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <Palette className="h-3.5 w-3.5" />
+                </button>
+              </ColorPickerPopover>
               <Button
                 variant="ghost"
                 size="icon"

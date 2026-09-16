@@ -92,6 +92,7 @@ import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmCanvas } from "./EdmCanvas";
 import { EdmPalette } from "./EdmPalette";
 import { EdmImageField } from "./EdmImageField";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import {
   AlignField,
   ColorField,
@@ -1001,11 +1002,11 @@ function BlockInspector({
       <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Header background</Label>
-            <Input
-              type="color"
-              value={block.headerBg || "#ffffff"}
-              onChange={(e) => onChange({ headerBg: e.target.value })}
-              className="h-9 p-1"
+            <ColorPickerPopover
+              value={block.headerBg}
+              fallback="#ffffff"
+              onChange={(hex) => onChange({ headerBg: hex })}
+              className="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
@@ -1053,29 +1054,29 @@ function BlockInspector({
           </div>
           <div className="space-y-1.5">
             <Label>Page background</Label>
-            <Input
-              type="color"
-              value={block.pageBg || "#f4f5f7"}
-              onChange={(e) => onChange({ pageBg: e.target.value })}
-              className="h-9 p-1"
+            <ColorPickerPopover
+              value={block.pageBg}
+              fallback="#f4f5f7"
+              onChange={(hex) => onChange({ pageBg: hex })}
+              className="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
             <Label>Email background</Label>
-            <Input
-              type="color"
-              value={block.contentBg || "#ffffff"}
-              onChange={(e) => onChange({ contentBg: e.target.value })}
-              className="h-9 p-1"
+            <ColorPickerPopover
+              value={block.contentBg}
+              fallback="#ffffff"
+              onChange={(hex) => onChange({ contentBg: hex })}
+              className="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
             <Label>Border colour</Label>
-            <Input
-              type="color"
-              value={block.borderColor || "#e2e8f0"}
-              onChange={(e) => onChange({ borderColor: e.target.value })}
-              className="h-9 p-1"
+            <ColorPickerPopover
+              value={block.borderColor}
+              fallback="#e2e8f0"
+              onChange={(hex) => onChange({ borderColor: hex })}
+              className="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
@@ -1206,29 +1207,29 @@ function BlockInspector({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Footer background</Label>
-              <Input
-                type="color"
-                value={block.footerBg || block.contentBg || "#ffffff"}
-                onChange={(e) => onChange({ footerBg: e.target.value })}
-                className="h-9 p-1"
+              <ColorPickerPopover
+                value={block.footerBg}
+                fallback={block.contentBg || "#ffffff"}
+                onChange={(hex) => onChange({ footerBg: hex })}
+                className="h-9 w-full"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Footer text colour</Label>
-              <Input
-                type="color"
-                value={block.footerColor || "#667085"}
-                onChange={(e) => onChange({ footerColor: e.target.value })}
-                className="h-9 p-1"
+              <ColorPickerPopover
+                value={block.footerColor}
+                fallback="#667085"
+                onChange={(hex) => onChange({ footerColor: hex })}
+                className="h-9 w-full"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Footer link colour</Label>
-              <Input
-                type="color"
-                value={block.footerLinkColor || block.footerColor || "#667085"}
-                onChange={(e) => onChange({ footerLinkColor: e.target.value })}
-                className="h-9 p-1"
+              <ColorPickerPopover
+                value={block.footerLinkColor}
+                fallback={block.footerColor || "#667085"}
+                onChange={(hex) => onChange({ footerLinkColor: hex })}
+                className="h-9 w-full"
               />
             </div>
             <div className="space-y-1.5">
@@ -1243,15 +1244,15 @@ function BlockInspector({
             </div>
             <div className="space-y-1.5">
               <Label>Footer top border</Label>
-              <Input
-                type="color"
+              <ColorPickerPopover
                 value={
                   block.footerBorderColor && block.footerBorderColor !== "transparent"
                     ? block.footerBorderColor
-                    : block.borderColor || "#e2e8f0"
+                    : undefined
                 }
-                onChange={(e) => onChange({ footerBorderColor: e.target.value })}
-                className="h-9 p-1"
+                fallback={block.borderColor || "#e2e8f0"}
+                onChange={(hex) => onChange({ footerBorderColor: hex })}
+                className="h-9 w-full"
               />
             </div>
             <div className="flex items-end">
