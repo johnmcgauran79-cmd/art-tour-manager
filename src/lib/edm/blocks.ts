@@ -302,8 +302,9 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         iconStyle: "plain",
         iconGap: 10,
         socials: [
-          { platform: "facebook", url: "" },
-          { platform: "instagram", url: "" },
+          { platform: "facebook", url: "https://www.facebook.com/AustralianRacingTours" },
+          { platform: "instagram", url: "https://www.instagram.com/AusRacingTours/" },
+          { platform: "youtube", url: "https://www.youtube.com/@australianracingtours" },
         ],
       };
     case "tourCard":
