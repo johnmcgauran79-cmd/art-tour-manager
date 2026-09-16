@@ -206,6 +206,33 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, open, autoSaveOn, payloadFor]);
 
+  // Safety net: even while typing non-stop, persist at least every 15 seconds.
+  const editingRef = useRef<Partial<EdmTemplateRow> | null>(editing);
+  editingRef.current = editing;
+  useEffect(() => {
+    if (!open || !autoSaveOn) return;
+    const timer = setInterval(async () => {
+      const draft = editingRef.current;
+      if (!draft?.name?.trim()) return;
+      const payload = payloadFor(draft);
+      const fingerprint = JSON.stringify(payload);
+      if (lastSavedRef.current === fingerprint) return;
+      try {
+        setAutoSaving(true);
+        const saved = await saveTemplate.mutateAsync({ id: draft.id, silent: true, ...payload });
+        lastSavedRef.current = fingerprint;
+        setSavedAt(new Date());
+        if (saved?.id && !draft.id) setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
+      } catch {
+        // Retry on the next tick.
+      } finally {
+        setAutoSaving(false);
+      }
+    }, 15000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoSaveOn, payloadFor]);
+
   const commit = async (asNewVersion: boolean) => {
     if (!editing?.name) {
       toast({ title: "Template name required", variant: "destructive" });
