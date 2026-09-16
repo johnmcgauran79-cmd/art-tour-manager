@@ -312,6 +312,15 @@ serve(async (req) => {
 
 function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string, brandLogoUrl?: string | null, brandBorder?: string, typography?: BrandTypography | null): string {
   const TYPO = typography || buildBrandTypography(null);
+  // Only treat the welcome message as present when it actually has content, so an
+  // empty/unselected welcome doesn't leave a blank cover page in the printed PDF.
+  const welcomeBodyText = String(welcomeMessage?.body || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .trim();
+  const hasWelcome = Boolean(
+    welcomeMessage && (welcomeBodyText || welcomeMessage.signoff || welcomeMessage.imageUrl)
+  );
   // Pool of filler images, consumed as blank spaces are filled
   const fillerPool: any[] = [...(documentImages || [])];
   const GOLD_FILLER = '#c79a2e';
@@ -412,6 +421,12 @@ ${TYPO.headHtml}
           page-break-after: always;
           break-after: page;
         }
+        /* No welcome message: let the next section flow straight on from the banner */
+        .cover-flow {
+          page-break-after: auto;
+          break-after: auto;
+        }
+        .flow-pad { padding: 0; }
         .cover-banner {
           background-color: ${NAVY};
           background-image: ${HEADER_BG};
@@ -591,12 +606,14 @@ ${TYPO.headHtml}
           @page :first { margin: 0; }
           .cover { margin: 0; }
           .page { max-width: none; padding: 0; }
+          /* First page has no @page margin, so pad content that flows onto it */
+          .flow-pad { padding: 0 14mm 0; }
         }
       </style>
     </head>
     <body>
       <!-- ===== Cover ===== -->
-      <div class="cover">
+      <div class="cover${hasWelcome ? '' : ' cover-flow'}">
         <div class="cover-banner">
           ${brandLogoUrl ? `<img class="cover-logo" src="${brandLogoUrl}" alt="${brandName || 'Australian Racing Tours'} logo" />` : ''}
           <h1 class="cover-title">${tour.name}</h1>
@@ -607,7 +624,7 @@ ${TYPO.headHtml}
 
   html += `<div class="cover-rule"></div>`;
 
-  if (welcomeMessage) {
+  if (hasWelcome) {
     const rawBody = welcomeMessage.body || '';
     // New content is rich-text HTML; legacy content is plain text with newlines.
     const isHtmlBody = /<[a-z][\s\S]*>/i.test(rawBody);
@@ -637,7 +654,7 @@ ${TYPO.headHtml}
   // ===== Accommodation + Itinerary (same page, no break between them) =====
   const hasHotels = options.includeHotels && hotels.length > 0;
   html += `
-    <div class="page section">
+    <div class="page section${hasWelcome ? '' : ' section-first flow-pad'}">
       <div class="run-head"><strong>${runningTitle}</strong></div>
   `;
   if (hasHotels) {
