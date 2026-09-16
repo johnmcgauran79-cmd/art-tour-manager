@@ -1255,6 +1255,22 @@ function BlockInspector({
               />
             </div>
             <div className="space-y-1.5">
+              <Label>Footer line spacing</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min={1}
+                max={3}
+                value={block.footerLineHeight ?? 1.6}
+                onChange={(e) =>
+                  onChange({ footerLineHeight: Number(e.target.value) || 1.6 })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Applies to the whole footer, including custom footer text.
+              </p>
+            </div>
+            <div className="space-y-1.5">
               <Label>Footer top border</Label>
               <ColorPickerPopover
                 value={
