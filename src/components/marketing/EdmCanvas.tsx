@@ -96,6 +96,7 @@ export function EdmCanvas({
   const pendingHtmlRef = useRef<string | null>(null);
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
+  const [frameHeight, setFrameHeight] = useState(900);
 
   // Handlers change often; keep them out of the document-writing effect.
   const cb = useRef({
