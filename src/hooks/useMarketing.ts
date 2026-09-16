@@ -133,9 +133,10 @@ export const useSaveCampaign = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: Partial<MarketingCampaign> & { id?: string }) => {
-      const { id, ...rest } = input;
+    mutationFn: async (input: Partial<MarketingCampaign> & { id?: string; silent?: boolean }) => {
+      const { id, silent, ...rest } = input;
       const payload: any = { ...rest };
+      delete payload.silent;
       if (id) {
         const { data, error } = await supabase
           .from("marketing_campaigns")
@@ -159,8 +160,10 @@ export const useSaveCampaign = () => {
       qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
       if (c?.id) qc.invalidateQueries({ queryKey: ["marketing-campaign", c.id] });
     },
-    onError: (e: any) =>
-      toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any, vars: any) => {
+      if (vars?.silent) return;
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
   });
 };
 

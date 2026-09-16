@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import {
   BarChart3,
   CalendarClock,
+  Check,
   Copy,
   LayoutTemplate,
   Loader2,
@@ -316,6 +317,56 @@ export function CampaignsTab({
     const saved = await persist({ status: editing?.status === "sent" ? "sent" : "draft" });
     if (saved) toast({ title: "Draft saved", description: "Come back any time to finish it." });
   };
+
+  /* ------------------------------- autosave (15s) ------------------------------ */
+  const editingRef = useRef<Partial<MarketingCampaign> | null>(editing);
+  editingRef.current = editing;
+  const lastAutoSaveRef = useRef<string | null>(null);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      lastAutoSaveRef.current = null;
+      setAutoSavedAt(null);
+      return;
+    }
+    const tick = async () => {
+      const draft = editingRef.current;
+      if (!draft?.name?.trim() || !draft?.subject?.trim()) return;
+      // Never touch campaigns that are mid-send or already sent.
+      if (draft.status && !["draft", "scheduled"].includes(draft.status)) return;
+      const mode = (draft.editor_mode as "blocks" | "html") || "blocks";
+      const html_body =
+        mode === "blocks"
+          ? renderEdmHtml((draft.blocks as EdmBlock[]) || [], brand, {
+              subject: draft.subject || undefined,
+              preheader: draft.preheader || undefined,
+            })
+          : draft.html_body || "";
+      const payload = { ...draft, html_body };
+      const fingerprint = JSON.stringify(payload);
+      if (lastAutoSaveRef.current === fingerprint) return;
+      try {
+        setAutoSaving(true);
+        const saved = await save.mutateAsync({ ...payload, silent: true } as any);
+        lastAutoSaveRef.current = fingerprint;
+        setAutoSavedAt(new Date());
+        if (saved?.id && !draft.id) {
+          setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
+        }
+      } catch {
+        // Leave the fingerprint unset so the next tick retries.
+      } finally {
+        setAutoSaving(false);
+      }
+    };
+    const timer = setInterval(tick, 15000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, brand]);
+
+
 
   const openReview = (mode: "now" | "schedule") => {
     if (!editing?.name || !editing?.subject) {
@@ -890,7 +941,22 @@ export function CampaignsTab({
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="items-center gap-2 sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              {autoSaving ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Autosaving…
+                </span>
+              ) : autoSavedAt ? (
+                <span className="flex items-center gap-1">
+                  <Check className="h-3 w-3 text-primary" /> Autosaved{" "}
+                  {format(autoSavedAt, "HH:mm:ss")}
+                </span>
+              ) : (
+                <span>Autosaves every 15 seconds</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
@@ -919,6 +985,7 @@ export function CampaignsTab({
               )}
               Review &amp; send
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
