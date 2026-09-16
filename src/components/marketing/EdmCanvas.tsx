@@ -266,7 +266,7 @@ export function EdmCanvas({
       const target = dropTarget(e.target);
       if (!target) return;
       if (cb.current.pendingType) {
-        if ("cell" in target) target.cell.classList.add("edm-cell-target");
+        if (target.cell) target.cell.classList.add("edm-cell-target");
         else markInsert(target.row, e.clientY);
         return;
       }
@@ -284,7 +284,7 @@ export function EdmCanvas({
       if (type) {
         e.preventDefault();
         const target = dropTarget(e.target);
-        if (target && "cell" in target) {
+        if (target?.cell) {
           const cellId = target.cell.getAttribute("data-edm-cell");
           if (cellId) cb.current.onInsertIntoCell(cellId, type);
         } else if (target) {
@@ -353,7 +353,7 @@ export function EdmCanvas({
       clearMarks();
       const target = dropTarget(e.target);
       if (!target) return;
-      if ("cell" in target) target.cell.classList.add("edm-cell-target");
+      if (target.cell) target.cell.classList.add("edm-cell-target");
       else markInsert(target.row, e.clientY);
     };
 
@@ -362,7 +362,7 @@ export function EdmCanvas({
       if (!type) return;
       e.preventDefault();
       const target = dropTarget(e.target);
-      if (target && "cell" in target) {
+      if (target?.cell) {
         const cellId = target.cell.getAttribute("data-edm-cell");
         if (cellId) cb.current.onInsertIntoCell(cellId, type);
       } else if (target) {
