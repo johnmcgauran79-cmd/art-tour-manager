@@ -647,158 +647,86 @@ export function EdmBuilder({
         </div>
       ) : (
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-          {/* Block tree — width is user-adjustable via the drag handle */}
+          {/* The email itself is the editor */}
+          <div className="min-w-0 flex-1">
+            <EdmCanvas
+              html={previewHtml}
+              device={device}
+              selectedId={selectedId}
+              selectedLabel={selected ? blockLabel[selected.type] : null}
+              pendingType={pickType}
+              dragType={dragType}
+              mergeFields={edmMergeFields}
+              onSelect={setSelectedId}
+              onSelectBackground={openDesign}
+              onEdit={(id, patch) => update(id, patch)}
+              onInsertAt={addAtTarget}
+              onInsertIntoCell={(cellId, type) => {
+                addToCell(cellId, type);
+                setPickType(null);
+              }}
+              onDuplicate={duplicate}
+              onDelete={remove}
+              onMove={move}
+            />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Click any text on the email to edit it. Click a section to change its settings, or
+              click the background for the whole email’s design.
+            </p>
+          </div>
+
+          {/* Content palette / settings for the selected section */}
           <Card
-            className="h-fit w-full shrink-0 xl:w-[var(--edm-panel-w)]"
+            className="h-fit w-full shrink-0 xl:sticky xl:top-2 xl:w-[var(--edm-panel-w)]"
             style={{ ["--edm-panel-w" as string]: `${panelWidth}px` }}
           >
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Content blocks</CardTitle>
+              <Tabs value={panelTab} onValueChange={(v) => setPanelTab(v as "content" | "settings")}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="content" className="flex-1 gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Content
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex-1 gap-1.5">
+                    <Palette className="h-3.5 w-3.5" /> Settings
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <AddBlockMenu
-                  onPick={add}
-                  trigger={
-                    <Button size="sm" className="w-full gap-1.5">
-                      <Plus className="h-3.5 w-3.5" /> Add block
-                    </Button>
-                  }
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  {selected
-                    ? `Goes directly below “${blockLabel[selected.type]}”.`
-                    : "Goes at the end of the email."}
-                </p>
-                <AddBlockMenu
+              {panelTab === "content" ? (
+                <EdmPalette
+                  pendingType={pickType}
                   onPick={(t) => {
-                    setPickType(t);
-                    setLivePreview(true);
+                    if (blocks.filter((b) => b.type !== "design").length === 0) add(t);
+                    else setPickType(pickType === t ? null : t);
                   }}
-                  trigger={
-                    <Button size="sm" variant="outline" className="w-full gap-1.5">
-                      <MousePointerClick className="h-3.5 w-3.5" /> Add at position…
-                    </Button>
-                  }
+                  onDragStart={setDragType}
+                  onDragEnd={() => setDragType(null)}
                 />
-                {pickType && (
-                  <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-2 py-1.5 text-[11px]">
-                    <span className="min-w-0 flex-1">
-                      Click in the live preview to place the {blockLabel[pickType].toLowerCase()}.
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-[11px]"
-                      onClick={() => setPickType(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <div
-                ref={treeScrollRef}
-                className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1"
-                onDragOver={handleTreeDragOver}
-                onDrop={stopAutoScroll}
-                onDragEnd={stopAutoScroll}
-                onDragLeave={stopAutoScroll}
-              >
-                {blocks.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">
-                    Pick a layout or add your first block.
-                  </p>
-                ) : (
-                  <BlockTree
-                    blocks={blocks}
-                    depth={0}
-                    selectedId={selectedId}
-                    onSelect={setSelectedId}
-                    onMove={move}
-                    onDropBlock={dropBlock}
-                    onDuplicate={duplicate}
-                    onRemove={remove}
-                    onAddToCell={addToCell}
-                    onCopy={copyBlock}
-                    onPasteAfter={pasteAfter}
-                    onCopyCell={copyCell}
-                    onPasteIntoCell={pasteIntoCell}
-                    onDuplicateCell={duplicateCell}
-                    onRemoveCell={removeCell}
-                    onClearCell={clearCell}
-                    clipLabel={clip?.label ?? null}
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Drag handle to widen/narrow the blocks panel */}
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize content blocks panel"
-            onPointerDown={startPanelDrag}
-            onDoubleClick={() => setPanelWidth(320)}
-            title="Drag to resize · double-click to reset"
-            className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch rounded hover:bg-accent xl:flex"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground" />
-          </div>
-
-          <div
-            className={cn(
-              "grid min-w-0 flex-1 gap-4",
-              livePreview && "xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)]"
-            )}
-          >
-
-
-
-          {/* Inspector */}
-          <Card className="h-fit">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                {selected ? blockLabel[selected.type] : "Block settings"}
-                {device === "mobile" && (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                    Mobile overrides
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!selected ? (
+              ) : !selected ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  Select a block on the left to edit it.
+                  Click a section on the email to change its settings.
                 </p>
               ) : (
-                <BlockInspector
-                  block={selected}
-                  device={device}
-                  brand={brand}
-                  onChange={(p) => update(selected.id, p)}
-                />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {blockLabel[selected.type]}
+                    {device === "mobile" && (
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                        Mobile overrides
+                      </span>
+                    )}
+                  </div>
+                  <BlockInspector
+                    block={selected}
+                    device={device}
+                    brand={brand}
+                    onChange={(p) => update(selected.id, p)}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
-
-            {livePreview && (
-              <LivePreviewCard
-                html={previewHtml}
-                device={device}
-                onDeviceChange={setDevice}
-                selectedId={selectedId}
-                pickLabel={pickType ? blockLabel[pickType] : null}
-                onSelectBlock={setSelectedId}
-                onInsertAt={(targetId, place) =>
-                  pickType && addAtTarget(pickType, targetId, place)
-                }
-              />
-            )}
-          </div>
         </div>
 
       )}
