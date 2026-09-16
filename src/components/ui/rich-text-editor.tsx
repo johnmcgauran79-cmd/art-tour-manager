@@ -68,7 +68,7 @@ function ColorPickerButton({
   const brandColors = colors?.length ? colors : liveBrandColors;
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState("#000000");
-  const recent = getRecentColors();
+  
 
   const pick = (hex: string | null) => {
     if (hex) rememberColor(hex);
