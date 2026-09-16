@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Palette, RotateCcw } from "lucide-react";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
 import { useToast } from "@/hooks/use-toast";
 
