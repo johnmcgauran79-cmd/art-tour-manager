@@ -932,7 +932,9 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
   // Builder-only hook so clicking the live preview can select this block.
   const tagAttr = ctx.tag ? ` data-edm-id="${b.id}"` : "";
 
-  if (hasSpacing(margin) || outer) {
+  const negative = negativeSpacing(b);
+
+  if (hasSpacing(margin) || outer || negative) {
     // Outer row carries the margin plus the optional full-width background;
     // the inner row keeps the padding and the content background colour.
     html = html.replace("<tr", `<tr class="${cls}"`);
@@ -943,7 +945,9 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
     }><td${outerAttrs} style="${outerBg}padding:${
       hasSpacing(margin) ? spacingCss(margin!) : "0"
     };">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${html}</table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
+    negative ? `margin:${negative};` : ""
+  }">${html}</table>
 </td></tr>`;
   }
 
