@@ -86,7 +86,10 @@ import {
   resizeCells,
   updateBlockById,
   type EdmBlock,
+  newPaletteBlock,
+  paletteLabel,
   type EdmBlockType,
+  type EdmPaletteType,
   type EdmBrand,
 } from "@/lib/edm/blocks";
 import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
@@ -150,9 +153,9 @@ export function EdmBuilder({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
   /** When set, the next click on the email places a block of this type. */
-  const [pickType, setPickType] = useState<EdmBlockType | null>(null);
+  const [pickType, setPickType] = useState<EdmPaletteType | null>(null);
   /** Palette tile currently being dragged onto the email. */
-  const [dragType, setDragType] = useState<EdmBlockType | null>(null);
+  const [dragType, setDragType] = useState<EdmPaletteType | null>(null);
   const [panelTab, setPanelTab] = useState<"content" | "settings">("content");
 
   // Selecting a section on the canvas shows its settings straight away.
@@ -251,8 +254,8 @@ export function EdmBuilder({
   };
 
   /** Insert a new block relative to an existing one (used by preview picking). */
-  const addAtTarget = (type: EdmBlockType, targetId: string, place: "before" | "after") => {
-    const block = newBlock(type);
+  const addAtTarget = (type: EdmPaletteType, targetId: string, place: "before" | "after") => {
+    const block = newPaletteBlock(type);
     const next = moveBlockToTarget(
       insertBlockAfter(blocks, block, null),
       block.id,
@@ -264,8 +267,8 @@ export function EdmBuilder({
     setPickType(null);
   };
 
-  const addToCell = (cellId: string, type: EdmBlockType) => {
-    const block = newBlock(type);
+  const addToCell = (cellId: string, type: EdmPaletteType) => {
+    const block = newPaletteBlock(type);
     commit(appendBlockToCell(blocks, cellId, block));
     setSelectedId(block.id);
   };
