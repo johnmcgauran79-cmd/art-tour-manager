@@ -654,7 +654,7 @@ ${TYPO.headHtml}
   // ===== Accommodation + Itinerary (same page, no break between them) =====
   const hasHotels = options.includeHotels && hotels.length > 0;
   html += `
-    <div class="page section">
+    <div class="page section${hasWelcome ? '' : ' section-first flow-pad'}">
       <div class="run-head"><strong>${runningTitle}</strong></div>
   `;
   if (hasHotels) {
