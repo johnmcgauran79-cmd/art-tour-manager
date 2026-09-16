@@ -231,6 +231,19 @@ export function EdmCanvas({
       (t as HTMLElement | null)?.closest?.("[data-edm-id]") ?? null;
     const cellOf = (t: EventTarget | null): HTMLElement | null =>
       (t as HTMLElement | null)?.closest?.("[data-edm-cell]") ?? null;
+    /**
+     * Where should a dropped/clicked palette item land? A column always wins,
+     * so content dropped anywhere inside a block goes into that block rather
+     * than beside it.
+     */
+    const dropTarget = (
+      t: EventTarget | null
+    ): { cell: HTMLElement } | { row: HTMLElement } | null => {
+      const cell = cellOf(t);
+      if (cell) return { cell };
+      const row = rowOf(t);
+      return row ? { row } : null;
+    };
 
     const clearMarks = () => {
       d.querySelectorAll("[data-edm-id]").forEach((el) =>
