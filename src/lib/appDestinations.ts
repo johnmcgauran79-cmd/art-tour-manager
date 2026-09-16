@@ -28,6 +28,7 @@ export const APP_DESTINATIONS: AppDestination[] = [
   { id: "reports", label: "Reports", group: "Pages", keywords: "reporting exports csv", path: "/?tab=reports", access: "staff" },
   { id: "art-ai", label: "Ask ART AI", group: "Pages", keywords: "ai assistant chat questions", path: "/art-ai", access: "staff" },
   { id: "communications", label: "Communications", group: "Pages", keywords: "emails sent inbox history messages", path: "/communications", access: "adminManager" },
+  { id: "instalment-reminders", label: "Instalment Reminders", group: "Pages", keywords: "instalment installment payment reminder overdue chase invoice due", path: "/communications?tab=instalments", access: "adminManager" },
   { id: "marketing", label: "Marketing", group: "Pages", keywords: "campaigns edm audiences newsletters forms landing pages submissions results", path: "/marketing", access: "adminManager" },
   { id: "leads", label: "Leads & Enquiries", group: "Pages", keywords: "crm sales pipeline enquiries prospects", path: "/leads", access: "adminManager" },
   { id: "todos", label: "My To-Do list", group: "Pages", keywords: "todo personal checklist", path: "/todos", access: "adminManager" },

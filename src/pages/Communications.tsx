@@ -16,7 +16,12 @@ import { usePendingWebsiteChangeCount } from "@/hooks/useWebsiteChanges";
 
 export default function Communications() {
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState(searchParams.get("tab") === "website" ? "website" : "approvals");
+  const requestedTab = searchParams.get("tab") || "";
+  const [tab, setTab] = useState(
+    ["approvals", "upcoming", "instalments", "sent", "website"].includes(requestedTab)
+      ? requestedTab
+      : "approvals",
+  );
   const { data: pendingCount = 0 } = usePendingApprovalCount();
   const { data: websiteChangeCount = 0 } = usePendingWebsiteChangeCount();
   const { data: instalmentDueCount = 0 } = useInstalmentReminderDueCount();
