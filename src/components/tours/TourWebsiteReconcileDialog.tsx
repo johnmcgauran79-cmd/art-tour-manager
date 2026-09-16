@@ -400,8 +400,8 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
                     )}
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    "Use website" replaces the ART lists with the website's. "Keep ART" overwrites the website lists and
-                    description with ART's.
+                    "Use website" brings the website's overview text, inclusions and exclusions into ART. "Keep ART"
+                    overwrites the website's overview text and lists with ART's.
                   </p>
                   <div className="mt-2">
                     <ChoicePicker value={inclusionsChoice} onChange={setInclusionsChoice} disabled={applying} />
