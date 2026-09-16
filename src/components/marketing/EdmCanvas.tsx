@@ -493,24 +493,31 @@ export function EdmCanvas({
     const d = doc();
     if (!d) return;
     const raf = requestAnimationFrame(() => {
-      d.querySelectorAll("[data-edm-id].edm-active").forEach((el) =>
-        el.classList.remove("edm-active")
+      d.querySelectorAll("[data-edm-id].edm-active,[data-edm-id].edm-row-active").forEach((el) =>
+        el.classList.remove("edm-active", "edm-row-active")
       );
       if (!selectedId) {
         setBlockRect(null);
+        setParentRowId(null);
         return;
       }
       const el = d.querySelector(`[data-edm-id="${selectedId}"]`);
       if (!el) {
         setBlockRect(null);
+        setParentRowId(null);
         return;
       }
-      el.classList.add("edm-active");
+      const isRow = !!el.querySelector("[data-edm-cell]");
+      el.classList.add(isRow ? "edm-row-active" : "edm-active");
       el.scrollIntoView({ block: "nearest" });
       setBlockRect(rectOf(el));
+      // The row (block) this content sits in, so it can be selected directly.
+      const row = el.parentElement?.closest?.("[data-edm-id]") ?? null;
+      setParentRowId(row?.getAttribute("data-edm-id") || null);
     });
     return () => cancelAnimationFrame(raf);
   }, [selectedId, html, rectOf]);
+
 
   /** Remembers the text selection while a popover (e.g. the colour picker) is open. */
   const savedRangeRef = useRef<Range | null>(null);
