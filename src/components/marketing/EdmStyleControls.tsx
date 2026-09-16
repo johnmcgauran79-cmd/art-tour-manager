@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  EDM_FONTS,
   SOCIAL_PLATFORMS,
   type EdmSocial,
   type EdmSpacing,
