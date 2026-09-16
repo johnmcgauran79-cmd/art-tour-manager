@@ -92,9 +92,11 @@ interface Props {
   tourId: string;
   tourName: string;
   onDone?: () => void;
+  /** Opened straight after linking: default every difference to the website's value. */
+  initialImport?: boolean;
 }
 
-export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourName, onDone }: Props) {
+export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourName, onDone, initialImport }: Props) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,8 +126,9 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         setFields(rows);
         const choices: Record<string, Choice> = {};
         for (const r of rows) {
-          // Website-first workflow: when ART is empty, default to importing the website value.
-          choices[r.artKey] = !r.changed ? "skip" : r.artValue.trim() === "" ? "wp" : "art";
+          // Straight after linking, the website is the source of truth: import everything.
+          // Otherwise: when ART is empty, default to importing the website value.
+          choices[r.artKey] = !r.changed ? "skip" : initialImport ? "wp" : r.artValue.trim() === "" ? "wp" : "art";
         }
         setFieldChoices(choices);
 
@@ -152,7 +155,7 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         setInclusions(inclInfo);
         setInclusionsChoice(
           inclInfo.changed
-            ? inclInfo.artInclusions + inclInfo.artExclusions === 0
+            ? initialImport || inclInfo.artInclusions + inclInfo.artExclusions === 0
               ? "wp"
               : "art"
             : "skip",
@@ -169,7 +172,9 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
           changed: Boolean(itinRes.changed),
         };
         setItinerary(itinInfo);
-        setItineraryChoice(itinInfo.changed ? (itinInfo.artDays === 0 ? "wp" : "art") : "skip");
+        setItineraryChoice(
+          itinInfo.changed ? (initialImport || itinInfo.artDays === 0 ? "wp" : "art") : "skip",
+        );
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
       } finally {
@@ -188,6 +193,12 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
       for (const r of fields) if (r.changed) next[r.artKey] = choice;
       return next;
     });
+  };
+
+  const useWebsiteForEverything = () => {
+    setAllFields("wp");
+    if (inclusions?.changed) setInclusionsChoice("wp");
+    if (itinerary?.changed) setItineraryChoice("wp");
   };
 
   const apply = async () => {
@@ -234,6 +245,19 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         });
         log.push(`Imported ${res.imported_days} itinerary day(s) from the website`);
         warn.push(...(res.warnings ?? []));
+        // Day galleries live on the same website rows — bring the photos across too.
+        try {
+          const photos = await callProxy<{ imported_photos: number; warnings?: string[] }>(
+            "pull_itinerary_photos",
+            { art_tour_id: tourId, confirm: true },
+          );
+          if ((photos.imported_photos ?? 0) > 0) {
+            log.push(`Imported ${photos.imported_photos} itinerary day photo(s) from the website`);
+          }
+          warn.push(...(photos.warnings ?? []));
+        } catch (e) {
+          warn.push(`Day photos could not be imported: ${(e as Error).message}`);
+        }
       } else if (itineraryChoice === "art") {
         const res = await callProxy<{ rows_published: number }>("push_itinerary", { art_tour_id: tourId });
         log.push(`Published ${res.rows_published} itinerary day(s) from ART to the website`);
@@ -265,13 +289,24 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowLeftRight className="h-5 w-5" />
-            Reconcile "{tourName}" with the website
+            {initialImport ? `Import "${tourName}" from the website` : `Reconcile "${tourName}" with the website`}
           </DialogTitle>
           <DialogDescription>
-            Compare every matched field, the inclusions and the itinerary, then choose which side is correct. After
-            reconciling, ART stays the source of truth.
+            {initialImport
+              ? "Everything on the website — dates, prices, payment details, location, inclusions, exclusions, description, itinerary and day photos — is set to come into ART. Change any line you'd rather keep as it is, then apply. From then on, edit in ART and publish to the website."
+              : "Compare every matched field, the inclusions and the itinerary, then choose which side is correct. After reconciling, ART stays the source of truth."}
           </DialogDescription>
         </DialogHeader>
+
+        {!loading && !error && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 p-3">
+            <span className="text-sm">Bring the whole tour across from the website in one go:</span>
+            <Button size="sm" onClick={useWebsiteForEverything} disabled={applying}>
+              Import everything from the website
+            </Button>
+          </div>
+        )}
+
 
         {loading && (
           <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
