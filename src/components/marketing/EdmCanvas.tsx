@@ -71,6 +71,11 @@ const CANVAS_CSS = `
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
   [data-edm-edit]{cursor:text;}
   [data-edm-edit]:focus{outline:2px solid #2563eb;outline-offset:2px;border-radius:2px;}
+  /* While you type, very light text on a light background (or dark on dark) is
+     temporarily shown in a readable colour so it can be seen — the real colour
+     is used in the preview and the sent email. */
+  [data-edm-edit].edm-readable,[data-edm-edit].edm-readable *{color:#111827!important;}
+  [data-edm-edit].edm-readable{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
 `;
@@ -324,6 +329,7 @@ export function EdmCanvas({
       const blockId = el.getAttribute("data-edm-block") || "";
       const field = (el.getAttribute("data-edm-edit") || "text") as EditField;
       editingRef.current = { el, blockId, field };
+      applyReadableColour(el);
       setTextRect(rectOf(el));
       if (blockId) cb.current.onSelect(blockId);
     };
@@ -331,6 +337,7 @@ export function EdmCanvas({
     const onFocusOut = (e: FocusEvent) => {
       const el = editingRef.current?.el;
       if (!el || el !== (e.target as HTMLElement)) return;
+      el.classList.remove("edm-readable");
       commitEdit();
     };
 
