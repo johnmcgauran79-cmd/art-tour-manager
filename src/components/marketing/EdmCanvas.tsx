@@ -66,6 +66,8 @@ const CANVAS_CSS = `
   [data-edm-id]{cursor:pointer;}
   [data-edm-id].edm-hover > td{outline:2px dashed #93c5fd;outline-offset:-2px;}
   [data-edm-id].edm-active > td{outline:2px solid #2563eb;outline-offset:-2px;}
+  [data-edm-id].edm-row-active > td{outline:2px solid #f59e0b;outline-offset:-2px;
+    background-image:linear-gradient(rgba(245,158,11,0.08),rgba(245,158,11,0.08));}
   [data-edm-id].edm-insert-before > td{box-shadow:inset 0 3px 0 0 #16a34a;}
   [data-edm-id].edm-insert-after > td{box-shadow:inset 0 -3px 0 0 #16a34a;}
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
@@ -78,7 +80,13 @@ const CANVAS_CSS = `
   [data-edm-edit].edm-readable{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
+  /* Phone view: keep the whole email inside the narrow frame while editing. */
+  html.edm-mobile,html.edm-mobile body{overflow-x:hidden!important;}
+  html.edm-mobile table{max-width:100%!important;}
+  html.edm-mobile img{max-width:100%!important;height:auto!important;}
+  html.edm-mobile td{word-break:break-word;}
 `;
+
 
 /** Parse a computed rgb()/rgba() colour into channels. */
 const rgbOf = (value: string): [number, number, number] | null => {
