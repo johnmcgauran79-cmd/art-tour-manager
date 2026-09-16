@@ -803,6 +803,25 @@ const spacingCss = (s: EdmSpacing, fallback = 0) =>
 const hasSpacing = (s?: EdmSpacing) =>
   !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null && v !== 0);
 
+/**
+ * Negative spacing can't be expressed as padding, so any negative margin or
+ * padding side is collected here and applied as a negative CSS margin on the
+ * block's wrapper table (which pulls the block towards its neighbour).
+ */
+const negativeSpacing = (b: EdmBlock): string | null => {
+  const sides: (keyof EdmSpacing)[] = ["top", "right", "bottom", "left"];
+  const parts = sides.map((side) => {
+    const m = b.margin?.[side] ?? 0;
+    const p = b.padding?.[side] ?? 0;
+    const total = Math.min(0, m) + Math.min(0, p);
+    return total < 0 ? `${Math.round(total)}px` : "0";
+  });
+  return parts.some((v) => v !== "0") ? parts.join(" ") : null;
+};
+
+/** Resolve the font stack for a block, falling back to the brand default. */
+const fontStack = (b: EdmBlock, fallback: string) => b.fontFamily || fallback;
+
 /** Short, stable class prefix derived from the block id. */
 const blockClass = (b: EdmBlock) => `eb${b.id.replace(/-/g, "").slice(0, 8)}`;
 
