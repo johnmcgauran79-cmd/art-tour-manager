@@ -1243,15 +1243,15 @@ function BlockInspector({
             </div>
             <div className="space-y-1.5">
               <Label>Footer top border</Label>
-              <Input
-                type="color"
+              <ColorPickerPopover
                 value={
                   block.footerBorderColor && block.footerBorderColor !== "transparent"
                     ? block.footerBorderColor
-                    : block.borderColor || "#e2e8f0"
+                    : undefined
                 }
-                onChange={(e) => onChange({ footerBorderColor: e.target.value })}
-                className="h-9 p-1"
+                fallback={block.borderColor || "#e2e8f0"}
+                onChange={(hex) => onChange({ footerBorderColor: hex })}
+                className="h-9 w-full"
               />
             </div>
             <div className="flex items-end">
