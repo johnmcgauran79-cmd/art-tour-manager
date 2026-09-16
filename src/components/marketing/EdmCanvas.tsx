@@ -230,6 +230,7 @@ export function EdmCanvas({
       const style = fresh.createElement("style");
       style.textContent = CANVAS_CSS;
       fresh.head?.appendChild(style);
+      fresh.documentElement?.classList.toggle("edm-mobile", device === "mobile");
       fresh.querySelectorAll<HTMLElement>("[data-edm-edit]").forEach((el) => {
         el.contentEditable = "true";
         el.spellcheck = true;
@@ -240,8 +241,9 @@ export function EdmCanvas({
       window.setTimeout(syncHeight, 250);
       window.setTimeout(syncHeight, 1200);
     },
-    [syncHeight]
+    [syncHeight, device]
   );
+
 
   /** Write the current editable content back onto the block. */
   const commitEdit = useCallback(() => {
