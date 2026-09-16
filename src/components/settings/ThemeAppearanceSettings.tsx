@@ -17,17 +17,12 @@ interface ColorFieldProps {
 
 const ColorField = ({ label, description, settingKey, value, onChange }: ColorFieldProps) => (
   <div className="flex items-center gap-4">
-    <div
-      className="w-10 h-10 rounded-md border-2 border-border flex-shrink-0 cursor-pointer relative overflow-hidden"
-      style={{ backgroundColor: value }}
-    >
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => onChange(settingKey, e.target.value)}
-        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-      />
-    </div>
+    <ColorPickerPopover
+      value={value}
+      fallback="#000000"
+      onChange={(hex) => onChange(settingKey, hex)}
+      className="h-10 w-10 flex-shrink-0 rounded-md border-2"
+    />
     <div className="flex-1 min-w-0">
       <Label className="text-sm font-medium">{label}</Label>
       <p className="text-xs text-muted-foreground">{description}</p>
