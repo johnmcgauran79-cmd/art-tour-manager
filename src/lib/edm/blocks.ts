@@ -904,13 +904,17 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       // Extra horizontal space between columns (never on the outer edges).
       const padLeft = c === 0 ? cp : cp + halfGap;
       const padRight = c === cols - 1 ? cp : cp + halfGap;
-      return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
+      // Builder-only hooks: identify the column so content can be dropped into
+      // it, and show an empty-state hint on the editing canvas.
+      const cellAttr = ctx.tag && cell?.id ? ` data-edm-cell="${cell.id}"` : "";
+      const empty = !(cell?.blocks || []).length;
+      const inner =
+        ctx.tag && empty
+          ? `<div class="edm-empty-cell">No content here. Drag content from the right.</div>`
+          : renderNested(cell?.blocks || [], brand, ctx);
+      return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
-      }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${renderNested(
-        cell?.blocks || [],
-        brand,
-        ctx
-      )}</td>`;
+      }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${inner}</td>`;
     }).join("");
     return `<tr>${tds}</tr>`;
   }).join("\n");
