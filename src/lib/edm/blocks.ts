@@ -958,10 +958,17 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
   const buttonText = brand.colorButtonText || "#ffffff";
   const border = brand.colorBorder || "#e2e8f0";
   const align = b.align || "left";
+  /**
+   * Builder-only hook: marks an element as directly editable on the canvas.
+   * `field` is the block property the element's content is written back to.
+   * Never emitted in sent email HTML (only when ctx.tag is set).
+   */
+  const edit = (field: "text" | "html" | "subtitle" | "meta") =>
+    ctx.tag ? ` data-edm-edit="${field}" data-edm-block="${b.id}"` : "";
 
   switch (b.type) {
     case "heading":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
+      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
         b.fontSize || headingSize(b.size)
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
@@ -971,7 +978,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
         b.fontSize || 16
       }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
         b.align ? `text-align:${b.align};` : ""
-      }"><div style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
+      }"><div${edit("html")} style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
         b.html || ""
       )}</div></td></tr>`;
     case "image": {
