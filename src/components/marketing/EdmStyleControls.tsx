@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  EDM_FONTS,
   SOCIAL_PLATFORMS,
   type EdmSocial,
   type EdmSpacing,
@@ -51,7 +52,8 @@ export function SpacingEditor({
   const v = value || {};
 
   const setSide = (side: keyof EdmSpacing, raw: string) => {
-    const num = raw === "" ? undefined : Math.max(0, Number(raw) || 0);
+    // Negative values are allowed: they pull the block towards its neighbour.
+    const num = raw === "" ? undefined : Math.max(-160, Math.min(160, Number(raw) || 0));
     const next: EdmSpacing = linked
       ? { top: num, right: num, bottom: num, left: num }
       : { ...v, [side]: num };
@@ -80,7 +82,7 @@ export function SpacingEditor({
             <Label className="text-[10px] uppercase text-muted-foreground">{sideLabel}</Label>
             <Input
               type="number"
-              min={0}
+              min={-160}
               max={160}
               placeholder="—"
               value={v[key] ?? ""}
@@ -90,6 +92,10 @@ export function SpacingEditor({
         ))}
       </div>
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <p className="text-xs text-muted-foreground">
+        Negative numbers are allowed — they pull the content closer to the block above, below or
+        beside it.
+      </p>
       {value && (
         <Button type="button" variant="outline" size="sm" onClick={() => onChange(undefined)}>
           Reset to default
@@ -365,6 +371,10 @@ export function ColorField({
 
       <Swatches title="Recently used" colors={recent} onPick={pick} />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <p className="text-xs text-muted-foreground">
+        Negative numbers are allowed — they pull the content closer to the block above, below or
+        beside it.
+      </p>
     </div>
   );
 }
@@ -392,6 +402,41 @@ export function AlignField({
           <SelectItem value="left">Left</SelectItem>
           <SelectItem value="center">Centre</SelectItem>
           <SelectItem value="right">Right</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+/** Choose the font for a block (brand fonts plus email-safe stacks). */
+export function FontField({
+  label = "Font",
+  value,
+  fallbackLabel,
+  onChange,
+}: {
+  label?: string;
+  value?: string;
+  fallbackLabel?: string;
+  onChange: (font: string | undefined) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Select
+        value={value || "default"}
+        onValueChange={(v) => onChange(v === "default" ? undefined : v)}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">{fallbackLabel || "Default"}</SelectItem>
+          {EDM_FONTS.map((f) => (
+            <SelectItem key={f.value} value={f.value}>
+              {f.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

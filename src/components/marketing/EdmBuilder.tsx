@@ -101,6 +101,7 @@ import { ColorPickerPopover } from "./ColorPickerPopover";
 import {
   AlignField,
   ColorField,
+  FontField,
   NumField,
   SocialLinksEditor,
   SpacingEditor,
@@ -1254,6 +1255,22 @@ function BlockInspector({
               />
             </div>
             <div className="space-y-1.5">
+              <Label>Footer line spacing</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min={1}
+                max={3}
+                value={block.footerLineHeight ?? 1.6}
+                onChange={(e) =>
+                  onChange({ footerLineHeight: Number(e.target.value) || 1.6 })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Applies to the whole footer, including custom footer text.
+              </p>
+            </div>
+            <div className="space-y-1.5">
               <Label>Footer top border</Label>
               <ColorPickerPopover
                 value={
@@ -1378,6 +1395,19 @@ function BlockInspector({
               value={block.colGap ?? 0}
               onChange={(e) => onChange({ colGap: Number(e.target.value) || 0 })}
             />
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <Label>Space between stacked columns on mobile (px)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={80}
+              value={block.stackGap ?? 0}
+              onChange={(e) => onChange({ stackGap: Math.max(0, Number(e.target.value) || 0) })}
+            />
+            <p className="text-xs text-muted-foreground">
+              On phones the columns sit on top of each other — this adds a gap between them.
+            </p>
           </div>
         </div>
 
@@ -1867,10 +1897,16 @@ function BlockInspector({
           <NumField
             label="Custom font size"
             suffix="px"
-            min={10}
-            max={72}
+            min={6}
+            max={96}
             value={block.fontSize}
             onChange={(fontSize) => onChange({ fontSize })}
+          />
+          <FontField
+            label="Heading font"
+            fallbackLabel="Larken (brand headings)"
+            value={block.fontFamily}
+            onChange={(fontFamily) => onChange({ fontFamily })}
           />
         </>
       )}
@@ -1901,8 +1937,8 @@ function BlockInspector({
           <NumField
             label="Font size"
             suffix="px"
-            min={8}
-            max={48}
+            min={6}
+            max={96}
             placeholder="16"
             value={block.fontSize}
             onChange={(fontSize) => onChange({ fontSize })}
@@ -1916,6 +1952,14 @@ function BlockInspector({
               max={3}
               value={block.lineHeight ?? 1.6}
               onChange={(e) => onChange({ lineHeight: Number(e.target.value) || 1.6 })}
+            />
+          </div>
+          <div className="col-span-2">
+            <FontField
+              label="Font"
+              fallbackLabel="Poppins (brand body)"
+              value={block.fontFamily}
+              onChange={(fontFamily) => onChange({ fontFamily })}
             />
           </div>
           <p className="col-span-2 text-xs text-muted-foreground">

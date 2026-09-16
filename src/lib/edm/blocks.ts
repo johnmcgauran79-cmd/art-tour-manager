@@ -16,6 +16,23 @@ import { FONT_BODY, FONT_HEADING, BRAND_FONT_HEAD_HTML } from "@/lib/brandFonts"
  *    query so one design works on desktop and phones.
  */
 
+/**
+ * Fonts offered in the builder. Larken and Poppins are the brand fonts; the
+ * rest are email-safe stacks that render everywhere without web fonts.
+ */
+export const EDM_FONTS: { label: string; value: string }[] = [
+  { label: "Larken (brand headings)", value: FONT_HEADING },
+  { label: "Poppins (brand body)", value: FONT_BODY },
+  { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+  { label: "Helvetica", value: "Helvetica, Arial, sans-serif" },
+  { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
+  { label: "Tahoma", value: "Tahoma, Verdana, sans-serif" },
+  { label: "Trebuchet MS", value: "'Trebuchet MS', Tahoma, sans-serif" },
+  { label: "Georgia", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { label: "Courier New", value: "'Courier New', Courier, monospace" },
+];
+
 export type EdmBlockType =
   | "design"
   | "heading"
@@ -149,6 +166,8 @@ export interface EdmBlock {
   footerColor?: string;
   footerLinkColor?: string;
   footerPadding?: number;
+  /** design block: footer line spacing multiplier */
+  footerLineHeight?: number;
   footerBorderColor?: string;
   footerHtml?: string;
   footerShowUnsubscribe?: boolean;
@@ -178,6 +197,10 @@ export interface EdmBlock {
   fontSize?: number;
   /** text block line height multiplier */
   lineHeight?: number;
+  /** font stack override (heading / text / button / quote) */
+  fontFamily?: string;
+  /** columns: vertical gap between stacked columns on mobile, in px */
+  stackGap?: number;
 
   /* ---- button ---- */
   btnBg?: string;
@@ -797,6 +820,25 @@ const spacingCss = (s: EdmSpacing, fallback = 0) =>
 const hasSpacing = (s?: EdmSpacing) =>
   !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null && v !== 0);
 
+/**
+ * Negative spacing can't be expressed as padding, so any negative margin or
+ * padding side is collected here and applied as a negative CSS margin on the
+ * block's wrapper table (which pulls the block towards its neighbour).
+ */
+const negativeSpacing = (b: EdmBlock): string | null => {
+  const sides: (keyof EdmSpacing)[] = ["top", "right", "bottom", "left"];
+  const parts = sides.map((side) => {
+    const m = b.margin?.[side] ?? 0;
+    const p = b.padding?.[side] ?? 0;
+    const total = Math.min(0, m) + Math.min(0, p);
+    return total < 0 ? `${Math.round(total)}px` : "0";
+  });
+  return parts.some((v) => v !== "0") ? parts.join(" ") : null;
+};
+
+/** Resolve the font stack for a block, falling back to the brand default. */
+const fontStack = (b: EdmBlock, fallback: string) => b.fontFamily || fallback;
+
 /** Short, stable class prefix derived from the block id. */
 const blockClass = (b: EdmBlock) => `eb${b.id.replace(/-/g, "").slice(0, 8)}`;
 
@@ -869,6 +911,14 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
         `tr.${cls} table.edm-grid tr{display:flex!important;flex-direction:column-reverse!important;width:100%!important;}`
       );
     }
+    // Space between columns once they stack on top of each other.
+    if (m.stack !== false && b.stackGap) {
+      const gap = Math.max(0, Math.round(b.stackGap));
+      rules.push(
+        `tr.${cls} td.edm-col{padding-bottom:${gap}px!important;}`,
+        `tr.${cls} td.edm-col:last-child{padding-bottom:0!important;}`
+      );
+    }
   }
 
   if (rules.length) ctx.css.push(...rules);
@@ -899,7 +949,9 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
   // Builder-only hook so clicking the live preview can select this block.
   const tagAttr = ctx.tag ? ` data-edm-id="${b.id}"` : "";
 
-  if (hasSpacing(margin) || outer) {
+  const negative = negativeSpacing(b);
+
+  if (hasSpacing(margin) || outer || negative) {
     // Outer row carries the margin plus the optional full-width background;
     // the inner row keeps the padding and the content background colour.
     html = html.replace("<tr", `<tr class="${cls}"`);
@@ -910,7 +962,9 @@ const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
     }><td${outerAttrs} style="${outerBg}padding:${
       hasSpacing(margin) ? spacingCss(margin!) : "0"
     };">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${html}</table>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
+    negative ? `margin:${negative};` : ""
+  }">${html}</table>
 </td></tr>`;
   }
 
@@ -1023,13 +1077,13 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
 
   switch (b.type) {
     case "heading":
-      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
+      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_HEADING)};font-size:${
         b.fontSize || headingSize(b.size)
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_BODY};font-size:${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_BODY)};font-size:${
         b.fontSize || 16
       }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
         b.align ? `text-align:${b.align};` : ""
@@ -1094,7 +1148,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
   <a${edit("text")} href="${esc(
     b.linkUrl || "#"
-  )}" style="${widthCss}background:${bg};color:${fg};font-family:${FONT_BODY};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
+  )}" style="${widthCss}background:${bg};color:${fg};font-family:${fontStack(b, FONT_BODY)};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
     b.text || "Click here"
   )}</a></td></tr>`;
     }
@@ -1152,7 +1206,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
     case "quote":
       return `<tr><td style="padding:${pad(ctx, "16px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
-    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;"><div${edit(
+    <tr><td style="padding:18px 22px;font-family:${fontStack(b, FONT_HEADING)};font-size:17px;line-height:1.6;color:#334155;font-style:italic;"><div${edit(
       "html"
     )}>${b.html || ""}</div>${
       b.text
@@ -1246,6 +1300,7 @@ export const renderEdmHtml = (
   const footerColor = design?.footerColor || "#e6e8ec";
   const footerLinkColor = design?.footerLinkColor || "#ffffff";
   const footerPadding = Math.max(0, design?.footerPadding ?? 20);
+  const footerLineHeight = design?.footerLineHeight ?? 1.6;
   const footerBorder = design?.footerBorderColor ?? border;
   const showUnsub = design?.footerShowUnsubscribe !== false;
   const footerAlign = design?.footerAlign || "center";
@@ -1333,7 +1388,7 @@ ${
         footerBorder && footerBorder !== "transparent"
           ? `border-top:1px solid ${footerBorder};`
           : ""
-      }font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:${footerColor};text-align:${footerAlign};">
+      }font-family:${FONT_BODY};font-size:12px;line-height:${footerLineHeight};color:${footerColor};text-align:${footerAlign};">
       ${footerSocial}
       ${brandBody}
       ${unsub}

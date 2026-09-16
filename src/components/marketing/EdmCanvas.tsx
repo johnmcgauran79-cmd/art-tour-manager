@@ -71,9 +71,63 @@ const CANVAS_CSS = `
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
   [data-edm-edit]{cursor:text;}
   [data-edm-edit]:focus{outline:2px solid #2563eb;outline-offset:2px;border-radius:2px;}
+  /* While you type, very light text on a light background (or dark on dark) is
+     temporarily shown in a readable colour so it can be seen — the real colour
+     is used in the preview and the sent email. */
+  [data-edm-edit].edm-readable,[data-edm-edit].edm-readable *{color:#111827!important;}
+  [data-edm-edit].edm-readable{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
 `;
+
+/** Parse a computed rgb()/rgba() colour into channels. */
+const rgbOf = (value: string): [number, number, number] | null => {
+  const m = value.match(/rgba?\(([^)]+)\)/);
+  if (!m) return null;
+  const parts = m[1].split(",").map((n) => parseFloat(n.trim()));
+  if (parts.length < 3 || parts.some((n) => Number.isNaN(n))) return null;
+  return [parts[0], parts[1], parts[2]];
+};
+
+const luminance = ([r, g, b]: [number, number, number]) => {
+  const f = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+
+/** Walk up the tree for the first non-transparent background colour. */
+const effectiveBg = (el: HTMLElement): [number, number, number] => {
+  let node: HTMLElement | null = el;
+  const win = el.ownerDocument?.defaultView;
+  while (node && win) {
+    const bg = win.getComputedStyle(node).backgroundColor;
+    if (bg && !/rgba\([^)]*,\s*0\s*\)/.test(bg) && bg !== "transparent") {
+      const rgb = rgbOf(bg);
+      if (rgb) return rgb;
+    }
+    node = node.parentElement;
+  }
+  return [255, 255, 255];
+};
+
+/**
+ * Text that is nearly the same colour as its background can't be seen while
+ * typing (white copy on a white block, for example). While the element is
+ * focused we show it in a readable colour; the saved colour is untouched.
+ */
+const applyReadableColour = (el: HTMLElement) => {
+  const win = el.ownerDocument?.defaultView;
+  if (!win) return;
+  const fg = rgbOf(win.getComputedStyle(el).color);
+  if (!fg) return;
+  const bgLum = luminance(effectiveBg(el));
+  const fgLum = luminance(fg);
+  const ratio =
+    (Math.max(bgLum, fgLum) + 0.05) / (Math.min(bgLum, fgLum) + 0.05);
+  el.classList.toggle("edm-readable", ratio < 2.2);
+};
 
 /**
  * The editing canvas: the branded email preview itself is the editor. Text is
@@ -324,6 +378,7 @@ export function EdmCanvas({
       const blockId = el.getAttribute("data-edm-block") || "";
       const field = (el.getAttribute("data-edm-edit") || "text") as EditField;
       editingRef.current = { el, blockId, field };
+      applyReadableColour(el);
       setTextRect(rectOf(el));
       if (blockId) cb.current.onSelect(blockId);
     };
@@ -331,6 +386,7 @@ export function EdmCanvas({
     const onFocusOut = (e: FocusEvent) => {
       const el = editingRef.current?.el;
       if (!el || el !== (e.target as HTMLElement)) return;
+      el.classList.remove("edm-readable");
       commitEdit();
     };
 
