@@ -96,6 +96,7 @@ export function EdmCanvas({
   const pendingHtmlRef = useRef<string | null>(null);
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
+  const [frameHeight, setFrameHeight] = useState(900);
 
   // Handlers change often; keep them out of the document-writing effect.
   const cb = useRef({
@@ -131,13 +132,24 @@ export function EdmCanvas({
     };
   }, []);
 
-  /** Replace the iframe document, keeping the scroll position. */
+  /** Grow the frame to the full height of the email so the page scrolls, not the frame. */
+  const syncHeight = useCallback(() => {
+    const d = frameRef.current?.contentDocument;
+    if (!d) return;
+    const h = Math.max(
+      d.documentElement?.scrollHeight || 0,
+      d.body?.scrollHeight || 0,
+      320
+    );
+    setFrameHeight((prev) => (Math.abs(prev - h) > 2 ? h : prev));
+  }, []);
+
+  /** Replace the iframe document. */
   const writeDoc = useCallback(
     (markup: string) => {
       const frame = frameRef.current;
       const d = frame?.contentDocument;
       if (!frame || !d) return;
-      const prev = d.documentElement?.scrollTop || d.body?.scrollTop || 0;
       d.open();
       d.write(markup);
       d.close();
@@ -152,14 +164,12 @@ export function EdmCanvas({
         el.spellcheck = true;
       });
 
-      requestAnimationFrame(() => {
-        const d2 = frame.contentDocument;
-        if (!d2) return;
-        if (d2.documentElement) d2.documentElement.scrollTop = prev;
-        if (d2.body) d2.body.scrollTop = prev;
-      });
+      requestAnimationFrame(syncHeight);
+      // Images and web fonts settle a little later.
+      window.setTimeout(syncHeight, 250);
+      window.setTimeout(syncHeight, 1200);
     },
-    []
+    [syncHeight]
   );
 
   /** Write the current editable content back onto the block. */
@@ -189,6 +199,18 @@ export function EdmCanvas({
     }
     writeDoc(html);
   }, [html, writeDoc]);
+
+  /* ---- keep the frame as tall as the email while typing or on resize ---- */
+  useEffect(() => {
+    const id = window.setInterval(syncHeight, 600);
+    window.addEventListener("resize", syncHeight);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("resize", syncHeight);
+    };
+  }, [syncHeight]);
+
+
 
   /* ---- canvas interaction ---- */
   useEffect(() => {
@@ -414,6 +436,13 @@ export function EdmCanvas({
     const d = doc();
     if (!d) return;
     if (savedRangeRef.current) restoreRange();
+    // Emit <span style="color:…"> instead of the legacy <font> tag, which the
+    // email sanitiser strips.
+    try {
+      d.execCommand("styleWithCSS", false, "true");
+    } catch {
+      /* not supported – fall through */
+    }
     d.execCommand(command, false, value);
     const el = editingRef.current?.el;
     if (el) setTextRect(rectOf(el));
@@ -427,10 +456,12 @@ export function EdmCanvas({
         <iframe
           ref={frameRef}
           title="Email editing canvas"
+          scrolling="no"
+          style={{ height: frameHeight }}
           // Same-origin so the document can be edited; scripts stay blocked.
           sandbox="allow-same-origin"
           className={cn(
-            "h-[72vh] rounded bg-background",
+            "rounded bg-background",
             device === "mobile" ? "w-[390px] shrink-0" : "w-full min-w-[720px]"
           )}
         />

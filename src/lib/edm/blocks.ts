@@ -302,8 +302,9 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         iconStyle: "plain",
         iconGap: 10,
         socials: [
-          { platform: "facebook", url: "" },
-          { platform: "instagram", url: "" },
+          { platform: "facebook", url: "https://www.facebook.com/AustralianRacingTours" },
+          { platform: "instagram", url: "https://www.instagram.com/AusRacingTours/" },
+          { platform: "youtube", url: "https://www.youtube.com/@australianracingtours" },
         ],
       };
     case "tourCard":
@@ -928,7 +929,9 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
 };
 
 const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
-  const items = (b.socials || []).filter((s) => s.url?.trim());
+  // Icons stay visible while a link is still blank so the block can be seen and
+  // edited on the canvas.
+  const items = (b.socials || []).filter((s) => s.platform);
   if (!items.length) return "";
   const size = Math.max(12, b.iconSize ?? 24);
   const gap = Math.max(0, b.iconGap ?? 10);
@@ -948,7 +951,7 @@ const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
           ? inner
           : `<span style="display:inline-block;background:${bg};border-radius:${radius};padding:${boxPad}px;line-height:0;">${inner}</span>`;
       return `<td style="padding:0 ${i === items.length - 1 ? 0 : gap}px 0 0;font-size:0;line-height:0;"><a href="${esc(
-        s.url
+        s.url?.trim() || "#"
       )}" style="text-decoration:none;">${boxed}</a></td>`;
     })
     .join("");

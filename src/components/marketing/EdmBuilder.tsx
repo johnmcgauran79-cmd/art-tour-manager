@@ -496,7 +496,7 @@ export function EdmBuilder({
 
           {/* Content palette / settings for the selected section */}
           <Card
-            className="h-fit w-full shrink-0 xl:sticky xl:top-2 xl:w-[var(--edm-panel-w)]"
+            className="h-fit w-full shrink-0 xl:sticky xl:top-2 xl:max-h-[calc(100vh-1.5rem)] xl:w-[var(--edm-panel-w)] xl:overflow-y-auto"
             style={{ ["--edm-panel-w" as string]: `${panelWidth}px` }}
           >
             <CardHeader className="pb-3">
