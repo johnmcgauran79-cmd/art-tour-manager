@@ -237,9 +237,9 @@ export function EdmBuilder({
 
 
   const add = (type: EdmPaletteType) => {
-    const block = newPaletteBlock(type);
+    const { block, selectId } = newTopLevelPaletteBlock(type);
     commit(insertBlockAfter(blocks, block, selectedId));
-    setSelectedId(block.id);
+    setSelectedId(selectId);
     toast({
       title: `${paletteLabel(type)} added`,
       description: selectedId
