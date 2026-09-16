@@ -293,7 +293,7 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
           </DialogTitle>
           <DialogDescription>
             {initialImport
-              ? "Everything on the website — dates, prices, payment details, location, inclusions, exclusions, description, itinerary and day photos — is set to come into ART. Change any line you'd rather keep as it is, then apply. From then on, edit in ART and publish to the website."
+              ? "Everything on the website — dates, prices, payment details, location, capacity, overview text, inclusions, exclusions, itinerary and day photos — is set to come into ART. Change any line you'd rather keep as it is, then apply. From then on, edit in ART and publish to the website."
               : "Compare every matched field, the inclusions and the itinerary, then choose which side is correct. After reconciling, ART stays the source of truth."}
           </DialogDescription>
         </DialogHeader>
