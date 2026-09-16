@@ -984,6 +984,7 @@ export function CampaignsTab({
               )}
               Review &amp; send
             </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
