@@ -156,43 +156,10 @@ export function EdmBuilder({
     if (selectedId) setPanelTab("settings");
   }, [selectedId]);
 
-  /* ---- resizable content-blocks panel ---- */
-  const PANEL_MIN = 240;
-  const PANEL_MAX = 640;
-  const [panelWidth, setPanelWidth] = useState<number>(() => {
-    const stored = Number(localStorage.getItem("edm-blocks-panel-width"));
-    return stored >= PANEL_MIN && stored <= PANEL_MAX ? stored : 320;
-  });
-  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+  /** Fixed width for the content / settings panel. */
+  const panelWidth = 340;
 
-  useEffect(() => {
-    localStorage.setItem("edm-blocks-panel-width", String(Math.round(panelWidth)));
-  }, [panelWidth]);
 
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (!dragRef.current) return;
-      const next = dragRef.current.startW + (e.clientX - dragRef.current.startX);
-      setPanelWidth(Math.min(PANEL_MAX, Math.max(PANEL_MIN, next)));
-    };
-    const onUp = () => {
-      dragRef.current = null;
-      document.body.style.removeProperty("cursor");
-      document.body.style.removeProperty("user-select");
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-  }, []);
-
-  const startPanelDrag = (e: React.PointerEvent) => {
-    dragRef.current = { startX: e.clientX, startW: panelWidth };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  };
 
 
   /* ---- undo / redo history ---- */
