@@ -92,18 +92,12 @@ export const BrandPaletteSettings = () => {
         <div className="space-y-2">
           {colors.map((c, i) => (
             <div key={`${c.hex}-${i}`} className="flex items-center gap-2">
-              <div
-                className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-md border-2 border-border"
-                style={{ backgroundColor: c.hex }}
-              >
-                <input
-                  type="color"
-                  value={/^#[0-9a-fA-F]{6}$/.test(c.hex) ? c.hex : "#000000"}
-                  onChange={(e) => set(i, { hex: e.target.value })}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  aria-label={`${c.label || "Swatch"} colour picker`}
-                />
-              </div>
+              <ColorPickerPopover
+                value={/^#[0-9a-fA-F]{6}$/.test(c.hex) ? c.hex : "#000000"}
+                fallback="#000000"
+                onChange={(hex) => set(i, { hex })}
+                className="h-9 w-9 flex-shrink-0 rounded-md border-2"
+              />
               <Input
                 value={c.hex}
                 onChange={(e) => set(i, { hex: e.target.value })}
