@@ -3833,6 +3833,110 @@ export type Database = {
           },
         ]
       }
+      instalment_reminders: {
+        Row: {
+          actioned_at: string | null
+          actioned_by: string | null
+          amount_due: number
+          amount_paid: number
+          booking_ids: string[]
+          created_at: string
+          currency_code: string
+          deposit_expected: number
+          hold_reason: string | null
+          id: string
+          instalment_expected: number
+          invoice_due_date: string | null
+          invoice_total: number
+          last_email_id: string | null
+          last_sent_at: string | null
+          next_due_at: string | null
+          pax_count: number
+          payment_link: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          reminder_count: number
+          send_error: string | null
+          shortfall: number
+          state: string
+          stop_reason: string | null
+          tour_id: string
+          updated_at: string
+          xero_invoice_id: string
+          xero_invoice_number: string | null
+        }
+        Insert: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          amount_due?: number
+          amount_paid?: number
+          booking_ids?: string[]
+          created_at?: string
+          currency_code?: string
+          deposit_expected?: number
+          hold_reason?: string | null
+          id?: string
+          instalment_expected?: number
+          invoice_due_date?: string | null
+          invoice_total?: number
+          last_email_id?: string | null
+          last_sent_at?: string | null
+          next_due_at?: string | null
+          pax_count?: number
+          payment_link?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          reminder_count?: number
+          send_error?: string | null
+          shortfall?: number
+          state?: string
+          stop_reason?: string | null
+          tour_id: string
+          updated_at?: string
+          xero_invoice_id: string
+          xero_invoice_number?: string | null
+        }
+        Update: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          amount_due?: number
+          amount_paid?: number
+          booking_ids?: string[]
+          created_at?: string
+          currency_code?: string
+          deposit_expected?: number
+          hold_reason?: string | null
+          id?: string
+          instalment_expected?: number
+          invoice_due_date?: string | null
+          invoice_total?: number
+          last_email_id?: string | null
+          last_sent_at?: string | null
+          next_due_at?: string | null
+          pax_count?: number
+          payment_link?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          reminder_count?: number
+          send_error?: string | null
+          shortfall?: number
+          state?: string
+          stop_reason?: string | null
+          tour_id?: string
+          updated_at?: string
+          xero_invoice_id?: string
+          xero_invoice_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instalment_reminders_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_line_templates: {
         Row: {
           created_at: string
