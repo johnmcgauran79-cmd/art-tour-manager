@@ -125,9 +125,9 @@ interface EdmBuilderProps {
 }
 
 /**
- * Block-based EDM builder: pick a starter layout, then add, reorder and edit
- * content blocks — including nested column and table layouts — with a live
- * branded preview beside them.
+ * EDM builder where the branded preview *is* the editor: type straight onto the
+ * email, drag content in from the palette on the right, and edit the settings of
+ * whichever section is selected in the same panel.
  */
 export function EdmBuilder({
   mode,
@@ -145,8 +145,16 @@ export function EdmBuilder({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
-  /** When set, the next click in the live preview places a block of this type. */
+  /** When set, the next click on the email places a block of this type. */
   const [pickType, setPickType] = useState<EdmBlockType | null>(null);
+  /** Palette tile currently being dragged onto the email. */
+  const [dragType, setDragType] = useState<EdmBlockType | null>(null);
+  const [panelTab, setPanelTab] = useState<"content" | "settings">("content");
+
+  // Selecting a section on the canvas shows its settings straight away.
+  useEffect(() => {
+    if (selectedId) setPanelTab("settings");
+  }, [selectedId]);
 
   /* ---- resizable content-blocks panel ---- */
   const PANEL_MIN = 240;
