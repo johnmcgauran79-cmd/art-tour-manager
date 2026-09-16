@@ -73,3 +73,20 @@ An enquiry or booking is credited to a campaign only when the person arrived thr
 ## Legacy surfaces still present
 
 The Keap → Brevo migration console, the `brevo-sync` and `crm-migrate-*` functions and the Keap contact-matching function were removed in the 2026 tidy-up. Brevo and Keap are no longer part of the system and must not be reintroduced. Historical `customers.keap_contact_id` / `brevo_contact_id` values are retained as read-only history.
+
+### Typography & spacing controls (September 2026)
+
+- **Fonts per block** — `EdmBlock.fontFamily` overrides the default stack for heading, text,
+  button and quote blocks. Options come from `EDM_FONTS` in `src/lib/edm/blocks.ts` (Larken,
+  Poppins plus email-safe stacks); `fontStack(block, fallback)` resolves it at render time.
+- **Negative spacing** — the margin/padding editors accept -160..160. Negative sides are
+  collected by `negativeSpacing()` and emitted as a negative CSS margin on the block's wrapper
+  table (padding cannot be negative in email HTML).
+- **Mobile stacked columns** — `EdmBlock.stackGap` adds `padding-bottom` to `td.edm-col` inside
+  the block's mobile media query (last column excluded).
+- **Font sizes** — heading and text blocks accept 6-96px (previously 10/8 minimum).
+- **Footer line spacing** — `EdmBlock.footerLineHeight` (design block) drives the footer `td`
+  line-height, including custom footer HTML.
+- **Editor readability** — `EdmCanvas` adds `.edm-readable` to the focused editable element when
+  its text/background contrast ratio is below 2.2, so white-on-white copy is visible while
+  typing. The stored colour and the sent email are unaffected.
