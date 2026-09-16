@@ -3839,17 +3839,22 @@ export type Database = {
           actioned_by: string | null
           amount_due: number
           amount_paid: number
+          auto_send: boolean
           booking_ids: string[]
           created_at: string
           currency_code: string
           deposit_expected: number
+          escalated_at: string | null
+          final_payment_date: string | null
           hold_reason: string | null
           id: string
           instalment_expected: number
           invoice_due_date: string | null
           invoice_total: number
+          kind: string
           last_email_id: string | null
           last_sent_at: string | null
+          line_items: Json
           next_due_at: string | null
           pax_count: number
           payment_link: string | null
@@ -3870,17 +3875,22 @@ export type Database = {
           actioned_by?: string | null
           amount_due?: number
           amount_paid?: number
+          auto_send?: boolean
           booking_ids?: string[]
           created_at?: string
           currency_code?: string
           deposit_expected?: number
+          escalated_at?: string | null
+          final_payment_date?: string | null
           hold_reason?: string | null
           id?: string
           instalment_expected?: number
           invoice_due_date?: string | null
           invoice_total?: number
+          kind?: string
           last_email_id?: string | null
           last_sent_at?: string | null
+          line_items?: Json
           next_due_at?: string | null
           pax_count?: number
           payment_link?: string | null
@@ -3901,17 +3911,22 @@ export type Database = {
           actioned_by?: string | null
           amount_due?: number
           amount_paid?: number
+          auto_send?: boolean
           booking_ids?: string[]
           created_at?: string
           currency_code?: string
           deposit_expected?: number
+          escalated_at?: string | null
+          final_payment_date?: string | null
           hold_reason?: string | null
           id?: string
           instalment_expected?: number
           invoice_due_date?: string | null
           invoice_total?: number
+          kind?: string
           last_email_id?: string | null
           last_sent_at?: string | null
+          line_items?: Json
           next_due_at?: string | null
           pax_count?: number
           payment_link?: string | null
