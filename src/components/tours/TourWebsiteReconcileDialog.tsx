@@ -92,9 +92,11 @@ interface Props {
   tourId: string;
   tourName: string;
   onDone?: () => void;
+  /** Opened straight after linking: default every difference to the website's value. */
+  initialImport?: boolean;
 }
 
-export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourName, onDone }: Props) {
+export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourName, onDone, initialImport }: Props) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
