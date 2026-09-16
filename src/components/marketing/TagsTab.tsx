@@ -69,6 +69,7 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadCsv, exportStamp } from "@/lib/csvExport";
 import { cn } from "@/lib/utils";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 const DEFAULT_COLOR = "#0f766e";
 
