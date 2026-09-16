@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
       <h1 style="font-family:Larken,Georgia,serif;font-size:24px;margin:0 0 4px">Daily system health</h1>
       <p style="margin:0 0 20px;color:#6b7280;font-size:13px">${esc(stamp)} (Brisbane time)</p>
       ${listHtml}
-      <p style="margin:24px 0 0"><a href="${APP_URL}/settings" style="background:#111827;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:6px;display:inline-block">Open System Health in ART Admin</a></p>
+      <p style="margin:24px 0 0"><a href="${APP_URL}${HEALTH_PATH}" style="background:#111827;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:6px;display:inline-block">Open System Health in ART Admin</a></p>
       <p style="margin:20px 0 0;color:#6b7280;font-size:12px">This digest is sent automatically each morning. It only lists things that look wrong.</p>
     </div>
   </div>
