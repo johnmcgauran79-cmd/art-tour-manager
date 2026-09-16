@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+export type ReminderKind = "instalment" | "final";
+
 export interface InstalmentReminder {
   id: string;
+  kind: ReminderKind;
   tour_id: string;
   xero_invoice_id: string;
   xero_invoice_number: string | null;
@@ -17,10 +20,14 @@ export interface InstalmentReminder {
   deposit_expected: number;
   shortfall: number;
   invoice_due_date: string | null;
+  final_payment_date: string | null;
+  line_items: Array<{ description: string; quantity: number; unit_amount: number; line_amount: number }> | null;
+  auto_send: boolean;
+  escalated_at: string | null;
   recipient_email: string | null;
   recipient_name: string | null;
   payment_link: string | null;
-  state: "pending" | "sent" | "held_agent" | "stopped" | "resolved";
+  state: "pending" | "sent" | "held_agent" | "needs_call" | "stopped" | "resolved";
   hold_reason: string | null;
   stop_reason: string | null;
   reminder_count: number;
@@ -38,7 +45,7 @@ export const useInstalmentReminders = () =>
       const { data, error } = await supabase
         .from("instalment_reminders")
         .select("*, tour:tours ( id, name, start_date, final_payment_date )")
-        .in("state", ["pending", "sent", "held_agent", "stopped"])
+        .in("state", ["pending", "sent", "held_agent", "needs_call", "stopped"])
         .order("next_due_at", { ascending: true });
       if (error) throw error;
       return (data as any) || [];
@@ -50,19 +57,19 @@ export const useInstalmentReminderDueCount = () =>
   useQuery({
     queryKey: ["instalment-reminders-due-count"],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      // Only rows a person must action: first approval, agent invoices, and
+      // invoices that need a phone call. Automatic follow-ups are not counted.
       const { count, error } = await supabase
         .from("instalment_reminders")
         .select("id", { count: "exact", head: true })
-        .in("state", ["pending", "sent"])
-        .lte("next_due_at", today);
+        .in("state", ["pending", "held_agent", "needs_call"]);
       if (error) throw error;
       return count ?? 0;
     },
     refetchInterval: 120_000,
   });
 
-type Action = "send" | "skip" | "stop" | "resume";
+type Action = "send" | "skip" | "stop" | "resume" | "pause_auto";
 
 export const useInstalmentReminderAction = () => {
   const qc = useQueryClient();
@@ -84,7 +91,9 @@ export const useInstalmentReminderAction = () => {
             ? "Pushed back a week"
             : vars.action === "stop"
               ? "Reminders stopped"
-              : "Reminders resumed";
+              : vars.action === "pause_auto"
+                ? "Automatic sending paused"
+                : "Reminders resumed";
       toast({ title: "Done", description: label, variant: data.errors ? "destructive" : "default" });
       qc.invalidateQueries({ queryKey: ["instalment-reminders"] });
       qc.invalidateQueries({ queryKey: ["instalment-reminders-due-count"] });
@@ -107,7 +116,7 @@ export const useRefreshInstalmentReminders = () => {
     onSuccess: (data: any) => {
       toast({
         title: "Checked against Xero",
-        description: `${data.queued} new · ${data.updated} updated · ${data.resolved} paid · ${data.held_agent} agent invoice(s) held`,
+        description: `${data.queued} new · ${data.updated} updated · ${data.resolved} paid · ${data.auto_sent ?? 0} sent automatically · ${data.flagged_for_call ?? 0} for a phone call · ${data.held_agent} agent invoice(s) held`,
       });
       qc.invalidateQueries({ queryKey: ["instalment-reminders"] });
       qc.invalidateQueries({ queryKey: ["instalment-reminders-due-count"] });

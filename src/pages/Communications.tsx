@@ -57,7 +57,7 @@ export default function Communications() {
           </TabsTrigger>
           <TabsTrigger value="instalments" className="flex items-center gap-1.5">
             <CircleDollarSign className="h-3.5 w-3.5" />
-            Instalment Reminders
+            Payment Reminders
             {instalmentDueCount > 0 && (
               <Badge variant="secondary" className="ml-1">
                 {instalmentDueCount}

@@ -91,11 +91,6 @@ function parseXeroDate(v: unknown): string | null {
 }
 
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
-const addDays = (from: string, days: number) => {
-  const d = new Date(`${from}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().split("T")[0];
-};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
