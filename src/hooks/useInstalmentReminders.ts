@@ -57,12 +57,12 @@ export const useInstalmentReminderDueCount = () =>
   useQuery({
     queryKey: ["instalment-reminders-due-count"],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      // Only rows a person must action: first approval, agent invoices, and
+      // invoices that need a phone call. Automatic follow-ups are not counted.
       const { count, error } = await supabase
         .from("instalment_reminders")
         .select("id", { count: "exact", head: true })
-        .or("state.eq.pending,state.eq.held_agent,state.eq.needs_call")
-        .lte("next_due_at", today);
+        .in("state", ["pending", "held_agent", "needs_call"]);
       if (error) throw error;
       return count ?? 0;
     },
