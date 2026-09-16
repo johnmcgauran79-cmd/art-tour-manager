@@ -1059,7 +1059,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
         : ""
     }
     <tr><td style="padding:20px;font-family:${FONT_BODY};">
-      <div style="font-size:20px;font-weight:700;color:${primary};">${esc(b.text || "")}</div>
+      <div${edit("text")} style="font-size:20px;font-weight:700;color:${primary};">${esc(b.text || "")}</div>
       ${
         b.meta
           ? `<div style="font-size:13px;color:#667085;margin-top:4px;">${esc(b.meta)}</div>`
