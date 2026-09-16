@@ -1037,7 +1037,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
           ? `display:inline-block;width:${b.btnWidth}px;text-align:center;`
           : "display:inline-block;";
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
-  <a href="${esc(
+  <a${edit("text")} href="${esc(
     b.linkUrl || "#"
   )}" style="${widthCss}background:${bg};color:${fg};font-family:${FONT_BODY};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
     b.text || "Click here"
