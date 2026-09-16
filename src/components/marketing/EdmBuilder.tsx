@@ -68,6 +68,7 @@ import {
   duplicateBlockById,
   duplicateCellById,
   appendBlocksToCell,
+  ART_CHARCOAL,
   cloneBlock,
   cloneBlocks,
   findCellById,
