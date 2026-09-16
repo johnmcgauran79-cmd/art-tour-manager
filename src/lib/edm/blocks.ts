@@ -178,6 +178,10 @@ export interface EdmBlock {
   fontSize?: number;
   /** text block line height multiplier */
   lineHeight?: number;
+  /** font stack override (heading / text / button / quote) */
+  fontFamily?: string;
+  /** columns: vertical gap between stacked columns on mobile, in px */
+  stackGap?: number;
 
   /* ---- button ---- */
   btnBg?: string;
