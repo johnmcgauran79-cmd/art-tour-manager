@@ -371,7 +371,7 @@ export function ColorPickerPopover({
         className="w-auto p-3"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <PickerBody
+        <ColorPickerPanel
           value={value}
           fallback={fallback}
           onChange={onChange}
