@@ -115,7 +115,6 @@ export function EdmCanvas({
     onInsertAt,
     onInsertIntoCell,
     onInsertAtEnd,
-  onInsertAtEnd,
   });
   cb.current = {
     pendingType,
@@ -126,7 +125,6 @@ export function EdmCanvas({
     onInsertAt,
     onInsertIntoCell,
     onInsertAtEnd,
-  onInsertAtEnd,
   };
 
   const doc = () => frameRef.current?.contentDocument ?? null;
