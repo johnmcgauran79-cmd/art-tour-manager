@@ -9,6 +9,7 @@ import {
   List,
   ListOrdered,
   Palette,
+  SquareDashed,
   Strikethrough,
   Trash2,
   Type,
@@ -66,6 +67,8 @@ const CANVAS_CSS = `
   [data-edm-id]{cursor:pointer;}
   [data-edm-id].edm-hover > td{outline:2px dashed #93c5fd;outline-offset:-2px;}
   [data-edm-id].edm-active > td{outline:2px solid #2563eb;outline-offset:-2px;}
+  [data-edm-id].edm-row-active > td{outline:2px solid #f59e0b;outline-offset:-2px;
+    background-image:linear-gradient(rgba(245,158,11,0.08),rgba(245,158,11,0.08));}
   [data-edm-id].edm-insert-before > td{box-shadow:inset 0 3px 0 0 #16a34a;}
   [data-edm-id].edm-insert-after > td{box-shadow:inset 0 -3px 0 0 #16a34a;}
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
@@ -78,7 +81,13 @@ const CANVAS_CSS = `
   [data-edm-edit].edm-readable{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
+  /* Phone view: keep the whole email inside the narrow frame while editing. */
+  html.edm-mobile,html.edm-mobile body{overflow-x:hidden!important;}
+  html.edm-mobile table{max-width:100%!important;}
+  html.edm-mobile img{max-width:100%!important;height:auto!important;}
+  html.edm-mobile td{word-break:break-word;}
 `;
+
 
 /** Parse a computed rgb()/rgba() colour into channels. */
 const rgbOf = (value: string): [number, number, number] | null => {
@@ -155,6 +164,13 @@ export function EdmCanvas({
   const frameRef = useRef<HTMLIFrameElement>(null);
   const editingRef = useRef<{ el: HTMLElement; blockId: string; field: EditField } | null>(null);
   const pendingHtmlRef = useRef<string | null>(null);
+  /**
+   * True while a toolbar popover (the colour picker) has focus. The text stays
+   * "in edit" so the highlighted words and their colour choice survive.
+   */
+  const holdEditRef = useRef(false);
+  const [parentRowId, setParentRowId] = useState<string | null>(null);
+
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
   const [frameHeight, setFrameHeight] = useState(900);
@@ -222,6 +238,7 @@ export function EdmCanvas({
       const style = fresh.createElement("style");
       style.textContent = CANVAS_CSS;
       fresh.head?.appendChild(style);
+      fresh.documentElement?.classList.toggle("edm-mobile", device === "mobile");
       fresh.querySelectorAll<HTMLElement>("[data-edm-edit]").forEach((el) => {
         el.contentEditable = "true";
         el.spellcheck = true;
@@ -232,8 +249,9 @@ export function EdmCanvas({
       window.setTimeout(syncHeight, 250);
       window.setTimeout(syncHeight, 1200);
     },
-    [syncHeight]
+    [syncHeight, device]
   );
+
 
   /** Write the current editable content back onto the block. */
   const commitEdit = useCallback(() => {
@@ -386,9 +404,12 @@ export function EdmCanvas({
     const onFocusOut = (e: FocusEvent) => {
       const el = editingRef.current?.el;
       if (!el || el !== (e.target as HTMLElement)) return;
+      // Keep the edit alive while the colour picker is open.
+      if (holdEditRef.current) return;
       el.classList.remove("edm-readable");
       commitEdit();
     };
+
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && editingRef.current) {
@@ -473,24 +494,31 @@ export function EdmCanvas({
     const d = doc();
     if (!d) return;
     const raf = requestAnimationFrame(() => {
-      d.querySelectorAll("[data-edm-id].edm-active").forEach((el) =>
-        el.classList.remove("edm-active")
+      d.querySelectorAll("[data-edm-id].edm-active,[data-edm-id].edm-row-active").forEach((el) =>
+        el.classList.remove("edm-active", "edm-row-active")
       );
       if (!selectedId) {
         setBlockRect(null);
+        setParentRowId(null);
         return;
       }
       const el = d.querySelector(`[data-edm-id="${selectedId}"]`);
       if (!el) {
         setBlockRect(null);
+        setParentRowId(null);
         return;
       }
-      el.classList.add("edm-active");
+      const isRow = !!el.querySelector("[data-edm-cell]");
+      el.classList.add(isRow ? "edm-row-active" : "edm-active");
       el.scrollIntoView({ block: "nearest" });
       setBlockRect(rectOf(el));
+      // The row (block) this content sits in, so it can be selected directly.
+      const row = el.parentElement?.closest?.("[data-edm-id]") ?? null;
+      setParentRowId(row?.getAttribute("data-edm-id") || null);
     });
     return () => cancelAnimationFrame(raf);
   }, [selectedId, html, rectOf]);
+
 
   /** Remembers the text selection while a popover (e.g. the colour picker) is open. */
   const savedRangeRef = useRef<Range | null>(null);
@@ -559,6 +587,18 @@ export function EdmCanvas({
           <span className="px-1 text-[10px] font-semibold uppercase text-muted-foreground">
             {selectedLabel || "Block"}
           </span>
+          {parentRowId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 gap-1 px-1.5 text-[10px] font-semibold uppercase"
+              title="Select the row this content sits in"
+              onClick={() => onSelect(parentRowId)}
+            >
+              <SquareDashed className="h-3.5 w-3.5" /> Row
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -635,8 +675,15 @@ export function EdmCanvas({
                 fallback="#000000"
                 align="center"
                 onOpenChange={(open) => {
-                  if (open) saveRange();
-                  else savedRangeRef.current = null;
+                  if (open) {
+                    holdEditRef.current = true;
+                    saveRange();
+                  } else {
+                    holdEditRef.current = false;
+                    savedRangeRef.current = null;
+                    // Store the newly coloured text on the block.
+                    commitEdit();
+                  }
                 }}
                 onChange={(hex) => exec("foreColor", hex)}
               >
