@@ -54,6 +54,8 @@ interface EdmCanvasProps {
   onEdit: (blockId: string, patch: Partial<EdmBlock>) => void;
   onInsertAt: (type: EdmPaletteType, targetId: string, place: "before" | "after") => void;
   onInsertIntoCell: (cellId: string, type: EdmPaletteType) => void;
+  /** Fallback: drop/click landed outside any row or column — append to the email. */
+  onInsertAtEnd: (type: EdmPaletteType) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
@@ -90,6 +92,7 @@ export function EdmCanvas({
   onEdit,
   onInsertAt,
   onInsertIntoCell,
+  onInsertAtEnd,
   onDuplicate,
   onDelete,
   onMove,
@@ -111,6 +114,8 @@ export function EdmCanvas({
     onEdit,
     onInsertAt,
     onInsertIntoCell,
+    onInsertAtEnd,
+  onInsertAtEnd,
   });
   cb.current = {
     pendingType,
@@ -120,6 +125,8 @@ export function EdmCanvas({
     onEdit,
     onInsertAt,
     onInsertIntoCell,
+    onInsertAtEnd,
+  onInsertAtEnd,
   };
 
   const doc = () => frameRef.current?.contentDocument ?? null;
@@ -272,13 +279,13 @@ export function EdmCanvas({
         return;
       }
       if (type && !row) {
+        e.preventDefault();
         const cell = cellOf(e.target);
-        if (cell) {
-          const cellId = cell.getAttribute("data-edm-cell");
-          if (cellId) cb.current.onInsertIntoCell(cellId, type);
-          clearMarks();
-          return;
-        }
+        const cellId = cell?.getAttribute("data-edm-cell");
+        if (cellId) cb.current.onInsertIntoCell(cellId, type);
+        else cb.current.onInsertAtEnd(type);
+        clearMarks();
+        return;
       }
 
       // Links (buttons, images) must not navigate inside the editor.
@@ -356,6 +363,7 @@ export function EdmCanvas({
         const cell = cellOf(e.target);
         const cellId = cell?.getAttribute("data-edm-cell");
         if (cellId) cb.current.onInsertIntoCell(cellId, type);
+        else cb.current.onInsertAtEnd(type);
       }
       clearMarks();
     };

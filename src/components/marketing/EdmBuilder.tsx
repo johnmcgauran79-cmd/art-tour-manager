@@ -484,6 +484,10 @@ export function EdmBuilder({
               onSelectBackground={openDesign}
               onEdit={(id, patch) => update(id, patch)}
               onInsertAt={addAtTarget}
+              onInsertAtEnd={(t) => {
+                add(t);
+                setPickType(null);
+              }}
               onInsertIntoCell={(cellId, type) => {
                 addToCell(cellId, type);
                 setPickType(null);
@@ -520,8 +524,10 @@ export function EdmBuilder({
                 <EdmPalette
                   pendingType={pickType}
                   onPick={(t) => {
-                    if (blocks.filter((b) => b.type !== "design").length === 0) add(t);
-                    else setPickType(pickType === t ? null : t);
+                    if (!blocks.some((b) => b.type !== "design")) {
+                      add(t);
+                      setPickType(null);
+                    } else setPickType(pickType === t ? null : t);
                   }}
                   onDragStart={setDragType}
                   onDragEnd={() => setDragType(null)}
