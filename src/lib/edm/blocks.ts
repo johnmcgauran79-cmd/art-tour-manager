@@ -149,6 +149,8 @@ export interface EdmBlock {
   footerColor?: string;
   footerLinkColor?: string;
   footerPadding?: number;
+  /** design block: footer line spacing multiplier */
+  footerLineHeight?: number;
   footerBorderColor?: string;
   footerHtml?: string;
   footerShowUnsubscribe?: boolean;
