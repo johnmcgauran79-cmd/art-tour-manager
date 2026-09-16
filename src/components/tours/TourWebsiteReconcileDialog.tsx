@@ -155,7 +155,7 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         setInclusions(inclInfo);
         setInclusionsChoice(
           inclInfo.changed
-            ? inclInfo.artInclusions + inclInfo.artExclusions === 0
+            ? initialImport || inclInfo.artInclusions + inclInfo.artExclusions === 0
               ? "wp"
               : "art"
             : "skip",
