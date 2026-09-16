@@ -521,6 +521,11 @@ export function EdmCanvas({
               </Button>
               <ColorPickerPopover
                 fallback="#000000"
+                align="center"
+                onOpenChange={(open) => {
+                  if (open) saveRange();
+                  else savedRangeRef.current = null;
+                }}
                 onChange={(hex) => exec("foreColor", hex)}
               >
                 <button
