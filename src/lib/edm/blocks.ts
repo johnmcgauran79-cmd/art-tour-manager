@@ -228,6 +228,9 @@ export interface EdmBrand {
   paletteColors?: { hex: string; label: string }[] | null;
 }
 
+/** ART dark charcoal — default header/footer background. */
+export const ART_CHARCOAL = "#0f172a";
+
 export const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; slug: string }[] = [
   { value: "facebook", label: "Facebook", slug: "facebook" },
   { value: "instagram", label: "Instagram", slug: "instagram" },
