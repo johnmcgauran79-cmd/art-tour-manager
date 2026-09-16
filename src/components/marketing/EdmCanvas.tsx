@@ -389,10 +389,30 @@ export function EdmCanvas({
     return () => cancelAnimationFrame(raf);
   }, [selectedId, html, rectOf]);
 
+  /** Remembers the text selection while a popover (e.g. the colour picker) is open. */
+  const savedRangeRef = useRef<Range | null>(null);
+
+  const saveRange = () => {
+    const sel = doc()?.getSelection();
+    savedRangeRef.current = sel && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  };
+
+  const restoreRange = () => {
+    const d = doc();
+    const range = savedRangeRef.current;
+    if (!d || !range) return;
+    d.defaultView?.focus();
+    editingRef.current?.el?.focus();
+    const sel = d.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  };
+
   /** Run a formatting command inside the iframe without losing the selection. */
   const exec = (command: string, value?: string) => {
     const d = doc();
     if (!d) return;
+    if (savedRangeRef.current) restoreRange();
     d.execCommand(command, false, value);
     const el = editingRef.current?.el;
     if (el) setTextRect(rectOf(el));
