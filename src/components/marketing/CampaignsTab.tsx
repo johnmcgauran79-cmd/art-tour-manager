@@ -940,7 +940,22 @@ export function CampaignsTab({
             </div>
           )}
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="items-center gap-2 sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              {autoSaving ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Autosaving…
+                </span>
+              ) : autoSavedAt ? (
+                <span className="flex items-center gap-1">
+                  <Check className="h-3 w-3 text-primary" /> Autosaved{" "}
+                  {format(autoSavedAt, "HH:mm:ss")}
+                </span>
+              ) : (
+                <span>Autosaves every 15 seconds</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
