@@ -415,20 +415,22 @@ export function EdmBuilder({
         )}
 
         <div className={cn("flex items-center gap-2", mode === "html" && "ml-auto")}>
-          <Button
-            size="sm"
-            variant={livePreview ? "secondary" : "outline"}
-            className="gap-1.5"
-            onClick={() => setLivePreview((v) => !v)}
-            aria-pressed={livePreview}
-          >
-            {livePreview ? (
-              <EyeOff className="h-3.5 w-3.5" />
-            ) : (
-              <Eye className="h-3.5 w-3.5" />
-            )}
-            {livePreview ? "Hide live preview" : "Show live preview"}
-          </Button>
+          {mode === "html" && (
+            <Button
+              size="sm"
+              variant={livePreview ? "secondary" : "outline"}
+              className="gap-1.5"
+              onClick={() => setLivePreview((v) => !v)}
+              aria-pressed={livePreview}
+            >
+              {livePreview ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+              {livePreview ? "Hide preview" : "Show preview"}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
