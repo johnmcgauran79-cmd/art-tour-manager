@@ -104,7 +104,8 @@ function useDrag(onMove: (clientX: number, clientY: number, el: HTMLElement) => 
 
 /* ---------- picker body ---------- */
 
-function PickerBody({
+/** The picker panel on its own, for use inside an existing popover/dialog. */
+export function ColorPickerPanel({
   value,
   fallback,
   onChange,
