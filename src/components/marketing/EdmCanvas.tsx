@@ -499,17 +499,19 @@ export function EdmCanvas({
               >
                 <Strikethrough className="h-3.5 w-3.5" />
               </Button>
-              <label
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-accent"
-                title="Text colour"
+              <ColorPickerPopover
+                fallback="#000000"
+                onChange={(hex) => exec("foreColor", hex)}
               >
-                <Palette className="h-3.5 w-3.5" />
-                <input
-                  type="color"
-                  className="sr-only"
-                  onChange={(e) => exec("foreColor", e.target.value)}
-                />
-              </label>
+                <button
+                  type="button"
+                  className="flex h-6 w-6 items-center justify-center rounded hover:bg-accent"
+                  title="Text colour"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <Palette className="h-3.5 w-3.5" />
+                </button>
+              </ColorPickerPopover>
               <Button
                 variant="ghost"
                 size="icon"
