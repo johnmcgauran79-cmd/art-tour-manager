@@ -236,12 +236,12 @@ export function EdmBuilder({
     commit(updateBlockById(blocks, id, patch));
 
 
-  const add = (type: EdmBlockType) => {
-    const block = newBlock(type);
+  const add = (type: EdmPaletteType) => {
+    const block = newPaletteBlock(type);
     commit(insertBlockAfter(blocks, block, selectedId));
     setSelectedId(block.id);
     toast({
-      title: `${blockLabel[type]} added`,
+      title: `${paletteLabel(type)} added`,
       description: selectedId
         ? `Placed directly below the selected ${
             (findBlockById(blocks, selectedId)
@@ -1289,6 +1289,33 @@ function BlockInspector({
 
     return (
       <div className="space-y-4">
+        {t === "columns" && (
+          <div className="space-y-1.5">
+            <Label>Split this block into columns</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => resize(n, 1)}
+                  aria-pressed={cols === n}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-md border p-2 text-[11px] font-medium transition hover:border-primary hover:bg-accent",
+                    cols === n && "border-primary bg-primary/5 text-primary"
+                  )}
+                >
+                  <span className="flex w-full gap-0.5">
+                    {Array.from({ length: n }, (_, i) => (
+                      <span key={i} className="h-4 flex-1 rounded-sm bg-muted-foreground/30" />
+                    ))}
+                  </span>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <Label>Columns</Label>
