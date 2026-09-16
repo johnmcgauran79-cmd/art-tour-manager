@@ -1060,13 +1060,13 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
 
   switch (b.type) {
     case "heading":
-      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
+      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_HEADING)};font-size:${
         b.fontSize || headingSize(b.size)
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_BODY};font-size:${
+      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_BODY)};font-size:${
         b.fontSize || 16
       }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
         b.align ? `text-align:${b.align};` : ""
@@ -1131,7 +1131,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
   <a${edit("text")} href="${esc(
     b.linkUrl || "#"
-  )}" style="${widthCss}background:${bg};color:${fg};font-family:${FONT_BODY};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
+  )}" style="${widthCss}background:${bg};color:${fg};font-family:${fontStack(b, FONT_BODY)};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
     b.text || "Click here"
   )}</a></td></tr>`;
     }
@@ -1189,7 +1189,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
     case "quote":
       return `<tr><td style="padding:${pad(ctx, "16px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
-    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;"><div${edit(
+    <tr><td style="padding:18px 22px;font-family:${fontStack(b, FONT_HEADING)};font-size:17px;line-height:1.6;color:#334155;font-style:italic;"><div${edit(
       "html"
     )}>${b.html || ""}</div>${
       b.text
@@ -1283,6 +1283,7 @@ export const renderEdmHtml = (
   const footerColor = design?.footerColor || "#e6e8ec";
   const footerLinkColor = design?.footerLinkColor || "#ffffff";
   const footerPadding = Math.max(0, design?.footerPadding ?? 20);
+  const footerLineHeight = design?.footerLineHeight ?? 1.6;
   const footerBorder = design?.footerBorderColor ?? border;
   const showUnsub = design?.footerShowUnsubscribe !== false;
   const footerAlign = design?.footerAlign || "center";
@@ -1370,7 +1371,7 @@ ${
         footerBorder && footerBorder !== "transparent"
           ? `border-top:1px solid ${footerBorder};`
           : ""
-      }font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:${footerColor};text-align:${footerAlign};">
+      }font-family:${FONT_BODY};font-size:12px;line-height:${footerLineHeight};color:${footerColor};text-align:${footerAlign};">
       ${footerSocial}
       ${brandBody}
       ${unsub}
