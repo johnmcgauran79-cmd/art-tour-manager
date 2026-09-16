@@ -293,7 +293,7 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
           </DialogTitle>
           <DialogDescription>
             {initialImport
-              ? "Everything on the website — dates, prices, payment details, location, inclusions, exclusions, description, itinerary and day photos — is set to come into ART. Change any line you'd rather keep as it is, then apply. From then on, edit in ART and publish to the website."
+              ? "Everything on the website — dates, prices, payment details, location, capacity, overview text, inclusions, exclusions, itinerary and day photos — is set to come into ART. Change any line you'd rather keep as it is, then apply. From then on, edit in ART and publish to the website."
               : "Compare every matched field, the inclusions and the itinerary, then choose which side is correct. After reconciling, ART stays the source of truth."}
           </DialogDescription>
         </DialogHeader>
@@ -374,7 +374,7 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
             {/* Inclusions */}
             {inclusions && (
               <section className="space-y-2">
-                <h3 className="text-sm font-semibold">Inclusions, exclusions & description</h3>
+                <h3 className="text-sm font-semibold">Overview text, inclusions & exclusions</h3>
                 <div className="rounded-md border p-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">
@@ -400,8 +400,8 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
                     )}
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    "Use website" replaces the ART lists with the website's. "Keep ART" overwrites the website lists and
-                    description with ART's.
+                    "Use website" brings the website's overview text, inclusions and exclusions into ART. "Keep ART"
+                    overwrites the website's overview text and lists with ART's.
                   </p>
                   <div className="mt-2">
                     <ChoicePicker value={inclusionsChoice} onChange={setInclusionsChoice} disabled={applying} />
