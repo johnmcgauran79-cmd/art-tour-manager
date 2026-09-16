@@ -24,7 +24,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { plainEdmText, sanitizeEdmHtml } from "@/lib/edm/sanitizeHtml";
-import { blockLabel, type EdmBlock, type EdmBlockType } from "@/lib/edm/blocks";
+import {
+  paletteLabel,
+  type EdmBlock,
+  type EdmPaletteType,
+} from "@/lib/edm/blocks";
 import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 type EditField = "text" | "html" | "subtitle" | "meta";
@@ -41,15 +45,15 @@ interface EdmCanvasProps {
   device: "desktop" | "mobile";
   selectedId: string | null;
   /** Type waiting to be placed by clicking the email. */
-  pendingType: EdmBlockType | null;
+  pendingType: EdmPaletteType | null;
   /** Type currently being dragged in from the palette. */
-  dragType: EdmBlockType | null;
+  dragType: EdmPaletteType | null;
   mergeFields: { label: string; token: string }[];
   onSelect: (id: string | null) => void;
   onSelectBackground: () => void;
   onEdit: (blockId: string, patch: Partial<EdmBlock>) => void;
-  onInsertAt: (type: EdmBlockType, targetId: string, place: "before" | "after") => void;
-  onInsertIntoCell: (cellId: string, type: EdmBlockType) => void;
+  onInsertAt: (type: EdmPaletteType, targetId: string, place: "before" | "after") => void;
+  onInsertIntoCell: (cellId: string, type: EdmPaletteType) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
@@ -621,7 +625,7 @@ export function EdmCanvas({
 
       {pendingType && (
         <div className="absolute left-3 top-3 z-30 rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
-          Click where the {blockLabel[pendingType].toLowerCase()} should go
+          Click where the {paletteLabel(pendingType).toLowerCase()} should go
         </div>
       )}
     </div>

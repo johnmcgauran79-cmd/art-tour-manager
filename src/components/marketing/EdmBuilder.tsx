@@ -86,7 +86,10 @@ import {
   resizeCells,
   updateBlockById,
   type EdmBlock,
+  newPaletteBlock,
+  paletteLabel,
   type EdmBlockType,
+  type EdmPaletteType,
   type EdmBrand,
 } from "@/lib/edm/blocks";
 import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
@@ -150,9 +153,9 @@ export function EdmBuilder({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
   /** When set, the next click on the email places a block of this type. */
-  const [pickType, setPickType] = useState<EdmBlockType | null>(null);
+  const [pickType, setPickType] = useState<EdmPaletteType | null>(null);
   /** Palette tile currently being dragged onto the email. */
-  const [dragType, setDragType] = useState<EdmBlockType | null>(null);
+  const [dragType, setDragType] = useState<EdmPaletteType | null>(null);
   const [panelTab, setPanelTab] = useState<"content" | "settings">("content");
 
   // Selecting a section on the canvas shows its settings straight away.
@@ -233,12 +236,12 @@ export function EdmBuilder({
     commit(updateBlockById(blocks, id, patch));
 
 
-  const add = (type: EdmBlockType) => {
-    const block = newBlock(type);
+  const add = (type: EdmPaletteType) => {
+    const block = newPaletteBlock(type);
     commit(insertBlockAfter(blocks, block, selectedId));
     setSelectedId(block.id);
     toast({
-      title: `${blockLabel[type]} added`,
+      title: `${paletteLabel(type)} added`,
       description: selectedId
         ? `Placed directly below the selected ${
             (findBlockById(blocks, selectedId)
@@ -251,8 +254,8 @@ export function EdmBuilder({
   };
 
   /** Insert a new block relative to an existing one (used by preview picking). */
-  const addAtTarget = (type: EdmBlockType, targetId: string, place: "before" | "after") => {
-    const block = newBlock(type);
+  const addAtTarget = (type: EdmPaletteType, targetId: string, place: "before" | "after") => {
+    const block = newPaletteBlock(type);
     const next = moveBlockToTarget(
       insertBlockAfter(blocks, block, null),
       block.id,
@@ -264,8 +267,8 @@ export function EdmBuilder({
     setPickType(null);
   };
 
-  const addToCell = (cellId: string, type: EdmBlockType) => {
-    const block = newBlock(type);
+  const addToCell = (cellId: string, type: EdmPaletteType) => {
+    const block = newPaletteBlock(type);
     commit(appendBlockToCell(blocks, cellId, block));
     setSelectedId(block.id);
   };
@@ -1286,6 +1289,33 @@ function BlockInspector({
 
     return (
       <div className="space-y-4">
+        {t === "columns" && (
+          <div className="space-y-1.5">
+            <Label>Split this block into columns</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => resize(n, 1)}
+                  aria-pressed={cols === n}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-md border p-2 text-[11px] font-medium transition hover:border-primary hover:bg-accent",
+                    cols === n && "border-primary bg-primary/5 text-primary"
+                  )}
+                >
+                  <span className="flex w-full gap-0.5">
+                    {Array.from({ length: n }, (_, i) => (
+                      <span key={i} className="h-4 flex-1 rounded-sm bg-muted-foreground/30" />
+                    ))}
+                  </span>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <Label>Columns</Label>

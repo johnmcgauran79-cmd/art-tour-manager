@@ -376,6 +376,30 @@ export const blockLabel: Record<EdmBlockType, string> = {
 export const isContainer = (b: EdmBlock) => b.type === "columns" || b.type === "table";
 
 /**
+ * A blank layout block (Keap-style "row"): the foundation you drop content into.
+ * Starts as a single empty column; the column count and background colour are
+ * set in the settings panel.
+ */
+export const newBlankRow = (cols = 1): EdmBlock => ({
+  id: crypto.randomUUID(),
+  type: "columns",
+  cols: Math.max(1, cols),
+  cellPadding: 8,
+  valign: "top",
+  cells: Array.from({ length: Math.max(1, cols) }, () => newCell()),
+});
+
+/** Palette tokens: every block type plus the blank layout block. */
+export type EdmPaletteType = EdmBlockType | "row";
+
+export const paletteLabel = (t: EdmPaletteType) =>
+  t === "row" ? "Blank block" : blockLabel[t];
+
+/** Create the block a palette tile stands for. */
+export const newPaletteBlock = (t: EdmPaletteType): EdmBlock =>
+  t === "row" ? newBlankRow(1) : newBlock(t);
+
+/**
  * Short human preview of a block's content so the editor list is scannable
  * (e.g. "Text · Hi {{first_name}}, we have just opened…").
  */
