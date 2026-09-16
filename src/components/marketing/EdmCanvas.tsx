@@ -163,6 +163,13 @@ export function EdmCanvas({
   const frameRef = useRef<HTMLIFrameElement>(null);
   const editingRef = useRef<{ el: HTMLElement; blockId: string; field: EditField } | null>(null);
   const pendingHtmlRef = useRef<string | null>(null);
+  /**
+   * True while a toolbar popover (the colour picker) has focus. The text stays
+   * "in edit" so the highlighted words and their colour choice survive.
+   */
+  const holdEditRef = useRef(false);
+  const [parentRowId, setParentRowId] = useState<string | null>(null);
+
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
   const [frameHeight, setFrameHeight] = useState(900);
