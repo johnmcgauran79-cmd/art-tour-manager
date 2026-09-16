@@ -1206,11 +1206,11 @@ function BlockInspector({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Footer background</Label>
-              <Input
-                type="color"
-                value={block.footerBg || block.contentBg || "#ffffff"}
-                onChange={(e) => onChange({ footerBg: e.target.value })}
-                className="h-9 p-1"
+              <ColorPickerPopover
+                value={block.footerBg}
+                fallback={block.contentBg || "#ffffff"}
+                onChange={(hex) => onChange({ footerBg: hex })}
+                className="h-9 w-full"
               />
             </div>
             <div className="space-y-1.5">
