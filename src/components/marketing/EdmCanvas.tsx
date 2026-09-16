@@ -131,13 +131,24 @@ export function EdmCanvas({
     };
   }, []);
 
-  /** Replace the iframe document, keeping the scroll position. */
+  /** Grow the frame to the full height of the email so the page scrolls, not the frame. */
+  const syncHeight = useCallback(() => {
+    const d = frameRef.current?.contentDocument;
+    if (!d) return;
+    const h = Math.max(
+      d.documentElement?.scrollHeight || 0,
+      d.body?.scrollHeight || 0,
+      320
+    );
+    setFrameHeight((prev) => (Math.abs(prev - h) > 2 ? h : prev));
+  }, []);
+
+  /** Replace the iframe document. */
   const writeDoc = useCallback(
     (markup: string) => {
       const frame = frameRef.current;
       const d = frame?.contentDocument;
       if (!frame || !d) return;
-      const prev = d.documentElement?.scrollTop || d.body?.scrollTop || 0;
       d.open();
       d.write(markup);
       d.close();
@@ -152,14 +163,12 @@ export function EdmCanvas({
         el.spellcheck = true;
       });
 
-      requestAnimationFrame(() => {
-        const d2 = frame.contentDocument;
-        if (!d2) return;
-        if (d2.documentElement) d2.documentElement.scrollTop = prev;
-        if (d2.body) d2.body.scrollTop = prev;
-      });
+      requestAnimationFrame(syncHeight);
+      // Images and web fonts settle a little later.
+      window.setTimeout(syncHeight, 250);
+      window.setTimeout(syncHeight, 1200);
     },
-    []
+    [syncHeight]
   );
 
   /** Write the current editable content back onto the block. */
