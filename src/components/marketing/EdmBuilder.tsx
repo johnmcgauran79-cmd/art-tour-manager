@@ -92,6 +92,7 @@ import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmCanvas } from "./EdmCanvas";
 import { EdmPalette } from "./EdmPalette";
 import { EdmImageField } from "./EdmImageField";
+import { ColorPickerPopover } from "./ColorPickerPopover";
 import {
   AlignField,
   ColorField,
