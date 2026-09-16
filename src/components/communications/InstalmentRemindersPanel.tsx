@@ -31,8 +31,8 @@ const STATE_LABELS: Record<string, string> = {
 };
 
 export const InstalmentRemindersPanel = () => {
-  const { isAdmin, isAdminOrManager } = usePermissions() as any;
-  const canAct = Boolean(isAdminOrManager ?? isAdmin);
+  const { hasEditAccess } = usePermissions();
+  const canAct = hasEditAccess;
   const { data: rows = [], isLoading } = useInstalmentReminders();
   const action = useInstalmentReminderAction();
   const refresh = useRefreshInstalmentReminders();
