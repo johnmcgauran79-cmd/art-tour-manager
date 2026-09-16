@@ -904,13 +904,17 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       // Extra horizontal space between columns (never on the outer edges).
       const padLeft = c === 0 ? cp : cp + halfGap;
       const padRight = c === cols - 1 ? cp : cp + halfGap;
-      return `<td class="edm-col" width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
+      // Builder-only hooks: identify the column so content can be dropped into
+      // it, and show an empty-state hint on the editing canvas.
+      const cellAttr = ctx.tag && cell?.id ? ` data-edm-cell="${cell.id}"` : "";
+      const empty = !(cell?.blocks || []).length;
+      const inner =
+        ctx.tag && empty
+          ? `<div class="edm-empty-cell">No content here. Drag content from the right.</div>`
+          : renderNested(cell?.blocks || [], brand, ctx);
+      return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
-      }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${renderNested(
-        cell?.blocks || [],
-        brand,
-        ctx
-      )}</td>`;
+      }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${inner}</td>`;
     }).join("");
     return `<tr>${tds}</tr>`;
   }).join("\n");
@@ -958,10 +962,17 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
   const buttonText = brand.colorButtonText || "#ffffff";
   const border = brand.colorBorder || "#e2e8f0";
   const align = b.align || "left";
+  /**
+   * Builder-only hook: marks an element as directly editable on the canvas.
+   * `field` is the block property the element's content is written back to.
+   * Never emitted in sent email HTML (only when ctx.tag is set).
+   */
+  const edit = (field: "text" | "html" | "subtitle" | "meta") =>
+    ctx.tag ? ` data-edm-edit="${field}" data-edm-block="${b.id}"` : "";
 
   switch (b.type) {
     case "heading":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
+      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${FONT_HEADING};font-size:${
         b.fontSize || headingSize(b.size)
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
@@ -971,7 +982,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
         b.fontSize || 16
       }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
         b.align ? `text-align:${b.align};` : ""
-      }"><div style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
+      }"><div${edit("html")} style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
         b.html || ""
       )}</div></td></tr>`;
     case "image": {
@@ -1030,7 +1041,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
           ? `display:inline-block;width:${b.btnWidth}px;text-align:center;`
           : "display:inline-block;";
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
-  <a href="${esc(
+  <a${edit("text")} href="${esc(
     b.linkUrl || "#"
   )}" style="${widthCss}background:${bg};color:${fg};font-family:${FONT_BODY};font-size:${fs}px;font-weight:${fw};text-decoration:none;padding:${py}px ${px_}px;border-radius:${radius}px;">${esc(
     b.text || "Click here"
@@ -1052,7 +1063,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
         : ""
     }
     <tr><td style="padding:20px;font-family:${FONT_BODY};">
-      <div style="font-size:20px;font-weight:700;color:${primary};">${esc(b.text || "")}</div>
+      <div${edit("text")} style="font-size:20px;font-weight:700;color:${primary};">${esc(b.text || "")}</div>
       ${
         b.meta
           ? `<div style="font-size:13px;color:#667085;margin-top:4px;">${esc(b.meta)}</div>`
@@ -1090,9 +1101,9 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
     case "quote":
       return `<tr><td style="padding:${pad(ctx, "16px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
-    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
-      b.html || ""
-    }${
+    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;"><div${edit(
+      "html"
+    )}>${b.html || ""}</div>${
       b.text
         ? `<div style="margin-top:10px;font-family:${FONT_BODY};font-size:13px;font-style:normal;color:#64748b;">— ${esc(
             b.text

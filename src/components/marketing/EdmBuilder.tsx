@@ -89,6 +89,8 @@ import {
   type EdmBrand,
 } from "@/lib/edm/blocks";
 import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
+import { EdmCanvas } from "./EdmCanvas";
+import { EdmPalette } from "./EdmPalette";
 import { EdmImageField } from "./EdmImageField";
 import {
   AlignField,
@@ -124,48 +126,10 @@ interface EdmBuilderProps {
   preheader?: string;
 }
 
-function AddBlockMenu({
-  onPick,
-  trigger,
-  includeLayout = true,
-}: {
-  onPick: (t: EdmBlockType) => void;
-  trigger: React.ReactNode;
-  includeLayout?: boolean;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        {includeLayout && (
-          <>
-            <div className="px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
-              Layout
-            </div>
-            {LAYOUT_BLOCKS.map((t) => (
-              <DropdownMenuItem key={t} onClick={() => onPick(t)}>
-                {blockLabel[t]}
-              </DropdownMenuItem>
-            ))}
-          </>
-        )}
-        <div className="px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
-          Content
-        </div>
-        {CONTENT_BLOCKS.map((t) => (
-          <DropdownMenuItem key={t} onClick={() => onPick(t)}>
-            {blockLabel[t]}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 /**
- * Block-based EDM builder: pick a starter layout, then add, reorder and edit
- * content blocks — including nested column and table layouts — with a live
- * branded preview beside them.
+ * EDM builder where the branded preview *is* the editor: type straight onto the
+ * email, drag content in from the palette on the right, and edit the settings of
+ * whichever section is selected in the same panel.
  */
 export function EdmBuilder({
   mode,
@@ -183,105 +147,22 @@ export function EdmBuilder({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
-  /** When set, the next click in the live preview places a block of this type. */
+  /** When set, the next click on the email places a block of this type. */
   const [pickType, setPickType] = useState<EdmBlockType | null>(null);
+  /** Palette tile currently being dragged onto the email. */
+  const [dragType, setDragType] = useState<EdmBlockType | null>(null);
+  const [panelTab, setPanelTab] = useState<"content" | "settings">("content");
 
-  /* ---- resizable content-blocks panel ---- */
-  const PANEL_MIN = 240;
-  const PANEL_MAX = 640;
-  const [panelWidth, setPanelWidth] = useState<number>(() => {
-    const stored = Number(localStorage.getItem("edm-blocks-panel-width"));
-    return stored >= PANEL_MIN && stored <= PANEL_MAX ? stored : 320;
-  });
-  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
-
+  // Selecting a section on the canvas shows its settings straight away.
   useEffect(() => {
-    localStorage.setItem("edm-blocks-panel-width", String(Math.round(panelWidth)));
-  }, [panelWidth]);
-
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (!dragRef.current) return;
-      const next = dragRef.current.startW + (e.clientX - dragRef.current.startX);
-      setPanelWidth(Math.min(PANEL_MAX, Math.max(PANEL_MIN, next)));
-    };
-    const onUp = () => {
-      dragRef.current = null;
-      document.body.style.removeProperty("cursor");
-      document.body.style.removeProperty("user-select");
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    };
-  }, []);
-
-  const startPanelDrag = (e: React.PointerEvent) => {
-    dragRef.current = { startX: e.clientX, startW: panelWidth };
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  };
-
-  /* ---- block list scrolling (auto-scroll while dragging) ---- */
-  const treeScrollRef = useRef<HTMLDivElement>(null);
-  const autoScrollRef = useRef<{ dir: -1 | 0 | 1; speed: number; raf: number | null }>({
-    dir: 0,
-    speed: 0,
-    raf: null,
-  });
-
-  const stopAutoScroll = () => {
-    if (autoScrollRef.current.raf != null) cancelAnimationFrame(autoScrollRef.current.raf);
-    autoScrollRef.current = { dir: 0, speed: 0, raf: null };
-  };
-
-  /** Scroll the block list while a block is dragged near its top/bottom edge. */
-  const handleTreeDragOver = (e: React.DragEvent) => {
-    const el = treeScrollRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const zone = 72;
-    const fromTop = e.clientY - rect.top;
-    const fromBottom = rect.bottom - e.clientY;
-    let dir: -1 | 0 | 1 = 0;
-    let speed = 0;
-    if (fromTop < zone) {
-      dir = -1;
-      speed = Math.max(4, ((zone - fromTop) / zone) * 22);
-    } else if (fromBottom < zone) {
-      dir = 1;
-      speed = Math.max(4, ((zone - fromBottom) / zone) * 22);
-    }
-    autoScrollRef.current.dir = dir;
-    autoScrollRef.current.speed = speed;
-    if (dir === 0) {
-      stopAutoScroll();
-      return;
-    }
-    if (autoScrollRef.current.raf != null) return;
-    const step = () => {
-      const box = treeScrollRef.current;
-      const st = autoScrollRef.current;
-      if (!box || st.dir === 0) {
-        stopAutoScroll();
-        return;
-      }
-      box.scrollTop += st.dir * st.speed;
-      st.raf = requestAnimationFrame(step);
-    };
-    autoScrollRef.current.raf = requestAnimationFrame(step);
-  };
-
-  useEffect(() => stopAutoScroll, []);
-
-  // Keep the selected block visible in the list (e.g. selected from preview).
-  useEffect(() => {
-    if (!selectedId) return;
-    const el = treeScrollRef.current?.querySelector(`[data-block-id="${selectedId}"]`);
-    (el as HTMLElement | null)?.scrollIntoView({ block: "nearest" });
+    if (selectedId) setPanelTab("settings");
   }, [selectedId]);
+
+  /** Fixed width for the content / settings panel. */
+  const panelWidth = 340;
+
+
+
 
   /* ---- undo / redo history ---- */
   const [past, setPast] = useState<EdmBlock[][]>([]);
@@ -388,71 +269,6 @@ export function EdmBuilder({
   };
 
   const move = (id: string, dir: -1 | 1) => commit(moveBlockById(blocks, id, dir));
-
-  /** Drag-and-drop reorder: drop a block above or below another block. */
-  const dropBlock = (dragId: string, targetId: string, place: "before" | "after") => {
-    const next = moveBlockToTarget(blocks, dragId, targetId, place);
-    if (next !== blocks) commit(next);
-  };
-
-  const [clip, setClip] = useState<
-    { kind: "block"; blocks: EdmBlock[]; label: string } | null
-  >(null);
-
-  const copyBlock = (id: string) => {
-    const b = findBlockById(blocks, id);
-    if (!b) return;
-    setClip({ kind: "block", blocks: [b], label: blockLabel[b.type] });
-    toast({ title: `Copied ${blockLabel[b.type]}`, description: "Paste it anywhere in this email." });
-  };
-
-  const copyCell = (cellId: string) => {
-    const hit = findCellById(blocks, cellId);
-    if (!hit) return;
-    setClip({ kind: "block", blocks: hit.cell.blocks, label: "column contents" });
-    toast({
-      title: "Copied column contents",
-      description: `${hit.cell.blocks.length} block(s) copied.`,
-    });
-  };
-
-  const pasteAfter = (id: string) => {
-    if (!clip) return;
-    let next = blocks;
-    let afterId = id;
-    let lastId = id;
-    for (const b of clip.blocks) {
-      const copy = cloneBlock(b);
-      next = insertBlockAfter(next, copy, afterId);
-      afterId = copy.id;
-      lastId = copy.id;
-    }
-    commit(next);
-    setSelectedId(lastId);
-  };
-
-  const pasteIntoCell = (cellId: string) => {
-    if (!clip) return;
-    commit(appendBlocksToCell(blocks, cellId, cloneBlocks(clip.blocks)));
-  };
-
-  const duplicateCell = (cellId: string) => {
-    const res = duplicateCellById(blocks, cellId);
-    commit(res.blocks);
-  };
-
-  /** Delete a whole column (and, in tables, that column in every row). */
-  const removeCell = (cellId: string) => {
-    commit(removeCellById(blocks, cellId));
-    setSelectedId(null);
-    toast({ title: "Column deleted", description: "Use Undo if that wasn't intended." });
-  };
-
-  /** Empty a column but keep the column itself. */
-  const clearCell = (cellId: string) => {
-    commit(clearCellById(blocks, cellId));
-    setSelectedId(null);
-  };
 
   const duplicate = (id: string) => {
     const res = duplicateBlockById(blocks, id);
@@ -601,20 +417,22 @@ export function EdmBuilder({
         )}
 
         <div className={cn("flex items-center gap-2", mode === "html" && "ml-auto")}>
-          <Button
-            size="sm"
-            variant={livePreview ? "secondary" : "outline"}
-            className="gap-1.5"
-            onClick={() => setLivePreview((v) => !v)}
-            aria-pressed={livePreview}
-          >
-            {livePreview ? (
-              <EyeOff className="h-3.5 w-3.5" />
-            ) : (
-              <Eye className="h-3.5 w-3.5" />
-            )}
-            {livePreview ? "Hide live preview" : "Show live preview"}
-          </Button>
+          {mode === "html" && (
+            <Button
+              size="sm"
+              variant={livePreview ? "secondary" : "outline"}
+              className="gap-1.5"
+              onClick={() => setLivePreview((v) => !v)}
+              aria-pressed={livePreview}
+            >
+              {livePreview ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+              {livePreview ? "Hide preview" : "Show preview"}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -647,158 +465,86 @@ export function EdmBuilder({
         </div>
       ) : (
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-          {/* Block tree — width is user-adjustable via the drag handle */}
+          {/* The email itself is the editor */}
+          <div className="min-w-0 flex-1">
+            <EdmCanvas
+              html={previewHtml}
+              device={device}
+              selectedId={selectedId}
+              selectedLabel={selected ? blockLabel[selected.type] : null}
+              pendingType={pickType}
+              dragType={dragType}
+              mergeFields={edmMergeFields}
+              onSelect={setSelectedId}
+              onSelectBackground={openDesign}
+              onEdit={(id, patch) => update(id, patch)}
+              onInsertAt={addAtTarget}
+              onInsertIntoCell={(cellId, type) => {
+                addToCell(cellId, type);
+                setPickType(null);
+              }}
+              onDuplicate={duplicate}
+              onDelete={remove}
+              onMove={move}
+            />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Click any text on the email to edit it. Click a section to change its settings, or
+              click the background for the whole email’s design.
+            </p>
+          </div>
+
+          {/* Content palette / settings for the selected section */}
           <Card
-            className="h-fit w-full shrink-0 xl:w-[var(--edm-panel-w)]"
+            className="h-fit w-full shrink-0 xl:sticky xl:top-2 xl:w-[var(--edm-panel-w)]"
             style={{ ["--edm-panel-w" as string]: `${panelWidth}px` }}
           >
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Content blocks</CardTitle>
+              <Tabs value={panelTab} onValueChange={(v) => setPanelTab(v as "content" | "settings")}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="content" className="flex-1 gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Content
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex-1 gap-1.5">
+                    <Palette className="h-3.5 w-3.5" /> Settings
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <AddBlockMenu
-                  onPick={add}
-                  trigger={
-                    <Button size="sm" className="w-full gap-1.5">
-                      <Plus className="h-3.5 w-3.5" /> Add block
-                    </Button>
-                  }
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  {selected
-                    ? `Goes directly below “${blockLabel[selected.type]}”.`
-                    : "Goes at the end of the email."}
-                </p>
-                <AddBlockMenu
+              {panelTab === "content" ? (
+                <EdmPalette
+                  pendingType={pickType}
                   onPick={(t) => {
-                    setPickType(t);
-                    setLivePreview(true);
+                    if (blocks.filter((b) => b.type !== "design").length === 0) add(t);
+                    else setPickType(pickType === t ? null : t);
                   }}
-                  trigger={
-                    <Button size="sm" variant="outline" className="w-full gap-1.5">
-                      <MousePointerClick className="h-3.5 w-3.5" /> Add at position…
-                    </Button>
-                  }
+                  onDragStart={setDragType}
+                  onDragEnd={() => setDragType(null)}
                 />
-                {pickType && (
-                  <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-2 py-1.5 text-[11px]">
-                    <span className="min-w-0 flex-1">
-                      Click in the live preview to place the {blockLabel[pickType].toLowerCase()}.
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-[11px]"
-                      onClick={() => setPickType(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <div
-                ref={treeScrollRef}
-                className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1"
-                onDragOver={handleTreeDragOver}
-                onDrop={stopAutoScroll}
-                onDragEnd={stopAutoScroll}
-                onDragLeave={stopAutoScroll}
-              >
-                {blocks.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground">
-                    Pick a layout or add your first block.
-                  </p>
-                ) : (
-                  <BlockTree
-                    blocks={blocks}
-                    depth={0}
-                    selectedId={selectedId}
-                    onSelect={setSelectedId}
-                    onMove={move}
-                    onDropBlock={dropBlock}
-                    onDuplicate={duplicate}
-                    onRemove={remove}
-                    onAddToCell={addToCell}
-                    onCopy={copyBlock}
-                    onPasteAfter={pasteAfter}
-                    onCopyCell={copyCell}
-                    onPasteIntoCell={pasteIntoCell}
-                    onDuplicateCell={duplicateCell}
-                    onRemoveCell={removeCell}
-                    onClearCell={clearCell}
-                    clipLabel={clip?.label ?? null}
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Drag handle to widen/narrow the blocks panel */}
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize content blocks panel"
-            onPointerDown={startPanelDrag}
-            onDoubleClick={() => setPanelWidth(320)}
-            title="Drag to resize · double-click to reset"
-            className="group hidden w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch rounded hover:bg-accent xl:flex"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover:text-foreground" />
-          </div>
-
-          <div
-            className={cn(
-              "grid min-w-0 flex-1 gap-4",
-              livePreview && "xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)]"
-            )}
-          >
-
-
-
-          {/* Inspector */}
-          <Card className="h-fit">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                {selected ? blockLabel[selected.type] : "Block settings"}
-                {device === "mobile" && (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                    Mobile overrides
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!selected ? (
+              ) : !selected ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  Select a block on the left to edit it.
+                  Click a section on the email to change its settings.
                 </p>
               ) : (
-                <BlockInspector
-                  block={selected}
-                  device={device}
-                  brand={brand}
-                  onChange={(p) => update(selected.id, p)}
-                />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {blockLabel[selected.type]}
+                    {device === "mobile" && (
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                        Mobile overrides
+                      </span>
+                    )}
+                  </div>
+                  <BlockInspector
+                    block={selected}
+                    device={device}
+                    brand={brand}
+                    onChange={(p) => update(selected.id, p)}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
-
-            {livePreview && (
-              <LivePreviewCard
-                html={previewHtml}
-                device={device}
-                onDeviceChange={setDevice}
-                selectedId={selectedId}
-                pickLabel={pickType ? blockLabel[pickType] : null}
-                onSelectBlock={setSelectedId}
-                onInsertAt={(targetId, place) =>
-                  pickType && addAtTarget(pickType, targetId, place)
-                }
-              />
-            )}
-          </div>
         </div>
 
       )}
@@ -836,288 +582,6 @@ export function EdmBuilder({
 }
 
 /** Small type icon so blocks are distinguishable at a glance in the list. */
-function BlockIcon({ type }: { type: EdmBlockType }) {
-  const Icon =
-    type === "image" || type === "imageText"
-      ? ImageIcon
-      : type === "button"
-        ? MousePointerClick
-        : type === "heading"
-          ? Heading
-          : type === "columns" || type === "table"
-            ? LayoutGrid
-            : type === "divider" || type === "spacer"
-              ? Minus
-              : Type;
-  return <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />;
-}
-
-function BlockTree({
-  blocks,
-  depth,
-  selectedId,
-  onSelect,
-  onMove,
-  onDropBlock,
-  onDuplicate,
-  onRemove,
-  onAddToCell,
-  onCopy,
-  onPasteAfter,
-  onCopyCell,
-  onPasteIntoCell,
-  onDuplicateCell,
-  onRemoveCell,
-  onClearCell,
-  clipLabel,
-}: {
-  blocks: EdmBlock[];
-  depth: number;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  onMove: (id: string, dir: -1 | 1) => void;
-  onDropBlock: (dragId: string, targetId: string, place: "before" | "after") => void;
-  onDuplicate: (id: string) => void;
-  onRemove: (id: string) => void;
-  onAddToCell: (cellId: string, type: EdmBlockType) => void;
-  onCopy: (id: string) => void;
-  onPasteAfter: (id: string) => void;
-  onCopyCell: (cellId: string) => void;
-  onPasteIntoCell: (cellId: string) => void;
-  onDuplicateCell: (cellId: string) => void;
-  onRemoveCell: (cellId: string) => void;
-  onClearCell: (cellId: string) => void;
-  clipLabel: string | null;
-}) {
-  const [dropHint, setDropHint] = useState<{ id: string; place: "before" | "after" } | null>(null);
-
-  return (
-    <div className="space-y-1.5" style={{ paddingLeft: depth ? 10 : 0 }}>
-      {blocks.map((b, i) => {
-        const cols = Math.max(1, b.cols || 1);
-        const label = blockLabel[b.type];
-        const summary = blockSummary(b);
-        const hint = dropHint?.id === b.id ? dropHint.place : null;
-        return (
-          <div key={b.id} className="space-y-1">
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => onSelect(b.id)}
-              onKeyDown={(e) => e.key === "Enter" && onSelect(b.id)}
-              data-block-id={b.id}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("text/edm-block", b.id);
-                e.dataTransfer.effectAllowed = "move";
-              }}
-              onDragOver={(e) => {
-                if (!e.dataTransfer.types.includes("text/edm-block")) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                const rect = e.currentTarget.getBoundingClientRect();
-                const place = e.clientY - rect.top < rect.height / 2 ? "before" : "after";
-                setDropHint({ id: b.id, place });
-              }}
-              onDragLeave={() => setDropHint((h) => (h?.id === b.id ? null : h))}
-              onDrop={(e) => {
-                const dragId = e.dataTransfer.getData("text/edm-block");
-                e.preventDefault();
-                e.stopPropagation();
-                const place = dropHint?.id === b.id ? dropHint.place : "before";
-                setDropHint(null);
-                if (dragId && dragId !== b.id) onDropBlock(dragId, b.id, place);
-              }}
-              className={cn(
-                "flex cursor-grab items-center gap-1 rounded-md border px-2 py-1.5 text-xs active:cursor-grabbing",
-                selectedId === b.id ? "border-primary bg-accent" : "hover:bg-muted",
-                hint === "before" && "border-t-2 border-t-primary",
-                hint === "after" && "border-b-2 border-b-primary"
-              )}
-            >
-              <GripVertical className="h-3 w-3 shrink-0 text-muted-foreground" />
-              <BlockIcon type={b.type} />
-              <span className="min-w-0 flex-1">
-                <span className="flex min-w-0 items-center gap-1 truncate font-medium">
-                  {i + 1}. {label}
-                  {isContainer(b) && (
-                    <span className="text-muted-foreground">
-                      ({cols}
-                      {b.type === "table" ? `×${Math.max(1, b.rowCount || 1)}` : ""})
-                    </span>
-                  )}
-                </span>
-                {summary && (
-                  <span className="block truncate text-[10px] font-normal text-muted-foreground">
-                    {summary}
-                  </span>
-                )}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMove(b.id, -1);
-                }}
-                aria-label="Move up"
-                title="Move up"
-              >
-                <ArrowUp className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMove(b.id, 1);
-                }}
-                aria-label="Move down"
-                title="Move down"
-              >
-                <ArrowDown className="h-3 w-3" />
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`${label} actions`}
-                    title="More actions"
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="truncate">{label}</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => onDuplicate(b.id)}>
-                    <CopyPlus className="mr-2 h-3.5 w-3.5" /> Duplicate (with contents)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onCopy(b.id)}>
-                    <Copy className="mr-2 h-3.5 w-3.5" /> Copy
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled={!clipLabel} onClick={() => onPasteAfter(b.id)}>
-                    <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
-                    {clipLabel ? `Paste ${clipLabel} below` : "Nothing copied yet"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => onRemove(b.id)}
-                  >
-                    <Trash2 className="mr-2 h-3.5 w-3.5" />
-                    Delete {isContainer(b) ? "whole section" : label.toLowerCase()}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {isContainer(b) &&
-              (b.cells || []).map((cell, idx) => {
-                const r = Math.floor(idx / cols) + 1;
-                const c = (idx % cols) + 1;
-                const cellLabel =
-                  b.type === "table" ? `Row ${r} · Col ${c}` : `Column ${c}`;
-                const colName = b.type === "table" ? `column ${c}` : cellLabel.toLowerCase();
-                return (
-                  <div key={cell.id} className="ml-3 rounded-md border border-dashed p-1.5">
-                    <div className="flex items-center gap-1">
-                      <span className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase text-muted-foreground">
-                        {cellLabel}
-                      </span>
-                      <AddBlockMenu
-                        includeLayout={false}
-                        onPick={(t) => onAddToCell(cell.id, t)}
-                        trigger={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5 shrink-0"
-                            aria-label={`Add block to ${cellLabel}`}
-                            title={`Add block to ${cellLabel}`}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5 shrink-0"
-                            aria-label={`${cellLabel} actions`}
-                            title="Column actions"
-                          >
-                            <MoreHorizontal className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                          <DropdownMenuLabel>{cellLabel}</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => onDuplicateCell(cell.id)}>
-                            <CopyPlus className="mr-2 h-3.5 w-3.5" /> Duplicate column
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onCopyCell(cell.id)}>
-                            <Copy className="mr-2 h-3.5 w-3.5" /> Copy column contents
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={!clipLabel}
-                            onClick={() => onPasteIntoCell(cell.id)}
-                          >
-                            <ClipboardPaste className="mr-2 h-3.5 w-3.5" />
-                            {clipLabel ? `Paste ${clipLabel} here` : "Nothing copied yet"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => onClearCell(cell.id)}>
-                            <Eraser className="mr-2 h-3.5 w-3.5" /> Empty this column
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onRemoveCell(cell.id)}
-                          >
-                            <Trash2 className="mr-2 h-3.5 w-3.5" />
-                            {cols <= 1 ? "Delete whole section" : `Delete ${colName}`}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    {cell.blocks.length === 0 ? (
-                      <p className="py-1 text-center text-[10px] text-muted-foreground">Empty</p>
-                    ) : (
-                      <BlockTree
-                        blocks={cell.blocks}
-                        depth={depth + 1}
-                        selectedId={selectedId}
-                        onSelect={onSelect}
-                        onMove={onMove}
-                        onDropBlock={onDropBlock}
-                        onDuplicate={onDuplicate}
-                        onRemove={onRemove}
-                        onAddToCell={onAddToCell}
-                        onCopy={onCopy}
-                        onPasteAfter={onPasteAfter}
-                        onCopyCell={onCopyCell}
-                        onPasteIntoCell={onPasteIntoCell}
-                        onDuplicateCell={onDuplicateCell}
-                        onRemoveCell={onRemoveCell}
-                        onClearCell={onClearCell}
-                        clipLabel={clipLabel}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 
 function LivePreviewCard({
   html,
