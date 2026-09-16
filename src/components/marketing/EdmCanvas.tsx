@@ -403,9 +403,12 @@ export function EdmCanvas({
     const onFocusOut = (e: FocusEvent) => {
       const el = editingRef.current?.el;
       if (!el || el !== (e.target as HTMLElement)) return;
+      // Keep the edit alive while the colour picker is open.
+      if (holdEditRef.current) return;
       el.classList.remove("edm-readable");
       commitEdit();
     };
+
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && editingRef.current) {
