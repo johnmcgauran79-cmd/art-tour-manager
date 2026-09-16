@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import {
   BarChart3,
   CalendarClock,
+  Check,
   Copy,
   LayoutTemplate,
   Loader2,
