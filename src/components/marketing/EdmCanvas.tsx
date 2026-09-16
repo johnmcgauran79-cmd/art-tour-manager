@@ -200,6 +200,18 @@ export function EdmCanvas({
     writeDoc(html);
   }, [html, writeDoc]);
 
+  /* ---- keep the frame as tall as the email while typing or on resize ---- */
+  useEffect(() => {
+    const id = window.setInterval(syncHeight, 600);
+    window.addEventListener("resize", syncHeight);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("resize", syncHeight);
+    };
+  }, [syncHeight]);
+
+
+
   /* ---- canvas interaction ---- */
   useEffect(() => {
     const frame = frameRef.current;
