@@ -613,7 +613,7 @@ ${TYPO.headHtml}
     </head>
     <body>
       <!-- ===== Cover ===== -->
-      <div class="cover">
+      <div class="cover${hasWelcome ? '' : ' cover-flow'}">
         <div class="cover-banner">
           ${brandLogoUrl ? `<img class="cover-logo" src="${brandLogoUrl}" alt="${brandName || 'Australian Racing Tours'} logo" />` : ''}
           <h1 class="cover-title">${tour.name}</h1>
