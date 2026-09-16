@@ -586,6 +586,18 @@ export function EdmCanvas({
           <span className="px-1 text-[10px] font-semibold uppercase text-muted-foreground">
             {selectedLabel || "Block"}
           </span>
+          {parentRowId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 gap-1 px-1.5 text-[10px] font-semibold uppercase"
+              title="Select the row this content sits in"
+              onClick={() => onSelect(parentRowId)}
+            >
+              <SquareDashed className="h-3.5 w-3.5" /> Row
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
