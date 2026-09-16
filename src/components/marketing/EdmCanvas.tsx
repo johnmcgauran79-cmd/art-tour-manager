@@ -351,23 +351,23 @@ export function EdmCanvas({
       if (!cb.current.dragType) return;
       e.preventDefault();
       clearMarks();
-      const row = rowOf(e.target);
-      if (row) {
-        markInsert(row, e.clientY);
-        return;
-      }
-      const cell = cellOf(e.target);
-      if (cell) cell.classList.add("edm-cell-target");
+      const target = dropTarget(e.target);
+      if (!target) return;
+      if ("cell" in target) target.cell.classList.add("edm-cell-target");
+      else markInsert(target.row, e.clientY);
     };
 
     const onDrop = (e: DragEvent) => {
       const type = cb.current.dragType;
       if (!type) return;
       e.preventDefault();
-      const row = rowOf(e.target);
-      if (row) {
-        const id = row.getAttribute("data-edm-id");
-        const rect = row.getBoundingClientRect();
+      const target = dropTarget(e.target);
+      if (target && "cell" in target) {
+        const cellId = target.cell.getAttribute("data-edm-cell");
+        if (cellId) cb.current.onInsertIntoCell(cellId, type);
+      } else if (target) {
+        const id = target.row.getAttribute("data-edm-id");
+        const rect = target.row.getBoundingClientRect();
         if (id)
           cb.current.onInsertAt(
             type,
@@ -375,10 +375,7 @@ export function EdmCanvas({
             e.clientY - rect.top < rect.height / 2 ? "before" : "after"
           );
       } else {
-        const cell = cellOf(e.target);
-        const cellId = cell?.getAttribute("data-edm-cell");
-        if (cellId) cb.current.onInsertIntoCell(cellId, type);
-        else cb.current.onInsertAtEnd(type);
+        cb.current.onInsertAtEnd(type);
       }
       clearMarks();
     };
