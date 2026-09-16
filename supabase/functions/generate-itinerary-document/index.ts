@@ -426,7 +426,6 @@ ${TYPO.headHtml}
           page-break-after: auto;
           break-after: auto;
         }
-        .flow-pad { padding: 0; }
         .cover-banner {
           background-color: ${NAVY};
           background-image: ${HEADER_BG};
