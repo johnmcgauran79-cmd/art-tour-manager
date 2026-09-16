@@ -69,6 +69,7 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadCsv, exportStamp } from "@/lib/csvExport";
 import { cn } from "@/lib/utils";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 const DEFAULT_COLOR = "#0f766e";
 
@@ -464,12 +465,11 @@ export const TagsTab = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tag-color">Colour</Label>
-              <Input
-                id="tag-color"
-                type="color"
+              <ColorPickerPopover
                 value={draft.color || DEFAULT_COLOR}
-                onChange={(e) => setDraft({ ...draft, color: e.target.value })}
-                className="h-10 w-20 p-1"
+                fallback={DEFAULT_COLOR}
+                onChange={(hex) => setDraft({ ...draft, color: hex })}
+                className="h-10 w-20"
               />
             </div>
           </div>

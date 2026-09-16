@@ -5,9 +5,8 @@ import { cn } from "@/lib/utils";
 import { Baseline, PaintBucket } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { getRecentColors, normalise, rememberColor, type PaletteColor } from "@/lib/edm/palette";
+import { ColorPickerPanel } from "@/components/marketing/ColorPickerPopover";
+import { normalise, rememberColor, type PaletteColor } from "@/lib/edm/palette";
 import { useLiveBrandColors } from "@/hooks/useBrandPalette";
 
 interface RichTextEditorProps {
@@ -69,7 +68,7 @@ function ColorPickerButton({
   const brandColors = colors?.length ? colors : liveBrandColors;
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState("#000000");
-  const recent = getRecentColors();
+  
 
   const pick = (hex: string | null) => {
     if (hex) rememberColor(hex);
@@ -85,80 +84,29 @@ function ColorPickerButton({
           <span className="text-xs">{format === "color" ? "Text" : "Fill"}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 space-y-3" align="start">
-        <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Brand colours
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {brandColors.map((c) => (
-              <button
-                key={c.hex}
-                type="button"
-                title={`${c.label} (${c.hex})`}
-                aria-label={`${c.label} ${c.hex}`}
-                className="h-5 w-5 rounded border border-border shadow-sm transition-transform hover:scale-110"
-                style={{ backgroundColor: c.hex }}
-                onClick={() => pick(c.hex)}
-              />
-            ))}
-          </div>
+      <PopoverContent className="w-auto space-y-3 p-3" align="start">
+        <ColorPickerPanel
+          value={custom}
+          fallback="#000000"
+          onChange={setCustom}
+          extraColors={brandColors}
+        />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              const hex = normalise(custom);
+              if (hex) pick(hex);
+            }}
+          >
+            Apply
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => pick(null)}>
+            Remove colour
+          </Button>
         </div>
-
-        {!!recent.length && (
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Recently used
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {recent.map((hex) => (
-                <button
-                  key={hex}
-                  type="button"
-                  title={hex}
-                  aria-label={hex}
-                  className="h-5 w-5 rounded border border-border shadow-sm transition-transform hover:scale-110"
-                  style={{ backgroundColor: hex }}
-                  onClick={() => pick(hex)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-1.5">
-          <Label className="text-xs">Custom colour</Label>
-          <div className="flex gap-2">
-            <Input
-              type="color"
-              className="h-9 w-14 p-1"
-              value={/^#[0-9a-fA-F]{6}$/.test(custom) ? custom : "#000000"}
-              onChange={(e) => setCustom(e.target.value)}
-              aria-label="Custom colour picker"
-            />
-            <Input
-              value={custom}
-              onChange={(e) => setCustom(e.target.value)}
-              placeholder="#RRGGBB"
-              className="font-mono text-xs"
-              aria-label="Custom hex value"
-            />
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                const hex = normalise(custom);
-                if (hex) pick(hex);
-              }}
-            >
-              Apply
-            </Button>
-          </div>
-        </div>
-
-        <Button type="button" variant="outline" size="sm" onClick={() => pick(null)}>
-          Remove colour
-        </Button>
       </PopoverContent>
     </Popover>
   );

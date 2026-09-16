@@ -104,7 +104,8 @@ function useDrag(onMove: (clientX: number, clientY: number, el: HTMLElement) => 
 
 /* ---------- picker body ---------- */
 
-function PickerBody({
+/** The picker panel on its own, for use inside an existing popover/dialog. */
+export function ColorPickerPanel({
   value,
   fallback,
   onChange,
@@ -370,7 +371,7 @@ export function ColorPickerPopover({
         className="w-auto p-3"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <PickerBody
+        <ColorPickerPanel
           value={value}
           fallback={fallback}
           onChange={onChange}
