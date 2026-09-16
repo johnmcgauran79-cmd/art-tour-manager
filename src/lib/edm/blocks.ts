@@ -894,6 +894,14 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
         `tr.${cls} table.edm-grid tr{display:flex!important;flex-direction:column-reverse!important;width:100%!important;}`
       );
     }
+    // Space between columns once they stack on top of each other.
+    if (m.stack !== false && b.stackGap) {
+      const gap = Math.max(0, Math.round(b.stackGap));
+      rules.push(
+        `tr.${cls} td.edm-col{padding-bottom:${gap}px!important;}`,
+        `tr.${cls} td.edm-col:last-child{padding-bottom:0!important;}`
+      );
+    }
   }
 
   if (rules.length) ctx.css.push(...rules);
