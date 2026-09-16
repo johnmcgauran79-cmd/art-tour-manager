@@ -444,10 +444,12 @@ export function EdmCanvas({
         <iframe
           ref={frameRef}
           title="Email editing canvas"
+          scrolling="no"
+          style={{ height: frameHeight }}
           // Same-origin so the document can be edited; scripts stay blocked.
           sandbox="allow-same-origin"
           className={cn(
-            "h-[72vh] rounded bg-background",
+            "rounded bg-background",
             device === "mobile" ? "w-[390px] shrink-0" : "w-full min-w-[720px]"
           )}
         />
