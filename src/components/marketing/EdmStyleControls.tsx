@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link2, Unlink, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { getRecentColors, rememberColor } from "@/lib/edm/palette";
 import { useLiveBrandColors } from "@/hooks/useBrandPalette";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
