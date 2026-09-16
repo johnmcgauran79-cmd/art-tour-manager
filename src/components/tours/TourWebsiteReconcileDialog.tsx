@@ -195,6 +195,12 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
     });
   };
 
+  const useWebsiteForEverything = () => {
+    setAllFields("wp");
+    if (inclusions?.changed) setInclusionsChoice("wp");
+    if (itinerary?.changed) setItineraryChoice("wp");
+  };
+
   const apply = async () => {
     setApplying(true);
     const log: string[] = [];
