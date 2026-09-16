@@ -1097,9 +1097,9 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
     case "quote":
       return `<tr><td style="padding:${pad(ctx, "16px", b)};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:4px solid ${button};background:#f8fafc;border-radius:6px;">
-    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;">${
-      b.html || ""
-    }${
+    <tr><td style="padding:18px 22px;font-family:${FONT_HEADING};font-size:17px;line-height:1.6;color:#334155;font-style:italic;"><div${edit(
+      "html"
+    )}>${b.html || ""}</div>${
       b.text
         ? `<div style="margin-top:10px;font-family:${FONT_BODY};font-size:13px;font-style:normal;color:#64748b;">— ${esc(
             b.text
