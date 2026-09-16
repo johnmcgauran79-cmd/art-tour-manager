@@ -263,10 +263,15 @@ export function EdmCanvas({
 
     const onMove_ = (e: MouseEvent) => {
       clearMarks();
+      const target = dropTarget(e.target);
+      if (!target) return;
+      if (cb.current.pendingType) {
+        if ("cell" in target) target.cell.classList.add("edm-cell-target");
+        else markInsert(target.row, e.clientY);
+        return;
+      }
       const row = rowOf(e.target);
-      if (!row) return;
-      if (cb.current.pendingType) markInsert(row, e.clientY);
-      else row.classList.add("edm-hover");
+      if (row) row.classList.add("edm-hover");
     };
 
     const onLeave = () => clearMarks();
@@ -276,25 +281,24 @@ export function EdmCanvas({
       const row = rowOf(e.target);
       const type = cb.current.pendingType;
 
-      if (type && row) {
+      if (type) {
         e.preventDefault();
-        const id = row.getAttribute("data-edm-id");
-        const rect = row.getBoundingClientRect();
-        if (id)
-          cb.current.onInsertAt(
-            type,
-            id,
-            e.clientY - rect.top < rect.height / 2 ? "before" : "after"
-          );
-        clearMarks();
-        return;
-      }
-      if (type && !row) {
-        e.preventDefault();
-        const cell = cellOf(e.target);
-        const cellId = cell?.getAttribute("data-edm-cell");
-        if (cellId) cb.current.onInsertIntoCell(cellId, type);
-        else cb.current.onInsertAtEnd(type);
+        const target = dropTarget(e.target);
+        if (target && "cell" in target) {
+          const cellId = target.cell.getAttribute("data-edm-cell");
+          if (cellId) cb.current.onInsertIntoCell(cellId, type);
+        } else if (target) {
+          const id = target.row.getAttribute("data-edm-id");
+          const rect = target.row.getBoundingClientRect();
+          if (id)
+            cb.current.onInsertAt(
+              type,
+              id,
+              e.clientY - rect.top < rect.height / 2 ? "before" : "after"
+            );
+        } else {
+          cb.current.onInsertAtEnd(type);
+        }
         clearMarks();
         return;
       }
