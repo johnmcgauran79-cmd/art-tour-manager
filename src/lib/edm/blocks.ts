@@ -950,7 +950,7 @@ const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
           ? inner
           : `<span style="display:inline-block;background:${bg};border-radius:${radius};padding:${boxPad}px;line-height:0;">${inner}</span>`;
       return `<td style="padding:0 ${i === items.length - 1 ? 0 : gap}px 0 0;font-size:0;line-height:0;"><a href="${esc(
-        s.url
+        s.url?.trim() || "#"
       )}" style="text-decoration:none;">${boxed}</a></td>`;
     })
     .join("");
