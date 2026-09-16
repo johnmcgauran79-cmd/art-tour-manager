@@ -7,7 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const APP_URL = "https://art-tour-manager.lovable.app";
+const APP_URL = "https://admin.australianracingtours.com.au";
+/** Deep link to Settings → System Health (the app has no standalone /settings route). */
+const HEALTH_PATH = "/?tab=settings&stab=system&ssec=health";
 const TZ = "Australia/Brisbane";
 
 const json = (body: unknown, status = 200) =>
