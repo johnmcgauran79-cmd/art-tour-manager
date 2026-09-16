@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { plainEdmText, sanitizeEdmHtml } from "@/lib/edm/sanitizeHtml";
 import { blockLabel, type EdmBlock, type EdmBlockType } from "@/lib/edm/blocks";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 type EditField = "text" | "html" | "subtitle" | "meta";
 
