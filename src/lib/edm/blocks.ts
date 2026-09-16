@@ -228,6 +228,9 @@ export interface EdmBrand {
   paletteColors?: { hex: string; label: string }[] | null;
 }
 
+/** ART dark charcoal — default header/footer background. */
+export const ART_CHARCOAL = "#0f172a";
+
 export const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; slug: string }[] = [
   { value: "facebook", label: "Facebook", slug: "facebook" },
   { value: "instagram", label: "Instagram", slug: "instagram" },
@@ -251,7 +254,7 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         type,
         headerMode: "brand",
         imageUrl: "",
-        headerBg: "#ffffff",
+        headerBg: ART_CHARCOAL,
         headerWidthPct: 55,
         headerPadding: 20,
         pageBg: "#f4f5f7",
@@ -260,11 +263,11 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         contentGapTop: 16,
         contentGapBottom: 16,
         footerMode: "brand",
-        footerBg: "#ffffff",
-        footerColor: "#667085",
-        footerLinkColor: "#667085",
+        footerBg: ART_CHARCOAL,
+        footerColor: "#e6e8ec",
+        footerLinkColor: "#ffffff",
         footerPadding: 20,
-        footerBorderColor: "#e2e8f0",
+        footerBorderColor: ART_CHARCOAL,
         footerHtml: "",
         footerShowUnsubscribe: true,
         footerAlign: "center",
@@ -1188,15 +1191,15 @@ export const renderEdmHtml = (
   const contentBg = design?.contentBg || "#ffffff";
   const maxWidth = design?.maxWidth || 800;
   const headerMode = design?.headerMode || "brand";
-  const headerBg = design?.headerBg || contentBg;
+  const headerBg = design?.headerBg || ART_CHARCOAL;
   const headerWidthPct = Math.min(100, Math.max(20, design?.headerWidthPct ?? 55));
   const headerPadding = Math.max(0, design?.headerPadding ?? 20);
   const gapTop = Math.max(0, design?.contentGapTop ?? 16);
   const gapBottom = Math.max(0, design?.contentGapBottom ?? 16);
   const footerMode = design?.footerMode || "brand";
-  const footerBg = design?.footerBg || contentBg;
-  const footerColor = design?.footerColor || "#667085";
-  const footerLinkColor = design?.footerLinkColor || footerColor;
+  const footerBg = design?.footerBg || ART_CHARCOAL;
+  const footerColor = design?.footerColor || "#e6e8ec";
+  const footerLinkColor = design?.footerLinkColor || "#ffffff";
   const footerPadding = Math.max(0, design?.footerPadding ?? 20);
   const footerBorder = design?.footerBorderColor ?? border;
   const showUnsub = design?.footerShowUnsubscribe !== false;
