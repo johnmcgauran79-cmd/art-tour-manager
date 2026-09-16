@@ -317,6 +317,56 @@ export function CampaignsTab({
     if (saved) toast({ title: "Draft saved", description: "Come back any time to finish it." });
   };
 
+  /* ------------------------------- autosave (15s) ------------------------------ */
+  const editingRef = useRef<Partial<MarketingCampaign> | null>(editing);
+  editingRef.current = editing;
+  const lastAutoSaveRef = useRef<string | null>(null);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      lastAutoSaveRef.current = null;
+      setAutoSavedAt(null);
+      return;
+    }
+    const tick = async () => {
+      const draft = editingRef.current;
+      if (!draft?.name?.trim() || !draft?.subject?.trim()) return;
+      // Never touch campaigns that are mid-send or already sent.
+      if (draft.status && !["draft", "scheduled"].includes(draft.status)) return;
+      const mode = (draft.editor_mode as "blocks" | "html") || "blocks";
+      const html_body =
+        mode === "blocks"
+          ? renderEdmHtml((draft.blocks as EdmBlock[]) || [], brand, {
+              subject: draft.subject || undefined,
+              preheader: draft.preheader || undefined,
+            })
+          : draft.html_body || "";
+      const payload = { ...draft, html_body };
+      const fingerprint = JSON.stringify(payload);
+      if (lastAutoSaveRef.current === fingerprint) return;
+      try {
+        setAutoSaving(true);
+        const saved = await save.mutateAsync({ ...payload, silent: true } as any);
+        lastAutoSaveRef.current = fingerprint;
+        setAutoSavedAt(new Date());
+        if (saved?.id && !draft.id) {
+          setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
+        }
+      } catch {
+        // Leave the fingerprint unset so the next tick retries.
+      } finally {
+        setAutoSaving(false);
+      }
+    };
+    const timer = setInterval(tick, 15000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, brand]);
+
+
+
   const openReview = (mode: "now" | "schedule") => {
     if (!editing?.name || !editing?.subject) {
       toast({ title: "Name and subject required", variant: "destructive" });
