@@ -5,9 +5,8 @@ import { cn } from "@/lib/utils";
 import { Baseline, PaintBucket } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { getRecentColors, normalise, rememberColor, type PaletteColor } from "@/lib/edm/palette";
+import { ColorPickerPanel } from "@/components/marketing/ColorPickerPopover";
+import { normalise, rememberColor, type PaletteColor } from "@/lib/edm/palette";
 import { useLiveBrandColors } from "@/hooks/useBrandPalette";
 
 interface RichTextEditorProps {
