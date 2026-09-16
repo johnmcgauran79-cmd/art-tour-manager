@@ -471,9 +471,9 @@ export function EdmBuilder({
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-          {/* The email itself is the editor */}
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-col gap-4 xl:h-[calc(100vh-19rem)] xl:min-h-[520px] xl:flex-row xl:items-stretch">
+          {/* The email itself is the editor — this pane scrolls on its own */}
+          <div className="min-w-0 flex-1 xl:overflow-y-auto xl:pr-1">
             <EdmCanvas
               html={previewHtml}
               device={device}
@@ -506,10 +506,10 @@ export function EdmBuilder({
 
           {/* Content palette / settings for the selected section */}
           <Card
-            className="h-fit w-full shrink-0 xl:sticky xl:top-2 xl:max-h-[calc(100vh-1.5rem)] xl:w-[var(--edm-panel-w)] xl:overflow-y-auto"
+            className="flex h-fit w-full shrink-0 flex-col xl:h-full xl:w-[var(--edm-panel-w)]"
             style={{ ["--edm-panel-w" as string]: `${panelWidth}px` }}
           >
-            <CardHeader className="pb-3">
+            <CardHeader className="shrink-0 pb-3">
               <Tabs value={panelTab} onValueChange={(v) => setPanelTab(v as "content" | "settings")}>
                 <TabsList className="w-full">
                   <TabsTrigger value="content" className="flex-1 gap-1.5">
@@ -521,7 +521,7 @@ export function EdmBuilder({
                 </TabsList>
               </Tabs>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
               {panelTab === "content" ? (
                 <EdmPalette
                   pendingType={pickType}
