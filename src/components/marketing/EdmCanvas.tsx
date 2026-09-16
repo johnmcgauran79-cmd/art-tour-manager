@@ -414,6 +414,13 @@ export function EdmCanvas({
     const d = doc();
     if (!d) return;
     if (savedRangeRef.current) restoreRange();
+    // Emit <span style="color:…"> instead of the legacy <font> tag, which the
+    // email sanitiser strips.
+    try {
+      d.execCommand("styleWithCSS", false, "true");
+    } catch {
+      /* not supported – fall through */
+    }
     d.execCommand(command, false, value);
     const el = editingRef.current?.el;
     if (el) setTextRect(rectOf(el));
