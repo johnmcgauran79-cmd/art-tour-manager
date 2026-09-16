@@ -130,25 +130,6 @@ export function EdmCanvas({
     };
   }, []);
 
-  /** Write the current editable content back onto the block. */
-  const commitEdit = useCallback(() => {
-    const active = editingRef.current;
-    editingRef.current = null;
-    if (active) {
-      const { el, blockId, field } = active;
-      const value =
-        field === "html" ? sanitizeEdmHtml(el.innerHTML) : plainEdmText(el.innerText || "");
-      cb.current.onEdit(blockId, { [field]: value } as Partial<EdmBlock>);
-    }
-    setTextRect(null);
-    // Apply any document rewrite that was held back while typing.
-    if (pendingHtmlRef.current != null) {
-      const next = pendingHtmlRef.current;
-      pendingHtmlRef.current = null;
-      writeDoc(next);
-    }
-  }, []);
-
   /** Replace the iframe document, keeping the scroll position. */
   const writeDoc = useCallback(
     (markup: string) => {
@@ -179,6 +160,25 @@ export function EdmCanvas({
     },
     []
   );
+
+  /** Write the current editable content back onto the block. */
+  const commitEdit = useCallback(() => {
+    const active = editingRef.current;
+    editingRef.current = null;
+    if (active) {
+      const { el, blockId, field } = active;
+      const value =
+        field === "html" ? sanitizeEdmHtml(el.innerHTML) : plainEdmText(el.innerText || "");
+      cb.current.onEdit(blockId, { [field]: value } as Partial<EdmBlock>);
+    }
+    setTextRect(null);
+    // Apply any document rewrite that was held back while typing.
+    if (pendingHtmlRef.current != null) {
+      const next = pendingHtmlRef.current;
+      pendingHtmlRef.current = null;
+      writeDoc(next);
+    }
+  }, [writeDoc]);
 
   /* ---- keep the document in step with the block model ---- */
   useEffect(() => {
