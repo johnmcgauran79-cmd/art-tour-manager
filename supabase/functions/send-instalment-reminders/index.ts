@@ -64,11 +64,20 @@ function buildLineItemsTable(
   const rows = items.map((li, i) => {
     const bg = i % 2 === 1 ? "#f3f4f6" : "#ffffff";
     const qty = Number(li.quantity) || 0;
+    const unit = Number(li.unit_amount) || 0;
+    const amount = Number(li.line_amount) || 0;
+    // Xero invoices often carry description-only rows (no amounts) as headings —
+    // render those as plain text rather than a row of zeros.
+    if (unit === 0 && amount === 0) {
+      return `<tr>
+      <td colspan="4" style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(li.description)}</td>
+    </tr>`;
+    }
     return `<tr>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(li.description)}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top;">${qty ? qty.toLocaleString("en-AU") : ""}</td>
-      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(Number(li.unit_amount) || 0)}</td>
-      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(Number(li.line_amount) || 0)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(unit)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(amount)}</td>
     </tr>`;
   }).join("");
 
