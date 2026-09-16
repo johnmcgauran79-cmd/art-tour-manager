@@ -1004,7 +1004,7 @@ function BlockInspector({
             <Label>Header background</Label>
             <ColorPickerPopover
               value={block.headerBg}
-              fallback="#ffffff"
+              fallback={ART_CHARCOAL}
               onChange={(hex) => onChange({ headerBg: hex })}
               className="h-9 w-full"
             />
