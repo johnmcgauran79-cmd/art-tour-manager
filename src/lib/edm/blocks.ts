@@ -399,6 +399,27 @@ export const paletteLabel = (t: EdmPaletteType) =>
 export const newPaletteBlock = (t: EdmPaletteType): EdmBlock =>
   t === "row" ? newBlankRow(1) : newBlock(t);
 
+/** Layout tokens hold other content; everything else lives inside a block. */
+export const isLayoutPaletteType = (t: EdmPaletteType) =>
+  t === "row" || t === "columns" || t === "table" || t === "design";
+
+/**
+ * Build a top-level insertion for a palette token. Content is always wrapped in
+ * a blank block (single column) so nothing ever sits loose in the email body.
+ */
+export const newTopLevelPaletteBlock = (
+  t: EdmPaletteType
+): { block: EdmBlock; selectId: string } => {
+  if (isLayoutPaletteType(t)) {
+    const block = newPaletteBlock(t);
+    return { block, selectId: block.id };
+  }
+  const inner = newPaletteBlock(t);
+  const row = newBlankRow(1);
+  row.cells = [newCell([inner])];
+  return { block: row, selectId: inner.id };
+};
+
 /**
  * Short human preview of a block's content so the editor list is scannable
  * (e.g. "Text · Hi {{first_name}}, we have just opened…").
