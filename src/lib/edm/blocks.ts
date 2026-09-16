@@ -16,6 +16,23 @@ import { FONT_BODY, FONT_HEADING, BRAND_FONT_HEAD_HTML } from "@/lib/brandFonts"
  *    query so one design works on desktop and phones.
  */
 
+/**
+ * Fonts offered in the builder. Larken and Poppins are the brand fonts; the
+ * rest are email-safe stacks that render everywhere without web fonts.
+ */
+export const EDM_FONTS: { label: string; value: string }[] = [
+  { label: "Larken (brand headings)", value: FONT_HEADING },
+  { label: "Poppins (brand body)", value: FONT_BODY },
+  { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+  { label: "Helvetica", value: "Helvetica, Arial, sans-serif" },
+  { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
+  { label: "Tahoma", value: "Tahoma, Verdana, sans-serif" },
+  { label: "Trebuchet MS", value: "'Trebuchet MS', Tahoma, sans-serif" },
+  { label: "Georgia", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { label: "Courier New", value: "'Courier New', Courier, monospace" },
+];
+
 export type EdmBlockType =
   | "design"
   | "heading"
