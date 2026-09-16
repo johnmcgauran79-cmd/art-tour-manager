@@ -928,7 +928,9 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
 };
 
 const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
-  const items = (b.socials || []).filter((s) => s.url?.trim());
+  // Icons stay visible while a link is still blank so the block can be seen and
+  // edited on the canvas.
+  const items = (b.socials || []).filter((s) => s.platform);
   if (!items.length) return "";
   const size = Math.max(12, b.iconSize ?? 24);
   const gap = Math.max(0, b.iconGap ?? 10);
