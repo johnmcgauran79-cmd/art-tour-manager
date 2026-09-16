@@ -7436,6 +7436,8 @@ export type Database = {
       }
       tour_itineraries: {
         Row: {
+          brochure_file_name: string | null
+          brochure_file_path: string | null
           created_at: string
           created_by: string
           guest_document_file_name: string | null
@@ -7447,10 +7449,14 @@ export type Database = {
           snapshot_file_path: string | null
           title: string | null
           tour_id: string
+          tour_itinerary_file_name: string | null
+          tour_itinerary_file_path: string | null
           updated_at: string
           version: number
         }
         Insert: {
+          brochure_file_name?: string | null
+          brochure_file_path?: string | null
           created_at?: string
           created_by: string
           guest_document_file_name?: string | null
@@ -7462,10 +7468,14 @@ export type Database = {
           snapshot_file_path?: string | null
           title?: string | null
           tour_id: string
+          tour_itinerary_file_name?: string | null
+          tour_itinerary_file_path?: string | null
           updated_at?: string
           version?: number
         }
         Update: {
+          brochure_file_name?: string | null
+          brochure_file_path?: string | null
           created_at?: string
           created_by?: string
           guest_document_file_name?: string | null
@@ -7477,6 +7487,8 @@ export type Database = {
           snapshot_file_path?: string | null
           title?: string | null
           tour_id?: string
+          tour_itinerary_file_name?: string | null
+          tour_itinerary_file_path?: string | null
           updated_at?: string
           version?: number
         }
