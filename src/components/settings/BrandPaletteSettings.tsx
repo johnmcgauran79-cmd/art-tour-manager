@@ -10,6 +10,7 @@ import {
 import { Palette, Plus, RotateCcw, Trash2, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { DEFAULT_BRAND_COLORS, type PaletteColor } from "@/lib/edm/palette";
 import { useBrandPalette, useSaveBrandPalette, paletteOf } from "@/hooks/useBrandPalette";
+import { ColorPickerPopover } from "@/components/marketing/ColorPickerPopover";
 
 /**
  * Editor for the brand swatches offered by every colour picker in the app.
