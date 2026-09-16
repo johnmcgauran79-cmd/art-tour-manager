@@ -172,7 +172,9 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
           changed: Boolean(itinRes.changed),
         };
         setItinerary(itinInfo);
-        setItineraryChoice(itinInfo.changed ? (itinInfo.artDays === 0 ? "wp" : "art") : "skip");
+        setItineraryChoice(
+          itinInfo.changed ? (initialImport || itinInfo.artDays === 0 ? "wp" : "art") : "skip",
+        );
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
       } finally {
