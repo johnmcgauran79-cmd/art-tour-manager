@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ShareButton } from "@/components/shared/ShareButton";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen, MessageSquareQuote, Image as ImageIcon, Globe, BarChart3 } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen, MessageSquareQuote, Image as ImageIcon, Globe, BarChart3, FolderOpen } from "lucide-react";
 import { AddBookingModal } from "@/components/bookings/AddBookingModal";
 import { AddActivityModal } from "@/components/activities/AddActivityModal";
 import { AddHotelModal } from "@/components/hotels/AddHotelModal";
@@ -23,6 +23,8 @@ import { TourBookingsTab } from "@/components/tours/TourBookingsTab";
 import { TourOperationsTab } from "@/components/tours/TourOperationsTab";
 import { TourAttachmentsSection } from "@/components/tours/TourAttachmentsSection";
 import { TourItineraryTab } from "@/components/tours/TourItineraryTab";
+import { TourFilesTab } from "@/components/tours/TourFilesTab";
+
 import { TourTasksTab } from "@/components/tours/TourTasksTab";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { TourPickupLocationsTab } from "@/components/tours/TourPickupLocationsTab";
@@ -64,7 +66,12 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
           <Calendar className="h-3.5 w-3.5" />
           Itinerary
         </TabsTrigger>
+        <TabsTrigger value="files" className="flex items-center gap-1.5">
+          <FolderOpen className="h-3.5 w-3.5" />
+          Files
+        </TabsTrigger>
         <TabsTrigger value="additional-info" className="flex items-center gap-1.5">
+
           <Info className="h-3.5 w-3.5" />
           Additional Info
         </TabsTrigger>
@@ -96,7 +103,11 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
           location: tour.location || ''
         }} />
       </TabsContent>
+      <TabsContent value="files">
+        <TourFilesTab tour={{ id: tour.id, startDate: tour.start_date, endDate: tour.end_date }} />
+      </TabsContent>
       <TabsContent value="additional-info">
+
         <TourAdditionalInfoTab tourId={tour.id} tourName={tour.name} />
       </TabsContent>
       <TabsContent value="welcome-message">

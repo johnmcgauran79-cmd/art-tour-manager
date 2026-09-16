@@ -6,7 +6,6 @@ import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles, Glob
 import { format, addDays } from "date-fns";
 import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "@/components/itinerary/ItineraryDayCard";
-import { ItinerarySnapshotSection } from "@/components/itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "@/components/itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "@/components/itinerary/EmailItineraryModal";
 import { GuestDocumentTextModal } from "@/components/itinerary/GuestDocumentTextModal";
@@ -187,27 +186,8 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         </div>
       </div>
 
-      {/* Snapshot & Guest Document Uploads */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <ItinerarySnapshotSection
-          tourId={tour.id}
-          itineraryId={itinerary.id}
-          snapshotFilePath={itinerary.snapshot_file_path}
-          snapshotFileName={itinerary.snapshot_file_name}
-          readOnly={isAgent}
-        />
-        <ItinerarySnapshotSection
-          tourId={tour.id}
-          itineraryId={itinerary.id}
-          snapshotFilePath={itinerary.guest_document_file_path}
-          snapshotFileName={itinerary.guest_document_file_name}
-          readOnly={isAgent}
-          title="Guest Document"
-          folder="guest-documents"
-          pathColumn="guest_document_file_path"
-          nameColumn="guest_document_file_name"
-        />
-      </div>
+
+
 
       {/* Days List */}
       <div className="space-y-4">
