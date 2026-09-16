@@ -126,8 +126,9 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         setFields(rows);
         const choices: Record<string, Choice> = {};
         for (const r of rows) {
-          // Website-first workflow: when ART is empty, default to importing the website value.
-          choices[r.artKey] = !r.changed ? "skip" : r.artValue.trim() === "" ? "wp" : "art";
+          // Straight after linking, the website is the source of truth: import everything.
+          // Otherwise: when ART is empty, default to importing the website value.
+          choices[r.artKey] = !r.changed ? "skip" : initialImport ? "wp" : r.artValue.trim() === "" ? "wp" : "art";
         }
         setFieldChoices(choices);
 
