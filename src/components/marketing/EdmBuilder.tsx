@@ -1071,11 +1071,11 @@ function BlockInspector({
           </div>
           <div className="space-y-1.5">
             <Label>Border colour</Label>
-            <Input
-              type="color"
-              value={block.borderColor || "#e2e8f0"}
-              onChange={(e) => onChange({ borderColor: e.target.value })}
-              className="h-9 p-1"
+            <ColorPickerPopover
+              value={block.borderColor}
+              fallback="#e2e8f0"
+              onChange={(hex) => onChange({ borderColor: hex })}
+              className="h-9 w-full"
             />
           </div>
           <div className="space-y-1.5">
