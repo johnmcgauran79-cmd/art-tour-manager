@@ -3,12 +3,14 @@ import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, CheckSquare, Send, Mail, Globe } from "lucide-react";
+import { CalendarClock, CheckSquare, Send, Mail, Globe, CircleDollarSign } from "lucide-react";
 import { AppBreadcrumbs } from "@/components/shared/AppBreadcrumbs";
 import { UnifiedEmailApprovals } from "@/components/operations/UnifiedEmailApprovals";
 import { UpcomingEmailsPanel } from "@/components/communications/UpcomingEmailsPanel";
 import { SentEmailsReport } from "@/components/operations/SentEmailsReport";
 import { WebsiteChangesPanel } from "@/components/communications/WebsiteChangesPanel";
+import { InstalmentRemindersPanel } from "@/components/communications/InstalmentRemindersPanel";
+import { useInstalmentReminderDueCount } from "@/hooks/useInstalmentReminders";
 import { usePendingApprovalCount } from "@/hooks/useUpcomingEmails";
 import { usePendingWebsiteChangeCount } from "@/hooks/useWebsiteChanges";
 
@@ -17,6 +19,7 @@ export default function Communications() {
   const [tab, setTab] = useState(searchParams.get("tab") === "website" ? "website" : "approvals");
   const { data: pendingCount = 0 } = usePendingApprovalCount();
   const { data: websiteChangeCount = 0 } = usePendingWebsiteChangeCount();
+  const { data: instalmentDueCount = 0 } = useInstalmentReminderDueCount();
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -46,6 +49,15 @@ export default function Communications() {
           <TabsTrigger value="upcoming" className="flex items-center gap-1.5">
             <CalendarClock className="h-3.5 w-3.5" />
             Emails Due
+          </TabsTrigger>
+          <TabsTrigger value="instalments" className="flex items-center gap-1.5">
+            <CircleDollarSign className="h-3.5 w-3.5" />
+            Instalment Reminders
+            {instalmentDueCount > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {instalmentDueCount}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="sent" className="flex items-center gap-1.5">
             <Send className="h-3.5 w-3.5" />
@@ -82,6 +94,10 @@ export default function Communications() {
               <UpcomingEmailsPanel />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="instalments" className="mt-6">
+          <InstalmentRemindersPanel />
         </TabsContent>
 
         <TabsContent value="sent" className="mt-6">
