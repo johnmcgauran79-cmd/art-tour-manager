@@ -4,14 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle } from "lucide-react";
+import {
+  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle,
+} from "lucide-react";
 import { format } from "date-fns";
 import {
   InstalmentReminder,
+  ReminderKind,
   useInstalmentReminderAction,
   useInstalmentReminders,
   useRefreshInstalmentReminders,
@@ -24,11 +28,31 @@ const money = (n: number | null | undefined, ccy = "AUD") =>
 const dateAU = (v: string | null) => (v ? format(new Date(v), "dd/MM/yyyy") : "—");
 
 const STATE_LABELS: Record<string, string> = {
-  pending: "Due",
-  sent: "Reminded",
+  pending: "Awaiting first email",
+  sent: "Chasing automatically",
   held_agent: "Agent invoice — check",
+  needs_call: "Needs a phone call",
   stopped: "Stopped",
 };
+
+const KIND_COPY: Record<ReminderKind, { title: string; blurb: string; empty: string }> = {
+  instalment: {
+    title: "Instalment payments",
+    blurb:
+      "One line per invoice, built each night from live Xero figures. Send the first email yourself; after that unpaid invoices are chased automatically every fortnight, and flagged for a phone call after three emails.",
+    empty:
+      "Nothing owing. Lines appear here once a tour's instalment date has passed and Xero still shows the instalment unpaid.",
+  },
+  final: {
+    title: "Final balances",
+    blurb:
+      "Full invoices — every line item, invoice number, bank details, card link and the cancellation policy. Send the first one yourself; unpaid invoices are then chased automatically each week, and flagged for a phone call after three emails.",
+    empty:
+      "Nothing owing. Lines appear here once a tour's final payment date has passed and Xero still shows a balance.",
+  },
+};
+
+const KIND_ORDER: ReminderKind[] = ["instalment", "final"];
 
 export const InstalmentRemindersPanel = () => {
   const { hasEditAccess } = usePermissions();
@@ -36,23 +60,33 @@ export const InstalmentRemindersPanel = () => {
   const { data: rows = [], isLoading } = useInstalmentReminders();
   const action = useInstalmentReminderAction();
   const refresh = useRefreshInstalmentReminders();
+  const [kind, setKind] = useState<ReminderKind>("instalment");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [stopOpen, setStopOpen] = useState(false);
   const [stopReason, setStopReason] = useState("");
 
-  const groups = useMemo(() => {
-    const map = new Map<string, { name: string; rows: InstalmentReminder[] }>();
-    for (const r of rows) {
-      const key = r.tour_id;
-      const entry = map.get(key) ?? { name: r.tour?.name || "Unknown tour", rows: [] };
-      entry.rows.push(r);
-      map.set(key, entry);
-    }
-    return Array.from(map.values());
+  const byKind = useMemo(() => {
+    const map: Record<ReminderKind, InstalmentReminder[]> = { instalment: [], final: [] };
+    for (const r of rows) map[(r.kind as ReminderKind) ?? "instalment"]?.push(r);
+    return map;
   }, [rows]);
 
-  const selectable = rows.filter((r) => r.state !== "stopped");
+  const kindRows = byKind[kind] ?? [];
+
+  const groups = useMemo(() => {
+    const map = new Map<string, { name: string; rows: InstalmentReminder[] }>();
+    for (const r of kindRows) {
+      const entry = map.get(r.tour_id) ?? { name: r.tour?.name || "Unknown tour", rows: [] };
+      entry.rows.push(r);
+      map.set(r.tour_id, entry);
+    }
+    return Array.from(map.values());
+  }, [kindRows]);
+
+  const selectable = kindRows;
   const allSelected = selectable.length > 0 && selected.size === selectable.length;
+  const needsAction = kindRows.filter((r) =>
+    r.state === "pending" || r.state === "held_agent" || r.state === "needs_call").length;
 
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(selectable.map((r) => r.id)));
@@ -63,7 +97,7 @@ export const InstalmentRemindersPanel = () => {
       return next;
     });
 
-  const run = async (a: "send" | "skip" | "stop" | "resume", reason?: string) => {
+  const run = async (a: "send" | "skip" | "stop" | "resume" | "pause_auto", reason?: string) => {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     await action.mutateAsync({ ids, action: a, reason });
@@ -73,6 +107,7 @@ export const InstalmentRemindersPanel = () => {
   };
 
   const busy = action.isPending || refresh.isPending;
+  const copy = KIND_COPY[kind];
 
   return (
     <Card>
@@ -81,13 +116,10 @@ export const InstalmentRemindersPanel = () => {
           <div className="min-w-0">
             <CardTitle className="flex items-center gap-2 text-base">
               <CircleDollarSign className="h-4 w-4" />
-              Instalment reminders
+              Payment reminders
               <Badge variant="secondary">{rows.length}</Badge>
             </CardTitle>
-            <CardDescription>
-              One reminder per invoice, built from live Xero figures. Approve to send, push back a week, or stop
-              reminders when a payment plan has been agreed. Unpaid invoices come back weekly.
-            </CardDescription>
+            <CardDescription>{copy.blurb}</CardDescription>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button size="sm" variant="outline" disabled={busy} onClick={() => refresh.mutate()}>
@@ -99,6 +131,9 @@ export const InstalmentRemindersPanel = () => {
                 <Button size="sm" variant="outline" disabled={busy || selected.size === 0} onClick={() => run("skip")}>
                   <Clock className="h-4 w-4 mr-1" /> Skip a week
                 </Button>
+                <Button size="sm" variant="outline" disabled={busy || selected.size === 0} onClick={() => run("pause_auto")}>
+                  <PauseCircle className="h-4 w-4 mr-1" /> Pause auto
+                </Button>
                 <Button size="sm" variant="outline" disabled={busy || selected.size === 0} onClick={() => run("resume")}>
                   <RotateCcw className="h-4 w-4 mr-1" /> Resume
                 </Button>
@@ -107,7 +142,7 @@ export const InstalmentRemindersPanel = () => {
                 </Button>
                 <Button size="sm" disabled={busy || selected.size === 0} onClick={() => run("send")}>
                   {action.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
-                  Approve &amp; send ({selected.size})
+                  Send now ({selected.size})
                 </Button>
               </>
             )}
@@ -115,20 +150,37 @@ export const InstalmentRemindersPanel = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Tabs
+          value={kind}
+          onValueChange={(v) => { setKind(v as ReminderKind); setSelected(new Set()); }}
+        >
+          <TabsList>
+            {KIND_ORDER.map((k) => (
+              <TabsTrigger key={k} value={k} className="gap-2">
+                {KIND_COPY[k].title}
+                <Badge variant="secondary">{(byKind[k] ?? []).length}</Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {KIND_ORDER.map((k) => (
+            <TabsContent key={k} value={k} className="mt-0" />
+          ))}
+        </Tabs>
+
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading reminders…
           </div>
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">
-            Nothing owing. Reminders appear here once a tour's instalment date has passed and Xero still shows the
-            instalment unpaid.
-          </p>
+        ) : kindRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">{copy.empty}</p>
         ) : (
           <>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
-              <span>Select all ({selectable.length})</span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
+                Select all ({selectable.length})
+              </span>
+              {needsAction > 0 && <span>{needsAction} need you to act</span>}
             </div>
 
             {groups.map((g) => (
@@ -143,7 +195,6 @@ export const InstalmentRemindersPanel = () => {
                       <Checkbox
                         checked={selected.has(r.id)}
                         onCheckedChange={() => toggleOne(r.id)}
-                        disabled={r.state === "stopped" ? false : false}
                         aria-label={`Select invoice ${r.xero_invoice_number ?? ""}`}
                         className="mt-1"
                       />
@@ -170,17 +221,30 @@ export const InstalmentRemindersPanel = () => {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           <span>Invoice {money(r.invoice_total, r.currency_code)}</span>
                           <span>Paid {money(r.amount_paid, r.currency_code)}</span>
-                          <span>Final payment {dateAU(r.tour?.final_payment_date ?? null)}</span>
-                          <span>Reminders sent: {r.reminder_count}</span>
+                          <span>Final payment {dateAU(r.final_payment_date ?? r.tour?.final_payment_date ?? null)}</span>
+                          <span>Emails sent: {r.reminder_count}</span>
                           {r.last_sent_at && <span>Last {dateAU(r.last_sent_at)}</span>}
                           <span>Next {dateAU(r.next_due_at)}</span>
-                          <Badge variant={r.state === "held_agent" ? "destructive" : r.state === "stopped" ? "outline" : "secondary"}>
+                          {r.auto_send === false && r.state !== "stopped" && (
+                            <Badge variant="outline">Automatic sending paused</Badge>
+                          )}
+                          <Badge
+                            variant={
+                              r.state === "held_agent" || r.state === "needs_call"
+                                ? "destructive"
+                                : r.state === "stopped"
+                                  ? "outline"
+                                  : "secondary"
+                            }
+                          >
                             {STATE_LABELS[r.state] ?? r.state}
                           </Badge>
                         </div>
-                        {r.state === "held_agent" && r.hold_reason && (
+                        {(r.state === "held_agent" || r.state === "needs_call") && r.hold_reason && (
                           <div className="flex items-start gap-1.5 text-xs text-destructive">
-                            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                            {r.state === "needs_call"
+                              ? <Phone className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              : <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />}
                             <span>{r.hold_reason}</span>
                           </div>
                         )}
