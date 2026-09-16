@@ -18,6 +18,16 @@ ART's marketing system is built inside ART Admin. It is **not** a third-party ES
 | Reporting | Marketing → Results, `CampaignResultsTab.tsx`, `useMarketingIntelligence.ts` |
 | Tour-level view | Tour → Marketing, `crm_tour_marketing_intelligence` |
 
+## EDM builder (canvas editor)
+
+`EdmBuilder.tsx` is a single-canvas editor: the branded preview *is* the editing surface.
+
+- `EdmCanvas.tsx` writes the interactive email HTML into a same-origin iframe, makes elements carrying `data-edm-edit` contenteditable, and commits their content back through `updateBlockById` on blur (so undo/redo, autosave and dirty state are unchanged). A floating toolbar gives bold/italic/underline/strikethrough, colour, lists, links and merge-field insertion; canvas-authored HTML is reduced to email-safe tags by `src/lib/edm/sanitizeHtml.ts`.
+- `EdmPalette.tsx` is the block palette on the right: drag a tile onto the email (insert line shows the drop point, empty columns highlight) or click a tile then click where it goes.
+- The same right-hand panel switches to `BlockInspector` settings for the selected section, with the Desktop / Mobile switch driving mobile overrides. Clicking the email background opens the whole-email design block.
+- `data-edm-edit`, `data-edm-block`, `data-edm-cell` and the empty-column hint are emitted **only** when `renderEdmHtml(..., { interactive: true })` is used by the builder — sent email HTML never contains them.
+- HTML mode is unchanged: raw source on the left, preview on the right.
+
 ## Audience builder
 
 Audiences are a nested rule tree (`and`/`or` groups) evaluated at send time by `crm_audience_match` / `crm_audience_predicate`, with `crm_audience_summary` for counts. Available condition families:
