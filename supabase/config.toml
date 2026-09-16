@@ -195,3 +195,9 @@ verify_jwt = false
 
 [functions.crm-automation-run]
 verify_jwt = false
+
+[functions.queue-instalment-reminders]
+verify_jwt = false
+
+[functions.send-instalment-reminders]
+verify_jwt = false

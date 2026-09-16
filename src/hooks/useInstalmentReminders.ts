@@ -1,0 +1,119 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+export interface InstalmentReminder {
+  id: string;
+  tour_id: string;
+  xero_invoice_id: string;
+  xero_invoice_number: string | null;
+  booking_ids: string[];
+  pax_count: number;
+  currency_code: string;
+  invoice_total: number;
+  amount_paid: number;
+  amount_due: number;
+  instalment_expected: number;
+  deposit_expected: number;
+  shortfall: number;
+  invoice_due_date: string | null;
+  recipient_email: string | null;
+  recipient_name: string | null;
+  payment_link: string | null;
+  state: "pending" | "sent" | "held_agent" | "stopped" | "resolved";
+  hold_reason: string | null;
+  stop_reason: string | null;
+  reminder_count: number;
+  last_sent_at: string | null;
+  next_due_at: string | null;
+  send_error: string | null;
+  created_at: string;
+  tour?: { id: string; name: string | null; start_date: string | null; final_payment_date: string | null } | null;
+}
+
+export const useInstalmentReminders = () =>
+  useQuery({
+    queryKey: ["instalment-reminders"],
+    queryFn: async (): Promise<InstalmentReminder[]> => {
+      const { data, error } = await supabase
+        .from("instalment_reminders")
+        .select("*, tour:tours ( id, name, start_date, final_payment_date )")
+        .in("state", ["pending", "sent", "held_agent", "stopped"])
+        .order("next_due_at", { ascending: true });
+      if (error) throw error;
+      return (data as any) || [];
+    },
+    refetchOnWindowFocus: false,
+  });
+
+export const useInstalmentReminderDueCount = () =>
+  useQuery({
+    queryKey: ["instalment-reminders-due-count"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { count, error } = await supabase
+        .from("instalment_reminders")
+        .select("id", { count: "exact", head: true })
+        .in("state", ["pending", "sent"])
+        .lte("next_due_at", today);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 120_000,
+  });
+
+type Action = "send" | "skip" | "stop" | "resume";
+
+export const useInstalmentReminderAction = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, action, reason }: { ids: string[]; action: Action; reason?: string }) => {
+      const { data: userRes } = await supabase.auth.getUser();
+      const { data, error } = await supabase.functions.invoke("send-instalment-reminders", {
+        body: { reminder_ids: ids, action, reason: reason || null, actor_id: userRes?.user?.id || null },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error((data as any)?.error || "Action failed");
+      return data as { sent?: number; errors?: number; count?: number };
+    },
+    onSuccess: (data, vars) => {
+      const label =
+        vars.action === "send"
+          ? `${data.sent ?? 0} reminder(s) sent${data.errors ? ` · ${data.errors} error(s)` : ""}`
+          : vars.action === "skip"
+            ? "Pushed back a week"
+            : vars.action === "stop"
+              ? "Reminders stopped"
+              : "Reminders resumed";
+      toast({ title: "Done", description: label, variant: data.errors ? "destructive" : "default" });
+      qc.invalidateQueries({ queryKey: ["instalment-reminders"] });
+      qc.invalidateQueries({ queryKey: ["instalment-reminders-due-count"] });
+    },
+    onError: (e: any) => {
+      toast({ title: "Action failed", description: e.message, variant: "destructive" });
+    },
+  });
+};
+
+export const useRefreshInstalmentReminders = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("queue-instalment-reminders", { body: {} });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error((data as any)?.error || "Refresh failed");
+      return data;
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Checked against Xero",
+        description: `${data.queued} new · ${data.updated} updated · ${data.resolved} paid · ${data.held_agent} agent invoice(s) held`,
+      });
+      qc.invalidateQueries({ queryKey: ["instalment-reminders"] });
+      qc.invalidateQueries({ queryKey: ["instalment-reminders-due-count"] });
+    },
+    onError: (e: any) => {
+      toast({ title: "Could not check Xero", description: e.message, variant: "destructive" });
+    },
+  });
+};
