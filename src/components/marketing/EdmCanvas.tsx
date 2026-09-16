@@ -238,11 +238,11 @@ export function EdmCanvas({
      */
     const dropTarget = (
       t: EventTarget | null
-    ): { cell: HTMLElement } | { row: HTMLElement } | null => {
+    ): { cell: HTMLElement; row: null } | { cell: null; row: HTMLElement } | null => {
       const cell = cellOf(t);
-      if (cell) return { cell };
+      if (cell) return { cell, row: null };
       const row = rowOf(t);
-      return row ? { row } : null;
+      return row ? { cell: null, row } : null;
     };
 
     const clearMarks = () => {
