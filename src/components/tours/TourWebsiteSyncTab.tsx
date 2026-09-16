@@ -91,6 +91,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [pushing, setPushing] = useState(false);
   const [reconcileOpen, setReconcileOpen] = useState(false);
+  const [reconcileInitial, setReconcileInitial] = useState(false);
   const [markingNoWebsite, setMarkingNoWebsite] = useState(false);
 
   const changedRows = useMemo(() => (diff ?? []).filter((r) => r.changed), [diff]);
@@ -165,6 +166,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
       toast.success("Linked to WordPress tour");
       setSuggestions(null);
       await loadLink();
+      setReconcileInitial(true);
       setReconcileOpen(true);
     } catch (e) {
       toast.error(`Link failed: ${(e as Error).message}`);
@@ -411,6 +413,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
       <TourWebsiteReconcileDialog
         open={reconcileOpen}
         onOpenChange={setReconcileOpen}
+        initialImport={reconcileInitial}
         tourId={tourId}
         tourName={tourName}
         onDone={loadLink}
@@ -445,7 +448,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
               {diffLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="h-3.5 w-3.5" />}
               <span className="ml-1.5">Recheck</span>
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)}>
+            <Button size="sm" variant="outline" onClick={() => { setReconcileInitial(false); setReconcileOpen(true); }}>
               <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" /> Reconcile with website
             </Button>
             <Button size="sm" variant="ghost" onClick={unlink}>
@@ -574,6 +577,7 @@ export function TourWebsiteSyncTab({ tourId, tourName }: { tourId: string; tourN
       <TourWebsiteReconcileDialog
         open={reconcileOpen}
         onOpenChange={setReconcileOpen}
+        initialImport={reconcileInitial}
         tourId={tourId}
         tourName={tourName}
         onDone={loadDiff}

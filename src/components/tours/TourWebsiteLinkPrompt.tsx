@@ -229,6 +229,7 @@ export function TourWebsiteLinkPrompt({ open, onOpenChange, tourId, tourName }: 
 
       <TourWebsiteReconcileDialog
         open={reconcileOpen}
+        initialImport
         onOpenChange={(o) => {
           setReconcileOpen(o);
           if (!o) onOpenChange(false);
