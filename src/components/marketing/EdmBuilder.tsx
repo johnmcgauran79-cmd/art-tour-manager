@@ -255,7 +255,7 @@ export function EdmBuilder({
 
   /** Insert a new block relative to an existing one (used by preview picking). */
   const addAtTarget = (type: EdmPaletteType, targetId: string, place: "before" | "after") => {
-    const block = newPaletteBlock(type);
+    const { block, selectId } = newTopLevelPaletteBlock(type);
     const next = moveBlockToTarget(
       insertBlockAfter(blocks, block, null),
       block.id,
@@ -263,7 +263,7 @@ export function EdmBuilder({
       place
     );
     commit(next);
-    setSelectedId(block.id);
+    setSelectedId(selectId);
     setPickType(null);
   };
 
