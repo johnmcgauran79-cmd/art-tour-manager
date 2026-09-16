@@ -412,6 +412,12 @@ ${TYPO.headHtml}
           page-break-after: always;
           break-after: page;
         }
+        /* No welcome message: let the next section flow straight on from the banner */
+        .cover-flow {
+          page-break-after: auto;
+          break-after: auto;
+        }
+        .flow-pad { padding: 0; }
         .cover-banner {
           background-color: ${NAVY};
           background-image: ${HEADER_BG};
