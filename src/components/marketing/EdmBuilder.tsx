@@ -1209,7 +1209,7 @@ function BlockInspector({
               <Label>Footer background</Label>
               <ColorPickerPopover
                 value={block.footerBg}
-                fallback={block.contentBg || "#ffffff"}
+                fallback={ART_CHARCOAL}
                 onChange={(hex) => onChange({ footerBg: hex })}
                 className="h-9 w-full"
               />
@@ -1218,7 +1218,7 @@ function BlockInspector({
               <Label>Footer text colour</Label>
               <ColorPickerPopover
                 value={block.footerColor}
-                fallback="#667085"
+                fallback="#e6e8ec"
                 onChange={(hex) => onChange({ footerColor: hex })}
                 className="h-9 w-full"
               />
