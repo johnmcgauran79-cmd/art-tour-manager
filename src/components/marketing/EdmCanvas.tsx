@@ -9,6 +9,7 @@ import {
   List,
   ListOrdered,
   Palette,
+  SquareDashed,
   Strikethrough,
   Trash2,
   Type,
@@ -674,8 +675,15 @@ export function EdmCanvas({
                 fallback="#000000"
                 align="center"
                 onOpenChange={(open) => {
-                  if (open) saveRange();
-                  else savedRangeRef.current = null;
+                  if (open) {
+                    holdEditRef.current = true;
+                    saveRange();
+                  } else {
+                    holdEditRef.current = false;
+                    savedRangeRef.current = null;
+                    // Store the newly coloured text on the block.
+                    commitEdit();
+                  }
                 }}
                 onChange={(hex) => exec("foreColor", hex)}
               >
