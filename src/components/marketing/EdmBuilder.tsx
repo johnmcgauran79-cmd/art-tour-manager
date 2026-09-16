@@ -89,6 +89,8 @@ import {
   type EdmBrand,
 } from "@/lib/edm/blocks";
 import { edmMergeFields, edmStarterTemplates } from "@/lib/edm/templates";
+import { EdmCanvas } from "./EdmCanvas";
+import { EdmPalette } from "./EdmPalette";
 import { EdmImageField } from "./EdmImageField";
 import {
   AlignField,
