@@ -289,13 +289,24 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowLeftRight className="h-5 w-5" />
-            Reconcile "{tourName}" with the website
+            {initialImport ? `Import "${tourName}" from the website` : `Reconcile "${tourName}" with the website`}
           </DialogTitle>
           <DialogDescription>
-            Compare every matched field, the inclusions and the itinerary, then choose which side is correct. After
-            reconciling, ART stays the source of truth.
+            {initialImport
+              ? "Everything on the website — dates, prices, payment details, location, inclusions, exclusions, description, itinerary and day photos — is set to come into ART. Change any line you'd rather keep as it is, then apply. From then on, edit in ART and publish to the website."
+              : "Compare every matched field, the inclusions and the itinerary, then choose which side is correct. After reconciling, ART stays the source of truth."}
           </DialogDescription>
         </DialogHeader>
+
+        {!loading && !error && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 p-3">
+            <span className="text-sm">Bring the whole tour across from the website in one go:</span>
+            <Button size="sm" onClick={useWebsiteForEverything} disabled={applying}>
+              Import everything from the website
+            </Button>
+          </div>
+        )}
+
 
         {loading && (
           <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
