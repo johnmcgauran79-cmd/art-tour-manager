@@ -160,8 +160,10 @@ export const useSaveCampaign = () => {
       qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
       if (c?.id) qc.invalidateQueries({ queryKey: ["marketing-campaign", c.id] });
     },
-    onError: (e: any) =>
-      toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any, vars: any) => {
+      if (vars?.silent) return;
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
   });
 };
 
