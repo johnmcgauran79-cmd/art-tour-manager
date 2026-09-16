@@ -6,7 +6,6 @@ import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2, Sparkles, Glob
 import { format, addDays } from "date-fns";
 import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "@/components/itinerary/ItineraryDayCard";
-import { ItinerarySnapshotSection } from "@/components/itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "@/components/itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "@/components/itinerary/EmailItineraryModal";
 import { GuestDocumentTextModal } from "@/components/itinerary/GuestDocumentTextModal";
