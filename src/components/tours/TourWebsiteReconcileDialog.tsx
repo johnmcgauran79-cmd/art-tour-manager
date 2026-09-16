@@ -245,6 +245,19 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
         });
         log.push(`Imported ${res.imported_days} itinerary day(s) from the website`);
         warn.push(...(res.warnings ?? []));
+        // Day galleries live on the same website rows — bring the photos across too.
+        try {
+          const photos = await callProxy<{ imported_photos: number; warnings?: string[] }>(
+            "pull_itinerary_photos",
+            { art_tour_id: tourId, confirm: true },
+          );
+          if ((photos.imported_photos ?? 0) > 0) {
+            log.push(`Imported ${photos.imported_photos} itinerary day photo(s) from the website`);
+          }
+          warn.push(...(photos.warnings ?? []));
+        } catch (e) {
+          warn.push(`Day photos could not be imported: ${(e as Error).message}`);
+        }
       } else if (itineraryChoice === "art") {
         const res = await callProxy<{ rows_published: number }>("push_itinerary", { art_tour_id: tourId });
         log.push(`Published ${res.rows_published} itinerary day(s) from ART to the website`);
