@@ -374,7 +374,7 @@ export function TourWebsiteReconcileDialog({ open, onOpenChange, tourId, tourNam
             {/* Inclusions */}
             {inclusions && (
               <section className="space-y-2">
-                <h3 className="text-sm font-semibold">Inclusions, exclusions & description</h3>
+                <h3 className="text-sm font-semibold">Overview text, inclusions & exclusions</h3>
                 <div className="rounded-md border p-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">
