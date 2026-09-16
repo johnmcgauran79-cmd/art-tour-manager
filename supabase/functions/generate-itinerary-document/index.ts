@@ -426,7 +426,6 @@ ${TYPO.headHtml}
           page-break-after: auto;
           break-after: auto;
         }
-        .flow-pad { padding: 0; }
         .cover-banner {
           background-color: ${NAVY};
           background-image: ${HEADER_BG};
@@ -603,12 +602,11 @@ ${TYPO.headHtml}
         .info-content a { color: ${NAVY}; }
         @media print {
           @page { margin: 14mm; size: A4; }
-          @page :first { margin: 0; }
-          .cover { margin: 0; }
+${hasWelcome ? `          @page :first { margin: 0; }
+          .cover { margin: 0; }` : ''}
           .page { max-width: none; padding: 0; }
-          /* First page has no @page margin, so pad content that flows onto it */
-          .flow-pad { padding: 0 14mm 0; }
         }
+
       </style>
     </head>
     <body>
@@ -654,7 +652,7 @@ ${TYPO.headHtml}
   // ===== Accommodation + Itinerary (same page, no break between them) =====
   const hasHotels = options.includeHotels && hotels.length > 0;
   html += `
-    <div class="page section${hasWelcome ? '' : ' section-first flow-pad'}">
+    <div class="page section${hasWelcome ? '' : ' section-first'}">
       <div class="run-head"><strong>${runningTitle}</strong></div>
   `;
   if (hasHotels) {
