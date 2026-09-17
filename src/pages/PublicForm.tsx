@@ -108,7 +108,7 @@ export default function PublicForm() {
     phone: "",
     state: "",
     message: "",
-    consent: false,
+    consent: true,
     honeypot: "",
     country: "",
     travellers: "",
