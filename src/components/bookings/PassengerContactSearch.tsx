@@ -65,6 +65,21 @@ export const PassengerContactSearch = ({
 
   const shouldShowSuggestions = searchValue.length >= 2 && showSuggestions;
 
+  // Close the suggestion list only when the user clicks away from it. Closing on
+  // input blur made the list disappear the moment the scrollbar was grabbed, so
+  // long lists could not be scrolled.
+  const searchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showSuggestions]);
+
   const handleContactSelect = (customer: any) => {
     onContactSelect(customer);
     setSearchValue("");
