@@ -56,7 +56,7 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
         case "hotel": {
           const query = supabase
             .from("hotels")
-            .select("id, name, location")
+            .select("id, name, address, tours(name)")
             .order("name")
             .limit(20);
           if (term) query.ilike("name", `%${term}%`);
@@ -65,7 +65,7 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
           return (data || []).map((h: any) => ({
             id: h.id,
             label: h.name,
-            sublabel: h.location || undefined,
+            sublabel: [h.tours?.name, h.address].filter(Boolean).join(" · ") || undefined,
           }));
         }
         case "activity": {
