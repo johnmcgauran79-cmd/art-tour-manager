@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Briefcase, BedDouble, MapPin, User, Activity as ActivityIcon, Loader2 } from "lucide-react";
+import { Briefcase, BedDouble, MapPin, User, Activity as ActivityIcon, Loader2, Megaphone } from "lucide-react";
 import { type EntityType } from "@/lib/entityLinks";
 import { cn } from "@/lib/utils";
 

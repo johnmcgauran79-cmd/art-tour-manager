@@ -1,6 +1,6 @@
 import { Link as RouterLink } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BedDouble, Briefcase, MapPin, User, Activity as ActivityIcon, AlertCircle } from "lucide-react";
+import { BedDouble, Briefcase, MapPin, User, Activity as ActivityIcon, AlertCircle, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   parseEntityLinks,
