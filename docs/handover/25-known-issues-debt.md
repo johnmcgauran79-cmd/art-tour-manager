@@ -8,7 +8,7 @@ Evidence-backed only. Nothing here was fixed as part of this handover.
 | --- | --- | --- |
 | No alerting on any failure | No monitoring config anywhere; failures only land in log tables | A failed nightly Xero sync, campaign processor or mailbox sync can go unnoticed for days |
 | Preview and production share one database | Single Supabase project ref in `.env` and `config.toml` | Any test that writes data writes production data. No safe rehearsal of destructive changes |
-| Cron job points at a non-existent function | `sync-keap-tags-nightly` calls `sync-keap-tags`; no such directory in `supabase/functions/` | Fails nightly and silently. Harmless functionally (Keap was removed) but cannot be deleted from here: the job is owned by `supabase_read_only_user`, so Supabase Support must remove it |
+| Restore never rehearsed | No runbook evidence, no recorded drill | Unknown recovery time in a real incident |
 | Restore never rehearsed | No runbook evidence, no recorded drill | Unknown recovery time in a real incident |
 
 ## Medium

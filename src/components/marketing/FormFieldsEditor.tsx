@@ -63,7 +63,7 @@ export function FormFieldsEditor({ fields, onChange }: FormFieldsEditorProps) {
 
       {fields.length === 0 && (
         <p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-          No extra questions yet — add the ones you use on your current Keap form.
+          No extra questions yet — add the ones you want to ask on this form.
         </p>
       )}
 
