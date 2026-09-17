@@ -264,6 +264,25 @@ export const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; slug: str
   { value: "tiktok", label: "TikTok", slug: "tiktok" },
 ];
 
+/**
+ * Pull the video id out of any common YouTube address (watch, youtu.be,
+ * embed, shorts). Returns "" when the address isn't a YouTube link.
+ */
+export const youtubeVideoId = (url: string): string => {
+  const value = (url || "").trim();
+  if (!value) return "";
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{6,})/,
+    /youtu\.be\/([A-Za-z0-9_-]{6,})/,
+    /youtube\.com\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{6,})/,
+  ];
+  for (const re of patterns) {
+    const m = value.match(re);
+    if (m) return m[1];
+  }
+  return /^[A-Za-z0-9_-]{8,}$/.test(value) ? value : "";
+};
+
 export const newCell = (blocks: EdmBlock[] = []): EdmCell => ({
   id: crypto.randomUUID(),
   blocks,
