@@ -1128,6 +1128,27 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
         align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"
       };" /></a></td></tr>`;
     }
+    case "video": {
+      const url = (b.linkUrl || "").trim();
+      const vid = youtubeVideoId(url);
+      const thumb = b.imageUrl || (vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "");
+      if (!thumb) return "";
+      const watch = url || (vid ? `https://www.youtube.com/watch?v=${vid}` : "#");
+      const radius = b.radius != null ? b.radius : 6;
+      const label = b.text || "Watch the video";
+      return `<tr><td style="padding:${pad(ctx, "12px", b)};text-align:${align};">
+  <a href="${esc(watch)}" style="text-decoration:none;color:${primary};">
+    <img src="${esc(thumb)}" alt="${esc(b.imageAlt || label)}" width="800" style="display:block;width:100%;max-width:100%;height:auto;border:0;border-radius:${radius}px;margin:${
+      align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"
+    };" />
+    <span style="display:inline-block;margin-top:10px;font-family:${fontStack(
+      b,
+      FONT_BODY
+    )};font-size:${b.fontSize || 15}px;font-weight:600;color:${b.color || primary};">&#9654;&nbsp;${esc(
+      label
+    )}</span>
+  </a></td></tr>`;
+    }
     case "imageText":
       return `<tr><td style="padding:${pad(ctx, "12px", b)};">
   <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
