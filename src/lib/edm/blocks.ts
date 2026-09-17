@@ -1154,7 +1154,13 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       const url = (b.linkUrl || "").trim();
       const vid = youtubeVideoId(url);
       const thumb = b.imageUrl || (vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "");
-      if (!thumb) return "";
+      if (!thumb) {
+        // On the canvas keep a visible, selectable placeholder so the block can
+        // be clicked and a link added. Sent emails simply omit an empty video.
+        if (!ctx.tag) return "";
+        return `<tr><td style="padding:${pad(ctx, "12px", b)};text-align:center;font-family:${FONT_BODY};font-size:13px;color:#64748b;">
+  <div style="border:1px dashed #cbd5e1;border-radius:8px;padding:28px 16px;background:#f8fafc;">&#9654;&nbsp;Video — add a YouTube link in the settings on the right.</div></td></tr>`;
+      }
       const watch = url || (vid ? `https://www.youtube.com/watch?v=${vid}` : "#");
       const radius = b.radius != null ? b.radius : 6;
       const label = b.text || "Watch the video";
