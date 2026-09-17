@@ -14,6 +14,7 @@ export type StandardFieldKey =
   | "travellers"
   | "previous_traveller"
   | "preferred_contact"
+  | "hear_about"
   | "tours"
   | "passengers"
   | "passenger_dietary"
