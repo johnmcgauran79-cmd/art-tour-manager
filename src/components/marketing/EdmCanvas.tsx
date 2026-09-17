@@ -130,18 +130,21 @@ const effectiveBg = (el: HTMLElement): [number, number, number] => {
 /**
  * Text that is nearly the same colour as its background can't be seen while
  * typing (white copy on a white block, for example). While the element is
- * focused we show it in a readable colour; the saved colour is untouched.
+ * focused we put a contrasting backdrop behind it — the text keeps the exact
+ * colour that was chosen, both here and in the sent email.
  */
 const applyReadableColour = (el: HTMLElement) => {
   const win = el.ownerDocument?.defaultView;
   if (!win) return;
+  el.classList.remove("edm-readable-light", "edm-readable-dark");
   const fg = rgbOf(win.getComputedStyle(el).color);
   if (!fg) return;
   const bgLum = luminance(effectiveBg(el));
   const fgLum = luminance(fg);
   const ratio =
     (Math.max(bgLum, fgLum) + 0.05) / (Math.min(bgLum, fgLum) + 0.05);
-  el.classList.toggle("edm-readable", ratio < 2.2);
+  if (ratio >= 2.2) return;
+  el.classList.add(fgLum > 0.4 ? "edm-readable-dark" : "edm-readable-light");
 };
 
 /**
