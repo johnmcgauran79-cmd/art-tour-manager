@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isChunkLoadError, reloadForNewVersion } from "@/lib/chunkReload";
 
 interface Props {
   children: ReactNode;
@@ -24,6 +25,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary] Uncaught render error:", error, info.componentStack);
+    // A newly published version renames the app's script files. Tabs that were
+    // already open fail to load a page they had not visited yet — reload once
+    // instead of showing an error the user cannot act on.
+    if (isChunkLoadError(error)) reloadForNewVersion();
   }
 
   private handleReload = () => {
