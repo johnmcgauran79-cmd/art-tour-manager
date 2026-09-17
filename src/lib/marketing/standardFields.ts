@@ -58,6 +58,7 @@ export const STANDARD_FIELDS: StandardFieldDef[] = [
   { key: "travellers", label: "How many travelling?", forms: "both", requirable: true, defaultEnabled: true, legacyToggle: "show_travellers", group: "About them" },
   { key: "previous_traveller", label: "Travelled with us before?", forms: "both", requirable: true, defaultEnabled: true, legacyToggle: "show_previous_traveller", group: "About them" },
   { key: "preferred_contact", label: "Preferred contact method", forms: "both", requirable: true, defaultEnabled: false, legacyToggle: "show_preferred_contact", group: "About them" },
+  { key: "hear_about", label: "How did you find out about us?", forms: "both", requirable: true, defaultEnabled: true, group: "About them" },
   { key: "tours", label: "Tours", forms: "both", requirable: true, defaultEnabled: true, group: "Tours" },
   { key: "passengers", label: "Passengers", forms: "booking", requirable: true, defaultEnabled: true, group: "Booking details" },
   { key: "passenger_dietary", label: "Dietary requirements", forms: "booking", defaultEnabled: true, group: "Booking details" },
