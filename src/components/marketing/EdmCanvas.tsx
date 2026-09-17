@@ -241,20 +241,10 @@ export function EdmCanvas({
   const syncHeight = useCallback(() => {
     const d = frameRef.current?.contentDocument;
     if (!d) return;
-    if (device === "mobile") {
-      // Widen the frame only if the email genuinely cannot reflow to 390px.
-      const needed = Math.max(
-        d.documentElement?.scrollWidth || 0,
-        d.body?.scrollWidth || 0,
-        MOBILE_FRAME_WIDTH
-      );
-      const width = needed > MOBILE_FRAME_WIDTH + 2 ? needed : MOBILE_FRAME_WIDTH;
-      setFrameWidth((prev) => (Math.abs(prev - width) > 2 ? width : prev));
-      setScale(Math.min(1, MOBILE_FRAME_WIDTH / width));
-    } else {
-      setFrameWidth(MOBILE_FRAME_WIDTH);
-      setScale(1);
-    }
+    // Phone view is always a true 390px phone: the email reflows to that width
+    // and text keeps its size, so nothing is ever shrunk to fit.
+    setFrameWidth(MOBILE_FRAME_WIDTH);
+    setScale(1);
     const h = Math.max(
       d.documentElement?.scrollHeight || 0,
       d.body?.scrollHeight || 0,
