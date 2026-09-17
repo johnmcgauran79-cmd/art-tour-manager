@@ -35,6 +35,7 @@ export const useEntityResolver = (refs: EntityRefInput[]) => {
       tour: new Set(),
       contact: new Set(),
       lead: new Set(),
+      campaign: new Set(),
     };
     refs.forEach((r) => map[r.entity_type].add(r.entity_id));
     return map;
@@ -99,6 +100,22 @@ export const useEntityResolver = (refs: EntityRefInput[]) => {
               const person = `${l.customers?.first_name || ""} ${l.customers?.last_name || ""}`.trim();
               out[`lead:${l.id}`] = {
                 label: person || "Enquiry",
+                deleted: false,
+              };
+            });
+          })()
+        );
+      }
+      if (grouped.campaign.size) {
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("marketing_campaigns")
+              .select("id, name, subject")
+              .in("id", [...grouped.campaign]);
+            (data || []).forEach((c: any) => {
+              out[`campaign:${c.id}`] = {
+                label: c.name || c.subject || "Untitled campaign",
                 deleted: false,
               };
             });

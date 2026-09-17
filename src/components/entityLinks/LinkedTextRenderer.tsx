@@ -1,6 +1,6 @@
 import { Link as RouterLink } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BedDouble, Briefcase, MapPin, User, Activity as ActivityIcon, AlertCircle } from "lucide-react";
+import { BedDouble, Briefcase, MapPin, User, Activity as ActivityIcon, AlertCircle, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   parseEntityLinks,
@@ -75,6 +75,7 @@ const renderTextWithLinks = (text: string, keyPrefix: string): React.ReactNode =
 };
 
 const entityIcon: Record<EntityType, typeof Briefcase> = {
+  campaign: Megaphone,
   booking: Briefcase,
   hotel: BedDouble,
   activity: ActivityIcon,
@@ -90,6 +91,8 @@ const entityChipClass: Record<EntityType, string> = {
   tour: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200",
   contact: "bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/40 dark:text-pink-200",
   lead: "bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-200",
+  campaign:
+    "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/40 dark:text-orange-200",
 };
 
 const Chip = ({

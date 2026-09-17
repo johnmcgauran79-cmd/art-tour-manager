@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Briefcase, BedDouble, MapPin, User, Activity as ActivityIcon, Loader2 } from "lucide-react";
+import { Briefcase, BedDouble, MapPin, User, Activity as ActivityIcon, Loader2, Megaphone } from "lucide-react";
 import { type EntityType } from "@/lib/entityLinks";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ export interface InlineSuggestionItem {
 }
 
 const ICON: Record<EntityType, typeof Briefcase> = {
+  campaign: Megaphone,
   booking: Briefcase,
   hotel: BedDouble,
   activity: ActivityIcon,
@@ -162,7 +163,7 @@ export const InlineEntitySuggestions = ({
     // Interleave types in priority order so a relevant booking sits next to a tour.
     const order: EntityType[] = ["booking", "tour", "contact", "activity", "hotel"];
     const grouped: Record<EntityType, InlineSuggestionItem[]> = {
-      booking: [], tour: [], contact: [], activity: [], hotel: [], lead: [],
+      booking: [], tour: [], contact: [], activity: [], hotel: [], lead: [], campaign: [],
     };
     queries.forEach((q) => {
       (q.data || []).forEach((it) => grouped[it.type].push(it));

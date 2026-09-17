@@ -118,7 +118,47 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
               (r.sublabel || "").toLowerCase().includes(t)
           );
         }
+        case "campaign": {
+          const query = supabase
+            .from("marketing_campaigns")
+            .select("id, name, subject, status, created_at")
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (term) query.or(`name.ilike.%${term}%,subject.ilike.%${term}%`);
+          const { data, error } = await query;
+          if (error) throw error;
+          return (data || []).map((c: any) => ({
+            id: c.id,
+            label: c.name || c.subject || "Untitled campaign",
+            sublabel: [c.subject, c.status].filter(Boolean).join(" · ") || undefined,
+          }));
+        }
+        case "lead": {
+          const query = supabase
+            .from("leads")
+            .select("id, stage, created_at, customers!leads_customer_id_fkey(first_name, last_name, email)")
+            .order("created_at", { ascending: false })
+            .limit(20);
+          const { data, error } = await query;
+          if (error) throw error;
+          const rows = (data || []).map((l: any) => ({
+            id: l.id,
+            label:
+              `${l.customers?.first_name || ""} ${l.customers?.last_name || ""}`.trim() ||
+              l.customers?.email ||
+              "Enquiry",
+            sublabel: [l.customers?.email, l.stage].filter(Boolean).join(" · ") || undefined,
+          }));
+          if (!term) return rows;
+          const t = term.toLowerCase();
+          return rows.filter(
+            (r) =>
+              r.label.toLowerCase().includes(t) ||
+              (r.sublabel || "").toLowerCase().includes(t)
+          );
+        }
       }
+
     },
     staleTime: 30_000,
     enabled,

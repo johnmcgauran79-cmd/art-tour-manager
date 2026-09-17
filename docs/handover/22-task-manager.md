@@ -11,7 +11,7 @@ One task system serves the whole application. CRM follow-ups, tour operations, w
 | `task_assignments`, `task_watchers`, `task_approvers` | Who owns it, who follows it, who must approve it |
 | `task_subtasks` | Checklist items |
 | `task_comments`, `task_comment_attachments`, `task_attachments` | Discussion and files |
-| `task_entity_links` | Links to booking / hotel / activity / tour / contact / lead |
+| `task_entity_links` | Links to booking / hotel / activity / tour / contact / lead / campaign. `source` is `description`, `comment` or `manual` (added by hand from the task's Linked Records panel) |
 | `task_activity_log` | Full audit of changes |
 | `task_templates` (+ assignees, approvers) | Reusable task definitions |
 | `task_notification_preferences`, `task_notification_log` | Per-user channels and cadence; repeat suppression |
@@ -23,7 +23,7 @@ Enums: `task_status` (not_started, in_progress, waiting, completed, cancelled, a
 - **Assignment is strictly by department.** There is no fallback to admins — an unmapped department means nobody is assigned, deliberately.
 - Approval flow: `notify_task_approval_request` and `handle_task_approver_decision` drive approval-required statuses and Teams/email notification.
 - Automatic generation: `generate_tour_operation_tasks` on tour creation, `create_pending_booking_task`, `create_capacity_monitoring_task`, with matching cleanup functions (`delete_automated_tour_tasks`, `cleanup_activity_generated_tasks`) so cancelled work does not leave orphan tasks.
-- Entity links are extracted from task text automatically (`extract_entity_links`, `sync_task_description_links`, `sync_task_comment_links`).
+- Entity links are extracted from task text automatically (`extract_entity_links`, `sync_task_description_links`, `sync_task_comment_links`), and can also be added directly with the "Add link" picker on a task (`source = 'manual'`, removable from the same panel). Sync triggers only delete rows of their own source, so manual links survive edits.
 - **Due dates are stored as literal `yyyy-MM-dd` strings**, never ISO timestamps, to avoid timezone drift.
 - Replying to a customer never closes a task; completion is explicit.
 
