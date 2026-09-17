@@ -1117,7 +1117,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
         b.text || ""
       )}</td></tr>`;
     case "text":
-      return `<tr><td style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_BODY)};font-size:${
+      return `<tr><td class="edm-body-text" style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_BODY)};font-size:${
         b.fontSize || 16
       }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
         b.align ? `text-align:${b.align};` : ""
@@ -1154,7 +1154,13 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       const url = (b.linkUrl || "").trim();
       const vid = youtubeVideoId(url);
       const thumb = b.imageUrl || (vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "");
-      if (!thumb) return "";
+      if (!thumb) {
+        // On the canvas keep a visible, selectable placeholder so the block can
+        // be clicked and a link added. Sent emails simply omit an empty video.
+        if (!ctx.tag) return "";
+        return `<tr><td style="padding:${pad(ctx, "12px", b)};text-align:center;font-family:${FONT_BODY};font-size:13px;color:#64748b;">
+  <div style="border:1px dashed #cbd5e1;border-radius:8px;padding:28px 16px;background:#f8fafc;">&#9654;&nbsp;Video — add a YouTube link in the settings on the right.</div></td></tr>`;
+      }
       const watch = url || (vid ? `https://www.youtube.com/watch?v=${vid}` : "#");
       const radius = b.radius != null ? b.radius : 6;
       const label = b.text || "Watch the video";
@@ -1384,6 +1390,13 @@ ${BRAND_FONT_HEAD_HTML}
 <style>
 @media only screen and (max-width:600px){
   td.edm-col{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;}
+  /* Reflow, don't shrink: everything becomes fluid and body text stays at a
+     comfortable reading size, so wording simply runs to more lines. */
+  table{width:100%!important;max-width:100%!important;}
+  td,th{max-width:100%!important;white-space:normal!important;word-break:normal;overflow-wrap:break-word;}
+  img{max-width:100%!important;height:auto!important;}
+  td.edm-body-text,td.edm-body-text div,td.edm-body-text p,td.edm-body-text li,td.edm-body-text span{
+    font-size:16px!important;line-height:1.65!important;}
   ${mobileCss}
 }
 </style>
