@@ -108,7 +108,7 @@ export default function PublicForm() {
     phone: "",
     state: "",
     message: "",
-    consent: false,
+    consent: true,
     honeypot: "",
     country: "",
     travellers: "",
@@ -232,7 +232,7 @@ export default function PublicForm() {
       emergency_contact: form.emergency_contact,
       special_requests: form.special_requests,
       message: form.message,
-      consent: form.consent ? "yes" : "",
+      consent: "yes",
     };
     const missingStandard = (Object.keys(values) as StandardFieldKey[]).find(
       (key) =>
@@ -276,7 +276,7 @@ export default function PublicForm() {
         phone: form.phone,
         state: form.state,
         message: form.message,
-        consent: form.consent,
+        consent: true,
         company_website_hp: form.honeypot,
         tour_ids: selectedTours,
         extra: {
@@ -825,22 +825,11 @@ export default function PublicForm() {
                   </div>
                 )}
 
-                {shows("consent") && (
-                  <label className="flex items-start gap-2 text-sm">
-                    <Checkbox
-                      checked={form.consent}
-                      onCheckedChange={(v) => setForm({ ...form, consent: !!v })}
-                    />
-                    <span className="text-muted-foreground">
-                      {page.consent_text ||
-                        standardLabel(
-                          "consent",
-                          sf,
-                          "Yes, I'd like to receive tour news and offers. You can unsubscribe at any time."
-                        )}
-                    </span>
-                  </label>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {page.consent_text ||
+                    "By submitting this form you agree to receive marketing emails. You can unsubscribe anytime."}
+                </p>
+
 
 
                 {/* Honeypot — hidden from real visitors */}
