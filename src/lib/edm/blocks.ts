@@ -1390,6 +1390,13 @@ ${BRAND_FONT_HEAD_HTML}
 <style>
 @media only screen and (max-width:600px){
   td.edm-col{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;}
+  /* Reflow, don't shrink: everything becomes fluid and body text stays at a
+     comfortable reading size, so wording simply runs to more lines. */
+  table{width:100%!important;max-width:100%!important;}
+  td,th{max-width:100%!important;white-space:normal!important;word-break:normal;overflow-wrap:break-word;}
+  img{max-width:100%!important;height:auto!important;}
+  td.edm-body-text,td.edm-body-text div,td.edm-body-text p,td.edm-body-text li,td.edm-body-text span{
+    font-size:16px!important;line-height:1.65!important;}
   ${mobileCss}
 }
 </style>
