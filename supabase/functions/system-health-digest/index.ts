@@ -25,6 +25,7 @@ interface Health {
   stale_code_backup_hours: number | null;
   failed_jobs_24h: Array<{ jobname: string; failures: number; message: string }>;
   http_failures_24h: number;
+  http_failure_details_24h?: Array<{ created: string; status_code: number | null; error: string }>;
   mailbox_failures: Array<{ mailbox: string; status: string | null; error: string }>;
   xero_failures_24h: number;
   crm_failures_24h: number;
@@ -73,8 +74,24 @@ function buildProblems(h: Health): string[] {
   }
 
   if (h.http_failures_24h > 0) {
+    const details = (h.http_failure_details_24h || [])
+      .map((d) => {
+        const when = new Date(d.created).toLocaleString("en-AU", {
+          timeZone: TZ,
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const reason = (d.error || "").trim();
+        return `${when} — response ${d.status_code ?? "none"}${reason ? `: ${esc(reason.slice(0, 160))}` : ""}`;
+      });
     out.push(
-      `${h.http_failures_24h} scheduled call(s) to background services returned an error in the last 24 hours.`,
+      `${h.http_failures_24h} scheduled call(s) to background services returned an error in the last 24 hours.` +
+        (details.length
+          ? `<br><span style="color:#6b7280;font-size:13px">${details.join("<br>")}</span>` +
+            `<br><span style="color:#6b7280;font-size:12px">These technical log entries are cleared after a few hours, so they may no longer appear in System Health.</span>`
+          : ""),
     );
   }
 
