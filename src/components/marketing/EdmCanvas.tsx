@@ -597,20 +597,43 @@ export function EdmCanvas({
   const isRichText = editingRef.current?.field === "html";
 
   return (
-    <div className="relative overflow-x-auto rounded-lg border bg-muted/40 p-2">
+    <div
+      className={cn(
+        "relative rounded-lg border bg-muted/40 p-2",
+        device === "mobile" ? "overflow-x-hidden" : "overflow-x-auto"
+      )}
+    >
       <div className={cn("flex justify-center", device === "desktop" && "min-w-[720px]")}>
-        <iframe
-          ref={frameRef}
-          title="Email editing canvas"
-          scrolling="no"
-          style={{ height: frameHeight }}
-          // Same-origin so the document can be edited; scripts stay blocked.
-          sandbox="allow-same-origin"
-          className={cn(
-            "rounded bg-background",
-            device === "mobile" ? "w-[390px] shrink-0" : "w-full min-w-[720px]"
-          )}
-        />
+        <div
+          className={device === "mobile" ? "shrink-0 overflow-hidden" : "w-full"}
+          style={
+            device === "mobile"
+              ? { width: MOBILE_FRAME_WIDTH, height: Math.round(frameHeight * scale) }
+              : undefined
+          }
+        >
+          <iframe
+            ref={frameRef}
+            title="Email editing canvas"
+            scrolling="no"
+            style={
+              device === "mobile"
+                ? {
+                    height: frameHeight,
+                    width: frameWidth,
+                    transform: scale < 1 ? `scale(${scale})` : undefined,
+                    transformOrigin: "top left",
+                  }
+                : { height: frameHeight }
+            }
+            // Same-origin so the document can be edited; scripts stay blocked.
+            sandbox="allow-same-origin"
+            className={cn(
+              "rounded bg-background",
+              device === "mobile" ? "shrink-0" : "w-full min-w-[720px]"
+            )}
+          />
+        </div>
       </div>
 
       {/* Selected block actions */}
