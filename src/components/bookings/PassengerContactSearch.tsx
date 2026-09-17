@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,21 @@ export const PassengerContactSearch = ({
   }) || [];
 
   const shouldShowSuggestions = searchValue.length >= 2 && showSuggestions;
+
+  // Close the suggestion list only when the user clicks away from it. Closing on
+  // input blur made the list disappear the moment the scrollbar was grabbed, so
+  // long lists could not be scrolled.
+  const searchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showSuggestions]);
 
   const handleContactSelect = (customer: any) => {
     onContactSelect(customer);
@@ -239,13 +254,13 @@ export const PassengerContactSearch = ({
           )}
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" ref={searchRef}>
           <Input
             value={fallbackName || searchValue}
             onChange={(e) => handleInputChange(e.target.value)}
             onFocus={() => setShowSuggestions(true)}
-            onBlur={() => {
-              setTimeout(() => setShowSuggestions(false), 200);
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setShowSuggestions(false);
             }}
             placeholder={placeholder}
             required={required}
