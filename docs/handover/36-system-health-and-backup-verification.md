@@ -82,15 +82,12 @@ Timebox: about 60–90 minutes. Never restore into production.
 | — | — | — | Not yet rehearsed | — |
 
 
-## Known outstanding item
+## Resolved outstanding item
 
-The cron job `sync-keap-tags-nightly` (job id 9) calls a function that no longer exists, so it
-fails every night. It was created by a different database role and cannot be removed by the
-app's migration role. Remove it once from the Supabase dashboard SQL editor:
+The cron job `sync-keap-tags-nightly` (job id 9) was unscheduled on 18/09/2026 and its stale
+deployed function deleted. It had been calling a removed Keap service and produced a false
+"scheduled call returned an error" entry in the daily health digest.
 
-```sql
-SELECT cron.unschedule(9);
-```
 
 ## Source-code backup
 

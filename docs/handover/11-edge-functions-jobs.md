@@ -55,7 +55,7 @@ Changing anything here changes several endpoints at once.
 | `purge-ai-conversations-daily` | 03:15 daily | `purge-ai-conversations` |
 | `sync-xero-payment-receipts-daily` | 04:00 daily | `sync-xero-payment-receipts` |
 | `xero-auto-sync-contacts` | every 4 hours | `sync-xero-contacts` |
-| `sync-keap-tags-nightly` | 17:00 daily | `sync-keap-tags` |
+| `process-daily-automated-emails` | 19:00 daily | `process-automated-emails` |
 | `process-daily-automated-emails` | 19:00 daily | `process-automated-emails` |
 | `process-daily-automated-reports` | 20:00 daily | `process-scheduled-reports` |
 | `process-post-booking-emails-daily` | 20:00 daily | `process-post-booking-emails` |
