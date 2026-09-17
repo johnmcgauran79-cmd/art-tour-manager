@@ -1424,7 +1424,7 @@ function BlockInspector({
         <SpacingEditor
           label="Row margin (outside the row background)"
           value={block.margin}
-          linked={block.marginLinked !== false}
+          linked={block.marginLinked === true}
           onChange={(margin) => onChange({ margin })}
           onLinkedChange={(marginLinked) => onChange({ marginLinked })}
         />
