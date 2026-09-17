@@ -587,7 +587,11 @@ export function EdmCanvas({
     }
     d.execCommand(command, false, value);
     const el = editingRef.current?.el;
-    if (el) setTextRect(rectOf(el));
+    if (el) {
+      // A new colour may need a different backdrop to stay readable.
+      applyReadableColour(el);
+      setTextRect(rectOf(el));
+    }
   };
 
   const isRichText = editingRef.current?.field === "html";
