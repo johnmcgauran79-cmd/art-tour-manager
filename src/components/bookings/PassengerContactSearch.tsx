@@ -254,13 +254,13 @@ export const PassengerContactSearch = ({
           )}
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" ref={searchRef}>
           <Input
             value={fallbackName || searchValue}
             onChange={(e) => handleInputChange(e.target.value)}
             onFocus={() => setShowSuggestions(true)}
-            onBlur={() => {
-              setTimeout(() => setShowSuggestions(false), 200);
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setShowSuggestions(false);
             }}
             placeholder={placeholder}
             required={required}
