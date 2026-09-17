@@ -1,0 +1,1 @@
+SELECT cron.unschedule('sync-keap-tags-nightly');
