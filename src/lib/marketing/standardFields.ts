@@ -74,6 +74,27 @@ export const DEFAULT_ROOM_TYPES = ["Single", "Twin share", "Double", "Triple"];
 export const DEFAULT_BEDDING_OPTIONS = ["Single beds", "Double bed", "King bed"];
 export const CONTACT_METHOD_OPTIONS = ["Email", "Phone call", "Text message"];
 
+/** Default "How did you find out about us?" choices; editable per form. */
+export const DEFAULT_HEAR_ABOUT_OPTIONS = [
+  "Previous ART Client",
+  "Friend",
+  "Google Search",
+  "Facebook",
+  "Instagram",
+  "Twitter",
+  "Australian Turf Club",
+  "Brisbane Racing Club",
+  "Belhus Racing",
+  "First Light Racing",
+  "Melbourne Racing Club",
+  "Moonee Valley Race Club",
+  "Perth Racing",
+  "Roll the Dice",
+  "Victoria Racing Club",
+  "Women in Racing NT",
+  "Other",
+];
+
 export const fieldsForForm = (formType: string | null | undefined) =>
   STANDARD_FIELDS.filter(
     (f) => f.forms === "both" || f.forms === (formType === "booking" ? "booking" : "interest")
