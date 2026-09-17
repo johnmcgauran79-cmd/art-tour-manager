@@ -232,7 +232,7 @@ export default function PublicForm() {
       emergency_contact: form.emergency_contact,
       special_requests: form.special_requests,
       message: form.message,
-      consent: form.consent ? "yes" : "",
+      consent: "yes",
     };
     const missingStandard = (Object.keys(values) as StandardFieldKey[]).find(
       (key) =>
