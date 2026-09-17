@@ -495,6 +495,28 @@ export default function PublicForm() {
                       </Select>
                     </div>
                   )}
+                  {shows("hear_about") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="hear_about">
+                        {label("hear_about", "How did you find out about us?")}
+                      </Label>
+                      <Select
+                        value={form.hear_about}
+                        onValueChange={(hear_about) => setForm({ ...form, hear_about })}
+                      >
+                        <SelectTrigger id="hear_about">
+                          <SelectValue placeholder="Please choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hearAboutOptions.map((o) => (
+                            <SelectItem key={o} value={o}>
+                              {o}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {shows("preferred_contact") && (
                     <div className="space-y-1.5">
                       <Label htmlFor="preferred_contact">
