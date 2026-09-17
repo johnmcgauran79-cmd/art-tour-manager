@@ -113,6 +113,7 @@ const CONTENT_BLOCKS: EdmBlockType[] = [
   "text",
   "image",
   "imageText",
+  "video",
   "button",
   "social",
   "tourCard",
@@ -1502,12 +1503,56 @@ function BlockInspector({
   /* ---------------- Desktop mode ---------------- */
   return (
     <div className="space-y-4">
-      {(t === "heading" || t === "button" || t === "tourCard" || t === "quote") && (
+      {(t === "heading" || t === "button" || t === "tourCard" || t === "quote" || t === "video") && (
         <div className="space-y-1.5">
-          <Label>{t === "quote" ? "Attribution" : t === "button" ? "Button label" : "Title"}</Label>
-          <Input value={block.text || ""} onChange={(e) => onChange({ text: e.target.value })} />
+          <Label>
+            {t === "quote"
+              ? "Attribution"
+              : t === "button"
+                ? "Button label"
+                : t === "video"
+                  ? "Caption under the video"
+                  : "Title"}
+          </Label>
+          <Input
+            value={block.text || ""}
+            onChange={(e) => onChange({ text: e.target.value })}
+            placeholder={t === "video" ? "Watch the video" : undefined}
+          />
         </div>
       )}
+
+      {t === "video" && (
+        <div className="space-y-3 rounded-md border p-3">
+          <div className="space-y-1.5">
+            <Label>YouTube link</Label>
+            <Input
+              value={block.linkUrl || ""}
+              onChange={(e) => onChange({ linkUrl: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=…"
+            />
+            <p className="text-xs text-muted-foreground">
+              Emails can’t play video, so the picture below opens the video on YouTube when it is
+              clicked. The picture is taken from YouTube automatically.
+            </p>
+          </div>
+          <EdmImageField
+            value={block.imageUrl}
+            onChange={(imageUrl) => onChange({ imageUrl })}
+            label="Use your own picture instead (optional)"
+          />
+          <NumField
+            label="Corner radius"
+            suffix="px"
+            min={0}
+            max={60}
+            placeholder="6"
+            value={block.radius}
+            onChange={(radius) => onChange({ radius })}
+          />
+        </div>
+      )}
+
 
       {t === "tourCard" && (
         <>
