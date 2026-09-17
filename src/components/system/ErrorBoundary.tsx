@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isChunkLoadError, reloadForNewVersion } from "@/lib/chunkReload";
 
 interface Props {
   children: ReactNode;
