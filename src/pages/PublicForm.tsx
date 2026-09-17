@@ -276,7 +276,7 @@ export default function PublicForm() {
         phone: form.phone,
         state: form.state,
         message: form.message,
-        consent: form.consent,
+        consent: true,
         company_website_hp: form.honeypot,
         tour_ids: selectedTours,
         extra: {
