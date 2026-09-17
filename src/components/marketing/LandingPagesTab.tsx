@@ -655,6 +655,23 @@ export function LandingPagesTab() {
                 onChange={(field_config) => setEditing({ ...editing, field_config })}
               />
 
+              <div className="space-y-1.5">
+                <Label>
+                  "How did you find out about us?" choices{" "}
+                  <span className="text-xs text-muted-foreground">(one per line)</span>
+                </Label>
+                <Textarea
+                  rows={6}
+                  value={(editing.hear_about_options || DEFAULT_HEAR_ABOUT_OPTIONS).join("\n")}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      hear_about_options: parseOptionLines(e.target.value),
+                    })
+                  }
+                />
+              </div>
+
               {editing.form_type === "booking" && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
