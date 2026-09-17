@@ -35,6 +35,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const ENTITY_PLURALS: Record<EntityType, string> = {
+  booking: "Bookings",
+  hotel: "Hotels",
+  activity: "Activities",
+  tour: "Tours",
+  contact: "Contacts",
+  lead: "Enquiries",
+  campaign: "Email campaigns",
+};
+
 const entityIcon: Record<EntityType, typeof Briefcase> = {
   booking: Briefcase,
   hotel: BedDouble,
@@ -229,7 +239,7 @@ export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
           <div key={type}>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
               <Icon className="h-3.5 w-3.5" />
-              {ENTITY_LABELS[type]}s ({items.length})
+              {ENTITY_PLURALS[type]} ({items.length})
             </div>
             <ul className="space-y-1.5">
               {items.map((g) => {

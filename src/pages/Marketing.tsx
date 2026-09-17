@@ -21,7 +21,9 @@ export default function Marketing() {
   const [tab, setTab] = useState<string>(
     TABS.includes(initial as any) ? (initial as string) : "campaigns"
   );
-  const [pendingCampaignId, setPendingCampaignId] = useState<string | null>(null);
+  const [pendingCampaignId, setPendingCampaignId] = useState<string | null>(
+    searchParams.get("campaignId")
+  );
   const navigate = useNavigate();
 
   // Leads moved to their own top-level tab; keep old links working.
