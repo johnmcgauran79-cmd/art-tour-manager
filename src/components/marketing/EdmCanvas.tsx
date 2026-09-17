@@ -74,19 +74,25 @@ const CANVAS_CSS = `
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
   [data-edm-edit]{cursor:text;}
   [data-edm-edit]:focus{outline:2px solid #2563eb;outline-offset:2px;border-radius:2px;}
-  /* While you type, very light text on a light background (or dark on dark) is
-     temporarily shown in a readable colour so it can be seen — the real colour
-     is used in the preview and the sent email. */
-  [data-edm-edit].edm-readable,[data-edm-edit].edm-readable *{color:#111827!important;}
-  [data-edm-edit].edm-readable{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
+  /* While you type, text that is nearly the same colour as its background gets a
+     temporary backdrop so it can be seen. The text keeps its own colour — the
+     colour you choose is always the colour that shows. */
+  [data-edm-edit].edm-readable-light{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
+  [data-edm-edit].edm-readable-dark{background:#111827!important;box-shadow:0 0 0 2px #374151;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
-  /* Phone view: keep the whole email inside the narrow frame while editing. */
+  /* Phone view: reflow the whole email inside the narrow frame while editing. */
   html.edm-mobile,html.edm-mobile body{overflow-x:hidden!important;}
+  html.edm-mobile *{min-width:0!important;}
   html.edm-mobile table{max-width:100%!important;}
-  html.edm-mobile img{max-width:100%!important;height:auto!important;}
-  html.edm-mobile td{word-break:break-word;}
+  html.edm-mobile table[width]{width:100%!important;}
+  html.edm-mobile td,html.edm-mobile th,html.edm-mobile div,html.edm-mobile p{
+    max-width:100%!important;white-space:normal!important;overflow-wrap:break-word;word-break:normal;}
+  html.edm-mobile td[width]{width:auto!important;}
+  html.edm-mobile img{max-width:100%!important;width:auto!important;height:auto!important;}
 `;
+
+const MOBILE_FRAME_WIDTH = 390;
 
 
 /** Parse a computed rgb()/rgba() colour into channels. */
