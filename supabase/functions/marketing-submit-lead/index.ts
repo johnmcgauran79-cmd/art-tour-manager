@@ -119,7 +119,11 @@ Deno.serve(async (req) => {
         message,
         tour_id: page.tour_id || null,
         consent_given: consent,
-        consent_text: consent ? page.consent_text : null,
+        consent_text: consent
+          ? page.consent_text ||
+            "By submitting this form you agree to receive marketing emails. You can unsubscribe anytime."
+          : null,
+
         utm_source: clean((attribution as any).utm_source, 120) || null,
         utm_medium: clean((attribution as any).utm_medium, 120) || null,
         utm_campaign: clean((attribution as any).utm_campaign, 200) || null,
