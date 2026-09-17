@@ -1415,7 +1415,7 @@ function BlockInspector({
         <SpacingEditor
           label="Row padding (inside the row background)"
           value={block.padding}
-          linked={block.paddingLinked !== false}
+          linked={block.paddingLinked === true}
           onChange={(padding) => onChange({ padding })}
           onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
           hint="Top, right, bottom and left padding for the whole row."
@@ -1424,7 +1424,7 @@ function BlockInspector({
         <SpacingEditor
           label="Row margin (outside the row background)"
           value={block.margin}
-          linked={block.marginLinked !== false}
+          linked={block.marginLinked === true}
           onChange={(margin) => onChange({ margin })}
           onLinkedChange={(marginLinked) => onChange({ marginLinked })}
         />

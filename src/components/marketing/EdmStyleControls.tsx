@@ -63,17 +63,22 @@ export function SpacingEditor({
 
   return (
     <div className="space-y-2 rounded-md border p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Label className="text-sm">{label}</Label>
         <Button
           type="button"
-          variant={linked ? "secondary" : "ghost"}
+          variant={linked ? "secondary" : "outline"}
           size="sm"
-          className="h-7 gap-1 text-xs"
+          className="h-7 shrink-0 gap-1 text-xs"
+          title={
+            linked
+              ? "All four sides change together — click to set each side on its own"
+              : "Each side is set on its own — click to change all four together"
+          }
           onClick={() => onLinkedChange(!linked)}
         >
           {linked ? <Link2 className="h-3 w-3" /> : <Unlink className="h-3 w-3" />}
-          {linked ? "Linked" : "Independent"}
+          {linked ? "All sides together" : "Each side on its own"}
         </Button>
       </div>
       <div className="grid grid-cols-4 gap-2">
