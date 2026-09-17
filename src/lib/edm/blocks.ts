@@ -513,6 +513,9 @@ export const blockSummary = (b: EdmBlock): string => {
     case "spacer":
       raw = b.height ? `${b.height}px` : "";
       break;
+    case "video":
+      raw = plain(b.text) || youtubeVideoId(b.linkUrl) || "Video";
+      break;
     default:
       raw = "";
   }
