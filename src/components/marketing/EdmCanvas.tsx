@@ -81,15 +81,21 @@ const CANVAS_CSS = `
   [data-edm-edit].edm-readable-dark{background:#111827!important;box-shadow:0 0 0 2px #374151;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
-  /* Phone view: reflow the whole email inside the narrow frame while editing. */
+  /* Phone view: reflow the whole email inside the narrow frame while editing —
+     text keeps a comfortable reading size and simply runs to more lines. */
   html.edm-mobile,html.edm-mobile body{overflow-x:hidden!important;}
   html.edm-mobile *{min-width:0!important;}
-  html.edm-mobile table{max-width:100%!important;}
+  html.edm-mobile table{width:100%!important;max-width:100%!important;}
   html.edm-mobile table[width]{width:100%!important;}
   html.edm-mobile td,html.edm-mobile th,html.edm-mobile div,html.edm-mobile p{
     max-width:100%!important;white-space:normal!important;overflow-wrap:break-word;word-break:normal;}
   html.edm-mobile td[width]{width:auto!important;}
+  html.edm-mobile td.edm-col{display:block!important;width:100%!important;
+    padding-left:0!important;padding-right:0!important;}
   html.edm-mobile img{max-width:100%!important;width:auto!important;height:auto!important;}
+  html.edm-mobile td.edm-body-text,html.edm-mobile td.edm-body-text div,
+  html.edm-mobile td.edm-body-text p,html.edm-mobile td.edm-body-text li,
+  html.edm-mobile td.edm-body-text span{font-size:16px!important;line-height:1.65!important;}
 `;
 
 const MOBILE_FRAME_WIDTH = 390;
