@@ -93,17 +93,31 @@ export const ContactSearch = ({
     setShowSuggestions(newValue.length >= 2);
   };
 
+  // Close only on a click outside the search box; closing on blur killed the
+  // list as soon as the user grabbed its scrollbar.
+  const searchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showSuggestions) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showSuggestions]);
+
   return (
     <div className="space-y-2">
       <Label htmlFor="contactSearch">{label}</Label>
-      <div className="relative">
+      <div className="relative" ref={searchRef}>
         <Input
           id="contactSearch"
           value={value}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowSuggestions(true)}
-          onBlur={() => {
-            setTimeout(() => setShowSuggestions(false), 200);
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setShowSuggestions(false);
           }}
           placeholder={placeholder}
           required={required}
