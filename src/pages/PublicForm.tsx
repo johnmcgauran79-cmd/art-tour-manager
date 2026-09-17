@@ -538,14 +538,7 @@ export default function PublicForm() {
                             checked={selectedTours.includes(t.id)}
                             onCheckedChange={() => toggleTour(t.id)}
                           />
-                          <span>
-                            {t.name}
-                            {t.start_date && (
-                              <span className="block text-xs text-muted-foreground">
-                                From {format(new Date(t.start_date), "dd/MM/yyyy")}
-                              </span>
-                            )}
-                          </span>
+                          <span>{t.name}</span>
                         </label>
                       ))}
                       {extraTourOptions.map((name) => (
