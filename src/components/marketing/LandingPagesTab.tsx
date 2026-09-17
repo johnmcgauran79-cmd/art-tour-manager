@@ -49,7 +49,7 @@ import {
   type LandingPage,
 } from "@/hooks/useMarketing";
 import { parseFormFields } from "@/lib/marketing/formFields";
-import { DEFAULT_ROOM_TYPES, parseOptionLines } from "@/lib/marketing/standardFields";
+import { DEFAULT_HEAR_ABOUT_OPTIONS, DEFAULT_ROOM_TYPES, parseOptionLines } from "@/lib/marketing/standardFields";
 import { FormFieldsEditor } from "./FormFieldsEditor";
 import { StandardFieldsEditor } from "./StandardFieldsEditor";
 
