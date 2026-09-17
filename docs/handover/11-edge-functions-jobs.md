@@ -56,7 +56,6 @@ Changing anything here changes several endpoints at once.
 | `sync-xero-payment-receipts-daily` | 04:00 daily | `sync-xero-payment-receipts` |
 | `xero-auto-sync-contacts` | every 4 hours | `sync-xero-contacts` |
 | `process-daily-automated-emails` | 19:00 daily | `process-automated-emails` |
-| `process-daily-automated-emails` | 19:00 daily | `process-automated-emails` |
 | `process-daily-automated-reports` | 20:00 daily | `process-scheduled-reports` |
 | `process-post-booking-emails-daily` | 20:00 daily | `process-post-booking-emails` |
 | `refresh-tour-alerts-weekly` | Sunday 00:00 | `refresh-tour-alerts` |
@@ -64,7 +63,7 @@ Changing anything here changes several endpoints at once.
 Notes and cautions:
 
 - Daily times are UTC. 19:00/20:00 UTC lands in the following Australian morning; that is intentional for the daily send window but is easy to misread.
-- `sync-keap-tags-nightly` points at a function name that is **not** present in `supabase/functions/`. Keap is contact-matching only now, so this job most likely fails silently every night. Recorded as a known issue in [25-known-issues-debt.md](25-known-issues-debt.md) — not changed here.
+- The old `sync-keap-tags-nightly` job was unscheduled on 18/09/2026 and its stale deployed function deleted; Keap is gone from the system entirely.
 - Authorisation headers are embedded in each job's SQL command. Rotating keys requires updating every job row.
 - `purge-passport-data` exists as a function; confirm whether it is scheduled before relying on automatic passport purging (`UNVERIFIED`).
 
