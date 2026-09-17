@@ -825,22 +825,11 @@ export default function PublicForm() {
                   </div>
                 )}
 
-                {shows("consent") && (
-                  <label className="flex items-start gap-2 text-sm">
-                    <Checkbox
-                      checked={form.consent}
-                      onCheckedChange={(v) => setForm({ ...form, consent: !!v })}
-                    />
-                    <span className="text-muted-foreground">
-                      {page.consent_text ||
-                        standardLabel(
-                          "consent",
-                          sf,
-                          "Yes, I'd like to receive tour news and offers. You can unsubscribe at any time."
-                        )}
-                    </span>
-                  </label>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {page.consent_text ||
+                    "By submitting this form you agree to receive marketing emails. You can unsubscribe anytime."}
+                </p>
+
 
 
                 {/* Honeypot — hidden from real visitors */}
