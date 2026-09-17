@@ -94,13 +94,21 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
           const query = supabase
             .from("bookings")
             .select(
-              "id, status, tours(name), customers!lead_passenger_id(first_name, last_name)"
+              term
+                ? "id, status, tours(name), customers!lead_passenger_id!inner(first_name, last_name, email)"
+                : "id, status, tours(name), customers!lead_passenger_id(first_name, last_name, email)"
             )
             .order("created_at", { ascending: false })
             .limit(20);
+          if (term) {
+            query.or(
+              `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`,
+              { referencedTable: "customers" }
+            );
+          }
           const { data, error } = await query;
           if (error) throw error;
-          const rows = (data || []).map((b: any) => {
+          return (data || []).map((b: any) => {
             const lead = b.customers
               ? `${b.customers.first_name || ""} ${b.customers.last_name || ""}`.trim()
               : "";
@@ -110,13 +118,6 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
               sublabel: [b.tours?.name, b.status].filter(Boolean).join(" · "),
             };
           });
-          if (!term) return rows;
-          const t = term.toLowerCase();
-          return rows.filter(
-            (r) =>
-              r.label.toLowerCase().includes(t) ||
-              (r.sublabel || "").toLowerCase().includes(t)
-          );
         }
         case "campaign": {
           const query = supabase
