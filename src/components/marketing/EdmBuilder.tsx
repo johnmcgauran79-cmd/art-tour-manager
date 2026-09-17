@@ -1956,7 +1956,7 @@ function BlockInspector({
         </>
       )}
 
-      {(t === "heading" || t === "button" || t === "image" || t === "divider" || t === "social" || t === "text") && (
+      {(t === "heading" || t === "button" || t === "image" || t === "divider" || t === "social" || t === "text" || t === "video") && (
         <AlignField
           value={block.align || (t === "text" ? undefined : "left")}
           onChange={(align) => onChange({ align })}
