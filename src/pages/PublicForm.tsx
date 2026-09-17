@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { format } from "date-fns";
 import { CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import { parseFormFields } from "@/lib/marketing/formFields";
 import {
   CONTACT_METHOD_OPTIONS,
   DEFAULT_BEDDING_OPTIONS,
+  DEFAULT_HEAR_ABOUT_OPTIONS,
   DEFAULT_ROOM_TYPES,
   resolveStandardFields,
   standardLabel,
@@ -52,6 +52,7 @@ interface PublicPage {
   field_config: unknown;
   extra_tour_options: string[] | null;
   room_type_options: string[] | null;
+  hear_about_options: string[] | null;
   form_type: "interest" | "booking";
   success_redirect_url: string | null;
   show_country: boolean | null;
@@ -113,6 +114,7 @@ export default function PublicForm() {
     travellers: "",
     previous_traveller: "",
     preferred_contact: "",
+    hear_about: "",
     room_type: "",
     bedding: "",
     emergency_contact: "",
@@ -188,6 +190,9 @@ export default function PublicForm() {
     standardLabel(key, sf, fallback) + (sf[key]?.required ? " *" : "");
 
   const roomTypes = page?.room_type_options?.length ? page.room_type_options : DEFAULT_ROOM_TYPES;
+  const hearAboutOptions = page?.hear_about_options?.length
+    ? page.hear_about_options
+    : DEFAULT_HEAR_ABOUT_OPTIONS;
   const extraTourOptions = page?.extra_tour_options || [];
   const multipleTours = isBooking
     ? page?.allow_multiple_tours === true
@@ -219,6 +224,7 @@ export default function PublicForm() {
       travellers: form.travellers,
       previous_traveller: form.previous_traveller,
       preferred_contact: form.preferred_contact,
+      hear_about: form.hear_about,
       tours: [...selectedTours, ...extraTours].length ? "yes" : "",
       passengers: pax.some((p) => p.first_name.trim()) ? "yes" : "",
       room_type: form.room_type,
@@ -284,6 +290,9 @@ export default function PublicForm() {
               }
             : {}),
           answers: [
+            ...(form.hear_about
+              ? [{ label: "How did you find out about us?", value: form.hear_about }]
+              : []),
             ...(extraTours.length
               ? [{ label: "Other tours selected", value: extraTours.join(", ") }]
               : []),
@@ -495,6 +504,28 @@ export default function PublicForm() {
                       </Select>
                     </div>
                   )}
+                  {shows("hear_about") && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="hear_about">
+                        {label("hear_about", "How did you find out about us?")}
+                      </Label>
+                      <Select
+                        value={form.hear_about}
+                        onValueChange={(hear_about) => setForm({ ...form, hear_about })}
+                      >
+                        <SelectTrigger id="hear_about">
+                          <SelectValue placeholder="Please choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hearAboutOptions.map((o) => (
+                            <SelectItem key={o} value={o}>
+                              {o}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {shows("preferred_contact") && (
                     <div className="space-y-1.5">
                       <Label htmlFor="preferred_contact">
@@ -538,14 +569,7 @@ export default function PublicForm() {
                             checked={selectedTours.includes(t.id)}
                             onCheckedChange={() => toggleTour(t.id)}
                           />
-                          <span>
-                            {t.name}
-                            {t.start_date && (
-                              <span className="block text-xs text-muted-foreground">
-                                From {format(new Date(t.start_date), "dd/MM/yyyy")}
-                              </span>
-                            )}
-                          </span>
+                          <span>{t.name}</span>
                         </label>
                       ))}
                       {extraTourOptions.map((name) => (

@@ -14,6 +14,7 @@ export type StandardFieldKey =
   | "travellers"
   | "previous_traveller"
   | "preferred_contact"
+  | "hear_about"
   | "tours"
   | "passengers"
   | "passenger_dietary"
@@ -57,6 +58,7 @@ export const STANDARD_FIELDS: StandardFieldDef[] = [
   { key: "travellers", label: "How many travelling?", forms: "both", requirable: true, defaultEnabled: true, legacyToggle: "show_travellers", group: "About them" },
   { key: "previous_traveller", label: "Travelled with us before?", forms: "both", requirable: true, defaultEnabled: true, legacyToggle: "show_previous_traveller", group: "About them" },
   { key: "preferred_contact", label: "Preferred contact method", forms: "both", requirable: true, defaultEnabled: false, legacyToggle: "show_preferred_contact", group: "About them" },
+  { key: "hear_about", label: "How did you find out about us?", forms: "both", requirable: true, defaultEnabled: true, group: "About them" },
   { key: "tours", label: "Tours", forms: "both", requirable: true, defaultEnabled: true, group: "Tours" },
   { key: "passengers", label: "Passengers", forms: "booking", requirable: true, defaultEnabled: true, group: "Booking details" },
   { key: "passenger_dietary", label: "Dietary requirements", forms: "booking", defaultEnabled: true, group: "Booking details" },
@@ -71,6 +73,27 @@ export const STANDARD_FIELDS: StandardFieldDef[] = [
 export const DEFAULT_ROOM_TYPES = ["Single", "Twin share", "Double", "Triple"];
 export const DEFAULT_BEDDING_OPTIONS = ["Single beds", "Double bed", "King bed"];
 export const CONTACT_METHOD_OPTIONS = ["Email", "Phone call", "Text message"];
+
+/** Default "How did you find out about us?" choices; editable per form. */
+export const DEFAULT_HEAR_ABOUT_OPTIONS = [
+  "Previous ART Client",
+  "Friend",
+  "Google Search",
+  "Facebook",
+  "Instagram",
+  "Twitter",
+  "Australian Turf Club",
+  "Brisbane Racing Club",
+  "Belhus Racing",
+  "First Light Racing",
+  "Melbourne Racing Club",
+  "Moonee Valley Race Club",
+  "Perth Racing",
+  "Roll the Dice",
+  "Victoria Racing Club",
+  "Women in Racing NT",
+  "Other",
+];
 
 export const fieldsForForm = (formType: string | null | undefined) =>
   STANDARD_FIELDS.filter(

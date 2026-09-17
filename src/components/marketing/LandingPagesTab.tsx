@@ -49,7 +49,7 @@ import {
   type LandingPage,
 } from "@/hooks/useMarketing";
 import { parseFormFields } from "@/lib/marketing/formFields";
-import { DEFAULT_ROOM_TYPES, parseOptionLines } from "@/lib/marketing/standardFields";
+import { DEFAULT_HEAR_ABOUT_OPTIONS, DEFAULT_ROOM_TYPES, parseOptionLines } from "@/lib/marketing/standardFields";
 import { FormFieldsEditor } from "./FormFieldsEditor";
 import { StandardFieldsEditor } from "./StandardFieldsEditor";
 
@@ -654,6 +654,23 @@ export function LandingPagesTab() {
                 page={editing}
                 onChange={(field_config) => setEditing({ ...editing, field_config })}
               />
+
+              <div className="space-y-1.5">
+                <Label>
+                  "How did you find out about us?" choices{" "}
+                  <span className="text-xs text-muted-foreground">(one per line)</span>
+                </Label>
+                <Textarea
+                  rows={6}
+                  value={(editing.hear_about_options || DEFAULT_HEAR_ABOUT_OPTIONS).join("\n")}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      hear_about_options: parseOptionLines(e.target.value),
+                    })
+                  }
+                />
+              </div>
 
               {editing.form_type === "booking" && (
                 <div className="grid gap-3 sm:grid-cols-2">

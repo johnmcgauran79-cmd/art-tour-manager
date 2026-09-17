@@ -96,6 +96,8 @@ export interface LandingPage {
   extra_tour_options: string[];
   /** Room type choices offered on booking forms. */
   room_type_options: string[];
+  /** "How did you find out about us?" choices. */
+  hear_about_options: string[];
 }
 
 export interface AutomationRule {

@@ -4360,6 +4360,7 @@ export type Database = {
           followup_due_days: number
           form_type: string
           headline: string | null
+          hear_about_options: string[] | null
           hero_image_url: string | null
           id: string
           is_active: boolean
@@ -4403,6 +4404,7 @@ export type Database = {
           followup_due_days?: number
           form_type?: string
           headline?: string | null
+          hear_about_options?: string[] | null
           hero_image_url?: string | null
           id?: string
           is_active?: boolean
@@ -4446,6 +4448,7 @@ export type Database = {
           followup_due_days?: number
           form_type?: string
           headline?: string | null
+          hear_about_options?: string[] | null
           hero_image_url?: string | null
           id?: string
           is_active?: boolean
