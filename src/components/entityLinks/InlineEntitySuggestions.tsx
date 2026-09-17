@@ -13,6 +13,7 @@ export interface InlineSuggestionItem {
 }
 
 const ICON: Record<EntityType, typeof Briefcase> = {
+  campaign: Megaphone,
   booking: Briefcase,
   hotel: BedDouble,
   activity: ActivityIcon,
@@ -162,7 +163,7 @@ export const InlineEntitySuggestions = ({
     // Interleave types in priority order so a relevant booking sits next to a tour.
     const order: EntityType[] = ["booking", "tour", "contact", "activity", "hotel"];
     const grouped: Record<EntityType, InlineSuggestionItem[]> = {
-      booking: [], tour: [], contact: [], activity: [], hotel: [], lead: [],
+      booking: [], tour: [], contact: [], activity: [], hotel: [], lead: [], campaign: [],
     };
     queries.forEach((q) => {
       (q.data || []).forEach((it) => grouped[it.type].push(it));
