@@ -415,7 +415,7 @@ export function EdmCanvas({
       if (!el || el !== (e.target as HTMLElement)) return;
       // Keep the edit alive while the colour picker is open.
       if (holdEditRef.current) return;
-      el.classList.remove("edm-readable");
+      el.classList.remove("edm-readable-light", "edm-readable-dark");
       commitEdit();
     };
 
