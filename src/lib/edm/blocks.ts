@@ -39,6 +39,7 @@ export type EdmBlockType =
   | "text"
   | "image"
   | "imageText"
+  | "video"
   | "button"
   | "social"
   | "tourCard"
@@ -263,6 +264,25 @@ export const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string; slug: str
   { value: "tiktok", label: "TikTok", slug: "tiktok" },
 ];
 
+/**
+ * Pull the video id out of any common YouTube address (watch, youtu.be,
+ * embed, shorts). Returns "" when the address isn't a YouTube link.
+ */
+export const youtubeVideoId = (url: string): string => {
+  const value = (url || "").trim();
+  if (!value) return "";
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{6,})/,
+    /youtu\.be\/([A-Za-z0-9_-]{6,})/,
+    /youtube\.com\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{6,})/,
+  ];
+  for (const re of patterns) {
+    const m = value.match(re);
+    if (m) return m[1];
+  }
+  return /^[A-Za-z0-9_-]{8,}$/.test(value) ? value : "";
+};
+
 export const newCell = (blocks: EdmBlock[] = []): EdmCell => ({
   id: crypto.randomUUID(),
   blocks,
@@ -315,6 +335,16 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         imageUrl: "",
         imageAlt: "",
         html: "<p>Describe this tour or offer.</p>",
+      };
+    case "video":
+      return {
+        id,
+        type,
+        linkUrl: "",
+        imageUrl: "",
+        imageAlt: "Watch the video",
+        align: "center",
+        radius: 6,
       };
     case "button":
       return { id, type, text: "Register your interest", linkUrl: "", align: "center" };
@@ -385,6 +415,7 @@ export const blockLabel: Record<EdmBlockType, string> = {
   text: "Text",
   image: "Image",
   imageText: "Image + text",
+  video: "Video (YouTube)",
   button: "Button",
   social: "Social icons",
   tourCard: "Tour card",
@@ -481,6 +512,9 @@ export const blockSummary = (b: EdmBlock): string => {
       break;
     case "spacer":
       raw = b.height ? `${b.height}px` : "";
+      break;
+    case "video":
+      raw = plain(b.text) || youtubeVideoId(b.linkUrl) || "Video";
       break;
     default:
       raw = "";
@@ -1115,6 +1149,27 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       )}" width="${attrW}" style="display:block;width:${widthCss};max-width:${maxW};${crop}border:0;border-radius:${radius}px;margin:${
         align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"
       };" /></a></td></tr>`;
+    }
+    case "video": {
+      const url = (b.linkUrl || "").trim();
+      const vid = youtubeVideoId(url);
+      const thumb = b.imageUrl || (vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : "");
+      if (!thumb) return "";
+      const watch = url || (vid ? `https://www.youtube.com/watch?v=${vid}` : "#");
+      const radius = b.radius != null ? b.radius : 6;
+      const label = b.text || "Watch the video";
+      return `<tr><td style="padding:${pad(ctx, "12px", b)};text-align:${align};">
+  <a href="${esc(watch)}" style="text-decoration:none;color:${primary};">
+    <img src="${esc(thumb)}" alt="${esc(b.imageAlt || label)}" width="800" style="display:block;width:100%;max-width:100%;height:auto;border:0;border-radius:${radius}px;margin:${
+      align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"
+    };" />
+    <span style="display:inline-block;margin-top:10px;font-family:${fontStack(
+      b,
+      FONT_BODY
+    )};font-size:${b.fontSize || 15}px;font-weight:600;color:${b.color || primary};">&#9654;&nbsp;${esc(
+      label
+    )}</span>
+  </a></td></tr>`;
     }
     case "imageText":
       return `<tr><td style="padding:${pad(ctx, "12px", b)};">

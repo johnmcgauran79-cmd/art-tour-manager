@@ -74,19 +74,25 @@ const CANVAS_CSS = `
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
   [data-edm-edit]{cursor:text;}
   [data-edm-edit]:focus{outline:2px solid #2563eb;outline-offset:2px;border-radius:2px;}
-  /* While you type, very light text on a light background (or dark on dark) is
-     temporarily shown in a readable colour so it can be seen — the real colour
-     is used in the preview and the sent email. */
-  [data-edm-edit].edm-readable,[data-edm-edit].edm-readable *{color:#111827!important;}
-  [data-edm-edit].edm-readable{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
+  /* While you type, text that is nearly the same colour as its background gets a
+     temporary backdrop so it can be seen. The text keeps its own colour — the
+     colour you choose is always the colour that shows. */
+  [data-edm-edit].edm-readable-light{background:#fffbe6!important;box-shadow:0 0 0 2px #fde68a;}
+  [data-edm-edit].edm-readable-dark{background:#111827!important;box-shadow:0 0 0 2px #374151;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
-  /* Phone view: keep the whole email inside the narrow frame while editing. */
+  /* Phone view: reflow the whole email inside the narrow frame while editing. */
   html.edm-mobile,html.edm-mobile body{overflow-x:hidden!important;}
+  html.edm-mobile *{min-width:0!important;}
   html.edm-mobile table{max-width:100%!important;}
-  html.edm-mobile img{max-width:100%!important;height:auto!important;}
-  html.edm-mobile td{word-break:break-word;}
+  html.edm-mobile table[width]{width:100%!important;}
+  html.edm-mobile td,html.edm-mobile th,html.edm-mobile div,html.edm-mobile p{
+    max-width:100%!important;white-space:normal!important;overflow-wrap:break-word;word-break:normal;}
+  html.edm-mobile td[width]{width:auto!important;}
+  html.edm-mobile img{max-width:100%!important;width:auto!important;height:auto!important;}
 `;
+
+const MOBILE_FRAME_WIDTH = 390;
 
 
 /** Parse a computed rgb()/rgba() colour into channels. */
@@ -124,18 +130,21 @@ const effectiveBg = (el: HTMLElement): [number, number, number] => {
 /**
  * Text that is nearly the same colour as its background can't be seen while
  * typing (white copy on a white block, for example). While the element is
- * focused we show it in a readable colour; the saved colour is untouched.
+ * focused we put a contrasting backdrop behind it — the text keeps the exact
+ * colour that was chosen, both here and in the sent email.
  */
 const applyReadableColour = (el: HTMLElement) => {
   const win = el.ownerDocument?.defaultView;
   if (!win) return;
+  el.classList.remove("edm-readable-light", "edm-readable-dark");
   const fg = rgbOf(win.getComputedStyle(el).color);
   if (!fg) return;
   const bgLum = luminance(effectiveBg(el));
   const fgLum = luminance(fg);
   const ratio =
     (Math.max(bgLum, fgLum) + 0.05) / (Math.min(bgLum, fgLum) + 0.05);
-  el.classList.toggle("edm-readable", ratio < 2.2);
+  if (ratio >= 2.2) return;
+  el.classList.add(fgLum > 0.4 ? "edm-readable-dark" : "edm-readable-light");
 };
 
 /**
@@ -174,6 +183,16 @@ export function EdmCanvas({
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
   const [frameHeight, setFrameHeight] = useState(900);
+  /**
+   * Phone view: the frame is 390px wide. If a design still can't reflow that
+   * narrow (a pasted design with fixed widths, for example) the frame is made
+   * as wide as the content needs and then shrunk to fit, so the whole email is
+   * always visible in the one window.
+   */
+  const [frameWidth, setFrameWidth] = useState(MOBILE_FRAME_WIDTH);
+  const [scale, setScale] = useState(1);
+  const scaleRef = useRef(1);
+  scaleRef.current = scale;
 
   // Handlers change often; keep them out of the document-writing effect.
   const cb = useRef({
@@ -203,11 +222,12 @@ export function EdmCanvas({
     const frame = frameRef.current;
     if (!el || !frame) return null;
     const r = el.getBoundingClientRect();
+    const s = scaleRef.current;
     return {
-      top: frame.offsetTop + r.top,
-      left: frame.offsetLeft + r.left,
-      width: r.width,
-      height: r.height,
+      top: frame.offsetTop + r.top * s,
+      left: frame.offsetLeft + r.left * s,
+      width: r.width * s,
+      height: r.height * s,
     };
   }, []);
 
@@ -215,13 +235,27 @@ export function EdmCanvas({
   const syncHeight = useCallback(() => {
     const d = frameRef.current?.contentDocument;
     if (!d) return;
+    if (device === "mobile") {
+      // Widen the frame only if the email genuinely cannot reflow to 390px.
+      const needed = Math.max(
+        d.documentElement?.scrollWidth || 0,
+        d.body?.scrollWidth || 0,
+        MOBILE_FRAME_WIDTH
+      );
+      const width = needed > MOBILE_FRAME_WIDTH + 2 ? needed : MOBILE_FRAME_WIDTH;
+      setFrameWidth((prev) => (Math.abs(prev - width) > 2 ? width : prev));
+      setScale(Math.min(1, MOBILE_FRAME_WIDTH / width));
+    } else {
+      setFrameWidth(MOBILE_FRAME_WIDTH);
+      setScale(1);
+    }
     const h = Math.max(
       d.documentElement?.scrollHeight || 0,
       d.body?.scrollHeight || 0,
       320
     );
     setFrameHeight((prev) => (Math.abs(prev - h) > 2 ? h : prev));
-  }, []);
+  }, [device]);
 
   /** Replace the iframe document. */
   const writeDoc = useCallback(
@@ -406,7 +440,7 @@ export function EdmCanvas({
       if (!el || el !== (e.target as HTMLElement)) return;
       // Keep the edit alive while the colour picker is open.
       if (holdEditRef.current) return;
-      el.classList.remove("edm-readable");
+      el.classList.remove("edm-readable-light", "edm-readable-dark");
       commitEdit();
     };
 
@@ -553,26 +587,53 @@ export function EdmCanvas({
     }
     d.execCommand(command, false, value);
     const el = editingRef.current?.el;
-    if (el) setTextRect(rectOf(el));
+    if (el) {
+      // A new colour may need a different backdrop to stay readable.
+      applyReadableColour(el);
+      setTextRect(rectOf(el));
+    }
   };
 
   const isRichText = editingRef.current?.field === "html";
 
   return (
-    <div className="relative overflow-x-auto rounded-lg border bg-muted/40 p-2">
+    <div
+      className={cn(
+        "relative rounded-lg border bg-muted/40 p-2",
+        device === "mobile" ? "overflow-x-hidden" : "overflow-x-auto"
+      )}
+    >
       <div className={cn("flex justify-center", device === "desktop" && "min-w-[720px]")}>
-        <iframe
-          ref={frameRef}
-          title="Email editing canvas"
-          scrolling="no"
-          style={{ height: frameHeight }}
-          // Same-origin so the document can be edited; scripts stay blocked.
-          sandbox="allow-same-origin"
-          className={cn(
-            "rounded bg-background",
-            device === "mobile" ? "w-[390px] shrink-0" : "w-full min-w-[720px]"
-          )}
-        />
+        <div
+          className={device === "mobile" ? "shrink-0 overflow-hidden" : "w-full"}
+          style={
+            device === "mobile"
+              ? { width: MOBILE_FRAME_WIDTH, height: Math.round(frameHeight * scale) }
+              : undefined
+          }
+        >
+          <iframe
+            ref={frameRef}
+            title="Email editing canvas"
+            scrolling="no"
+            style={
+              device === "mobile"
+                ? {
+                    height: frameHeight,
+                    width: frameWidth,
+                    transform: scale < 1 ? `scale(${scale})` : undefined,
+                    transformOrigin: "top left",
+                  }
+                : { height: frameHeight }
+            }
+            // Same-origin so the document can be edited; scripts stay blocked.
+            sandbox="allow-same-origin"
+            className={cn(
+              "rounded bg-background",
+              device === "mobile" ? "shrink-0" : "w-full min-w-[720px]"
+            )}
+          />
+        </div>
       </div>
 
       {/* Selected block actions */}

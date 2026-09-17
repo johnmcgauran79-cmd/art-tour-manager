@@ -4,6 +4,7 @@ import {
   LayoutGrid,
   Minus,
   MousePointerClick,
+  PlayCircle,
   Quote,
   Rows3,
   Share2,
@@ -22,6 +23,7 @@ const CONTENT: EdmPaletteType[] = [
   "text",
   "image",
   "imageText",
+  "video",
   "button",
   "divider",
   "spacer",
@@ -41,6 +43,8 @@ const iconFor = (type: EdmPaletteType) => {
     case "image":
     case "imageText":
       return ImageIcon;
+    case "video":
+      return PlayCircle;
     case "button":
       return MousePointerClick;
     case "divider":
