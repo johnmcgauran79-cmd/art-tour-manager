@@ -183,6 +183,16 @@ export function EdmCanvas({
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
   const [frameHeight, setFrameHeight] = useState(900);
+  /**
+   * Phone view: the frame is 390px wide. If a design still can't reflow that
+   * narrow (a pasted design with fixed widths, for example) the frame is made
+   * as wide as the content needs and then shrunk to fit, so the whole email is
+   * always visible in the one window.
+   */
+  const [frameWidth, setFrameWidth] = useState(MOBILE_FRAME_WIDTH);
+  const [scale, setScale] = useState(1);
+  const scaleRef = useRef(1);
+  scaleRef.current = scale;
 
   // Handlers change often; keep them out of the document-writing effect.
   const cb = useRef({
