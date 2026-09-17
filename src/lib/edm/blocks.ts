@@ -908,8 +908,11 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
     rules.push(`tr.${cls}-m>td{padding:${spacingCss(m.margin!)}!important;}`);
   }
 
-  if (b.type === "text" && m.lineHeight) {
-    rules.push(`tr.${cls}>td div{line-height:${m.lineHeight}!important;}`);
+  if (b.type === "text" && (m.fontSize || m.lineHeight)) {
+    const textRules: string[] = [];
+    if (m.fontSize) textRules.push(`font-size:${m.fontSize}px!important`);
+    if (m.lineHeight) textRules.push(`line-height:${m.lineHeight}!important`);
+    rules.push(`tr.${cls}>td.edm-body-text>div{${textRules.join(";")};}`);
   }
 
   if (b.type === "button") {
