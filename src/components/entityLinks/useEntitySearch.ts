@@ -137,12 +137,22 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
         case "lead": {
           const query = supabase
             .from("leads")
-            .select("id, stage, created_at, customers!leads_customer_id_fkey(first_name, last_name, email)")
+            .select(
+              term
+                ? "id, stage, created_at, customers!leads_customer_id_fkey!inner(first_name, last_name, email)"
+                : "id, stage, created_at, customers!leads_customer_id_fkey(first_name, last_name, email)"
+            )
             .order("created_at", { ascending: false })
             .limit(20);
+          if (term) {
+            query.or(
+              `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`,
+              { referencedTable: "customers" }
+            );
+          }
           const { data, error } = await query;
           if (error) throw error;
-          const rows = (data || []).map((l: any) => ({
+          return (data || []).map((l: any) => ({
             id: l.id,
             label:
               `${l.customers?.first_name || ""} ${l.customers?.last_name || ""}`.trim() ||
@@ -150,13 +160,6 @@ export const useEntitySearch = (type: EntityType, q: string, enabled = true) => 
               "Enquiry",
             sublabel: [l.customers?.email, l.stage].filter(Boolean).join(" · ") || undefined,
           }));
-          if (!term) return rows;
-          const t = term.toLowerCase();
-          return rows.filter(
-            (r) =>
-              r.label.toLowerCase().includes(t) ||
-              (r.sublabel || "").toLowerCase().includes(t)
-          );
         }
       }
 
