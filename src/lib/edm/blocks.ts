@@ -39,6 +39,7 @@ export type EdmBlockType =
   | "text"
   | "image"
   | "imageText"
+  | "video"
   | "button"
   | "social"
   | "tourCard"
@@ -316,6 +317,16 @@ export const newBlock = (type: EdmBlockType): EdmBlock => {
         imageAlt: "",
         html: "<p>Describe this tour or offer.</p>",
       };
+    case "video":
+      return {
+        id,
+        type,
+        linkUrl: "",
+        imageUrl: "",
+        imageAlt: "Watch the video",
+        align: "center",
+        radius: 6,
+      };
     case "button":
       return { id, type, text: "Register your interest", linkUrl: "", align: "center" };
     case "social":
@@ -385,6 +396,7 @@ export const blockLabel: Record<EdmBlockType, string> = {
   text: "Text",
   image: "Image",
   imageText: "Image + text",
+  video: "Video (YouTube)",
   button: "Button",
   social: "Social icons",
   tourCard: "Tour card",
