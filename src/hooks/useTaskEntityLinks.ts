@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EntityType } from "@/lib/entityLinks";
 
@@ -7,7 +7,7 @@ export interface TaskEntityLinkRow {
   task_id: string;
   entity_type: EntityType;
   entity_id: string;
-  source: "description" | "comment";
+  source: "description" | "comment" | "manual";
   source_id: string | null;
   created_at: string;
 }
@@ -53,5 +53,40 @@ export const useTasksLinkedToEntity = (entityType: EntityType, entityId: string 
       return tasks || [];
     },
     enabled: !!entityId,
+  });
+};
+/** Attach a record to a task by hand (source = "manual"). */
+export const useAddTaskEntityLink = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { taskId: string; entityType: EntityType; entityId: string }) => {
+      const { error } = await supabase.from("task_entity_links").insert({
+        task_id: input.taskId,
+        entity_type: input.entityType,
+        entity_id: input.entityId,
+        source: "manual",
+      });
+      // Ignore the duplicate-key case: the record is already linked.
+      if (error && error.code !== "23505") throw error;
+    },
+    onSuccess: (_d, v) => {
+      queryClient.invalidateQueries({ queryKey: ["task-entity-links", v.taskId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks-linked-to-entity"] });
+    },
+  });
+};
+
+/** Remove a hand-added link from a task. */
+export const useRemoveTaskEntityLink = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; taskId: string }) => {
+      const { error } = await supabase.from("task_entity_links").delete().eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      queryClient.invalidateQueries({ queryKey: ["task-entity-links", v.taskId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks-linked-to-entity"] });
+    },
   });
 };

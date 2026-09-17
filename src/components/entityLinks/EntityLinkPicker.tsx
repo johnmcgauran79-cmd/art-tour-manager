@@ -10,7 +10,9 @@ import { useEntitySearch, type EntitySearchResult } from "./useEntitySearch";
 
 interface EntityLinkPickerProps {
   /** Called with the token to insert at the current cursor position. */
-  onInsert: (token: string) => void;
+  onInsert?: (token: string) => void;
+  /** Called with the picked record itself — used when attaching a link directly. */
+  onPickEntity?: (picked: { type: EntityType; id: string; label: string }) => void;
   /** Optional label for the trigger button. Defaults to "Link". */
   triggerLabel?: string;
   /** Trigger button size. */
@@ -79,6 +81,7 @@ const SearchPanel = ({
 
 export const EntityLinkPicker = ({
   onInsert,
+  onPickEntity,
   triggerLabel = "Link",
   size = "sm",
   variant = "outline",
@@ -88,7 +91,8 @@ export const EntityLinkPicker = ({
   const [tab, setTab] = useState<EntityType>("booking");
 
   const handlePick = (type: EntityType, r: SearchResult) => {
-    onInsert(buildEntityToken(type, r.id, r.label));
+    if (onPickEntity) onPickEntity({ type, id: r.id, label: r.label });
+    else onInsert?.(buildEntityToken(type, r.id, r.label));
     setOpen(false);
   };
 
