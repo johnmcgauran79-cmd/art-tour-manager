@@ -9657,6 +9657,7 @@ export type Database = {
         | "tour"
         | "contact"
         | "lead"
+        | "campaign"
       task_notif_channel: "off" | "email" | "teams" | "both"
       task_priority: "low" | "medium" | "high" | "critical"
       task_status:
@@ -9917,6 +9918,7 @@ export const Constants = {
         "tour",
         "contact",
         "lead",
+        "campaign",
       ],
       task_notif_channel: ["off", "email", "teams", "both"],
       task_priority: ["low", "medium", "high", "critical"],
