@@ -568,12 +568,8 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
                   brandId: (editing.brand_id as string) || null,
                 });
                 setTestEmail(user?.email || "");
-                // Close the editor first so the test dialog isn't trapped behind it.
-                setOpen(false);
-                setTimeout(() => {
-                  document.body.style.pointerEvents = "";
-                  setTestOpen(true);
-                }, 150);
+                // Keep the editor open behind it so editing can continue afterwards.
+                setTestOpen(true);
               }}
 
             >
