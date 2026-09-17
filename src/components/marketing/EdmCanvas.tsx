@@ -222,11 +222,12 @@ export function EdmCanvas({
     const frame = frameRef.current;
     if (!el || !frame) return null;
     const r = el.getBoundingClientRect();
+    const s = scaleRef.current;
     return {
-      top: frame.offsetTop + r.top,
-      left: frame.offsetLeft + r.left,
-      width: r.width,
-      height: r.height,
+      top: frame.offsetTop + r.top * s,
+      left: frame.offsetLeft + r.left * s,
+      width: r.width * s,
+      height: r.height * s,
     };
   }, []);
 
@@ -234,13 +235,27 @@ export function EdmCanvas({
   const syncHeight = useCallback(() => {
     const d = frameRef.current?.contentDocument;
     if (!d) return;
+    if (device === "mobile") {
+      // Widen the frame only if the email genuinely cannot reflow to 390px.
+      const needed = Math.max(
+        d.documentElement?.scrollWidth || 0,
+        d.body?.scrollWidth || 0,
+        MOBILE_FRAME_WIDTH
+      );
+      const width = needed > MOBILE_FRAME_WIDTH + 2 ? needed : MOBILE_FRAME_WIDTH;
+      setFrameWidth((prev) => (Math.abs(prev - width) > 2 ? width : prev));
+      setScale(Math.min(1, MOBILE_FRAME_WIDTH / width));
+    } else {
+      setFrameWidth(MOBILE_FRAME_WIDTH);
+      setScale(1);
+    }
     const h = Math.max(
       d.documentElement?.scrollHeight || 0,
       d.body?.scrollHeight || 0,
       320
     );
     setFrameHeight((prev) => (Math.abs(prev - h) > 2 ? h : prev));
-  }, []);
+  }, [device]);
 
   /** Replace the iframe document. */
   const writeDoc = useCallback(
