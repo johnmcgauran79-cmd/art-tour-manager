@@ -22,6 +22,16 @@ interface EntityLinkPickerProps {
 
 type SearchResult = EntitySearchResult;
 
+const searchNoun: Record<EntityType, string> = {
+  booking: "bookings",
+  hotel: "hotels",
+  activity: "activities",
+  tour: "tours",
+  contact: "contacts",
+  lead: "enquiries",
+  campaign: "email campaigns",
+};
+
 const SearchPanel = ({
   type,
   onPick,
@@ -37,7 +47,7 @@ const SearchPanel = ({
         autoFocus
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder={`Search ${type}s...`}
+        placeholder={`Search ${searchNoun[type]}...`}
         className="h-8"
       />
       <div className="max-h-64 overflow-y-auto space-y-0.5">
@@ -97,14 +107,16 @@ export const EntityLinkPicker = ({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="start">
         <Tabs value={tab} onValueChange={(v) => setTab(v as EntityType)}>
-          <TabsList className="grid grid-cols-5 h-8 mb-2">
+          <TabsList className="mb-2 grid h-auto grid-cols-4 gap-1">
             <TabsTrigger value="booking" className="text-xs px-1">Booking</TabsTrigger>
+            <TabsTrigger value="tour" className="text-xs px-1">Tour</TabsTrigger>
             <TabsTrigger value="hotel" className="text-xs px-1">Hotel</TabsTrigger>
             <TabsTrigger value="activity" className="text-xs px-1">Activity</TabsTrigger>
-            <TabsTrigger value="tour" className="text-xs px-1">Tour</TabsTrigger>
             <TabsTrigger value="contact" className="text-xs px-1">Contact</TabsTrigger>
+            <TabsTrigger value="lead" className="text-xs px-1">Enquiry</TabsTrigger>
+            <TabsTrigger value="campaign" className="text-xs px-1">Campaign</TabsTrigger>
           </TabsList>
-          {(["booking", "hotel", "activity", "tour", "contact"] as EntityType[]).map((t) => (
+          {(["booking", "tour", "hotel", "activity", "contact", "lead", "campaign"] as EntityType[]).map((t) => (
             <TabsContent key={t} value={t} className="mt-0">
               <SearchPanel type={t} onPick={(r) => handlePick(t, r)} />
             </TabsContent>
