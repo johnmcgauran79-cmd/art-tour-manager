@@ -2,7 +2,12 @@ import { useMemo } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useTaskEntityLinks, type TaskEntityLinkRow } from "@/hooks/useTaskEntityLinks";
+import {
+  useAddTaskEntityLink,
+  useRemoveTaskEntityLink,
+  useTaskEntityLinks,
+  type TaskEntityLinkRow,
+} from "@/hooks/useTaskEntityLinks";
 import { ENTITY_LABELS, entityLinkHref, type EntityType } from "@/lib/entityLinks";
 import { useEntityResolver } from "@/hooks/useEntityResolver";
 import {
@@ -15,7 +20,12 @@ import {
   AlertCircle,
   FileText,
   MessageSquare,
+  Megaphone,
+  X,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EntityLinkPicker } from "./EntityLinkPicker";
+import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -32,6 +42,7 @@ const entityIcon: Record<EntityType, typeof Briefcase> = {
   tour: MapPin,
   contact: User,
   lead: User,
+  campaign: Megaphone,
 };
 
 /**
@@ -94,6 +105,39 @@ interface TaskLinkedItemsPanelProps {
 
 export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
   const { data: links = [], isLoading } = useTaskEntityLinks(taskId);
+  const addLink = useAddTaskEntityLink();
+  const removeLink = useRemoveTaskEntityLink();
+  const { toast } = useToast();
+
+  const handlePick = async (picked: { type: EntityType; id: string; label: string }) => {
+    try {
+      await addLink.mutateAsync({
+        taskId,
+        entityType: picked.type,
+        entityId: picked.id,
+      });
+      toast({ title: "Linked", description: `${picked.label} is now linked to this task.` });
+    } catch (e: any) {
+      toast({
+        title: "Could not link that record",
+        description: e?.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemove = async (id: string, label: string) => {
+    try {
+      await removeLink.mutateAsync({ id, taskId });
+      toast({ title: "Link removed", description: `${label} is no longer linked.` });
+    } catch (e: any) {
+      toast({
+        title: "Could not remove the link",
+        description: e?.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   const refs = useMemo(
     () =>
       links.map((l) => ({
@@ -143,16 +187,37 @@ export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
   if (isLoading) {
     return <Skeleton className="h-12 w-full" />;
   }
+
+  const order: EntityType[] = [
+    "booking",
+    "tour",
+    "hotel",
+    "activity",
+    "contact",
+    "lead",
+    "campaign",
+  ];
+
+  const picker = (
+    <EntityLinkPicker
+      triggerLabel="Add link"
+      variant="outline"
+      size="sm"
+      onPickEntity={handlePick}
+    />
+  );
+
   if (unique.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground italic">
-        No linked records yet — type @-style references in the description or comments using the
-        Link picker.
-      </p>
+      <div className="space-y-2">
+        <p className="text-xs italic text-muted-foreground">
+          Nothing linked yet — search for a tour, booking, hotel, activity, contact, enquiry or
+          email campaign and it will appear here as a clickable link.
+        </p>
+        {picker}
+      </div>
     );
   }
-
-  const order: EntityType[] = ["booking", "tour", "hotel", "activity", "contact"];
 
   return (
     <div className="space-y-3">
@@ -212,11 +277,35 @@ export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
                   <span>{chip}</span>
                 );
 
+                const manual = g.sources.filter((s) => s.source === "manual");
+
                 return (
                   <li key={`${type}:${g.entity_id}`} className="flex flex-col gap-0.5">
-                    {chipNode}
+                    <div className="flex items-center gap-1">
+                      {chipNode}
+                      {manual.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                          title="Remove this link"
+                          onClick={() => handleRemove(manual[0].id, label)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground pl-1">
                       {g.sources.map((s) => {
+                        if (s.source === "manual") {
+                          return (
+                            <span key={s.id} className="inline-flex items-center gap-1">
+                              <Link2 className="h-2.5 w-2.5" />
+                              added to this task
+                            </span>
+                          );
+                        }
                         if (s.source === "description") {
                           return (
                             <span key={s.id} className="inline-flex items-center gap-1">
@@ -245,6 +334,7 @@ export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
           </div>
         );
       })}
+      {picker}
     </div>
   );
 };
