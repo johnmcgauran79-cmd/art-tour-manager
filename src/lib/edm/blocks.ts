@@ -1202,10 +1202,10 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       const py = b.btnPadY ?? 14;
       const radius = b.btnRadius ?? 6;
       const widthCss = b.btnFullWidth
-        ? "display:block;width:auto;text-align:center;"
+        ? "display:block;width:auto;max-width:100%;box-sizing:border-box;text-align:center;"
         : b.btnWidth
-          ? `display:inline-block;width:${b.btnWidth}px;text-align:center;`
-          : "display:inline-block;";
+          ? `display:inline-block;width:${b.btnWidth}px;max-width:100%;box-sizing:border-box;text-align:center;`
+          : "display:inline-block;max-width:100%;box-sizing:border-box;";
       return `<tr><td style="padding:${pad(ctx, "16px", b)};text-align:${b.align || "center"};">
   <a${edit("text")} href="${esc(
     b.linkUrl || "#"
@@ -1390,13 +1390,16 @@ ${BRAND_FONT_HEAD_HTML}
 <style>
 @media only screen and (max-width:600px){
   td.edm-col{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;}
-  /* Reflow, don't shrink: everything becomes fluid and body text stays at a
-     comfortable reading size, so wording simply runs to more lines. */
-  table{width:100%!important;max-width:100%!important;}
-  td,th{max-width:100%!important;white-space:normal!important;word-break:normal;overflow-wrap:break-word;}
+  /* A true mobile reflow: fixed table layout prevents email tables expanding
+     to their longest word, and border-box keeps padding inside the phone width. */
+  html,body{width:100%!important;max-width:100%!important;margin:0!important;overflow-x:hidden!important;}
+  *,*::before,*::after{min-width:0!important;box-sizing:border-box!important;}
+  table{width:100%!important;max-width:100%!important;table-layout:fixed!important;}
+  table[width]{width:100%!important;}
+  td,th,div,p,li,span,a{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word;}
+  td[width]{width:auto!important;}
   img{max-width:100%!important;height:auto!important;}
-  td.edm-body-text,td.edm-body-text div,td.edm-body-text p,td.edm-body-text li,td.edm-body-text span{
-    font-size:16px!important;line-height:1.65!important;}
+  td.edm-body-text,td.edm-body-text>div{font-size:16px!important;line-height:1.65!important;}
   ${mobileCss}
 }
 </style>

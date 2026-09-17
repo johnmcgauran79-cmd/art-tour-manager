@@ -81,21 +81,25 @@ const CANVAS_CSS = `
   [data-edm-edit].edm-readable-dark{background:#111827!important;box-shadow:0 0 0 2px #374151;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
-  /* Phone view: reflow the whole email inside the narrow frame while editing —
-     text keeps a comfortable reading size and simply runs to more lines. */
-  html.edm-mobile,html.edm-mobile body{overflow-x:hidden!important;}
-  html.edm-mobile *{min-width:0!important;}
-  html.edm-mobile table{width:100%!important;max-width:100%!important;}
+  /* Phone view is a genuine narrow layout, never a scaled desktop preview.
+     border-box is essential: without it a 100%-wide table cell plus its left
+     and right padding is wider than the phone and the email is clipped. */
+  html.edm-mobile,html.edm-mobile body{
+    width:100%!important;max-width:100%!important;margin:0!important;overflow-x:hidden!important;}
+  html.edm-mobile *,html.edm-mobile *::before,html.edm-mobile *::after{
+    min-width:0!important;box-sizing:border-box!important;}
+  html.edm-mobile table{
+    width:100%!important;max-width:100%!important;table-layout:fixed!important;}
   html.edm-mobile table[width]{width:100%!important;}
-  html.edm-mobile td,html.edm-mobile th,html.edm-mobile div,html.edm-mobile p{
-    max-width:100%!important;white-space:normal!important;overflow-wrap:break-word;word-break:normal;}
+  html.edm-mobile td,html.edm-mobile th,html.edm-mobile div,html.edm-mobile p,
+  html.edm-mobile li,html.edm-mobile span,html.edm-mobile a{
+    max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word;}
   html.edm-mobile td[width]{width:auto!important;}
   html.edm-mobile td.edm-col{display:block!important;width:100%!important;
     padding-left:0!important;padding-right:0!important;}
   html.edm-mobile img{max-width:100%!important;width:auto!important;height:auto!important;}
-  html.edm-mobile td.edm-body-text,html.edm-mobile td.edm-body-text div,
-  html.edm-mobile td.edm-body-text p,html.edm-mobile td.edm-body-text li,
-  html.edm-mobile td.edm-body-text span{font-size:16px!important;line-height:1.65!important;}
+  html.edm-mobile td.edm-body-text,html.edm-mobile td.edm-body-text>div{
+    font-size:16px!important;line-height:1.65!important;}
 `;
 
 const MOBILE_FRAME_WIDTH = 390;
@@ -189,16 +193,6 @@ export function EdmCanvas({
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
   const [frameHeight, setFrameHeight] = useState(900);
-  /**
-   * Phone view: the frame is 390px wide. If a design still can't reflow that
-   * narrow (a pasted design with fixed widths, for example) the frame is made
-   * as wide as the content needs and then shrunk to fit, so the whole email is
-   * always visible in the one window.
-   */
-  const [frameWidth, setFrameWidth] = useState(MOBILE_FRAME_WIDTH);
-  const [scale, setScale] = useState(1);
-  const scaleRef = useRef(1);
-  scaleRef.current = scale;
 
   // Handlers change often; keep them out of the document-writing effect.
   const cb = useRef({
@@ -228,12 +222,11 @@ export function EdmCanvas({
     const frame = frameRef.current;
     if (!el || !frame) return null;
     const r = el.getBoundingClientRect();
-    const s = scaleRef.current;
     return {
-      top: frame.offsetTop + r.top * s,
-      left: frame.offsetLeft + r.left * s,
-      width: r.width * s,
-      height: r.height * s,
+      top: frame.offsetTop + r.top,
+      left: frame.offsetLeft + r.left,
+      width: r.width,
+      height: r.height,
     };
   }, []);
 
@@ -243,8 +236,6 @@ export function EdmCanvas({
     if (!d) return;
     // Phone view is always a true 390px phone: the email reflows to that width
     // and text keeps its size, so nothing is ever shrunk to fit.
-    setFrameWidth(MOBILE_FRAME_WIDTH);
-    setScale(1);
     const h = Math.max(
       d.documentElement?.scrollHeight || 0,
       d.body?.scrollHeight || 0,
@@ -604,7 +595,7 @@ export function EdmCanvas({
           className={device === "mobile" ? "shrink-0 overflow-hidden" : "w-full"}
           style={
             device === "mobile"
-              ? { width: MOBILE_FRAME_WIDTH, height: Math.round(frameHeight * scale) }
+              ? { width: MOBILE_FRAME_WIDTH, height: frameHeight }
               : undefined
           }
         >
@@ -616,9 +607,7 @@ export function EdmCanvas({
               device === "mobile"
                 ? {
                     height: frameHeight,
-                    width: frameWidth,
-                    transform: scale < 1 ? `scale(${scale})` : undefined,
-                    transformOrigin: "top left",
+                    width: MOBILE_FRAME_WIDTH,
                   }
                 : { height: frameHeight }
             }
