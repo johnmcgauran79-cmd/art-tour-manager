@@ -200,11 +200,18 @@ export const SystemHealthCard = () => {
               const calls = (data.recent_http_failures || []).filter(
                 (f) => (f.status_code ?? 0) >= 400,
               );
-              if (calls.length === 0) return null;
+              const counted = data.http_failures_24h ?? calls.length;
+              if (counted === 0) return null;
               return (
                 <div>
                   <h4 className="mb-2 text-sm font-semibold">Background service calls with errors (24h)</h4>
                   <div className="space-y-1 rounded-md border p-3">
+                    {calls.length === 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {counted} error{counted === 1 ? "" : "s"} were counted, but the technical log entries have
+                        since been cleared. The daily health email lists the details.
+                      </div>
+                    )}
                     {calls.map((f, i) => (
                       <div key={i} className="text-xs text-muted-foreground">
                         <span className="font-medium text-foreground">{formatWhen(f.created)}</span>{" "}

@@ -25,6 +25,7 @@ export interface SystemHealth {
   problem_count: number;
   jobs: SystemHealthJob[];
   recent_http_failures: Array<{ created: string; status_code: number | null; error: string }>;
+  http_failures_24h?: number;
   backup: {
     last_run: {
       status: string;
