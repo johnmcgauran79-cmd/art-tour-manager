@@ -502,8 +502,11 @@ export const useSendCampaign = () => {
           remaining: number;
           total: number;
           quotaExceeded?: boolean;
+          dailyLimitReached?: boolean;
         };
         onProgress?.(res.total - res.remaining, res.total);
+        if (res.dailyLimitReached)
+          return { quotaExceeded: false, dailyLimitReached: true, remaining: res.remaining };
         if (res.quotaExceeded) return { quotaExceeded: true, remaining: res.remaining };
         if (res.remaining <= 0) break;
         if (++guard > 500) break;
