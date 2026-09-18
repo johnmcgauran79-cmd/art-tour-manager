@@ -398,10 +398,11 @@ export function CampaignsTab({
       await queue.mutateAsync({
         campaignId: saved.id,
         recipients: contacts.map((c) => ({
-          email: c.email,
+          email: c.email!,
           customer_id: c.id || null,
           first_name: c.first_name,
           last_name: c.last_name,
+          priority: warmupPriority(c),
         })),
       });
     } catch (e: any) {
