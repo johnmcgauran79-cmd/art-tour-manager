@@ -227,6 +227,12 @@ export function EdmBuilder({
 
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
+  /** The email's real content width, so the desktop canvas matches what is sent. */
+  const contentWidth = useMemo(
+    () => blocks.find((b) => b.type === "design")?.maxWidth || 800,
+    [blocks]
+  );
+
   const previewHtml = useMemo(
     () =>
       mode === "html"
@@ -323,7 +329,8 @@ export function EdmBuilder({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Stays in view while the email is scrolled */}
+      <div className="sticky top-0 z-30 -mx-1 flex flex-wrap items-center gap-2 border-b bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <Tabs value={mode} onValueChange={(v) => onModeChange(v as "blocks" | "html")}>
           <TabsList>
             <TabsTrigger value="blocks" className="gap-1.5">
@@ -478,6 +485,7 @@ export function EdmBuilder({
             <EdmCanvas
               html={previewHtml}
               device={device}
+              contentWidth={contentWidth}
               selectedId={selectedId}
               selectedLabel={selected ? blockLabel[selected.type] : null}
               pendingType={pickType}
@@ -498,6 +506,12 @@ export function EdmBuilder({
               onDuplicate={duplicate}
               onDelete={remove}
               onMove={move}
+              onMoveTo={(dragId, targetId, place) =>
+                commit(moveBlockToTarget(blocks, dragId, targetId, place))
+              }
+              onMoveToCell={(dragId, cellId) => commit(moveBlockToCell(blocks, dragId, cellId))}
+              onClearCell={(cellId) => commit(clearCellById(blocks, cellId))}
+              onDeleteCell={(cellId) => commit(removeCellById(blocks, cellId))}
             />
             <p className="mt-2 text-[11px] text-muted-foreground">
               Click any text on the email to edit it. Click a section to change its settings, or
