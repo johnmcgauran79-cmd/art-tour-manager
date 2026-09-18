@@ -371,6 +371,23 @@ export function CampaignSendReviewDialog({
               Send to {recipients?.length ?? 0} contact
               {recipients?.length === 1 ? "" : "s"}
             </Button>
+          ) : mode === "ramp" ? (
+            <Button
+              onClick={() =>
+                recipients &&
+                rampStart &&
+                onRamp?.(dailyLimit, rampStart.toISOString(), recipients)
+              }
+              disabled={blocked || !rampValid || isPending}
+              className="gap-1.5"
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Users className="h-4 w-4" />
+              )}
+              Start ramp — {dailyLimit}/day over {rampDays} day{rampDays === 1 ? "" : "s"}
+            </Button>
           ) : (
             <Button
               onClick={() =>
