@@ -82,7 +82,43 @@ export interface AudienceContact {
   state: string | null;
   lead_stage: string | null;
   latest_tour_name: string | null;
+  latest_tour_end_date?: string | null;
+  created_at?: string | null;
 }
+
+const CONTACT_COLUMNS =
+  "id, first_name, last_name, email, state, lead_stage, latest_tour_name, latest_tour_end_date, created_at";
+
+/** Warm-up tiers — lower sends first, so the warmest contacts go out earliest. */
+export const WARMUP_TIERS = [
+  { priority: 10, label: "Travelled in the last 18 months" },
+  { priority: 20, label: "Travelled with us before" },
+  { priority: 30, label: "Added or enquired in the last 12 months" },
+  { priority: 40, label: "Everyone else (coldest addresses last)" },
+];
+
+const monthsAgo = (months: number) => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - months);
+  return d.getTime();
+};
+
+/** Sending priority for one contact (lower = warmer = sent earlier). */
+export const warmupPriority = (c: AudienceContact): number => {
+  const travelled = c.latest_tour_end_date ? new Date(c.latest_tour_end_date).getTime() : NaN;
+  if (!Number.isNaN(travelled) && travelled >= monthsAgo(18)) return 10;
+  if (c.latest_tour_name || !Number.isNaN(travelled)) return 20;
+  const created = c.created_at ? new Date(c.created_at).getTime() : NaN;
+  if (!Number.isNaN(created) && created >= monthsAgo(12)) return 30;
+  return 40;
+};
+
+/** How many contacts fall into each warm-up tier. */
+export const warmupBreakdown = (contacts: AudienceContact[]) =>
+  WARMUP_TIERS.map((t) => ({
+    ...t,
+    count: contacts.filter((c) => warmupPriority(c) === t.priority).length,
+  }));
 
 const PAGE = 1000;
 
