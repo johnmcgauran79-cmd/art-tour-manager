@@ -1060,6 +1060,7 @@ export function CampaignsTab({
         isPending={send.isPending || save.isPending || queue.isPending}
         onSendNow={handleSend}
         onSchedule={handleSchedule}
+        onRamp={handleRamp}
       />
 
 
