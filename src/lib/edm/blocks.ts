@@ -1466,7 +1466,8 @@ ${BRAND_FONT_HEAD_HTML}
   td,th,div,p,li,span,a{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word;}
   td[width]{width:auto!important;}
   img{max-width:100%!important;height:auto!important;}
-  td.edm-body-text,td.edm-body-text>div{font-size:16px!important;line-height:1.65!important;}
+  /* No blanket text size here: each text block emits its own phone size and
+     line spacing below, so what is set in the editor is what is sent. */
   ${mobileCss}
 }
 </style>
@@ -1484,8 +1485,8 @@ ${
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
       headerImage
-        ? `<tr><td align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
-             <img src="${esc(headerImage)}" alt="${esc(brand.name)}" width="${Math.round(
+        ? `<tr><td class="edm-header" align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
+             <img class="edm-header-img" src="${esc(headerImage)}" alt="${esc(brand.name)}" width="${Math.round(
                (maxWidth * headerWidthPct) / 100
              )}" style="display:block;width:${headerWidthPct}%;max-width:${Math.round(
                (maxWidth * headerWidthPct) / 100
@@ -1522,7 +1523,7 @@ ${
         <a href="{{unsubscribe_url}}" style="color:${footerLinkColor};text-decoration:underline;">Unsubscribe</a>
       </div>`
         : "";
-      return `<tr><td align="${footerAlign}" style="padding:${footerPadding}px 32px;background:${footerBg};${
+      return `<tr><td class="edm-footer" align="${footerAlign}" style="padding:${footerPadding}px 32px;background:${footerBg};${
         footerBorder && footerBorder !== "transparent"
           ? `border-top:1px solid ${footerBorder};`
           : ""
