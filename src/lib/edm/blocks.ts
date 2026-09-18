@@ -1154,14 +1154,22 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
-    case "text":
-      return `<tr><td class="edm-body-text" style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_BODY)};font-size:${
-        b.fontSize || 16
-      }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
+    case "text": {
+      // The font, size and line spacing are repeated on the inner container as
+      // well as the cell: the shared brand stylesheet sets a font on every div,
+      // p and span, so inheritance alone would keep body text on Poppins even
+      // when another font (e.g. Larken) has been chosen for this block.
+      const tFont = fontStack(b, FONT_BODY);
+      const tSize = b.fontSize || 16;
+      const tLh = b.lineHeight ?? 1.6;
+      return `<tr><td class="edm-body-text" style="padding:${pad(ctx, "8px", b)};font-family:${tFont};font-size:${tSize}px;line-height:${tLh};color:${
+        b.color || "#333333"
+      };${
         b.align ? `text-align:${b.align};` : ""
-      }"><div${edit("html")} style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
+      }"><div${edit("html")} style="font-family:${tFont};font-size:${tSize}px;line-height:${tLh};">${stripPastedSpacing(
         b.html || ""
       )}</div></td></tr>`;
+    }
     case "image": {
       if (!b.imageUrl) return "";
       const full = !!b.fullBleed;
