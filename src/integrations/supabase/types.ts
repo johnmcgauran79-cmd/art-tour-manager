@@ -1639,6 +1639,7 @@ export type Database = {
           open_count: number
           opened_at: string | null
           provider_message_id: string | null
+          send_priority: number
           sent_at: string | null
           status: string
         }
@@ -1656,6 +1657,7 @@ export type Database = {
           open_count?: number
           opened_at?: string | null
           provider_message_id?: string | null
+          send_priority?: number
           sent_at?: string | null
           status?: string
         }
@@ -1673,6 +1675,7 @@ export type Database = {
           open_count?: number
           opened_at?: string | null
           provider_message_id?: string | null
+          send_priority?: number
           sent_at?: string | null
           status?: string
         }
@@ -5142,6 +5145,7 @@ export type Database = {
           click_count: number
           created_at: string
           created_by: string | null
+          daily_send_limit: number | null
           editor_mode: string
           failed_count: number
           from_email: string | null
@@ -5151,6 +5155,8 @@ export type Database = {
           name: string
           open_count: number
           preheader: string | null
+          ramp_sent_count: number
+          ramp_sent_date: string | null
           reply_to: string | null
           scheduled_send_at: string | null
           send_completed_at: string | null
@@ -5171,6 +5177,7 @@ export type Database = {
           click_count?: number
           created_at?: string
           created_by?: string | null
+          daily_send_limit?: number | null
           editor_mode?: string
           failed_count?: number
           from_email?: string | null
@@ -5180,6 +5187,8 @@ export type Database = {
           name: string
           open_count?: number
           preheader?: string | null
+          ramp_sent_count?: number
+          ramp_sent_date?: string | null
           reply_to?: string | null
           scheduled_send_at?: string | null
           send_completed_at?: string | null
@@ -5200,6 +5209,7 @@ export type Database = {
           click_count?: number
           created_at?: string
           created_by?: string | null
+          daily_send_limit?: number | null
           editor_mode?: string
           failed_count?: number
           from_email?: string | null
@@ -5209,6 +5219,8 @@ export type Database = {
           name?: string
           open_count?: number
           preheader?: string | null
+          ramp_sent_count?: number
+          ramp_sent_date?: string | null
           reply_to?: string | null
           scheduled_send_at?: string | null
           send_completed_at?: string | null
