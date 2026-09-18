@@ -511,11 +511,18 @@ export const useSendCampaign = () => {
         if (res.remaining <= 0) break;
         if (++guard > 500) break;
       }
-      return { quotaExceeded: false, remaining: 0 };
+      return { quotaExceeded: false, dailyLimitReached: false, remaining: 0 };
     },
-    onSuccess: (result, v) => {
+    onSuccess: (result: any, v) => {
       qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
       qc.invalidateQueries({ queryKey: ["campaign-recipients", v.campaignId] });
+      if (result?.dailyLimitReached) {
+        toast({
+          title: "Today's warm-up batch is away",
+          description: `${result.remaining} contact(s) stay queued and go out automatically over the coming days.`,
+        });
+        return;
+      }
       if (result?.quotaExceeded) {
         toast({
           title: "Daily sending quota reached",
