@@ -950,24 +950,46 @@ function BlockInspector({
         )}
 
         {t === "image" && (
-          <div className="grid grid-cols-2 gap-3">
-            <NumField
-              label="Image width"
-              suffix="%"
-              min={5}
-              max={100}
-              value={m.imageWidthPct}
-              onChange={(imageWidthPct) => setM({ imageWidthPct })}
-            />
-            <NumField
-              label="Max width"
-              suffix="px"
-              min={40}
-              max={900}
-              value={m.imageMaxWidth}
-              onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
-            />
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Full width of the phone screen</Label>
+              <Switch
+                checked={!!m.imageFullWidth}
+                onCheckedChange={(imageFullWidth) => setM({ imageFullWidth })}
+              />
+            </div>
+            {!m.imageFullWidth && (
+              <div className="grid grid-cols-2 gap-3">
+                <NumField
+                  label="Image width"
+                  suffix="%"
+                  min={5}
+                  max={100}
+                  value={m.imageWidthPct}
+                  onChange={(imageWidthPct) => setM({ imageWidthPct })}
+                />
+                <NumField
+                  label="Max width"
+                  suffix="px"
+                  min={40}
+                  max={900}
+                  value={m.imageMaxWidth}
+                  onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
+                />
+              </div>
+            )}
           </div>
+        )}
+
+        {t === "social" && (
+          <NumField
+            label="Icon size on phones"
+            suffix="px"
+            min={12}
+            max={80}
+            value={m.iconSize}
+            onChange={(iconSize) => setM({ iconSize })}
+          />
         )}
 
         {(t === "columns" || t === "table" || t === "twoColumn" || t === "imageText") && (
