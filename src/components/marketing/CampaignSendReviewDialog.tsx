@@ -121,6 +121,7 @@ export function CampaignSendReviewDialog({
   isPending,
   onSendNow,
   onSchedule,
+  onRamp,
 }: CampaignSendReviewDialogProps) {
   const { data: settings } = useGeneralSettings();
   const settingTz = settings?.find((s) => s.setting_key === "display_timezone")?.setting_value;
