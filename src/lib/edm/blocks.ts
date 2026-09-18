@@ -915,35 +915,51 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
   if (m.hidden) rules.push(`tr.${cls}{display:none!important;max-height:0!important;overflow:hidden!important;}`);
 
   const tdRules: string[] = [];
-  if (hasSpacing(m.padding)) tdRules.push(`padding:${spacingCss(m.padding!)}!important`);
+  // Phone padding is set on its own: a deliberate 0 is honoured even when the
+  // desktop block has padding.
+  if (hasAnySpacing(m.padding)) tdRules.push(`padding:${spacingCss(m.padding!)}!important`);
   if (m.align) tdRules.push(`text-align:${m.align}!important`);
   if (m.fontSize) tdRules.push(`font-size:${m.fontSize}px!important`);
   if (m.lineHeight) tdRules.push(`line-height:${m.lineHeight}!important`);
   if (tdRules.length) rules.push(`tr.${cls}>td{${tdRules.join(";")};}`);
 
-  if (hasSpacing(m.margin)) {
+  if (hasAnySpacing(m.margin)) {
     rules.push(`tr.${cls}-m>td{padding:${spacingCss(m.margin!)}!important;}`);
   }
 
-  if (b.type === "text" && (m.fontSize || m.lineHeight)) {
-    const textRules: string[] = [];
-    if (m.fontSize) textRules.push(`font-size:${m.fontSize}px!important`);
-    if (m.lineHeight) textRules.push(`line-height:${m.lineHeight}!important`);
-    rules.push(`tr.${cls}>td.edm-body-text>div{${textRules.join(";")};}`);
+  if (b.type === "text") {
+    /**
+     * Text reflows on phones instead of shrinking: the block's own size is used
+     * (never overridden by a blanket rule), lifted to at least 16px so body copy
+     * stays comfortable to read and simply runs onto more lines.
+     */
+    const size = m.fontSize ?? Math.max(16, b.fontSize || 16);
+    const lh = m.lineHeight ?? Math.max(1.5, b.lineHeight ?? 1.6);
+    rules.push(
+      `tr.${cls}>td.edm-body-text,tr.${cls}>td.edm-body-text>div,tr.${cls}>td.edm-body-text p,tr.${cls}>td.edm-body-text li{font-size:${size}px!important;line-height:${lh}!important;}`
+    );
   }
 
   if (b.type === "button") {
     const aRules: string[] = [];
     if (m.btnFontSize) aRules.push(`font-size:${m.btnFontSize}px!important`);
-    if (m.btnFullWidth) aRules.push(`display:block!important;width:auto!important`);
+    if (m.btnFullWidth) aRules.push(`display:block!important;width:100%!important`);
     else if (m.btnWidth) aRules.push(`display:inline-block!important;width:${m.btnWidth}px!important`);
     if (aRules.length) rules.push(`tr.${cls}>td a{${aRules.join(";")};}`);
   }
 
+  if (b.type === "social" && m.iconSize) {
+    const s = Math.max(10, Math.round(m.iconSize));
+    rules.push(`tr.${cls}>td img{width:${s}px!important;height:${s}px!important;}`);
+  }
+
   if (b.type === "image") {
     const imgRules: string[] = [];
-    if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
-    if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    if (m.imageFullWidth) imgRules.push(`width:100%!important;max-width:100%!important`);
+    else {
+      if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
+      if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    }
     // Images are centred/right-aligned with auto margins, so the td text-align
     // override alone can't move them on mobile — set the margins too.
     if (m.align)
@@ -951,6 +967,8 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
         `margin:${m.align === "center" ? "0 auto" : m.align === "right" ? "0 0 0 auto" : "0"}!important`
       );
     if (imgRules.length) rules.push(`tr.${cls}>td img{${imgRules.join(";")};}`);
+    if (m.imageFullWidth)
+      rules.push(`tr.${cls}>td{padding-left:0!important;padding-right:0!important;}`);
     if (m.align) rules.push(`tr.${cls}>td a{display:block!important;text-align:${m.align}!important;}`);
   }
 
