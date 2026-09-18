@@ -31,6 +31,10 @@ export interface MarketingCampaign {
   click_count: number;
   bounce_count: number;
   unsubscribe_count: number;
+  /** Warm-up ramp: maximum emails allowed out per day (null = no limit). */
+  daily_send_limit?: number | null;
+  ramp_sent_date?: string | null;
+  ramp_sent_count?: number | null;
   created_at: string;
   updated_at: string;
 }
