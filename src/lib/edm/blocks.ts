@@ -1072,7 +1072,8 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       ? `border:1px solid ${brand.colorBorder || "#e2e8f0"};`
       : "";
 
-  const halfGap = Math.round(Math.max(0, b.colGap ?? 0) / 2);
+  // Negative gaps are allowed: they pull neighbouring columns closer together.
+  const halfGap = Math.round((b.colGap ?? 0) / 2);
   const body = Array.from({ length: rows }, (_, r) => {
     const tds = Array.from({ length: cols }, (_, c) => {
       const cell = cells[r * cols + c];
@@ -1119,7 +1120,7 @@ const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
     .map((s, i) => {
       const meta = SOCIAL_PLATFORMS.find((p) => p.value === s.platform);
       const src = `https://cdn.simpleicons.org/${meta?.slug || s.platform}/${color}`;
-      const inner = `<img src="${src}" alt="${esc(meta?.label || s.platform)}" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;border:0;" />`;
+      const inner = `<img class="edm-social-icon" src="${src}" alt="${esc(meta?.label || s.platform)}" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;border:0;" />`;
       const boxed =
         style === "plain"
           ? inner
@@ -1248,7 +1249,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       const py = b.btnPadY ?? 14;
       const radius = b.btnRadius ?? 6;
       const widthCss = b.btnFullWidth
-        ? "display:block;width:auto;max-width:100%;box-sizing:border-box;text-align:center;"
+        ? "display:block;width:100%;max-width:100%;box-sizing:border-box;text-align:center;"
         : b.btnWidth
           ? `display:inline-block;width:${b.btnWidth}px;max-width:100%;box-sizing:border-box;text-align:center;`
           : "display:inline-block;max-width:100%;box-sizing:border-box;";
@@ -1374,10 +1375,10 @@ export const stripPastedSpacing = (html: string): string => {
   return withoutPastedSpacing.replace(/<p\b([^>]*)>/gi, (_match, attrs: string) => {
     const styleMatch = attrs.match(/style=(['"])(.*?)\1/i);
     if (styleMatch) {
-      const nextStyle = `margin:0;line-height:inherit;${styleMatch[2]}`;
+      const nextStyle = `margin:0;line-height:inherit;font-family:inherit;font-size:inherit;${styleMatch[2]}`;
       return `<p${attrs.replace(styleMatch[0], `style=${styleMatch[1]}${nextStyle}${styleMatch[1]}`)}>`;
     }
-    return `<p${attrs} style="margin:0;line-height:inherit;">`;
+    return `<p${attrs} style="margin:0;line-height:inherit;font-family:inherit;font-size:inherit;">`;
   });
 };
 
