@@ -136,6 +136,15 @@ export function EdmImageField({ value, onChange, label = "Image" }: EdmImageFiel
           )}
           {uploading ? "Uploading…" : "Upload image"}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setLibraryOpen(true)}
+        >
+          <Images className="h-3.5 w-3.5" /> Choose from my images
+        </Button>
         <Input
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -143,6 +152,43 @@ export function EdmImageField({ value, onChange, label = "Image" }: EdmImageFiel
           className="flex-1"
         />
       </div>
+
+      <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Your email images</DialogTitle>
+            <DialogDescription>
+              Everything uploaded for emails before. Click one to use it again.
+            </DialogDescription>
+          </DialogHeader>
+          {loadingLibrary ? (
+            <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading your images…
+            </div>
+          ) : library.length === 0 ? (
+            <p className="p-6 text-sm text-muted-foreground">
+              No images uploaded yet — upload one and it will appear here next time.
+            </p>
+          ) : (
+            <div className="grid max-h-[60vh] grid-cols-3 gap-3 overflow-y-auto p-1 sm:grid-cols-4">
+              {library.map((img) => (
+                <button
+                  key={img.name}
+                  type="button"
+                  className="overflow-hidden rounded-md border transition hover:ring-2 hover:ring-primary"
+                  onClick={() => {
+                    onChange(img.url);
+                    setLibraryOpen(false);
+                  }}
+                >
+                  <img src={img.url} alt={img.name} className="h-24 w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <input
         ref={inputRef}
