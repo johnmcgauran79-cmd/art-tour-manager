@@ -255,7 +255,63 @@ export function CampaignSendReviewDialog({
             >
               <CalendarClock className="h-3.5 w-3.5" /> Schedule
             </Button>
+            {onRamp && (
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "ramp" ? "default" : "outline"}
+                onClick={() => setMode("ramp")}
+                className="gap-1.5"
+              >
+                <Users className="h-3.5 w-3.5" /> Warm-up ramp
+              </Button>
+            )}
           </div>
+
+          {mode === "ramp" && (
+            <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">
+                Spreads the send over several days so inbox providers see a gradual
+                increase. Recent travellers go first, coldest addresses last.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Emails per day</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={perDay}
+                    onChange={(e) => setPerDay(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Start on (optional)</Label>
+                  <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
+              </div>
+              {recipients && (
+                <div className="space-y-1 rounded-md bg-background/60 p-2">
+                  {tiers
+                    .filter((t) => t.count > 0)
+                    .map((t) => (
+                      <p key={t.priority} className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{t.label}</span>
+                        <span className="font-medium">{t.count}</span>
+                      </p>
+                    ))}
+                  <p className="pt-1 text-xs">
+                    {recipients.length} contacts at {dailyLimit} a day ≈{" "}
+                    <span className="font-medium">
+                      {rampDays} day{rampDays === 1 ? "" : "s"}
+                    </span>
+                    {date && scheduledDate
+                      ? `, starting ${formatInTimeZone(scheduledDate, tz, "EEE dd/MM/yyyy")}`
+                      : ", starting straight away"}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {mode === "schedule" && (
             <div className="space-y-3 rounded-md border bg-muted/30 p-3">
