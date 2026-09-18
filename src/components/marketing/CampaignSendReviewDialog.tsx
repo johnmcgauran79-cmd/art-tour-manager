@@ -179,6 +179,13 @@ export function CampaignSendReviewDialog({
     [defaultTz]
   );
 
+  const dailyLimit = Math.max(1, Number(perDay) || 0);
+  const rampDays = recipients?.length ? Math.ceil(recipients.length / dailyLimit) : 0;
+  const tiers = useMemo(() => (recipients ? warmupBreakdown(recipients) : []), [recipients]);
+  // Ramp can start now (blank date) or on a chosen day.
+  const rampStart = date ? scheduledDate : new Date();
+  const rampValid = !!rampStart && dailyLimit > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
