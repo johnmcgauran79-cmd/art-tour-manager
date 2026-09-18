@@ -865,6 +865,13 @@ const hasSpacing = (s?: EdmSpacing) =>
   !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null && v !== 0);
 
 /**
+ * Mobile spacing is independent of desktop, so a deliberate zero counts as a
+ * value (e.g. "no padding on phones" even though desktop has padding).
+ */
+const hasAnySpacing = (s?: EdmSpacing) =>
+  !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null);
+
+/**
  * Negative spacing can't be expressed as padding, so any negative margin or
  * padding side is collected here and applied as a negative CSS margin on the
  * block's wrapper table (which pulls the block towards its neighbour).
