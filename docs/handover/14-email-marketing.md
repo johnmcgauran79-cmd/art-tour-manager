@@ -90,3 +90,25 @@ The Keap → Brevo migration console, the `brevo-sync` and `crm-migrate-*` funct
 - **Editor readability** — `EdmCanvas` adds `.edm-readable` to the focused editable element when
   its text/background contrast ratio is below 2.2, so white-on-white copy is visible while
   typing. The stored colour and the sent email are unaffected.
+
+## Editor / sent-email parity (September 2026)
+
+- The editing canvas renders the email at its real content width (design → max
+  width) and scales the whole frame to fit the screen, so spacing, padding and
+  header size match what recipients receive. Mobile view is a genuine 390px
+  window and is never scaled.
+- `EdmCanvas` adds no layout or typography overrides. Text size, line spacing
+  and font come from the block and are written inline on the editable `div`
+  (the brand stylesheet targets every `div/p/span`, so inheritance alone was
+  keeping body copy on Poppins).
+- `collectMobileCss()` emits per-block phone rules; there is no blanket
+  16px/1.65 rule any more. Mobile padding/margin are independent of desktop
+  (a deliberate 0 counts as a value).
+- New phone-only settings: image full width, social icon size, header/logo
+  width and header padding, footer icon size (`mobileHeaderWidthPct`,
+  `mobileHeaderPadding`, `mobileIconSize`).
+- Content can be dragged by the move handle into any column or between blocks
+  (`moveBlockToCell`). Columns can be emptied or deleted individually.
+- Links never navigate in the editor (capture-phase `preventDefault`), the top
+  toolbar is sticky, negative column padding/gaps render as negative margins,
+  and images can be re-picked from the uploaded `email-assets/edm` library.
