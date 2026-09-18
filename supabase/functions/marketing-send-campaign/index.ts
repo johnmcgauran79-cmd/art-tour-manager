@@ -398,17 +398,22 @@ function serve_handler() {
               .eq("campaign_id", campaignId),
           ]);
 
+        const newSentToday = sentToday + sent;
         await supabase
           .from("marketing_campaigns")
           .update({
             sent_count: sentTotal || 0,
             failed_count: failedTotal || 0,
             total_recipients: total || 0,
+            ...(rampLimit ? { ramp_sent_date: today, ramp_sent_count: newSentToday } : {}),
             ...(remaining === 0
               ? { status: "sent", send_completed_at: new Date().toISOString() }
               : {}),
           })
           .eq("id", campaignId);
+
+        const dailyLimitReached =
+          !!rampLimit && newSentToday >= rampLimit && (remaining || 0) > 0;
 
         return json({
           sent,
@@ -416,6 +421,9 @@ function serve_handler() {
           remaining: remaining || 0,
           total: total || 0,
           quotaExceeded,
+          dailyLimitReached,
+          dailyLimit: rampLimit || null,
+          sentToday: rampLimit ? newSentToday : null,
         });
 
       }
