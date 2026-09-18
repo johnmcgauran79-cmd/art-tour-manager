@@ -1101,15 +1101,31 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       // Extra horizontal space between columns (never on the outer edges).
       const padLeft = c === 0 ? cp : cp + halfGap;
       const padRight = c === cols - 1 ? cp : cp + halfGap;
+      /**
+       * Column padding can be negative, which pulls the content outwards.
+       * Padding itself can never be negative in email HTML, so any negative
+       * side is applied as a negative margin on a wrapper instead.
+       */
+      const side = (n: number) => Math.max(0, n);
+      const pull = (n: number) => (n < 0 ? `${Math.round(n)}px` : "0");
+      const negative =
+        cp < 0 || padLeft < 0 || padRight < 0
+          ? `margin:${pull(cp)} ${pull(padRight)} ${pull(cp)} ${pull(padLeft)};`
+          : "";
       // Builder-only hooks: identify the column so content can be dropped into
       // it, and show an empty-state hint on the editing canvas.
       const cellAttr = ctx.tag && cell?.id ? ` data-edm-cell="${cell.id}"` : "";
       const empty = !(cell?.blocks || []).length;
-      const inner =
+      const content =
         ctx.tag && empty
           ? `<div class="edm-empty-cell">No content here. Drag content from the right.</div>`
           : renderNested(cell?.blocks || [], brand, ctx);
-      return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
+      const inner = negative ? `<div style="${negative}">${content}</div>` : content;
+      return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${side(
+        cp
+      )}px ${side(padRight)}px ${side(cp)}px ${side(
+        padLeft
+      )}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
       }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${inner}</td>`;
     }).join("");
