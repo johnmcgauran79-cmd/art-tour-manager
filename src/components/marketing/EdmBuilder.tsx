@@ -77,6 +77,7 @@ import {
   isContainer,
   moveBlockById,
   moveBlockToTarget,
+  moveBlockToCell,
   newBlock,
   removeBlockById,
   removeCellById,
