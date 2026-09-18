@@ -1421,7 +1421,27 @@ export const renderEdmHtml = (
 
   const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive };
   const body = renderRows(contentBlocks, brand, ctx);
-  const mobileCss = ctx.css.join("\n  ");
+
+  /* Phone-only header, footer and footer-icon sizes. */
+  const designMobileCss: string[] = [];
+  if (design?.mobileHeaderWidthPct) {
+    const w = Math.min(100, Math.max(10, Math.round(design.mobileHeaderWidthPct)));
+    designMobileCss.push(
+      `img.edm-header-img{width:${w}%!important;max-width:${w}%!important;}`
+    );
+  }
+  if (design?.mobileHeaderPadding != null) {
+    const p = Math.max(0, Math.round(design.mobileHeaderPadding));
+    designMobileCss.push(`td.edm-header{padding:${p}px 12px!important;}`);
+  }
+  if (design?.mobileIconSize) {
+    const s = Math.max(10, Math.round(design.mobileIconSize));
+    designMobileCss.push(
+      `td.edm-footer img.edm-social-icon{width:${s}px!important;height:${s}px!important;}`
+    );
+  }
+
+  const mobileCss = [...designMobileCss, ...ctx.css].join("\n  ");
 
   const footerSocial =
     design?.footerShowSocial && design.socials?.length
