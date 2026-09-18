@@ -463,6 +463,8 @@ interface SendRecipient {
   customer_id?: string | null;
   first_name?: string | null;
   last_name?: string | null;
+  /** Warm-up order: lower numbers are sent first. */
+  priority?: number | null;
 }
 
 export const useSendCampaign = () => {
