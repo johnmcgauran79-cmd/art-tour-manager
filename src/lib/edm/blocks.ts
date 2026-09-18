@@ -94,6 +94,10 @@ export interface EdmMobileOverride {
   /** image */
   imageWidthPct?: number;
   imageMaxWidth?: number;
+  /** image: fill the whole phone width (edge to edge) */
+  imageFullWidth?: boolean;
+  /** social icons: icon size on phones */
+  iconSize?: number;
   /** columns: stack (default) or keep side by side; optionally reverse order */
   stack?: boolean;
   stackReverse?: boolean;
@@ -156,6 +160,12 @@ export interface EdmBlock {
   headerBg?: string;
   headerWidthPct?: number;
   headerPadding?: number;
+  /** design block: phone-only header/logo width (% of email) */
+  mobileHeaderWidthPct?: number;
+  /** design block: phone-only header padding in px */
+  mobileHeaderPadding?: number;
+  /** design block: phone-only footer social icon size in px */
+  mobileIconSize?: number;
   pageBg?: string;
   contentBg?: string;
   borderColor?: string;
