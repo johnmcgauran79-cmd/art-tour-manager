@@ -97,6 +97,12 @@ export interface CampaignSendReviewDialogProps {
   isPending?: boolean;
   onSendNow: (recipients: AudienceContact[]) => void;
   onSchedule: (scheduledAtIso: string, recipients: AudienceContact[]) => void;
+  /** Spread the send over several days, warmest contacts first. */
+  onRamp?: (
+    dailyLimit: number,
+    startAtIso: string,
+    recipients: AudienceContact[]
+  ) => void;
 }
 
 export function CampaignSendReviewDialog({
