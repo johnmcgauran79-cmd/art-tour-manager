@@ -216,6 +216,8 @@ export const resolveAudience = async (
       state: r.state,
       lead_stage: r.lead_stage,
       latest_tour_name: r.latest_tour_name,
+      latest_tour_end_date: r.latest_tour_end_date,
+      created_at: r.created_at,
     }));
   }
   const tagIds = filters.tagIds?.length
