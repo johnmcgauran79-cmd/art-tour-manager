@@ -861,6 +861,41 @@ function BlockInspector({
 }) {
   const t = block.type;
 
+  /* --------- Phone-only header, logo and footer sizes --------- */
+  if (device === "mobile" && t === "design") {
+    return (
+      <div className="space-y-4">
+        <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+          These sizes only apply on phones. Leave them blank to use the desktop sizes.
+        </p>
+        <NumField
+          label="Header / logo width on phones"
+          suffix="%"
+          min={10}
+          max={100}
+          value={block.mobileHeaderWidthPct}
+          onChange={(mobileHeaderWidthPct) => onChange({ mobileHeaderWidthPct })}
+        />
+        <NumField
+          label="Space above and below the header on phones"
+          suffix="px"
+          min={0}
+          max={80}
+          value={block.mobileHeaderPadding}
+          onChange={(mobileHeaderPadding) => onChange({ mobileHeaderPadding })}
+        />
+        <NumField
+          label="Footer social icon size on phones"
+          suffix="px"
+          min={12}
+          max={80}
+          value={block.mobileIconSize}
+          onChange={(mobileIconSize) => onChange({ mobileIconSize })}
+        />
+      </div>
+    );
+  }
+
   /* ---------------- Mobile override mode ---------------- */
   if (device === "mobile" && t !== "design") {
     const m = block.mobile || {};
