@@ -76,6 +76,15 @@ Deno.serve(async (req) => {
         }
         sent += Number(body?.sent || 0);
         remaining = Number(body?.remaining ?? 0);
+        // Warm-up ramp: today's allowance is used up. Leave the rest queued —
+        // this worker picks the campaign up again tomorrow.
+        if (body?.dailyLimitReached) {
+          console.log(
+            `Campaign ${campaign.id} hit its daily warm-up limit (${body?.dailyLimit}); ${remaining} still queued.`
+          );
+          break;
+        }
+        if (body?.quotaExceeded) break;
       }
 
       results.push({ id: campaign.id, name: campaign.name, sent, remaining });
