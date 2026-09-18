@@ -647,6 +647,27 @@ export const moveBlockToTarget = (
   return insertBlockBeforeOrAfter(removeBlockById(blocks, dragId), dragged, targetId, place);
 };
 
+/** True when `cellId` is one of `root`'s own columns (at any depth). */
+const containsCell = (root: EdmBlock, cellId: string): boolean =>
+  (root.cells || []).some(
+    (c) => c.id === cellId || c.blocks.some((b) => containsCell(b, cellId))
+  );
+
+/**
+ * Drag an existing block into a column (including a column of another row), so
+ * content can be moved left/right as well as up/down.
+ */
+export const moveBlockToCell = (
+  blocks: EdmBlock[],
+  dragId: string,
+  cellId: string
+): EdmBlock[] => {
+  const dragged = findBlockById(blocks, dragId);
+  if (!dragged || containsCell(dragged, cellId)) return blocks;
+  return appendBlockToCell(removeBlockById(blocks, dragId), cellId, dragged);
+};
+
+
 /** Insert a block after `afterId` at the same level, or append at root. */
 export const insertBlockAfter = (
   blocks: EdmBlock[],
