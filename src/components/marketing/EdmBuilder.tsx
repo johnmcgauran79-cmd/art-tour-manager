@@ -1453,7 +1453,7 @@ function BlockInspector({
             <Label>Cell padding (px)</Label>
             <Input
               type="number"
-              min={0}
+              min={-40}
               max={40}
               value={block.cellPadding ?? 8}
               onChange={(e) => onChange({ cellPadding: Number(e.target.value) || 0 })}
@@ -1463,7 +1463,7 @@ function BlockInspector({
             <Label>Space between columns (px)</Label>
             <Input
               type="number"
-              min={0}
+              min={-80}
               max={80}
               value={block.colGap ?? 0}
               onChange={(e) => onChange({ colGap: Number(e.target.value) || 0 })}
