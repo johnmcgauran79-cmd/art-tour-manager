@@ -1,13 +1,21 @@
-import { useRef, useState } from "react";
-import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ImagePlus, Images, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const BUCKET = "email-assets";
 const MAX_BYTES = 5 * 1024 * 1024;
+const FOLDER = "edm";
 
 interface EdmImageFieldProps {
   value?: string;
@@ -17,12 +25,47 @@ interface EdmImageFieldProps {
 
 /**
  * Image picker for EDM blocks: upload straight from the computer (stored in the
- * public `email-assets` bucket) or paste an existing URL.
+ * public `email-assets` bucket), choose one that has already been uploaded, or
+ * paste an existing URL.
  */
 export function EdmImageField({ value, onChange, label = "Image" }: EdmImageFieldProps) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [library, setLibrary] = useState<{ name: string; url: string }[]>([]);
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+
+  /** List the images already uploaded for emails, newest first. */
+  const loadLibrary = useCallback(async () => {
+    setLoadingLibrary(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from(BUCKET)
+        .list(FOLDER, { limit: 200, sortBy: { column: "created_at", order: "desc" } });
+      if (error) throw error;
+      setLibrary(
+        (data || [])
+          .filter((f) => f.id)
+          .map((f) => ({
+            name: f.name,
+            url: supabase.storage.from(BUCKET).getPublicUrl(`${FOLDER}/${f.name}`).data.publicUrl,
+          }))
+      );
+    } catch (err: any) {
+      toast({
+        title: "Couldn't load your images",
+        description: err.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingLibrary(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    if (libraryOpen) loadLibrary();
+  }, [libraryOpen, loadLibrary]);
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
