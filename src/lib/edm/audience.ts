@@ -160,7 +160,7 @@ export const resolveEmailList = async (emails: string[]): Promise<AudienceContac
     const chunk = clean.slice(i, i + 200);
     const { data, error } = await supabase
       .from("customers")
-      .select("id, first_name, last_name, email, state, lead_stage, latest_tour_name")
+      .select(CONTACT_COLUMNS)
       .in("email", chunk);
     if (error) throw error;
     (data || []).forEach((c: any) => {
@@ -225,7 +225,7 @@ export const resolveAudience = async (
     const { data, error } = await applyFilters(
       supabase
         .from("customers")
-        .select("id, first_name, last_name, email, state, lead_stage, latest_tour_name"),
+        .select(CONTACT_COLUMNS),
       filters,
       tagIds
     )
