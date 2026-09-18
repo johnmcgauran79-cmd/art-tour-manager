@@ -21,7 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
-import { resolveAudience, type AudienceContact, type AudienceFilters } from "@/lib/edm/audience";
+import {
+  resolveAudience,
+  warmupBreakdown,
+  type AudienceContact,
+  type AudienceFilters,
+} from "@/lib/edm/audience";
 
 /** Timezones the ART team actually schedules against. */
 const TIMEZONES = [
@@ -92,6 +97,12 @@ export interface CampaignSendReviewDialogProps {
   isPending?: boolean;
   onSendNow: (recipients: AudienceContact[]) => void;
   onSchedule: (scheduledAtIso: string, recipients: AudienceContact[]) => void;
+  /** Spread the send over several days, warmest contacts first. */
+  onRamp?: (
+    dailyLimit: number,
+    startAtIso: string,
+    recipients: AudienceContact[]
+  ) => void;
 }
 
 export function CampaignSendReviewDialog({
@@ -110,18 +121,20 @@ export function CampaignSendReviewDialog({
   isPending,
   onSendNow,
   onSchedule,
+  onRamp,
 }: CampaignSendReviewDialogProps) {
   const { data: settings } = useGeneralSettings();
   const settingTz = settings?.find((s) => s.setting_key === "display_timezone")?.setting_value;
   const defaultTz =
     (typeof settingTz === "string" && settingTz.trim()) || "Australia/Melbourne";
 
-  const [mode, setMode] = useState<"now" | "schedule">(initialMode);
+  const [mode, setMode] = useState<"now" | "schedule" | "ramp">(initialMode);
   const [recipients, setRecipients] = useState<AudienceContact[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("09:00");
   const [tz, setTz] = useState(defaultTz);
+  const [perDay, setPerDay] = useState("500");
 
   useEffect(() => {
     if (open) {
@@ -165,6 +178,13 @@ export function CampaignSendReviewDialog({
     () => Array.from(new Set([defaultTz, ...TIMEZONES])),
     [defaultTz]
   );
+
+  const dailyLimit = Math.max(1, Number(perDay) || 0);
+  const rampDays = recipients?.length ? Math.ceil(recipients.length / dailyLimit) : 0;
+  const tiers = useMemo(() => (recipients ? warmupBreakdown(recipients) : []), [recipients]);
+  // Ramp can start now (blank date) or on a chosen day.
+  const rampStart = date ? scheduledDate : new Date();
+  const rampValid = !!rampStart && dailyLimit > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,7 +255,63 @@ export function CampaignSendReviewDialog({
             >
               <CalendarClock className="h-3.5 w-3.5" /> Schedule
             </Button>
+            {onRamp && (
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "ramp" ? "default" : "outline"}
+                onClick={() => setMode("ramp")}
+                className="gap-1.5"
+              >
+                <Users className="h-3.5 w-3.5" /> Warm-up ramp
+              </Button>
+            )}
           </div>
+
+          {mode === "ramp" && (
+            <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">
+                Spreads the send over several days so inbox providers see a gradual
+                increase. Recent travellers go first, coldest addresses last.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Emails per day</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={perDay}
+                    onChange={(e) => setPerDay(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Start on (optional)</Label>
+                  <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                </div>
+              </div>
+              {recipients && (
+                <div className="space-y-1 rounded-md bg-background/60 p-2">
+                  {tiers
+                    .filter((t) => t.count > 0)
+                    .map((t) => (
+                      <p key={t.priority} className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">{t.label}</span>
+                        <span className="font-medium">{t.count}</span>
+                      </p>
+                    ))}
+                  <p className="pt-1 text-xs">
+                    {recipients.length} contacts at {dailyLimit} a day ≈{" "}
+                    <span className="font-medium">
+                      {rampDays} day{rampDays === 1 ? "" : "s"}
+                    </span>
+                    {date && scheduledDate
+                      ? `, starting ${formatInTimeZone(scheduledDate, tz, "EEE dd/MM/yyyy")}`
+                      : ", starting straight away"}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {mode === "schedule" && (
             <div className="space-y-3 rounded-md border bg-muted/30 p-3">
@@ -294,6 +370,23 @@ export function CampaignSendReviewDialog({
               )}
               Send to {recipients?.length ?? 0} contact
               {recipients?.length === 1 ? "" : "s"}
+            </Button>
+          ) : mode === "ramp" ? (
+            <Button
+              onClick={() =>
+                recipients &&
+                rampStart &&
+                onRamp?.(dailyLimit, rampStart.toISOString(), recipients)
+              }
+              disabled={blocked || !rampValid || isPending}
+              className="gap-1.5"
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Users className="h-4 w-4" />
+              )}
+              Start ramp — {dailyLimit}/day over {rampDays} day{rampDays === 1 ? "" : "s"}
             </Button>
           ) : (
             <Button

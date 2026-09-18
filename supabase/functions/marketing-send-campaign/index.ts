@@ -200,6 +200,9 @@ function serve_handler() {
             first_name: r.first_name || null,
             last_name: r.last_name || null,
             status: "queued",
+            // Lower number = sent earlier. Used by the warm-up ramp so the most
+            // recently engaged contacts always go out first.
+            send_priority: Number.isFinite(Number(r.priority)) ? Number(r.priority) : 100,
           }))
           .filter((r: any) => r.email && !blocked.has(r.email));
 
@@ -252,12 +255,49 @@ function serve_handler() {
 
       /* -------------------------------- process ------------------------------ */
       if (action === "process") {
-        const batchSize = Math.min(Number(body?.batchSize) || 40, 100);
+        let batchSize = Math.min(Number(body?.batchSize) || 40, 100);
+
+        /* Warm-up ramp: only a set number of emails may leave per day. The day
+           is the Melbourne calendar day so it lines up with the ART working day. */
+        const rampLimit = Number(campaign.daily_send_limit) || 0;
+        const today = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Australia/Melbourne",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date()); // yyyy-mm-dd
+        const sentToday =
+          rampLimit && campaign.ramp_sent_date === today
+            ? Number(campaign.ramp_sent_count) || 0
+            : 0;
+        const allowanceToday = rampLimit ? Math.max(0, rampLimit - sentToday) : Infinity;
+
+        if (allowanceToday <= 0) {
+          const { count: stillQueued } = await supabase
+            .from("campaign_recipients")
+            .select("id", { count: "exact", head: true })
+            .eq("campaign_id", campaignId)
+            .eq("status", "queued");
+          return json({
+            sent: 0,
+            failed: 0,
+            remaining: stillQueued || 0,
+            total: campaign.total_recipients || 0,
+            quotaExceeded: false,
+            dailyLimitReached: true,
+            dailyLimit: rampLimit,
+            sentToday,
+          });
+        }
+        if (Number.isFinite(allowanceToday)) batchSize = Math.min(batchSize, allowanceToday);
+
         const { data: batch, error: bErr } = await supabase
           .from("campaign_recipients")
           .select("id, email, first_name, last_name, customer_id")
           .eq("campaign_id", campaignId)
           .eq("status", "queued")
+          .order("send_priority", { ascending: true })
+          .order("created_at", { ascending: true })
           .limit(batchSize);
         if (bErr) throw bErr;
 
@@ -358,17 +398,22 @@ function serve_handler() {
               .eq("campaign_id", campaignId),
           ]);
 
+        const newSentToday = sentToday + sent;
         await supabase
           .from("marketing_campaigns")
           .update({
             sent_count: sentTotal || 0,
             failed_count: failedTotal || 0,
             total_recipients: total || 0,
+            ...(rampLimit ? { ramp_sent_date: today, ramp_sent_count: newSentToday } : {}),
             ...(remaining === 0
               ? { status: "sent", send_completed_at: new Date().toISOString() }
               : {}),
           })
           .eq("id", campaignId);
+
+        const dailyLimitReached =
+          !!rampLimit && newSentToday >= rampLimit && (remaining || 0) > 0;
 
         return json({
           sent,
@@ -376,6 +421,9 @@ function serve_handler() {
           remaining: remaining || 0,
           total: total || 0,
           quotaExceeded,
+          dailyLimitReached,
+          dailyLimit: rampLimit || null,
+          sentToday: rampLimit ? newSentToday : null,
         });
 
       }

@@ -31,6 +31,10 @@ export interface MarketingCampaign {
   click_count: number;
   bounce_count: number;
   unsubscribe_count: number;
+  /** Warm-up ramp: maximum emails allowed out per day (null = no limit). */
+  daily_send_limit?: number | null;
+  ramp_sent_date?: string | null;
+  ramp_sent_count?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -459,6 +463,8 @@ interface SendRecipient {
   customer_id?: string | null;
   first_name?: string | null;
   last_name?: string | null;
+  /** Warm-up order: lower numbers are sent first. */
+  priority?: number | null;
 }
 
 export const useSendCampaign = () => {
@@ -496,17 +502,27 @@ export const useSendCampaign = () => {
           remaining: number;
           total: number;
           quotaExceeded?: boolean;
+          dailyLimitReached?: boolean;
         };
         onProgress?.(res.total - res.remaining, res.total);
+        if (res.dailyLimitReached)
+          return { quotaExceeded: false, dailyLimitReached: true, remaining: res.remaining };
         if (res.quotaExceeded) return { quotaExceeded: true, remaining: res.remaining };
         if (res.remaining <= 0) break;
         if (++guard > 500) break;
       }
-      return { quotaExceeded: false, remaining: 0 };
+      return { quotaExceeded: false, dailyLimitReached: false, remaining: 0 };
     },
-    onSuccess: (result, v) => {
+    onSuccess: (result: any, v) => {
       qc.invalidateQueries({ queryKey: ["marketing-campaigns"] });
       qc.invalidateQueries({ queryKey: ["campaign-recipients", v.campaignId] });
+      if (result?.dailyLimitReached) {
+        toast({
+          title: "Today's warm-up batch is away",
+          description: `${result.remaining} contact(s) stay queued and go out automatically over the coming days.`,
+        });
+        return;
+      }
       if (result?.quotaExceeded) {
         toast({
           title: "Daily sending quota reached",

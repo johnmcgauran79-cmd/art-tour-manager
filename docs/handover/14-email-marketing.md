@@ -57,6 +57,14 @@ Live audiences (all state-based, all active): Victorians (344), NSW (257), Queen
 - Marketing sender identity comes from `MARKETING_FROM_NAME` / `MARKETING_FROM_EMAIL`; the `news.` subdomain is send-only, so `MARKETING_REPLY_TO` routes replies to the bookings inbox.
 - Email layout is fluid 100% width with an 800px max width; complex blocks are wrapped in protected regions so the Quill editor cannot mangle them.
 
+### Warm-up ramp (September 2026)
+
+- The pre-send review dialog has a third mode, **Warm-up ramp**: choose emails per day and an optional start date.
+- `marketing_campaigns.daily_send_limit` caps sends per day; `ramp_sent_date` / `ramp_sent_count` track the day's tally (Australia/Melbourne).
+- All recipients are queued up front with `campaign_recipients.send_priority` from `warmupPriority()` in `src/lib/edm/audience.ts`: 10 = travelled in the last 18 months, 20 = travelled earlier, 30 = created/enquired in the last 12 months, 40 = coldest. The queue is drained in `send_priority, created_at` order.
+- `marketing-send-campaign` (`process`) returns `dailyLimitReached` once the day's allowance is spent; `process-scheduled-campaigns` stops for the day and leaves the campaign in `sending` so the rest goes out the next day.
+- Reputation guidance: 500 → 1,000 → 2,000 → remainder, pausing if bounces exceed ~2%.
+
 ## Tracking (started with Phase 6)
 
 `marketing-send-campaign` instruments campaign HTML: an open pixel plus rewritten HTTP(S) links routed through `marketing-track`, carrying ART UTM parameters. `marketing-track` records the event, classifies the link against `marketing_link_classifications` (which can tie a link to a tour and mark it meaningful, e.g. Register Interest), then redirects. Only exact configured tracking domains are accepted.

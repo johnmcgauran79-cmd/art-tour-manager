@@ -63,7 +63,7 @@ import {
   countAudience,
   describeFilters,
   parseEmailList,
-  
+  warmupPriority,
   type AudienceContact,
   type AudienceFilters,
 } from "@/lib/edm/audience";
@@ -398,10 +398,11 @@ export function CampaignsTab({
       await queue.mutateAsync({
         campaignId: saved.id,
         recipients: contacts.map((c) => ({
-          email: c.email,
+          email: c.email!,
           customer_id: c.id || null,
           first_name: c.first_name,
           last_name: c.last_name,
+          priority: warmupPriority(c),
         })),
       });
     } catch (e: any) {
@@ -413,6 +414,54 @@ export function CampaignsTab({
     toast({
       title: "Campaign scheduled",
       description: `Sending automatically on ${format(new Date(iso), "dd/MM/yyyy 'at' HH:mm")} (your local time).`,
+    });
+    setReviewOpen(false);
+    setOpen(false);
+    onSentOrScheduled?.();
+  };
+
+  /**
+   * Warm-up ramp: queue everyone (warmest first) and let the scheduled worker
+   * release only `dailyLimit` emails per day until the list is finished.
+   */
+  const handleRamp = async (
+    dailyLimit: number,
+    startIso: string,
+    contacts: AudienceContact[]
+  ) => {
+    if (!contacts.length) {
+      toast({ title: "No consented recipients in that audience", variant: "destructive" });
+      return;
+    }
+    const saved = await persist({
+      status: "scheduled",
+      scheduled_send_at: startIso,
+      daily_send_limit: dailyLimit,
+      ramp_sent_count: 0,
+      ramp_sent_date: null,
+    });
+    if (!saved?.id) return;
+
+    try {
+      await queue.mutateAsync({
+        campaignId: saved.id,
+        recipients: contacts.map((c) => ({
+          email: c.email!,
+          customer_id: c.id || null,
+          first_name: c.first_name,
+          last_name: c.last_name,
+          priority: warmupPriority(c),
+        })),
+      });
+    } catch (e: any) {
+      toast({ title: "Could not queue recipients", description: e.message, variant: "destructive" });
+      return;
+    }
+
+    setScheduleAt(toLocalInput(startIso));
+    toast({
+      title: "Warm-up ramp started",
+      description: `${contacts.length} contacts queued — up to ${dailyLimit} a day, most recent travellers first.`,
     });
     setReviewOpen(false);
     setOpen(false);
@@ -1011,6 +1060,7 @@ export function CampaignsTab({
         isPending={send.isPending || save.isPending || queue.isPending}
         onSendNow={handleSend}
         onSchedule={handleSchedule}
+        onRamp={handleRamp}
       />
 
 
