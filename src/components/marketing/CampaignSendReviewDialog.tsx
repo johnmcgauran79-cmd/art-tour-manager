@@ -128,12 +128,13 @@ export function CampaignSendReviewDialog({
   const defaultTz =
     (typeof settingTz === "string" && settingTz.trim()) || "Australia/Melbourne";
 
-  const [mode, setMode] = useState<"now" | "schedule">(initialMode);
+  const [mode, setMode] = useState<"now" | "schedule" | "ramp">(initialMode);
   const [recipients, setRecipients] = useState<AudienceContact[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("09:00");
   const [tz, setTz] = useState(defaultTz);
+  const [perDay, setPerDay] = useState("500");
 
   useEffect(() => {
     if (open) {
