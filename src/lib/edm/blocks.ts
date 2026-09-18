@@ -94,6 +94,10 @@ export interface EdmMobileOverride {
   /** image */
   imageWidthPct?: number;
   imageMaxWidth?: number;
+  /** image: fill the whole phone width (edge to edge) */
+  imageFullWidth?: boolean;
+  /** social icons: icon size on phones */
+  iconSize?: number;
   /** columns: stack (default) or keep side by side; optionally reverse order */
   stack?: boolean;
   stackReverse?: boolean;
@@ -156,6 +160,12 @@ export interface EdmBlock {
   headerBg?: string;
   headerWidthPct?: number;
   headerPadding?: number;
+  /** design block: phone-only header/logo width (% of email) */
+  mobileHeaderWidthPct?: number;
+  /** design block: phone-only header padding in px */
+  mobileHeaderPadding?: number;
+  /** design block: phone-only footer social icon size in px */
+  mobileIconSize?: number;
   pageBg?: string;
   contentBg?: string;
   borderColor?: string;
@@ -637,6 +647,27 @@ export const moveBlockToTarget = (
   return insertBlockBeforeOrAfter(removeBlockById(blocks, dragId), dragged, targetId, place);
 };
 
+/** True when `cellId` is one of `root`'s own columns (at any depth). */
+const containsCell = (root: EdmBlock, cellId: string): boolean =>
+  (root.cells || []).some(
+    (c) => c.id === cellId || c.blocks.some((b) => containsCell(b, cellId))
+  );
+
+/**
+ * Drag an existing block into a column (including a column of another row), so
+ * content can be moved left/right as well as up/down.
+ */
+export const moveBlockToCell = (
+  blocks: EdmBlock[],
+  dragId: string,
+  cellId: string
+): EdmBlock[] => {
+  const dragged = findBlockById(blocks, dragId);
+  if (!dragged || containsCell(dragged, cellId)) return blocks;
+  return appendBlockToCell(removeBlockById(blocks, dragId), cellId, dragged);
+};
+
+
 /** Insert a block after `afterId` at the same level, or append at root. */
 export const insertBlockAfter = (
   blocks: EdmBlock[],
@@ -855,6 +886,13 @@ const hasSpacing = (s?: EdmSpacing) =>
   !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null && v !== 0);
 
 /**
+ * Mobile spacing is independent of desktop, so a deliberate zero counts as a
+ * value (e.g. "no padding on phones" even though desktop has padding).
+ */
+const hasAnySpacing = (s?: EdmSpacing) =>
+  !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null);
+
+/**
  * Negative spacing can't be expressed as padding, so any negative margin or
  * padding side is collected here and applied as a negative CSS margin on the
  * block's wrapper table (which pulls the block towards its neighbour).
@@ -898,35 +936,51 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
   if (m.hidden) rules.push(`tr.${cls}{display:none!important;max-height:0!important;overflow:hidden!important;}`);
 
   const tdRules: string[] = [];
-  if (hasSpacing(m.padding)) tdRules.push(`padding:${spacingCss(m.padding!)}!important`);
+  // Phone padding is set on its own: a deliberate 0 is honoured even when the
+  // desktop block has padding.
+  if (hasAnySpacing(m.padding)) tdRules.push(`padding:${spacingCss(m.padding!)}!important`);
   if (m.align) tdRules.push(`text-align:${m.align}!important`);
   if (m.fontSize) tdRules.push(`font-size:${m.fontSize}px!important`);
   if (m.lineHeight) tdRules.push(`line-height:${m.lineHeight}!important`);
   if (tdRules.length) rules.push(`tr.${cls}>td{${tdRules.join(";")};}`);
 
-  if (hasSpacing(m.margin)) {
+  if (hasAnySpacing(m.margin)) {
     rules.push(`tr.${cls}-m>td{padding:${spacingCss(m.margin!)}!important;}`);
   }
 
-  if (b.type === "text" && (m.fontSize || m.lineHeight)) {
-    const textRules: string[] = [];
-    if (m.fontSize) textRules.push(`font-size:${m.fontSize}px!important`);
-    if (m.lineHeight) textRules.push(`line-height:${m.lineHeight}!important`);
-    rules.push(`tr.${cls}>td.edm-body-text>div{${textRules.join(";")};}`);
+  if (b.type === "text") {
+    /**
+     * Text reflows on phones instead of shrinking: the block's own size is used
+     * (never overridden by a blanket rule), lifted to at least 16px so body copy
+     * stays comfortable to read and simply runs onto more lines.
+     */
+    const size = m.fontSize ?? Math.max(16, b.fontSize || 16);
+    const lh = m.lineHeight ?? Math.max(1.5, b.lineHeight ?? 1.6);
+    rules.push(
+      `tr.${cls}>td.edm-body-text,tr.${cls}>td.edm-body-text>div,tr.${cls}>td.edm-body-text p,tr.${cls}>td.edm-body-text li{font-size:${size}px!important;line-height:${lh}!important;}`
+    );
   }
 
   if (b.type === "button") {
     const aRules: string[] = [];
     if (m.btnFontSize) aRules.push(`font-size:${m.btnFontSize}px!important`);
-    if (m.btnFullWidth) aRules.push(`display:block!important;width:auto!important`);
+    if (m.btnFullWidth) aRules.push(`display:block!important;width:100%!important`);
     else if (m.btnWidth) aRules.push(`display:inline-block!important;width:${m.btnWidth}px!important`);
     if (aRules.length) rules.push(`tr.${cls}>td a{${aRules.join(";")};}`);
   }
 
+  if (b.type === "social" && m.iconSize) {
+    const s = Math.max(10, Math.round(m.iconSize));
+    rules.push(`tr.${cls}>td img{width:${s}px!important;height:${s}px!important;}`);
+  }
+
   if (b.type === "image") {
     const imgRules: string[] = [];
-    if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
-    if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    if (m.imageFullWidth) imgRules.push(`width:100%!important;max-width:100%!important`);
+    else {
+      if (m.imageWidthPct) imgRules.push(`width:${m.imageWidthPct}%!important`);
+      if (m.imageMaxWidth) imgRules.push(`max-width:${m.imageMaxWidth}px!important`);
+    }
     // Images are centred/right-aligned with auto margins, so the td text-align
     // override alone can't move them on mobile — set the margins too.
     if (m.align)
@@ -934,6 +988,8 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
         `margin:${m.align === "center" ? "0 auto" : m.align === "right" ? "0 0 0 auto" : "0"}!important`
       );
     if (imgRules.length) rules.push(`tr.${cls}>td img{${imgRules.join(";")};}`);
+    if (m.imageFullWidth)
+      rules.push(`tr.${cls}>td{padding-left:0!important;padding-right:0!important;}`);
     if (m.align) rules.push(`tr.${cls}>td a{display:block!important;text-align:${m.align}!important;}`);
   }
 
@@ -1037,22 +1093,39 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       ? `border:1px solid ${brand.colorBorder || "#e2e8f0"};`
       : "";
 
-  const halfGap = Math.round(Math.max(0, b.colGap ?? 0) / 2);
+  // Negative gaps are allowed: they pull neighbouring columns closer together.
+  const halfGap = Math.round((b.colGap ?? 0) / 2);
   const body = Array.from({ length: rows }, (_, r) => {
     const tds = Array.from({ length: cols }, (_, c) => {
       const cell = cells[r * cols + c];
       // Extra horizontal space between columns (never on the outer edges).
       const padLeft = c === 0 ? cp : cp + halfGap;
       const padRight = c === cols - 1 ? cp : cp + halfGap;
+      /**
+       * Column padding can be negative, which pulls the content outwards.
+       * Padding itself can never be negative in email HTML, so any negative
+       * side is applied as a negative margin on a wrapper instead.
+       */
+      const side = (n: number) => Math.max(0, n);
+      const pull = (n: number) => (n < 0 ? `${Math.round(n)}px` : "0");
+      const negative =
+        cp < 0 || padLeft < 0 || padRight < 0
+          ? `margin:${pull(cp)} ${pull(padRight)} ${pull(cp)} ${pull(padLeft)};`
+          : "";
       // Builder-only hooks: identify the column so content can be dropped into
       // it, and show an empty-state hint on the editing canvas.
       const cellAttr = ctx.tag && cell?.id ? ` data-edm-cell="${cell.id}"` : "";
       const empty = !(cell?.blocks || []).length;
-      const inner =
+      const content =
         ctx.tag && empty
           ? `<div class="edm-empty-cell">No content here. Drag content from the right.</div>`
           : renderNested(cell?.blocks || [], brand, ctx);
-      return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${cp}px ${padRight}px ${cp}px ${padLeft}px;${cellBorder}${
+      const inner = negative ? `<div style="${negative}">${content}</div>` : content;
+      return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${side(
+        cp
+      )}px ${side(padRight)}px ${side(cp)}px ${side(
+        padLeft
+      )}px;${cellBorder}${
         b.bgColor ? `background:${b.bgColor};` : ""
       }font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#333333;">${inner}</td>`;
     }).join("");
@@ -1084,7 +1157,7 @@ const socialIconsHtml = (b: EdmBlock, fallbackColor: string): string => {
     .map((s, i) => {
       const meta = SOCIAL_PLATFORMS.find((p) => p.value === s.platform);
       const src = `https://cdn.simpleicons.org/${meta?.slug || s.platform}/${color}`;
-      const inner = `<img src="${src}" alt="${esc(meta?.label || s.platform)}" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;border:0;" />`;
+      const inner = `<img class="edm-social-icon" src="${src}" alt="${esc(meta?.label || s.platform)}" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;border:0;" />`;
       const boxed =
         style === "plain"
           ? inner
@@ -1119,14 +1192,22 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
       )}</td></tr>`;
-    case "text":
-      return `<tr><td class="edm-body-text" style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_BODY)};font-size:${
-        b.fontSize || 16
-      }px;line-height:${b.lineHeight ?? 1.6};color:${b.color || "#333333"};${
+    case "text": {
+      // The font, size and line spacing are repeated on the inner container as
+      // well as the cell: the shared brand stylesheet sets a font on every div,
+      // p and span, so inheritance alone would keep body text on Poppins even
+      // when another font (e.g. Larken) has been chosen for this block.
+      const tFont = fontStack(b, FONT_BODY);
+      const tSize = b.fontSize || 16;
+      const tLh = b.lineHeight ?? 1.6;
+      return `<tr><td class="edm-body-text" style="padding:${pad(ctx, "8px", b)};font-family:${tFont};font-size:${tSize}px;line-height:${tLh};color:${
+        b.color || "#333333"
+      };${
         b.align ? `text-align:${b.align};` : ""
-      }"><div${edit("html")} style="line-height:${b.lineHeight ?? 1.6};">${stripPastedSpacing(
+      }"><div${edit("html")} style="font-family:${tFont};font-size:${tSize}px;line-height:${tLh};">${stripPastedSpacing(
         b.html || ""
       )}</div></td></tr>`;
+    }
     case "image": {
       if (!b.imageUrl) return "";
       const full = !!b.fullBleed;
@@ -1205,7 +1286,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       const py = b.btnPadY ?? 14;
       const radius = b.btnRadius ?? 6;
       const widthCss = b.btnFullWidth
-        ? "display:block;width:auto;max-width:100%;box-sizing:border-box;text-align:center;"
+        ? "display:block;width:100%;max-width:100%;box-sizing:border-box;text-align:center;"
         : b.btnWidth
           ? `display:inline-block;width:${b.btnWidth}px;max-width:100%;box-sizing:border-box;text-align:center;`
           : "display:inline-block;max-width:100%;box-sizing:border-box;";
@@ -1331,10 +1412,10 @@ export const stripPastedSpacing = (html: string): string => {
   return withoutPastedSpacing.replace(/<p\b([^>]*)>/gi, (_match, attrs: string) => {
     const styleMatch = attrs.match(/style=(['"])(.*?)\1/i);
     if (styleMatch) {
-      const nextStyle = `margin:0;line-height:inherit;${styleMatch[2]}`;
+      const nextStyle = `margin:0;line-height:inherit;font-family:inherit;font-size:inherit;${styleMatch[2]}`;
       return `<p${attrs.replace(styleMatch[0], `style=${styleMatch[1]}${nextStyle}${styleMatch[1]}`)}>`;
     }
-    return `<p${attrs} style="margin:0;line-height:inherit;">`;
+    return `<p${attrs} style="margin:0;line-height:inherit;font-family:inherit;font-size:inherit;">`;
   });
 };
 
@@ -1377,7 +1458,27 @@ export const renderEdmHtml = (
 
   const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive };
   const body = renderRows(contentBlocks, brand, ctx);
-  const mobileCss = ctx.css.join("\n  ");
+
+  /* Phone-only header, footer and footer-icon sizes. */
+  const designMobileCss: string[] = [];
+  if (design?.mobileHeaderWidthPct) {
+    const w = Math.min(100, Math.max(10, Math.round(design.mobileHeaderWidthPct)));
+    designMobileCss.push(
+      `img.edm-header-img{width:${w}%!important;max-width:${w}%!important;}`
+    );
+  }
+  if (design?.mobileHeaderPadding != null) {
+    const p = Math.max(0, Math.round(design.mobileHeaderPadding));
+    designMobileCss.push(`td.edm-header{padding:${p}px 12px!important;}`);
+  }
+  if (design?.mobileIconSize) {
+    const s = Math.max(10, Math.round(design.mobileIconSize));
+    designMobileCss.push(
+      `td.edm-footer img.edm-social-icon{width:${s}px!important;height:${s}px!important;}`
+    );
+  }
+
+  const mobileCss = [...designMobileCss, ...ctx.css].join("\n  ");
 
   const footerSocial =
     design?.footerShowSocial && design.socials?.length
@@ -1402,7 +1503,8 @@ ${BRAND_FONT_HEAD_HTML}
   td,th,div,p,li,span,a{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word;}
   td[width]{width:auto!important;}
   img{max-width:100%!important;height:auto!important;}
-  td.edm-body-text,td.edm-body-text>div{font-size:16px!important;line-height:1.65!important;}
+  /* No blanket text size here: each text block emits its own phone size and
+     line spacing below, so what is set in the editor is what is sent. */
   ${mobileCss}
 }
 </style>
@@ -1420,8 +1522,8 @@ ${
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
       headerImage
-        ? `<tr><td align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
-             <img src="${esc(headerImage)}" alt="${esc(brand.name)}" width="${Math.round(
+        ? `<tr><td class="edm-header" align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
+             <img class="edm-header-img" src="${esc(headerImage)}" alt="${esc(brand.name)}" width="${Math.round(
                (maxWidth * headerWidthPct) / 100
              )}" style="display:block;width:${headerWidthPct}%;max-width:${Math.round(
                (maxWidth * headerWidthPct) / 100
@@ -1458,7 +1560,7 @@ ${
         <a href="{{unsubscribe_url}}" style="color:${footerLinkColor};text-decoration:underline;">Unsubscribe</a>
       </div>`
         : "";
-      return `<tr><td align="${footerAlign}" style="padding:${footerPadding}px 32px;background:${footerBg};${
+      return `<tr><td class="edm-footer" align="${footerAlign}" style="padding:${footerPadding}px 32px;background:${footerBg};${
         footerBorder && footerBorder !== "transparent"
           ? `border-top:1px solid ${footerBorder};`
           : ""

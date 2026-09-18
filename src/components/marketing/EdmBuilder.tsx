@@ -77,6 +77,7 @@ import {
   isContainer,
   moveBlockById,
   moveBlockToTarget,
+  moveBlockToCell,
   newBlock,
   removeBlockById,
   removeCellById,
@@ -227,6 +228,12 @@ export function EdmBuilder({
 
   const selected = selectedId ? findBlockById(blocks, selectedId) : null;
 
+  /** The email's real content width, so the desktop canvas matches what is sent. */
+  const contentWidth = useMemo(
+    () => blocks.find((b) => b.type === "design")?.maxWidth || 800,
+    [blocks]
+  );
+
   const previewHtml = useMemo(
     () =>
       mode === "html"
@@ -323,7 +330,8 @@ export function EdmBuilder({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Stays in view while the email is scrolled */}
+      <div className="sticky top-0 z-30 -mx-1 flex flex-wrap items-center gap-2 border-b bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <Tabs value={mode} onValueChange={(v) => onModeChange(v as "blocks" | "html")}>
           <TabsList>
             <TabsTrigger value="blocks" className="gap-1.5">
@@ -478,6 +486,7 @@ export function EdmBuilder({
             <EdmCanvas
               html={previewHtml}
               device={device}
+              contentWidth={contentWidth}
               selectedId={selectedId}
               selectedLabel={selected ? blockLabel[selected.type] : null}
               pendingType={pickType}
@@ -498,6 +507,12 @@ export function EdmBuilder({
               onDuplicate={duplicate}
               onDelete={remove}
               onMove={move}
+              onMoveTo={(dragId, targetId, place) =>
+                commit(moveBlockToTarget(blocks, dragId, targetId, place))
+              }
+              onMoveToCell={(dragId, cellId) => commit(moveBlockToCell(blocks, dragId, cellId))}
+              onClearCell={(cellId) => commit(clearCellById(blocks, cellId))}
+              onDeleteCell={(cellId) => commit(removeCellById(blocks, cellId))}
             />
             <p className="mt-2 text-[11px] text-muted-foreground">
               Click any text on the email to edit it. Click a section to change its settings, or
@@ -846,6 +861,41 @@ function BlockInspector({
 }) {
   const t = block.type;
 
+  /* --------- Phone-only header, logo and footer sizes --------- */
+  if (device === "mobile" && t === "design") {
+    return (
+      <div className="space-y-4">
+        <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+          These sizes only apply on phones. Leave them blank to use the desktop sizes.
+        </p>
+        <NumField
+          label="Header / logo width on phones"
+          suffix="%"
+          min={10}
+          max={100}
+          value={block.mobileHeaderWidthPct}
+          onChange={(mobileHeaderWidthPct) => onChange({ mobileHeaderWidthPct })}
+        />
+        <NumField
+          label="Space above and below the header on phones"
+          suffix="px"
+          min={0}
+          max={80}
+          value={block.mobileHeaderPadding}
+          onChange={(mobileHeaderPadding) => onChange({ mobileHeaderPadding })}
+        />
+        <NumField
+          label="Footer social icon size on phones"
+          suffix="px"
+          min={12}
+          max={80}
+          value={block.mobileIconSize}
+          onChange={(mobileIconSize) => onChange({ mobileIconSize })}
+        />
+      </div>
+    );
+  }
+
   /* ---------------- Mobile override mode ---------------- */
   if (device === "mobile" && t !== "design") {
     const m = block.mobile || {};
@@ -935,24 +985,46 @@ function BlockInspector({
         )}
 
         {t === "image" && (
-          <div className="grid grid-cols-2 gap-3">
-            <NumField
-              label="Image width"
-              suffix="%"
-              min={5}
-              max={100}
-              value={m.imageWidthPct}
-              onChange={(imageWidthPct) => setM({ imageWidthPct })}
-            />
-            <NumField
-              label="Max width"
-              suffix="px"
-              min={40}
-              max={900}
-              value={m.imageMaxWidth}
-              onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
-            />
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Full width of the phone screen</Label>
+              <Switch
+                checked={!!m.imageFullWidth}
+                onCheckedChange={(imageFullWidth) => setM({ imageFullWidth })}
+              />
+            </div>
+            {!m.imageFullWidth && (
+              <div className="grid grid-cols-2 gap-3">
+                <NumField
+                  label="Image width"
+                  suffix="%"
+                  min={5}
+                  max={100}
+                  value={m.imageWidthPct}
+                  onChange={(imageWidthPct) => setM({ imageWidthPct })}
+                />
+                <NumField
+                  label="Max width"
+                  suffix="px"
+                  min={40}
+                  max={900}
+                  value={m.imageMaxWidth}
+                  onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
+                />
+              </div>
+            )}
           </div>
+        )}
+
+        {t === "social" && (
+          <NumField
+            label="Icon size on phones"
+            suffix="px"
+            min={12}
+            max={80}
+            value={m.iconSize}
+            onChange={(iconSize) => setM({ iconSize })}
+          />
         )}
 
         {(t === "columns" || t === "table" || t === "twoColumn" || t === "imageText") && (
@@ -1381,7 +1453,7 @@ function BlockInspector({
             <Label>Cell padding (px)</Label>
             <Input
               type="number"
-              min={0}
+              min={-40}
               max={40}
               value={block.cellPadding ?? 8}
               onChange={(e) => onChange({ cellPadding: Number(e.target.value) || 0 })}
@@ -1391,7 +1463,7 @@ function BlockInspector({
             <Label>Space between columns (px)</Label>
             <Input
               type="number"
-              min={0}
+              min={-80}
               max={80}
               value={block.colGap ?? 0}
               onChange={(e) => onChange({ colGap: Number(e.target.value) || 0 })}

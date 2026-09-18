@@ -4,6 +4,8 @@ import {
   ArrowUp,
   Bold,
   Copy,
+  Eraser,
+  GripVertical,
   Italic,
   Link2,
   List,
@@ -44,6 +46,8 @@ interface Rect {
 interface EdmCanvasProps {
   html: string;
   device: "desktop" | "mobile";
+  /** Real content width of the email (design → content width), in px. */
+  contentWidth: number;
   selectedId: string | null;
   /** Type waiting to be placed by clicking the email. */
   pendingType: EdmPaletteType | null;
@@ -60,9 +64,23 @@ interface EdmCanvasProps {
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
+  /** Drag an existing block next to another block. */
+  onMoveTo: (dragId: string, targetId: string, place: "before" | "after") => void;
+  /** Drag an existing block into a column (including another row's column). */
+  onMoveToCell: (dragId: string, cellId: string) => void;
+  /** Remove everything inside a column, keeping the column. */
+  onClearCell: (cellId: string) => void;
+  /** Remove a single column from its row. */
+  onDeleteCell: (cellId: string) => void;
   selectedLabel?: string | null;
 }
 
+/**
+ * Editor-only styling. Deliberately contains no layout overrides: the email's
+ * own responsive rules drive both views, so the canvas is a true preview of
+ * what people receive (desktop is the real width, scaled to fit the screen;
+ * phone view is a genuine narrow window).
+ */
 const CANVAS_CSS = `
   [data-edm-id]{cursor:pointer;}
   [data-edm-id].edm-hover > td{outline:2px dashed #93c5fd;outline-offset:-2px;}
@@ -71,7 +89,9 @@ const CANVAS_CSS = `
     background-image:linear-gradient(rgba(245,158,11,0.08),rgba(245,158,11,0.08));}
   [data-edm-id].edm-insert-before > td{box-shadow:inset 0 3px 0 0 #16a34a;}
   [data-edm-id].edm-insert-after > td{box-shadow:inset 0 -3px 0 0 #16a34a;}
+  [data-edm-id].edm-dragging{opacity:0.45;}
   [data-edm-cell].edm-cell-target{outline:2px dashed #16a34a;outline-offset:-2px;}
+  [data-edm-cell].edm-cell-active{outline:2px solid #14b8a6;outline-offset:-2px;}
   [data-edm-edit]{cursor:text;}
   [data-edm-edit]:focus{outline:2px solid #2563eb;outline-offset:2px;border-radius:2px;}
   /* While you type, text that is nearly the same colour as its background gets a
@@ -81,29 +101,11 @@ const CANVAS_CSS = `
   [data-edm-edit].edm-readable-dark{background:#111827!important;box-shadow:0 0 0 2px #374151;}
   .edm-empty-cell{font-family:Arial,sans-serif;font-size:12px;color:#94a3b8;text-align:center;
     border:1px dashed #cbd5e1;border-radius:6px;padding:18px 10px;}
-  /* Phone view is a genuine narrow layout, never a scaled desktop preview.
-     border-box is essential: without it a 100%-wide table cell plus its left
-     and right padding is wider than the phone and the email is clipped. */
-  html.edm-mobile,html.edm-mobile body{
-    width:100%!important;max-width:100%!important;margin:0!important;overflow-x:hidden!important;}
-  html.edm-mobile *,html.edm-mobile *::before,html.edm-mobile *::after{
-    min-width:0!important;box-sizing:border-box!important;}
-  html.edm-mobile table{
-    width:100%!important;max-width:100%!important;table-layout:fixed!important;}
-  html.edm-mobile table[width]{width:100%!important;}
-  html.edm-mobile td,html.edm-mobile th,html.edm-mobile div,html.edm-mobile p,
-  html.edm-mobile li,html.edm-mobile span,html.edm-mobile a{
-    max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word;}
-  html.edm-mobile td[width]{width:auto!important;}
-  html.edm-mobile td.edm-col{display:block!important;width:100%!important;
-    padding-left:0!important;padding-right:0!important;}
-  html.edm-mobile img{max-width:100%!important;width:auto!important;height:auto!important;}
-  html.edm-mobile td.edm-body-text,html.edm-mobile td.edm-body-text>div{
-    font-size:16px!important;line-height:1.65!important;}
 `;
 
 const MOBILE_FRAME_WIDTH = 390;
-
+/** Padding either side of the email inside the branded shell. */
+const SHELL_PADDING = 24;
 
 /** Parse a computed rgb()/rgba() colour into channels. */
 const rgbOf = (value: string): [number, number, number] | null => {
@@ -137,24 +139,35 @@ const effectiveBg = (el: HTMLElement): [number, number, number] => {
   return [255, 255, 255];
 };
 
+const contrast = (a: number, b: number) =>
+  (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
 /**
  * Text that is nearly the same colour as its background can't be seen while
  * typing (white copy on a white block, for example). While the element is
  * focused we put a contrasting backdrop behind it — the text keeps the exact
- * colour that was chosen, both here and in the sent email.
+ * colour that was chosen, both here and in the sent email. Every coloured run
+ * inside the element is checked, so colouring a few words also works.
  */
 const applyReadableColour = (el: HTMLElement) => {
   const win = el.ownerDocument?.defaultView;
   if (!win) return;
   el.classList.remove("edm-readable-light", "edm-readable-dark");
-  const fg = rgbOf(win.getComputedStyle(el).color);
-  if (!fg) return;
   const bgLum = luminance(effectiveBg(el));
-  const fgLum = luminance(fg);
-  const ratio =
-    (Math.max(bgLum, fgLum) + 0.05) / (Math.min(bgLum, fgLum) + 0.05);
-  if (ratio >= 2.2) return;
-  el.classList.add(fgLum > 0.4 ? "edm-readable-dark" : "edm-readable-light");
+
+  const colours: number[] = [];
+  const own = rgbOf(win.getComputedStyle(el).color);
+  if (own) colours.push(luminance(own));
+  el.querySelectorAll<HTMLElement>("*").forEach((child) => {
+    const c = rgbOf(win.getComputedStyle(child).color);
+    if (c) colours.push(luminance(c));
+  });
+
+  const worst = colours
+    .map((lum) => ({ lum, ratio: contrast(bgLum, lum) }))
+    .sort((a, b) => a.ratio - b.ratio)[0];
+  if (!worst || worst.ratio >= 2.2) return;
+  el.classList.add(worst.lum > 0.4 ? "edm-readable-dark" : "edm-readable-light");
 };
 
 /**
@@ -165,6 +178,7 @@ const applyReadableColour = (el: HTMLElement) => {
 export function EdmCanvas({
   html,
   device,
+  contentWidth,
   selectedId,
   pendingType,
   dragType,
@@ -178,8 +192,13 @@ export function EdmCanvas({
   onDuplicate,
   onDelete,
   onMove,
+  onMoveTo,
+  onMoveToCell,
+  onClearCell,
+  onDeleteCell,
   selectedLabel,
 }: EdmCanvasProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const editingRef = useRef<{ el: HTMLElement; blockId: string; field: EditField } | null>(null);
   const pendingHtmlRef = useRef<string | null>(null);
@@ -188,11 +207,25 @@ export function EdmCanvas({
    * "in edit" so the highlighted words and their colour choice survive.
    */
   const holdEditRef = useRef(false);
+  /** Id of the existing block currently being dragged with the move handle. */
+  const dragBlockRef = useRef<string | null>(null);
+  const [dragBlockId, setDragBlockId] = useState<string | null>(null);
   const [parentRowId, setParentRowId] = useState<string | null>(null);
+  const [activeCellId, setActiveCellId] = useState<string | null>(null);
 
   const [blockRect, setBlockRect] = useState<Rect | null>(null);
   const [textRect, setTextRect] = useState<Rect | null>(null);
   const [frameHeight, setFrameHeight] = useState(900);
+  const [available, setAvailable] = useState(0);
+
+  /**
+   * Desktop shows the email at its true width and scales the whole thing down
+   * to fit the space, so proportions (logo width, padding, columns) are exactly
+   * what people receive. Phone view is a real narrow window and never scaled.
+   */
+  const frameWidth = device === "mobile" ? MOBILE_FRAME_WIDTH : contentWidth + SHELL_PADDING * 2;
+  const scale =
+    device === "mobile" || !available ? 1 : Math.min(1, available / frameWidth);
 
   // Handlers change often; keep them out of the document-writing effect.
   const cb = useRef({
@@ -204,6 +237,8 @@ export function EdmCanvas({
     onInsertAt,
     onInsertIntoCell,
     onInsertAtEnd,
+    onMoveTo,
+    onMoveToCell,
   });
   cb.current = {
     pendingType,
@@ -214,35 +249,57 @@ export function EdmCanvas({
     onInsertAt,
     onInsertIntoCell,
     onInsertAtEnd,
+    onMoveTo,
+    onMoveToCell,
   };
 
   const doc = () => frameRef.current?.contentDocument ?? null;
 
-  const rectOf = useCallback((el: Element | null): Rect | null => {
-    const frame = frameRef.current;
-    if (!el || !frame) return null;
-    const r = el.getBoundingClientRect();
-    return {
-      top: frame.offsetTop + r.top,
-      left: frame.offsetLeft + r.left,
-      width: r.width,
-      height: r.height,
+  /** Measure the space the canvas has, so the desktop email can be fitted to it. */
+  useEffect(() => {
+    const measure = () => {
+      const el = wrapRef.current;
+      if (el) setAvailable(el.clientWidth - 8);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const id = window.setInterval(measure, 800);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.clearInterval(id);
     };
   }, []);
+
+  /** Position of an element inside the iframe, in canvas coordinates. */
+  const rectOf = useCallback(
+    (el: Element | null): Rect | null => {
+      const frame = frameRef.current;
+      const wrap = wrapRef.current;
+      if (!el || !frame || !wrap) return null;
+      const r = el.getBoundingClientRect();
+      const f = frame.getBoundingClientRect();
+      const w = wrap.getBoundingClientRect();
+      return {
+        top: f.top - w.top + r.top * scale,
+        left: f.left - w.left + r.left * scale,
+        width: r.width * scale,
+        height: r.height * scale,
+      };
+    },
+    [scale]
+  );
 
   /** Grow the frame to the full height of the email so the page scrolls, not the frame. */
   const syncHeight = useCallback(() => {
     const d = frameRef.current?.contentDocument;
     if (!d) return;
-    // Phone view is always a true 390px phone: the email reflows to that width
-    // and text keeps its size, so nothing is ever shrunk to fit.
     const h = Math.max(
       d.documentElement?.scrollHeight || 0,
       d.body?.scrollHeight || 0,
       320
     );
     setFrameHeight((prev) => (Math.abs(prev - h) > 2 ? h : prev));
-  }, [device]);
+  }, []);
 
   /** Replace the iframe document. */
   const writeDoc = useCallback(
@@ -259,7 +316,6 @@ export function EdmCanvas({
       const style = fresh.createElement("style");
       style.textContent = CANVAS_CSS;
       fresh.head?.appendChild(style);
-      fresh.documentElement?.classList.toggle("edm-mobile", device === "mobile");
       fresh.querySelectorAll<HTMLElement>("[data-edm-edit]").forEach((el) => {
         el.contentEditable = "true";
         el.spellcheck = true;
@@ -270,9 +326,8 @@ export function EdmCanvas({
       window.setTimeout(syncHeight, 250);
       window.setTimeout(syncHeight, 1200);
     },
-    [syncHeight, device]
+    [syncHeight]
   );
-
 
   /** Write the current editable content back onto the block. */
   const commitEdit = useCallback(() => {
@@ -312,8 +367,6 @@ export function EdmCanvas({
     };
   }, [syncHeight]);
 
-
-
   /* ---- canvas interaction ---- */
   useEffect(() => {
     const frame = frameRef.current;
@@ -325,9 +378,8 @@ export function EdmCanvas({
     const cellOf = (t: EventTarget | null): HTMLElement | null =>
       (t as HTMLElement | null)?.closest?.("[data-edm-cell]") ?? null;
     /**
-     * Where should a dropped/clicked palette item land? A column always wins,
-     * so content dropped anywhere inside a block goes into that block rather
-     * than beside it.
+     * Where should a dropped/clicked item land? A column always wins, so content
+     * dropped anywhere inside a block goes into that block rather than beside it.
      */
     const dropTarget = (
       t: EventTarget | null
@@ -354,13 +406,18 @@ export function EdmCanvas({
       );
     };
 
+    /** Highlight where a dragged palette item or block would land. */
+    const markDropTarget = (target: EventTarget | null, clientY: number) => {
+      const t = dropTarget(target);
+      if (!t) return;
+      if (t.cell) t.cell.classList.add("edm-cell-target");
+      else markInsert(t.row, clientY);
+    };
+
     const onMove_ = (e: MouseEvent) => {
       clearMarks();
-      const target = dropTarget(e.target);
-      if (!target) return;
-      if (cb.current.pendingType) {
-        if (target.cell) target.cell.classList.add("edm-cell-target");
-        else markInsert(target.row, e.clientY);
+      if (cb.current.pendingType || dragBlockRef.current) {
+        markDropTarget(e.target, e.clientY);
         return;
       }
       const row = rowOf(e.target);
@@ -369,9 +426,38 @@ export function EdmCanvas({
 
     const onLeave = () => clearMarks();
 
+    /** Drop the block currently held by the move handle. */
+    const dropExisting = (target: EventTarget | null, clientY: number) => {
+      const dragId = dragBlockRef.current;
+      dragBlockRef.current = null;
+      setDragBlockId(null);
+      clearMarks();
+      if (!dragId) return;
+      const t = dropTarget(target);
+      if (!t) return;
+      if (t.cell) {
+        const cellId = t.cell.getAttribute("data-edm-cell");
+        if (cellId) cb.current.onMoveToCell(dragId, cellId);
+        return;
+      }
+      const id = t.row.getAttribute("data-edm-id");
+      if (!id || id === dragId) return;
+      const rect = t.row.getBoundingClientRect();
+      cb.current.onMoveTo(
+        dragId,
+        id,
+        clientY - rect.top < rect.height / 2 ? "before" : "after"
+      );
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (dragBlockRef.current) dropExisting(e.target, e.clientY);
+    };
+
     const onClick = (e: MouseEvent) => {
       const editable = (e.target as HTMLElement | null)?.closest?.("[data-edm-edit]");
       const row = rowOf(e.target);
+      const cell = cellOf(e.target);
       const type = cb.current.pendingType;
 
       if (type) {
@@ -396,8 +482,7 @@ export function EdmCanvas({
         return;
       }
 
-      // Links (buttons, images) must not navigate inside the editor.
-      if ((e.target as HTMLElement | null)?.closest?.("a")) e.preventDefault();
+      setActiveCellId(cell?.getAttribute("data-edm-cell") || null);
 
       if (row) {
         const id = row.getAttribute("data-edm-id");
@@ -406,6 +491,14 @@ export function EdmCanvas({
         cb.current.onSelectBackground();
       }
       clearMarks();
+    };
+
+    /**
+     * Links (buttons, images, linked text) must never navigate inside the
+     * editor. Capture phase so it also applies to links inside editable text.
+     */
+    const blockNavigation = (e: Event) => {
+      if ((e.target as HTMLElement | null)?.closest?.("a")) e.preventDefault();
     };
 
     /* ---- typing directly on the email ---- */
@@ -431,7 +524,6 @@ export function EdmCanvas({
       commitEdit();
     };
 
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && editingRef.current) {
         e.preventDefault();
@@ -441,7 +533,15 @@ export function EdmCanvas({
 
     const onInput = () => {
       const el = editingRef.current?.el;
-      if (el) setTextRect(rectOf(el));
+      if (el) {
+        applyReadableColour(el);
+        setTextRect(rectOf(el));
+      }
+    };
+
+    const onSelectionChange = () => {
+      const el = editingRef.current?.el;
+      if (el) applyReadableColour(el);
     };
 
     /* ---- palette drag and drop ---- */
@@ -449,10 +549,7 @@ export function EdmCanvas({
       if (!cb.current.dragType) return;
       e.preventDefault();
       clearMarks();
-      const target = dropTarget(e.target);
-      if (!target) return;
-      if (target.cell) target.cell.classList.add("edm-cell-target");
-      else markInsert(target.row, e.clientY);
+      markDropTarget(e.target, e.clientY);
     };
 
     const onDrop = (e: DragEvent) => {
@@ -488,27 +585,46 @@ export function EdmCanvas({
 
     d.addEventListener("mousemove", onMove_);
     d.addEventListener("mouseleave", onLeave);
+    d.addEventListener("mouseup", onMouseUp);
     d.addEventListener("click", onClick);
+    d.addEventListener("click", blockNavigation, true);
+    d.addEventListener("auxclick", blockNavigation, true);
     d.addEventListener("focusin", onFocusIn);
     d.addEventListener("focusout", onFocusOut);
     d.addEventListener("keydown", onKeyDown);
     d.addEventListener("input", onInput);
+    d.addEventListener("selectionchange", onSelectionChange);
     d.addEventListener("dragover", onDragOver);
     d.addEventListener("drop", onDrop);
     d.defaultView?.addEventListener("scroll", onScroll);
     return () => {
       d.removeEventListener("mousemove", onMove_);
       d.removeEventListener("mouseleave", onLeave);
+      d.removeEventListener("mouseup", onMouseUp);
       d.removeEventListener("click", onClick);
+      d.removeEventListener("click", blockNavigation, true);
+      d.removeEventListener("auxclick", blockNavigation, true);
       d.removeEventListener("focusin", onFocusIn);
       d.removeEventListener("focusout", onFocusOut);
       d.removeEventListener("keydown", onKeyDown);
       d.removeEventListener("input", onInput);
+      d.removeEventListener("selectionchange", onSelectionChange);
       d.removeEventListener("dragover", onDragOver);
       d.removeEventListener("drop", onDrop);
       d.defaultView?.removeEventListener("scroll", onScroll);
     };
   }, [html, selectedId, rectOf, commitEdit]);
+
+  /* ---- a drag can also finish outside the email ---- */
+  useEffect(() => {
+    if (!dragBlockId) return;
+    const stop = () => {
+      dragBlockRef.current = null;
+      setDragBlockId(null);
+    };
+    window.addEventListener("mouseup", stop);
+    return () => window.removeEventListener("mouseup", stop);
+  }, [dragBlockId]);
 
   /* ---- outline the selected block and place its toolbar ---- */
   useEffect(() => {
@@ -518,6 +634,12 @@ export function EdmCanvas({
       d.querySelectorAll("[data-edm-id].edm-active,[data-edm-id].edm-row-active").forEach((el) =>
         el.classList.remove("edm-active", "edm-row-active")
       );
+      d.querySelectorAll("[data-edm-cell].edm-cell-active").forEach((el) =>
+        el.classList.remove("edm-cell-active")
+      );
+      if (activeCellId) {
+        d.querySelector(`[data-edm-cell="${activeCellId}"]`)?.classList.add("edm-cell-active");
+      }
       if (!selectedId) {
         setBlockRect(null);
         setParentRowId(null);
@@ -538,8 +660,18 @@ export function EdmCanvas({
       setParentRowId(row?.getAttribute("data-edm-id") || null);
     });
     return () => cancelAnimationFrame(raf);
-  }, [selectedId, html, rectOf]);
+  }, [selectedId, html, rectOf, activeCellId]);
 
+  /* ---- mark the dragged block ---- */
+  useEffect(() => {
+    const d = doc();
+    if (!d) return;
+    d.querySelectorAll("[data-edm-id].edm-dragging").forEach((el) =>
+      el.classList.remove("edm-dragging")
+    );
+    if (dragBlockId)
+      d.querySelector(`[data-edm-id="${dragBlockId}"]`)?.classList.add("edm-dragging");
+  }, [dragBlockId, html]);
 
   /** Remembers the text selection while a popover (e.g. the colour picker) is open. */
   const savedRangeRef = useRef<Range | null>(null);
@@ -584,42 +716,62 @@ export function EdmCanvas({
   const isRichText = editingRef.current?.field === "html";
 
   return (
-    <div
-      className={cn(
-        "relative rounded-lg border bg-muted/40 p-2",
-        device === "mobile" ? "overflow-x-hidden" : "overflow-x-auto"
-      )}
-    >
-      <div className={cn("flex justify-center", device === "desktop" && "min-w-[720px]")}>
+    <div ref={wrapRef} className="relative overflow-hidden rounded-lg border bg-muted/40 p-2">
+      <div className="flex justify-center">
         <div
-          className={device === "mobile" ? "shrink-0 overflow-hidden" : "w-full"}
-          style={
-            device === "mobile"
-              ? { width: MOBILE_FRAME_WIDTH, height: frameHeight }
-              : undefined
-          }
+          className="overflow-hidden"
+          style={{ width: frameWidth * scale, height: frameHeight * scale }}
         >
           <iframe
             ref={frameRef}
             title="Email editing canvas"
             scrolling="no"
-            style={
-              device === "mobile"
-                ? {
-                    height: frameHeight,
-                    width: MOBILE_FRAME_WIDTH,
-                  }
-                : { height: frameHeight }
-            }
+            style={{
+              width: frameWidth,
+              height: frameHeight,
+              transform: scale === 1 ? undefined : `scale(${scale})`,
+              transformOrigin: "top left",
+              border: 0,
+            }}
             // Same-origin so the document can be edited; scripts stay blocked.
             sandbox="allow-same-origin"
-            className={cn(
-              "rounded bg-background",
-              device === "mobile" ? "shrink-0" : "w-full min-w-[720px]"
-            )}
+            className="rounded bg-background"
           />
         </div>
       </div>
+
+      {/* Column actions */}
+      {activeCellId && !textRect && (
+        <div className="pointer-events-auto absolute right-3 top-3 z-20 flex items-center gap-0.5 rounded-md border bg-background px-1 py-0.5 shadow-sm">
+          <span className="px-1 text-[10px] font-semibold uppercase text-muted-foreground">
+            Column
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1 px-1.5 text-[10px] font-semibold uppercase"
+            title="Remove everything inside this column, keeping the column"
+            onClick={() => {
+              onClearCell(activeCellId);
+              setActiveCellId(null);
+            }}
+          >
+            <Eraser className="h-3.5 w-3.5" /> Empty
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1 px-1.5 text-[10px] font-semibold uppercase text-destructive"
+            title="Delete just this column, leaving the rest of the row"
+            onClick={() => {
+              onDeleteCell(activeCellId);
+              setActiveCellId(null);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+        </div>
+      )}
 
       {/* Selected block actions */}
       {blockRect && !textRect && (
@@ -627,7 +779,7 @@ export function EdmCanvas({
           className="pointer-events-auto absolute z-20 flex items-center gap-0.5 rounded-md border bg-background px-1 py-0.5 shadow-sm"
           style={{
             top: Math.max(4, blockRect.top - 30),
-            left: Math.max(4, blockRect.left + blockRect.width - 168),
+            left: Math.max(4, blockRect.left + blockRect.width - 200),
           }}
         >
           <span className="px-1 text-[10px] font-semibold uppercase text-muted-foreground">
@@ -644,6 +796,22 @@ export function EdmCanvas({
               <SquareDashed className="h-3.5 w-3.5" /> Row
             </Button>
           )}
+
+          <button
+            type="button"
+            className={cn(
+              "flex h-6 w-6 cursor-grab items-center justify-center rounded hover:bg-accent",
+              dragBlockId && "cursor-grabbing bg-accent"
+            )}
+            title="Hold and drag onto the email to move this anywhere, including another column"
+            onMouseDown={() => {
+              if (!selectedId) return;
+              dragBlockRef.current = selectedId;
+              setDragBlockId(selectedId);
+            }}
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
 
           <Button
             variant="ghost"
@@ -795,6 +963,12 @@ export function EdmCanvas({
       {pendingType && (
         <div className="absolute left-3 top-3 z-30 rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
           Click where the {paletteLabel(pendingType).toLowerCase()} should go
+        </div>
+      )}
+
+      {dragBlockId && (
+        <div className="absolute bottom-3 left-3 z-30 rounded-md border border-primary bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+          Drop it where you want it — any column or between blocks
         </div>
       )}
     </div>
