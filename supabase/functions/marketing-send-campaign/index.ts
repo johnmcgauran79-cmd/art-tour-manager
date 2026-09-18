@@ -200,6 +200,9 @@ function serve_handler() {
             first_name: r.first_name || null,
             last_name: r.last_name || null,
             status: "queued",
+            // Lower number = sent earlier. Used by the warm-up ramp so the most
+            // recently engaged contacts always go out first.
+            send_priority: Number.isFinite(Number(r.priority)) ? Number(r.priority) : 100,
           }))
           .filter((r: any) => r.email && !blocked.has(r.email));
 
