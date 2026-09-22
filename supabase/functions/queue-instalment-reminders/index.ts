@@ -99,6 +99,15 @@ function parseXeroDate(v: unknown): string | null {
 
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 
+/** Best available person name for an invoice group, used in explanations. */
+function recipientNameFor(entry: { bookings: any[] }, inv: any): string {
+  const lead = entry.bookings?.[0]?.lead;
+  return [lead?.first_name, lead?.last_name].filter(Boolean).join(" ")
+    || entry.bookings?.[0]?.group_name
+    || inv?.Contact?.Name
+    || "Unknown";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
