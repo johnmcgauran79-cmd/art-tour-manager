@@ -64,8 +64,11 @@ function renderDescription(value: unknown): string {
 
   if (!text.includes("\n")) {
     text = text
-      // Section headings such as "TOUR INCLUSIONS:" / "PAYMENT SCHEDULE"
-      .replace(/\s+((?:[A-Z][A-Z &/']{3,}(?: [A-Z][A-Z &/']*)*)(?::|(?= ?\$)))/g, "\n\n$1")
+      // Section headings such as "TOUR INCLUSIONS:" or "PAYMENT SCHEDULE"
+      .replace(/\s+(TOUR INCLUSIONS:|TOUR EXCLUSIONS:|INCLUSIONS:|EXCLUSIONS:|PAYMENT SCHEDULE|CANCELLATION POLICY)/g, "\n\n$1")
+      // Sub-lines such as "FINAL PAYMENT DUE ..." and each money amount
+      .replace(/\s+(FINAL PAYMENT DUE)/g, "\n$1")
+      .replace(/\s+(?=[$£€¥]\s?\d)/g, "\n")
       // Bullet items written as " - item"
       .replace(/\s+-\s+/g, "\n- ");
   }
