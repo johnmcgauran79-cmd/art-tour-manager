@@ -347,7 +347,26 @@ serve(async (req) => {
           }
           details.push({ kind, invoice: invoiceNumber, tour: tour.name, currency, shortfall, state: row.state });
         }
+
+        // Clear down rows that are no longer chaseable: the booking has since
+        // been marked paid (so it never reached byInvoice), the invoice was
+        // unlinked, or the tour no longer requires this kind of reminder.
+        if (!dryRun) {
+          const activeIds = Array.from(byInvoice.keys());
+          let q = supabase
+            .from("instalment_reminders")
+            .update({ state: "resolved" })
+            .eq("tour_id", tour.id)
+            .eq("kind", kind)
+            .in("state", ["pending", "sent", "held_agent", "needs_call"]);
+          if (activeIds.length > 0) {
+            q = q.not("xero_invoice_id", "in", `(${activeIds.join(",")})`);
+          }
+          const { data: cleared } = await q.select("id");
+          resolved += cleared?.length ?? 0;
+        }
       }
+
     }
 
     // 5. Automatic follow-ups. The first email on each invoice waits for a
