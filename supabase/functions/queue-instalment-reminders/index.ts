@@ -7,12 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Kind = "instalment" | "final";
+type Kind = "deposit" | "instalment" | "final";
 
-// Booking statuses never chased, per kind of reminder. An instalment is not
-// chased once the instalment (or the lot) is paid; the final balance is still
-// chased when only the instalment has been paid.
+// Booking statuses never chased, per kind of reminder. A deposit is not chased
+// once any payment stage has been reached; an instalment is not chased once the
+// instalment (or the lot) is paid; the final balance is still chased when only
+// the instalment has been paid.
 const EXCLUDED_STATUSES: Record<Kind, Set<string>> = {
+  deposit: new Set([
+    "cancelled", "waitlisted", "host", "complimentary", "racing_breaks_invoice",
+    "fully_paid", "instalment_paid", "deposited",
+  ]),
   instalment: new Set([
     "cancelled", "waitlisted", "host", "complimentary", "racing_breaks_invoice",
     "fully_paid", "instalment_paid",
@@ -23,8 +28,10 @@ const EXCLUDED_STATUSES: Record<Kind, Set<string>> = {
   ]),
 };
 
+// Days a booking must be unpaid before the deposit is chased.
+const DEPOSIT_GRACE_DAYS = 10;
 // Days between chases, per kind.
-const CADENCE_DAYS: Record<Kind, number> = { instalment: 14, final: 7 };
+const CADENCE_DAYS: Record<Kind, number> = { deposit: 7, instalment: 14, final: 7 };
 // Emails sent before the invoice is flagged for a phone call instead.
 const MAX_REMINDERS = 3;
 
