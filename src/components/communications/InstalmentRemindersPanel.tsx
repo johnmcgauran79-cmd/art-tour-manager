@@ -37,6 +37,13 @@ const STATE_LABELS: Record<string, string> = {
 };
 
 const KIND_COPY: Record<ReminderKind, { title: string; blurb: string; empty: string }> = {
+  deposit: {
+    title: "Deposits",
+    blurb:
+      "Bookings whose deposit is still unpaid 10 days after being made, built each night from live Xero figures. Send the first email yourself; after that unpaid invoices are chased automatically each week, and flagged for a phone call after three emails.",
+    empty:
+      "Nothing owing. Lines appear here 10 days after a booking is made if Xero still shows the deposit unpaid.",
+  },
   instalment: {
     title: "Instalment payments",
     blurb:
@@ -53,7 +60,7 @@ const KIND_COPY: Record<ReminderKind, { title: string; blurb: string; empty: str
   },
 };
 
-const KIND_ORDER: ReminderKind[] = ["instalment", "final"];
+const KIND_ORDER: ReminderKind[] = ["deposit", "instalment", "final"];
 
 export const InstalmentRemindersPanel = () => {
   const { hasEditAccess } = usePermissions();
@@ -71,7 +78,7 @@ export const InstalmentRemindersPanel = () => {
   const [stopReason, setStopReason] = useState("");
 
   const byKind = useMemo(() => {
-    const map: Record<ReminderKind, InstalmentReminder[]> = { instalment: [], final: [] };
+    const map: Record<ReminderKind, InstalmentReminder[]> = { deposit: [], instalment: [], final: [] };
     for (const r of rows) map[(r.kind as ReminderKind) ?? "instalment"]?.push(r);
     return map;
   }, [rows]);

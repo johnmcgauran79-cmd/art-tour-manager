@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-export type ReminderKind = "instalment" | "final";
+export type ReminderKind = "deposit" | "instalment" | "final";
 
 export interface InstalmentReminder {
   id: string;

@@ -7,12 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Kind = "instalment" | "final";
+type Kind = "deposit" | "instalment" | "final";
 
-// Booking statuses never chased, per kind of reminder. An instalment is not
-// chased once the instalment (or the lot) is paid; the final balance is still
-// chased when only the instalment has been paid.
+// Booking statuses never chased, per kind of reminder. A deposit is not chased
+// once any payment stage has been reached; an instalment is not chased once the
+// instalment (or the lot) is paid; the final balance is still chased when only
+// the instalment has been paid.
 const EXCLUDED_STATUSES: Record<Kind, Set<string>> = {
+  deposit: new Set([
+    "cancelled", "waitlisted", "host", "complimentary", "racing_breaks_invoice",
+    "fully_paid", "instalment_paid", "deposited",
+  ]),
   instalment: new Set([
     "cancelled", "waitlisted", "host", "complimentary", "racing_breaks_invoice",
     "fully_paid", "instalment_paid",
@@ -23,8 +28,10 @@ const EXCLUDED_STATUSES: Record<Kind, Set<string>> = {
   ]),
 };
 
+// Days a booking must be unpaid before the deposit is chased.
+const DEPOSIT_GRACE_DAYS = 10;
 // Days between chases, per kind.
-const CADENCE_DAYS: Record<Kind, number> = { instalment: 14, final: 7 };
+const CADENCE_DAYS: Record<Kind, number> = { deposit: 7, instalment: 14, final: 7 };
 // Emails sent before the invoice is flagged for a phone call instead.
 const MAX_REMINDERS = 3;
 
@@ -137,8 +144,16 @@ serve(async (req) => {
       const instalmentDue = t.instalment_required && t.instalment_date && t.instalment_date <= today
         && Number(t.instalment_amount) > 0;
       const finalDue = t.final_payment_date && t.final_payment_date <= today;
-      return Boolean(instalmentDue || finalDue);
+      const depositDue = Number(t.deposit_required) > 0;
+      return Boolean(depositDue || instalmentDue || finalDue);
     });
+
+    // Bookings created on or before this date have had their grace period.
+    const depositCutoff = (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - DEPOSIT_GRACE_DAYS);
+      return d.toISOString().split("T")[0];
+    })();
 
     let queued = 0;
     let updated = 0;
@@ -149,6 +164,7 @@ serve(async (req) => {
 
     for (const tour of activeTours) {
       const kinds: Kind[] = [];
+      if (Number(tour.deposit_required) > 0) kinds.push("deposit");
       if (tour.instalment_required && tour.instalment_date && tour.instalment_date <= today
         && Number(tour.instalment_amount) > 0) kinds.push("instalment");
       if (tour.final_payment_date && tour.final_payment_date <= today) kinds.push("final");
@@ -156,7 +172,7 @@ serve(async (req) => {
       const { data: bookings } = await supabase
         .from("bookings")
         .select(`
-          id, status, passenger_count, group_name, invoice_reference, automation_override,
+          id, status, passenger_count, group_name, invoice_reference, automation_override, created_at,
           lead:customers!bookings_lead_passenger_id_fkey ( first_name, last_name, email ),
           pax2:customers!bookings_passenger_2_id_fkey ( first_name, last_name, email ),
           pax3:customers!bookings_passenger_3_id_fkey ( first_name, last_name, email )
@@ -177,7 +193,9 @@ serve(async (req) => {
         const chaseable = (bookings ?? []).filter((b: any) =>
           !EXCLUDED_STATUSES[kind].has(String(b.status)) &&
           b.automation_override !== "manual_emails" &&
-          b.automation_override !== "manual_all"
+          b.automation_override !== "manual_all" &&
+          // Deposits are only chased once the booking has had its grace period.
+          (kind !== "deposit" || String(b.created_at ?? "").split("T")[0] <= depositCutoff)
         );
         // Note: no early exit when nothing is chaseable — we still need to
         // clear down any reminder rows left over from before payment landed.
@@ -233,9 +251,14 @@ serve(async (req) => {
           const depositExpected = paxCount * (Number(tour.deposit_required) || 0);
           // Instalment reminders chase only what is due at this stage; the final
           // balance chases everything still outstanding on the invoice.
+          // Deposit reminders chase only the deposit still outstanding (never
+          // more than the balance on the invoice, so credits already applied in
+          // Xero are respected).
           const shortfall = kind === "final"
             ? due
-            : Math.max(0, depositExpected + instalmentExpected - paid);
+            : kind === "deposit"
+              ? Math.min(due, Math.max(0, depositExpected - paid))
+              : Math.max(0, depositExpected + instalmentExpected - paid);
 
           const existing = await supabase
             .from("instalment_reminders")
