@@ -31,7 +31,7 @@ const dateAU = (v: string | null) => (v ? format(new Date(v), "dd/MM/yyyy") : "â
 const STATE_LABELS: Record<string, string> = {
   pending: "Awaiting first email",
   sent: "Chasing automatically",
-  held_agent: "Agent invoice â€” check",
+  held_agent: "Needs a manual check",
   needs_call: "Needs a phone call",
   stopped: "Stopped",
 };
