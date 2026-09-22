@@ -105,6 +105,9 @@ export const InstalmentRemindersPanel = () => {
   const allSelected = selectable.length > 0 && selected.size === selectable.length;
   const needsAction = kindRows.filter((r) =>
     r.state === "pending" || r.state === "held_agent" || r.state === "needs_call").length;
+  // Matches the tab badge: rows a person must action, across all three kinds.
+  const totalNeedsAction = rows.filter((r) =>
+    r.state === "pending" || r.state === "held_agent" || r.state === "needs_call").length;
 
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(selectable.map((r) => r.id)));
@@ -137,7 +140,10 @@ export const InstalmentRemindersPanel = () => {
             <CardTitle className="flex items-center gap-2 text-base">
               <CircleDollarSign className="h-4 w-4" />
               Payment reminders
-              <Badge variant="secondary">{rows.length}</Badge>
+              <Badge variant="secondary">{totalNeedsAction} to action</Badge>
+              <span className="text-xs font-normal text-muted-foreground">
+                {rows.length} on the list
+              </span>
             </CardTitle>
             <CardDescription>{copy.blurb}</CardDescription>
           </div>
