@@ -70,6 +70,7 @@ export const InstalmentRemindersPanel = () => {
   const action = useInstalmentReminderAction();
   const refresh = useRefreshInstalmentReminders();
   const test = useSendTestReminder();
+  const { data: issues = [] } = useReminderIssues();
   const { user } = useAuth();
   const myEmail = user?.email ?? "";
 
