@@ -10,6 +10,7 @@ export interface TourWelcomeMessage {
   signoff: string;
   pickupArrivalMessage: string;
   welcomeDrinksMessage: string;
+  welcomeUpdateMessage: string;
   /** optional pickup/arrival document (e.g. arrivals map PDF) */
   pickupDocPath: string | null;
   pickupDocName: string | null;

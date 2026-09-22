@@ -32,6 +32,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
   const [signoff, setSignoff] = useState("");
   const [pickupArrival, setPickupArrival] = useState("");
   const [welcomeDrinks, setWelcomeDrinks] = useState("");
+  const [welcomeUpdate, setWelcomeUpdate] = useState("");
 
   useEffect(() => {
     if (data) {
@@ -41,6 +42,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
       setSignoff(data.signoff || "");
       setPickupArrival(data.pickupArrivalMessage || "");
       setWelcomeDrinks(data.welcomeDrinksMessage || "");
+      setWelcomeUpdate(data.welcomeUpdateMessage || "");
     }
   }, [data]);
 
@@ -52,6 +54,7 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
       signoff,
       pickupArrivalMessage: pickupArrival,
       welcomeDrinksMessage: welcomeDrinks,
+      welcomeUpdateMessage: welcomeUpdate,
     });
   };
 
