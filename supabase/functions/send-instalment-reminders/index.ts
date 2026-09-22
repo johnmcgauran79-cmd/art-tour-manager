@@ -156,6 +156,10 @@ serve(async (req) => {
       typeof body?.override_recipient_email === "string" && body.override_recipient_email.includes("@")
         ? body.override_recipient_email.trim()
         : null;
+    // Test mode: send one copy of the real email to a staff address only. Nothing
+    // is recorded against the reminder, no client or second passenger is copied.
+    const testMode: boolean = body?.test_mode === true && !!overrideRecipient;
+
 
     if (ids.length === 0) {
       return new Response(JSON.stringify({ error: "reminder_ids required" }), {
