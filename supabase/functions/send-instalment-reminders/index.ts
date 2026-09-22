@@ -51,6 +51,54 @@ function escapeHtml(str: unknown): string {
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/**
+ * Xero line descriptions arrive as plain text with real line breaks and bullet
+ * lists. HTML collapses those into one run of text, so rebuild the layout:
+ * headings in bold, bullet items on their own line, blank lines as spacing.
+ * When a description has no line breaks at all (some Xero rows arrive flattened)
+ * we split it on its own structural markers so it still reads like the invoice.
+ */
+function renderDescription(value: unknown): string {
+  let text = String(value ?? "").replace(/\r\n?/g, "\n").trim();
+  if (!text) return "";
+
+  if (!text.includes("\n")) {
+    text = text
+      // Section headings such as "TOUR INCLUSIONS:" / "PAYMENT SCHEDULE"
+      .replace(/\s+((?:[A-Z][A-Z &/']{3,}(?: [A-Z][A-Z &/']*)*)(?::|(?= ?\$)))/g, "\n\n$1")
+      // Bullet items written as " - item"
+      .replace(/\s+-\s+/g, "\n- ");
+  }
+
+  const lines = text.split("\n").map((l) => l.trim());
+  const out: string[] = [];
+  let pendingGap = false;
+
+  for (const line of lines) {
+    if (!line) {
+      if (out.length) pendingGap = true;
+      continue;
+    }
+    const gap = pendingGap ? "margin-top:10px;" : "";
+    pendingGap = false;
+    const isHeading = /^[^a-z]{4,}$/.test(line.replace(/[^A-Za-z]/g, "").length ? line : "x") &&
+      line === line.toUpperCase() && /[A-Z]/.test(line);
+    const isBullet = /^[-•]\s*/.test(line);
+
+    if (isHeading) {
+      out.push(`<div style="${gap}font-weight:600;color:#1a2332;">${escapeHtml(line)}</div>`);
+    } else if (isBullet) {
+      out.push(
+        `<div style="${gap}padding-left:12px;text-indent:-12px;">&bull; ${escapeHtml(line.replace(/^[-•]\s*/, ""))}</div>`,
+      );
+    } else {
+      out.push(`<div style="${gap}">${escapeHtml(line)}</div>`);
+    }
+  }
+
+  return out.join("");
+}
+
 /** Full invoice breakdown table (email-safe inline styles). */
 function buildLineItemsTable(
   items: any[],
