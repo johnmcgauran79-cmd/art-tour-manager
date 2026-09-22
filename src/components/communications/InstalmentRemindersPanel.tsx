@@ -78,7 +78,7 @@ export const InstalmentRemindersPanel = () => {
   const [stopReason, setStopReason] = useState("");
 
   const byKind = useMemo(() => {
-    const map: Record<ReminderKind, InstalmentReminder[]> = { instalment: [], final: [] };
+    const map: Record<ReminderKind, InstalmentReminder[]> = { deposit: [], instalment: [], final: [] };
     for (const r of rows) map[(r.kind as ReminderKind) ?? "instalment"]?.push(r);
     return map;
   }, [rows]);
