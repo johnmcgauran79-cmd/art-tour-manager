@@ -43,6 +43,7 @@ export default defineTool({
       welcome_message_signoff: "welcome_message_signoff",
       pickup_arrival_message: "pickup_arrival_message",
       welcome_drinks_message: "welcome_drinks_message",
+      welcome_update_message: "welcome_update_message",
     };
     const payload: Record<string, unknown> = {};
     for (const [key, column] of Object.entries(map)) {
@@ -57,7 +58,7 @@ export default defineTool({
       .update(payload)
       .eq("id", tour_id)
       .select(
-        "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message",
+        "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message, welcome_update_message",
       )
       .maybeSingle();
     if (error) return toolError(error.message);
