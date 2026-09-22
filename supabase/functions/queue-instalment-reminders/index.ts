@@ -97,7 +97,16 @@ function parseXeroDate(v: unknown): string | null {
   return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
 }
 
-const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Best available person name for an invoice group, used in explanations. */
+function recipientNameFor(entry: { bookings: any[] }, inv: any): string {
+  const lead = entry.bookings?.[0]?.lead;
+  return [lead?.first_name, lead?.last_name].filter(Boolean).join(" ")
+    || entry.bookings?.[0]?.group_name
+    || inv?.Contact?.Name
+    || "Unknown";
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -161,6 +170,9 @@ serve(async (req) => {
     let held = 0;
     const unlinked: any[] = [];
     const details: any[] = [];
+    // Bookings deliberately not chased, each with a plain-English reason so the
+    // team can see why a booking that looks owing is not on the list.
+    const notChased: any[] = [];
 
     for (const tour of activeTours) {
       const kinds: Kind[] = [];
@@ -263,14 +275,19 @@ serve(async (req) => {
             }
           }
           if (!matched) {
-            unlinked.push({
+            const entry = {
               kind,
               tour_id: tour.id,
               tour_name: tour.name,
               booking_id: b.id,
               invoice_reference: b.invoice_reference ?? null,
               client: [b.lead?.first_name, b.lead?.last_name].filter(Boolean).join(" ") || b.group_name,
-            });
+              reason: b.invoice_reference
+                ? `No invoice matching "${b.invoice_reference}" could be found in Xero — check the invoice number on the booking.`
+                : "No invoice has been raised in Xero for this booking yet, so there is nothing to chase.",
+            };
+            unlinked.push(entry);
+            notChased.push(entry);
           }
         }
 
@@ -333,6 +350,19 @@ serve(async (req) => {
               }
               resolved++;
             }
+            notChased.push({
+              kind,
+              tour_id: tour.id,
+              tour_name: tour.name,
+              invoice_number: invoiceNumber,
+              client: recipientNameFor(entry, inv),
+              reason:
+                status === "VOIDED" || status === "DELETED"
+                  ? `Invoice ${invoiceNumber ?? ""} has been voided in Xero, so nothing is chased.`
+                  : status === "PAID" || due <= 0
+                    ? `Invoice ${invoiceNumber ?? ""} is paid in full in Xero.`
+                    : `Invoice ${invoiceNumber ?? ""} shows nothing owing at this stage — payments or credits already cover it.`,
+            });
             continue;
           }
 
@@ -353,17 +383,31 @@ serve(async (req) => {
             }
             if (b.group_name) passengerNames.add(norm(b.group_name));
           }
-          const isPassengerInvoice =
-            (contactEmail && passengerEmails.has(contactEmail)) ||
-            (contactName && passengerNames.has(contactName));
+          // The invoice must be addressed to a passenger by name. Matching on the
+          // email alone is not enough: travel agents often appear as the booking
+          // contact, so their email is on the booking too.
+          const nameMatchesPassenger = Boolean(contactName && passengerNames.has(contactName));
+          const emailMatchesPassenger = Boolean(contactEmail && passengerEmails.has(contactEmail));
+          const isPassengerInvoice = nameMatchesPassenger;
 
           const lead = entry.bookings[0]?.lead;
-          const recipientEmail = contactEmail && isPassengerInvoice
+          const recipientEmail = contactEmail && (nameMatchesPassenger || emailMatchesPassenger)
             ? String(inv.Contact?.EmailAddress).trim()
             : (lead?.email ?? null);
           const recipientName = isPassengerInvoice
             ? ([lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || inv.Contact?.Name || "")
-            : (inv.Contact?.Name || "");
+            : (inv.Contact?.Name || [lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || "");
+
+          // Reasons a person must look at this line before anything is sent.
+          const holdReason = status === "DRAFT"
+            ? `Invoice ${invoiceNumber ?? ""} is still a draft in Xero — approve it before chasing payment, as the client cannot see or pay a draft.`
+            : status === "SUBMITTED"
+              ? `Invoice ${invoiceNumber ?? ""} is awaiting approval in Xero — approve it before chasing payment.`
+              : !isPassengerInvoice
+                ? `Invoice is addressed to ${inv.Contact?.Name || "someone"}, who is not a passenger on this booking — likely a travel agent billed net of commission, so check the amount manually before sending.`
+                : !recipientEmail
+                  ? "No email address on file for this invoice — add one to the contact before sending."
+                  : null;
 
           // Payment link (Xero online invoice), cached across kinds.
           let paymentLink = linkCache.get(invoiceId);
@@ -408,12 +452,12 @@ serve(async (req) => {
             recipient_email: recipientEmail,
             recipient_name: recipientName,
             payment_link: paymentLink,
-            state: isPassengerInvoice ? keepState : "held_agent",
-            hold_reason: isPassengerInvoice ? null : "Invoice is addressed to a third party (likely a travel agent) — check the amount manually before sending.",
+            state: holdReason ? "held_agent" : keepState,
+            hold_reason: holdReason,
             next_due_at: prior?.next_due_at ?? today,
           };
 
-          if (!isPassengerInvoice) held++;
+          if (holdReason) held++;
 
           if (!dryRun) {
             if (prior) {
@@ -501,6 +545,7 @@ serve(async (req) => {
         flagged_for_call: flaggedForCall,
         cadence_days: CADENCE_DAYS,
         unlinked_bookings: unlinked,
+        not_chased: notChased,
         details,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

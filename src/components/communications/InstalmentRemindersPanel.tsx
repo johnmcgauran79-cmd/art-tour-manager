@@ -18,6 +18,7 @@ import {
   useInstalmentReminderAction,
   useInstalmentReminders,
   useRefreshInstalmentReminders,
+  useReminderIssues,
   useSendTestReminder,
 } from "@/hooks/useInstalmentReminders";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -31,7 +32,7 @@ const dateAU = (v: string | null) => (v ? format(new Date(v), "dd/MM/yyyy") : "�
 const STATE_LABELS: Record<string, string> = {
   pending: "Awaiting first email",
   sent: "Chasing automatically",
-  held_agent: "Agent invoice — check",
+  held_agent: "Needs a manual check",
   needs_call: "Needs a phone call",
   stopped: "Stopped",
 };
@@ -69,6 +70,7 @@ export const InstalmentRemindersPanel = () => {
   const action = useInstalmentReminderAction();
   const refresh = useRefreshInstalmentReminders();
   const test = useSendTestReminder();
+  const { data: issues = [] } = useReminderIssues();
   const { user } = useAuth();
   const myEmail = user?.email ?? "";
 
@@ -94,6 +96,8 @@ export const InstalmentRemindersPanel = () => {
     }
     return Array.from(map.values());
   }, [kindRows]);
+
+  const kindIssues = useMemo(() => issues.filter((i) => i.kind === kind), [issues, kind]);
 
   const selectable = kindRows;
   const allSelected = selectable.length > 0 && selected.size === selectable.length;
@@ -294,6 +298,31 @@ export const InstalmentRemindersPanel = () => {
               </div>
             ))}
           </>
+        )}
+
+        {kindIssues.length > 0 && (
+          <div className="border rounded-md">
+            <div className="px-3 py-2 border-b bg-muted/40 text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              Not being chased ({kindIssues.length})
+            </div>
+            <div className="divide-y">
+              {kindIssues.map((i, idx) => (
+                <div key={idx} className="px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">
+                    {i.client || "Unknown"}
+                    {(i.invoice_number || i.invoice_reference) && (
+                      <span className="font-normal text-muted-foreground">
+                        {" "}· Inv {i.invoice_number || i.invoice_reference}
+                      </span>
+                    )}
+                    {i.tour_name && <span className="font-normal text-muted-foreground"> · {i.tour_name}</span>}
+                  </div>
+                  <div className="text-muted-foreground">{i.reason}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </CardContent>
 
