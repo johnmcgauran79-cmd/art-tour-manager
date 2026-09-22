@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle,
+  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle, Mail,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -18,8 +18,10 @@ import {
   useInstalmentReminderAction,
   useInstalmentReminders,
   useRefreshInstalmentReminders,
+  useSendTestReminder,
 } from "@/hooks/useInstalmentReminders";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 
 const money = (n: number | null | undefined, ccy = "AUD") =>
   `${ccy} ${Number(n || 0).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -59,6 +61,10 @@ export const InstalmentRemindersPanel = () => {
   const { data: rows = [], isLoading } = useInstalmentReminders();
   const action = useInstalmentReminderAction();
   const refresh = useRefreshInstalmentReminders();
+  const test = useSendTestReminder();
+  const { user } = useAuth();
+  const myEmail = user?.email ?? "";
+
   const [kind, setKind] = useState<ReminderKind>("instalment");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [stopOpen, setStopOpen] = useState(false);
@@ -139,10 +145,24 @@ export const InstalmentRemindersPanel = () => {
                 <Button size="sm" variant="destructive" disabled={busy || selected.size === 0} onClick={() => setStopOpen(true)}>
                   <Ban className="h-4 w-4 mr-1" /> Stop ({selected.size})
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || test.isPending || selected.size !== 1 || !myEmail}
+                  title={myEmail ? `Send a test copy to ${myEmail}` : "No email on your account"}
+                  onClick={() => {
+                    const id = Array.from(selected)[0];
+                    if (id && myEmail) test.mutate({ id, email: myEmail });
+                  }}
+                >
+                  {test.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                  Send test to me
+                </Button>
                 <Button size="sm" disabled={busy || selected.size === 0} onClick={() => run("send")}>
                   {action.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
                   Send now ({selected.size})
                 </Button>
+
               </>
             )}
           </div>

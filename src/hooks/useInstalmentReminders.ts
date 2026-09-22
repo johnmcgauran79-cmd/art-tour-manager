@@ -104,6 +104,25 @@ export const useInstalmentReminderAction = () => {
   });
 };
 
+export const useSendTestReminder = () =>
+  useMutation({
+    mutationFn: async ({ id, email }: { id: string; email: string }) => {
+      const { data, error } = await supabase.functions.invoke("send-instalment-reminders", {
+        body: { reminder_ids: [id], action: "send", test_mode: true, override_recipient_email: email },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error((data as any)?.error || "Test send failed");
+      if ((data as any)?.sent === 0) throw new Error("Nothing was sent — check the email template is active.");
+      return data as { sent?: number };
+    },
+    onSuccess: (_d, vars) => {
+      toast({ title: "Test sent", description: `A copy is on its way to ${vars.email}.` });
+    },
+    onError: (e: any) => {
+      toast({ title: "Test failed", description: e.message, variant: "destructive" });
+    },
+  });
+
 export const useRefreshInstalmentReminders = () => {
   const qc = useQueryClient();
   return useMutation({
