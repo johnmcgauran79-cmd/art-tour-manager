@@ -723,6 +723,10 @@ export const EmailTemplatesManagement = () => {
                        <Wine className="h-3 w-3" />
                        Welcome Drinks Message
                      </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertTourMessageBlock('update')}>
+                       <Info className="h-3 w-3" />
+                       Welcome Update
+                     </Button>
                   </div>
                   {showImageInsert && (
                     <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">
