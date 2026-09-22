@@ -125,6 +125,24 @@ export const useSendTestReminder = () =>
     },
   });
 
+export interface ReminderIssue {
+  kind: ReminderKind;
+  tour_name: string | null;
+  client: string | null;
+  invoice_number?: string | null;
+  invoice_reference?: string | null;
+  reason: string;
+}
+
+/** Explanations from the last Xero check: bookings deliberately not chased. */
+export const useReminderIssues = () =>
+  useQuery<ReminderIssue[]>({
+    queryKey: ["instalment-reminder-issues"],
+    queryFn: async () => [],
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+
 export const useRefreshInstalmentReminders = () => {
   const qc = useQueryClient();
   return useMutation({
