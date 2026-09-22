@@ -376,6 +376,27 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Welcome Update</CardTitle>
+          <CardDescription>
+            A tour-specific note to include in welcome emails &mdash; e.g. &ldquo;This tour begins in
+            Sapporo and ends in Tokyo, please book your flights accordingly.&rdquo; Available in email
+            templates as <code>{"{{tour_welcome_update_message}}"}</code>, and only shown when filled in
+            using <code>{"{{#has_tour_welcome_update}}"}</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RichTextEditor
+            value={welcomeUpdate}
+            onChange={setWelcomeUpdate}
+            placeholder="e.g. A reminder this tour begins in Sapporo and ends in Tokyo, please ensure you book your flights as such..."
+          />
+        </CardContent>
+      </Card>
+
+
+
       <ConfirmDeleteFileDialog
         open={!!confirmTarget}
         onOpenChange={(open) => !open && setConfirm(null)}

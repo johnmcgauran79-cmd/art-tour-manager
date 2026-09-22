@@ -442,9 +442,19 @@ export const EmailTemplatesManagement = () => {
     setShowImageInsert(false);
   };
 
-  const insertTourMessageBlock = (variant: 'pickup' | 'drinks') => {
-    const field = variant === 'pickup' ? 'tour_pickup_arrival_message' : 'tour_welcome_drinks_message';
-    const label = variant === 'pickup' ? 'Pickup / Arrival Message' : 'Welcome Drinks Message';
+  const insertTourMessageBlock = (variant: 'pickup' | 'drinks' | 'update') => {
+    const field =
+      variant === 'pickup'
+        ? 'tour_pickup_arrival_message'
+        : variant === 'drinks'
+          ? 'tour_welcome_drinks_message'
+          : 'tour_welcome_update_message';
+    const label =
+      variant === 'pickup'
+        ? 'Pickup / Arrival Message'
+        : variant === 'drinks'
+          ? 'Welcome Drinks Message'
+          : 'Welcome Update';
     // Only renders when the tour has content in that message block.
     const html = `{{#${field}}}<div style="margin:16px 0;font-size:14px;line-height:1.6;color:#55575d;">{{${field}}}</div>{{/${field}}}`;
     insertHtmlBlock(html, `Tour Message • ${label}`);
