@@ -173,9 +173,15 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
 
   // Calculate statistics from all tour bookings (before filters)
   const confirmedBookings = allTourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
+  const fullTourBookings = confirmedBookings.filter(b => (b as any).whatsapp_group_comms === true);
+  const activityOnlyBookings = confirmedBookings.filter(b => (b as any).whatsapp_group_comms !== true);
   const waitlistedBookings = allTourBookings.filter(b => b.status === 'waitlisted');
-  const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
-  const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
+  const sumPax = (list: typeof allTourBookings) => list.reduce((sum, b) => sum + (b.passenger_count || 0), 0);
+  const fullTourPassengers = sumPax(fullTourBookings);
+  const activityOnlyPassengers = sumPax(activityOnlyBookings);
+  const totalWaitlistedPassengers = sumPax(waitlistedBookings);
+  const totalConfirmedPassengers = fullTourPassengers + activityOnlyPassengers;
+
 
   return (
     <>
@@ -187,29 +193,37 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
         <>
           {/* Statistics Cards */}
           {!isHost && (
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Card>
               <CardContent className="p-2 sm:p-4">
-                <div className="text-lg sm:text-2xl font-bold text-green-600">{confirmedBookings.length}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Confirmed</div>
-                <div className="text-xs text-muted-foreground hidden sm:block">{totalConfirmedPassengers} passengers</div>
+                <div className="text-lg sm:text-2xl font-bold text-green-600">{fullTourPassengers} pax</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Full tour</div>
+                <div className="text-xs text-muted-foreground">{fullTourBookings.length} bookings</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-2 sm:p-4">
-                <div className="text-lg sm:text-2xl font-bold text-orange-600">{waitlistedBookings.length}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Waitlisted</div>
-                <div className="text-xs text-muted-foreground hidden sm:block">{totalWaitlistedPassengers} passengers</div>
+                <div className="text-lg sm:text-2xl font-bold text-purple-600">{activityOnlyPassengers} pax</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Activity/Ticket only</div>
+                <div className="text-xs text-muted-foreground">{activityOnlyBookings.length} bookings</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-2 sm:p-4">
-                <div className="text-lg sm:text-2xl font-bold text-blue-600">{allTourBookings.filter(b => b.status !== 'cancelled').length}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Total</div>
-                <div className="text-xs text-muted-foreground hidden sm:block">{totalConfirmedPassengers + totalWaitlistedPassengers} pax</div>
+                <div className="text-lg sm:text-2xl font-bold text-orange-600">{totalWaitlistedPassengers} pax</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Waitlist</div>
+                <div className="text-xs text-muted-foreground">{waitlistedBookings.length} bookings</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-2 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">{totalConfirmedPassengers + totalWaitlistedPassengers} pax</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Total (all combined)</div>
+                <div className="text-xs text-muted-foreground">{confirmedBookings.length + waitlistedBookings.length} bookings</div>
               </CardContent>
             </Card>
             </div>
+
           )}
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
