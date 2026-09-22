@@ -258,10 +258,12 @@ export const useFilteredBookings = (
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query;
+        const { data, error } = await query;
         
         if (error) throw error;
-        return { data: sortAndPaginate(data || [], 'instalments_owing'), count: count || 0 };
+        // Exclude anything still sitting in the earlier stage (deposits owing)
+        const rows = (data || []).filter((row: any) => !qualifiesDepositsOwing(row));
+        return { data: sortAndPaginate(rows, 'instalments_owing'), count: rows.length };
         
       } else if (filterType === 'payment_due') {
         // Final payment owing: past final_payment_date and not fully_paid
@@ -269,7 +271,7 @@ export const useFilteredBookings = (
           .from('bookings')
           .select(`
             *,
-            tours!inner (name, start_date, final_payment_date),
+            tours!inner (name, start_date, final_payment_date, instalment_required, instalment_date),
             customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
@@ -285,10 +287,14 @@ export const useFilteredBookings = (
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query;
+        const { data, error } = await query;
         
         if (error) throw error;
-        return { data: sortAndPaginate(data || [], 'payment_due'), count: count || 0 };
+        // Exclude anything still sitting in an earlier stage (deposit or instalment owing)
+        const rows = (data || []).filter(
+          (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
+        );
+        return { data: sortAndPaginate(rows, 'payment_due'), count: rows.length };
       }
 
       return { data: [], count: 0 };
