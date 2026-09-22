@@ -97,7 +97,7 @@ function parseXeroDate(v: unknown): string | null {
   return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
 }
 
-const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
