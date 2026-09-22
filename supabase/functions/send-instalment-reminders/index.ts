@@ -117,11 +117,11 @@ function buildLineItemsTable(
     // render those as plain text rather than a row of zeros.
     if (unit === 0 && amount === 0) {
       return `<tr>
-      <td colspan="4" style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(li.description)}</td>
+      <td colspan="4" style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${renderDescription(li.description)}</td>
     </tr>`;
     }
     return `<tr>
-      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeHtml(li.description)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${renderDescription(li.description)}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top;">${qty ? qty.toLocaleString("en-AU") : ""}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(unit)}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(amount)}</td>
