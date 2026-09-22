@@ -188,6 +188,9 @@ serve(async (req) => {
       // Live invoice reads are the slow part — cache per invoice across kinds.
       const invoiceCache = new Map<string, any>();
       const linkCache = new Map<string, string | null>();
+      // Invoice-number lookups for bookings without a stored mapping.
+      const numberCache = new Map<string, any>();
+
 
       for (const kind of kinds) {
         const chaseable = (bookings ?? []).filter((b: any) =>
