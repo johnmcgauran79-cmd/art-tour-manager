@@ -156,6 +156,9 @@ export const InvoiceSyncReviewModal = ({
 
       // Invalidate bookings queries so the UI refreshes
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      // Payment reminders may have been cleared by the sync
+      queryClient.invalidateQueries({ queryKey: ['instalment-reminders'] });
+      queryClient.invalidateQueries({ queryKey: ['instalment-reminders-due-count'] });
       onApplyComplete();
       onClose();
     } catch (error: any) {

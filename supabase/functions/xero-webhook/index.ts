@@ -613,11 +613,77 @@ serve(async (req) => {
         console.error('[apply-invoice-changes] failed to trigger receipts sync', e);
       }
 
+      // Clear payment reminders that are no longer required now that the
+      // booking statuses (and Xero balances) have been confirmed.
+      let remindersResolved = 0;
+      try {
+        const affected = Array.from(new Set(
+          changes.map((c) => c.booking_id).filter((v) => typeof v === 'string' && v.length > 0)
+        ));
+        if (affected.length > 0) {
+          // Invoices confirmed as settled in Xero during this sync
+          const settledInvoiceIds = new Set(
+            changes
+              .filter((c) => c.xero_invoice_id && (Number(c.amount_due ?? 1) <= 0 || c.xero_status === 'PAID' || c.xero_status === 'VOIDED'))
+              .map((c) => c.xero_invoice_id)
+          );
+
+          const { data: openReminders } = await supabase
+            .from('instalment_reminders')
+            .select('id, kind, booking_ids, xero_invoice_id')
+            .in('state', ['pending', 'sent', 'held_agent', 'needs_call']);
+
+          const candidates = (openReminders || []).filter((r: any) =>
+            (r.booking_ids || []).some((id: string) => affected.includes(id))
+          );
+
+          if (candidates.length > 0) {
+            const allBookingIds = Array.from(new Set(
+              candidates.flatMap((r: any) => r.booking_ids || [])
+            ));
+            const { data: bookingRows } = await supabase
+              .from('bookings')
+              .select('id, status')
+              .in('id', allBookingIds);
+            const statusById = new Map((bookingRows || []).map((b: any) => [b.id, b.status]));
+
+            // A booking still needs chasing for a given reminder kind when it
+            // has not yet reached (or passed) that payment stage.
+            const stillNeeds = (kind: string, status?: string) => {
+              if (!status) return false;
+              if (['cancelled', 'fully_paid', 'complimentary', 'racing_breaks_invoice'].includes(status)) return false;
+              if (kind === 'deposit') return !['deposited', 'instalment_paid'].includes(status);
+              if (kind === 'instalment') return status !== 'instalment_paid';
+              return true; // final balance: anything not fully paid
+            };
+
+            const toResolve = candidates
+              .filter((r: any) =>
+                settledInvoiceIds.has(r.xero_invoice_id) ||
+                !(r.booking_ids || []).some((id: string) => stillNeeds(r.kind, statusById.get(id)))
+              )
+              .map((r: any) => r.id);
+
+            if (toResolve.length > 0) {
+              const { error: resolveError } = await supabase
+                .from('instalment_reminders')
+                .update({ state: 'resolved', next_due_at: null, updated_at: new Date().toISOString() })
+                .in('id', toResolve);
+              if (resolveError) throw resolveError;
+              remindersResolved = toResolve.length;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[apply-invoice-changes] failed to clear payment reminders', e);
+      }
+
       return new Response(JSON.stringify({
+        reminders_resolved: remindersResolved,
         success: true,
         applied,
         errors,
-        message: `Applied ${applied} status changes${errors > 0 ? `, ${errors} errors` : ''}`,
+        message: `Applied ${applied} status changes${remindersResolved > 0 ? `, ${remindersResolved} payment reminder(s) cleared` : ''}${errors > 0 ? `, ${errors} errors` : ''}`,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
