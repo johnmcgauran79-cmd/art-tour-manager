@@ -341,6 +341,19 @@ serve(async (req) => {
               }
               resolved++;
             }
+            notChased.push({
+              kind,
+              tour_id: tour.id,
+              tour_name: tour.name,
+              invoice_number: invoiceNumber,
+              client: recipientNameFor(entry, inv),
+              reason:
+                status === "VOIDED" || status === "DELETED"
+                  ? `Invoice ${invoiceNumber ?? ""} has been voided in Xero, so nothing is chased.`
+                  : status === "PAID" || due <= 0
+                    ? `Invoice ${invoiceNumber ?? ""} is paid in full in Xero.`
+                    : `Invoice ${invoiceNumber ?? ""} shows nothing owing at this stage — payments or credits already cover it.`,
+            });
             continue;
           }
 
