@@ -161,6 +161,9 @@ serve(async (req) => {
     let held = 0;
     const unlinked: any[] = [];
     const details: any[] = [];
+    // Bookings deliberately not chased, each with a plain-English reason so the
+    // team can see why a booking that looks owing is not on the list.
+    const notChased: any[] = [];
 
     for (const tour of activeTours) {
       const kinds: Kind[] = [];
