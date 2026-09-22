@@ -225,7 +225,8 @@ export const useFilteredBookings = (
       };
 
       if (filterType === 'deposits_owing') {
-        // Deposits owing: pre-deposit statuses 7+ days after booking created
+        // Deposits owing: pre-deposit statuses 7+ days after booking created,
+        // excluding anything already at the instalment or final payment stage
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 7);
         
@@ -233,11 +234,11 @@ export const useFilteredBookings = (
           .from('bookings')
           .select(`
             *,
-            tours!inner (name, start_date),
+            tours!inner (name, start_date, final_payment_date, instalment_required, instalment_date),
             customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
-          .in('status', ['pending', 'invoiced', 'racing_breaks_invoice'])
+          .in('status', DEPOSIT_PENDING_STATUSES as any)
           .lt('created_at', cutoffDate.toISOString());
         
         // Apply tour filter
@@ -245,19 +246,21 @@ export const useFilteredBookings = (
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query;
+        const { data, error } = await query;
         
         if (error) throw error;
-        return { data: sortAndPaginate(data || [], 'deposits_owing'), count: count || 0 };
+        const rows = (data || []).filter((row: any) => qualifiesDepositsOwing(row));
+        return { data: sortAndPaginate(rows, 'deposits_owing'), count: rows.length };
         
       } else if (filterType === 'instalments_owing') {
         // Instalments owing: tour has instalment_required, past instalment_date,
-        // status is not instalment_paid or fully_paid
+        // status is not instalment_paid or fully_paid, and the final payment
+        // isn't already due (that takes precedence)
         let query = supabase
           .from('bookings')
           .select(`
             *,
-            tours!inner (name, start_date, instalment_required, instalment_date),
+            tours!inner (name, start_date, final_payment_date, instalment_required, instalment_date),
             customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
@@ -278,9 +281,10 @@ export const useFilteredBookings = (
         const { data, error } = await query;
         
         if (error) throw error;
-        // Exclude anything still sitting in the earlier stage (deposits owing)
-        const rows = (data || []).filter((row: any) => !qualifiesDepositsOwing(row));
+        const rows = (data || []).filter((row: any) => qualifiesInstalmentsOwing(row));
         return { data: sortAndPaginate(rows, 'instalments_owing'), count: rows.length };
+        
+
         
       } else if (filterType === 'payment_due') {
         // Final payment owing: past final_payment_date and not fully_paid
