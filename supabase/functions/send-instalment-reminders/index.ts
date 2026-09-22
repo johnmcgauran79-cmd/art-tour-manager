@@ -81,8 +81,7 @@ function renderDescription(value: unknown): string {
     }
     const gap = pendingGap ? "margin-top:10px;" : "";
     pendingGap = false;
-    const isHeading = /^[^a-z]{4,}$/.test(line.replace(/[^A-Za-z]/g, "").length ? line : "x") &&
-      line === line.toUpperCase() && /[A-Z]/.test(line);
+    const isHeading = line === line.toUpperCase() && /[A-Z]{3,}/.test(line);
     const isBullet = /^[-•]\s*/.test(line);
 
     if (isHeading) {
