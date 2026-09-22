@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle,
+  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle, Mail,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -18,8 +18,10 @@ import {
   useInstalmentReminderAction,
   useInstalmentReminders,
   useRefreshInstalmentReminders,
+  useSendTestReminder,
 } from "@/hooks/useInstalmentReminders";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 
 const money = (n: number | null | undefined, ccy = "AUD") =>
   `${ccy} ${Number(n || 0).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
