@@ -33,7 +33,7 @@ export const useTourWelcomeMessage = (tourId: string) => {
       const { data, error } = await supabase
         .from("tours")
         .select(
-          "welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name"
+          "welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, welcome_update_message, pickup_arrival_doc_path, pickup_arrival_doc_name"
         )
         .eq("id", tourId)
         .single();
@@ -62,6 +62,7 @@ export const useTourWelcomeMessage = (tourId: string) => {
         signoff: row?.welcome_message_signoff ?? "",
         pickupArrivalMessage: row?.pickup_arrival_message ?? "",
         welcomeDrinksMessage: row?.welcome_drinks_message ?? "",
+        welcomeUpdateMessage: row?.welcome_update_message ?? "",
         pickupDocPath: row?.pickup_arrival_doc_path ?? null,
         pickupDocName: row?.pickup_arrival_doc_name ?? null,
         pickupDocUrl,
@@ -79,6 +80,7 @@ export const useTourWelcomeMessage = (tourId: string) => {
       signoff?: string;
       pickupArrivalMessage?: string;
       welcomeDrinksMessage?: string;
+      welcomeUpdateMessage?: string;
       imagePath?: string | null;
     }) => {
       const payload: Record<string, unknown> = {};
@@ -90,6 +92,8 @@ export const useTourWelcomeMessage = (tourId: string) => {
         payload.pickup_arrival_message = updates.pickupArrivalMessage;
       if (updates.welcomeDrinksMessage !== undefined)
         payload.welcome_drinks_message = updates.welcomeDrinksMessage;
+      if (updates.welcomeUpdateMessage !== undefined)
+        payload.welcome_update_message = updates.welcomeUpdateMessage;
       if (updates.imagePath !== undefined) payload.welcome_message_image_path = updates.imagePath;
       const { error } = await supabase.from("tours").update(payload as any).eq("id", tourId);
       if (error) throw error;
