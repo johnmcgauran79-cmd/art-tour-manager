@@ -141,6 +141,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
                 <InvoiceLineTemplatesManagement />
               </CardContent>
             </Card>
+            <BankDetailsSettings />
           </TabsContent>
         )}
 
