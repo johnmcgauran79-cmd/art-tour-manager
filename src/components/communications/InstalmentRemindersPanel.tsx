@@ -139,10 +139,24 @@ export const InstalmentRemindersPanel = () => {
                 <Button size="sm" variant="destructive" disabled={busy || selected.size === 0} onClick={() => setStopOpen(true)}>
                   <Ban className="h-4 w-4 mr-1" /> Stop ({selected.size})
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || test.isPending || selected.size !== 1 || !myEmail}
+                  title={myEmail ? `Send a test copy to ${myEmail}` : "No email on your account"}
+                  onClick={() => {
+                    const id = Array.from(selected)[0];
+                    if (id && myEmail) test.mutate({ id, email: myEmail });
+                  }}
+                >
+                  {test.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                  Send test to me
+                </Button>
                 <Button size="sm" disabled={busy || selected.size === 0} onClick={() => run("send")}>
                   {action.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
                   Send now ({selected.size})
                 </Button>
+
               </>
             )}
           </div>
