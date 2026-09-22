@@ -332,14 +332,14 @@ export default function BulkBookingStatus() {
         items={[
           { label: "Home", href: "/" },
           { label: "Bookings", href: "/?tab=bookings" },
-          { label: "Update Status" }
+          { label: "Outstanding Payments" }
         ]} 
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Update Booking Status</span>
+            <span>Outstanding Payments</span>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
                 Page {currentPage} of {totalPages} • {totalCount} total bookings

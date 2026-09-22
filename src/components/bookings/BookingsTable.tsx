@@ -196,8 +196,8 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                   size="sm"
                   className="bg-brand-yellow hover:bg-brand-yellow/90 text-brand-navy relative text-xs sm:text-sm"
                 >
-                  <span className="hidden sm:inline">Update Status</span>
-                  <span className="sm:hidden">Status</span>
+                  <span className="hidden sm:inline">Outstanding Payments</span>
+                  <span className="sm:hidden">Payments</span>
                   {statusUpdateCount > 0 && (
                     <Badge 
                       variant="destructive" 
