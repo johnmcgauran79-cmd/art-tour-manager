@@ -6168,7 +6168,8 @@ var update_tour_messages_default = defineTool100({
       welcome_message_body: "welcome_message_body",
       welcome_message_signoff: "welcome_message_signoff",
       pickup_arrival_message: "pickup_arrival_message",
-      welcome_drinks_message: "welcome_drinks_message"
+      welcome_drinks_message: "welcome_drinks_message",
+      welcome_update_message: "welcome_update_message"
     };
     const payload = {};
     for (const [key, column] of Object.entries(map)) {
@@ -6178,7 +6179,7 @@ var update_tour_messages_default = defineTool100({
     if (Object.keys(payload).length === 0)
       return toolError2("No message fields supplied. Nothing to update.");
     const { data, error } = await supabaseForUser(ctx).from("tours").update(payload).eq("id", tour_id).select(
-      "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message"
+      "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message, welcome_update_message"
     ).maybeSingle();
     if (error) return toolError2(error.message);
     if (!data) return toolError2("Tour not found or not permitted.");
