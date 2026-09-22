@@ -179,7 +179,9 @@ serve(async (req) => {
           b.automation_override !== "manual_emails" &&
           b.automation_override !== "manual_all"
         );
-        if (chaseable.length === 0) continue;
+        // Note: no early exit when nothing is chaseable — we still need to
+        // clear down any reminder rows left over from before payment landed.
+
 
         const chaseableIds = new Set(chaseable.map((b: any) => b.id));
 
