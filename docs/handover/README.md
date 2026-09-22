@@ -69,6 +69,13 @@ Everything here was written from the live repository and the live Supabase proje
 - Backups: nightly database, code and storage copies to Supabase, GitHub artifacts and SharePoint, with retention of 5 / 5 / 3 dated folders.
 - Keap and Brevo removed entirely; historical IDs retained read-only. Do not reintroduce.
 - Bookings can have a secondary contact removed and saved.
+- Payment Reminders (Communications): deposit reminders after a 10-day grace period alongside instalment and final balances, invoice-number fallback matching to Xero, explicit hold/skip reasons, "Not being chased" list, Remove action, test send to yourself, and a Xero-style invoice layout in both emails. See [11-edge-functions-jobs.md](11-edge-functions-jobs.md).
+- Bookings: optional passenger titles (guest-editable on the profile page); the bulk screen is now "Outstanding Payments" and shows each booking under one stage only, most urgent first.
+- Tours: new per-tour "Welcome Update" message for welcome emails (`{{tour_welcome_update_message}}`), plus a Files tab in Comms holding itinerary snapshot, guest document, brochure and tour itinerary.
+- Marketing campaigns: warm-up ramp sending (set emails per day, warmest contacts first) and negative spacing converted to real padding so the editor matches the delivered email.
+- WordPress: linking a tour imports everything from the website first (prices, dates, capacity, inclusions/exclusions, itinerary, day photos, overview text).
+- Tasks can be linked to a booking, tour, hotel, activity, contact, enquiry or campaign, with server-side search on each.
+- Deploy-time chunk errors ("Failed to fetch dynamically imported module") now self-recover via `src/lib/chunkReload.ts`.
 - MCP expanded to v2.8.0 / 146 tools with CRM, marketing, correspondence and data-quality coverage; outbound sending disabled unless `MCP_SENDING_ENABLED=true`.
 
 Details live in [03-modules-routes.md](03-modules-routes.md), [14-email-marketing.md](14-email-marketing.md), [24-backup-recovery.md](24-backup-recovery.md), [25-known-issues-debt.md](25-known-issues-debt.md) and [35-mcp-tool-reference.md](35-mcp-tool-reference.md).

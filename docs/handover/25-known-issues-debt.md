@@ -51,3 +51,13 @@ Evidence-backed only. Nothing here was fixed as part of this handover.
 | Xero data-quality false positives (multi-invoice bookings, recorded invoice numbers) | Invoice checks normalise and token-match references, respect `xero_invoice_mappings`, and only cover upcoming (non-past/archived/cancelled) tours |
 | No way to remove a booking's secondary contact | Remove button on the booking edit page clears it on save |
 | Backups grew without limit | Prune step keeps 5 database, 5 code and 3 storage copies |
+| Deposit reminders only chased bookings with a stored Xero mapping (4 of 22 owing) | Queue matches `invoice_reference` numbers against Xero and back-fills `xero_invoice_mappings` |
+| Reminder rows stayed listed after an invoice was paid outside the system | Nightly cleanup resolves rows whose invoice is no longer active |
+| No way to abandon a reminder permanently | `remove` action; the nightly queue will not re-create it |
+| Cron job `sync-keap-tags-nightly` failed nightly against the dropped `tours.keap_tag_id` | Job unscheduled and the `sync-keap-tags` function deleted. `sync-n-tags-nightly` (job 9) is owned by `supabase_read_only_user` — do not alter |
+| System Health digest counted expired background-log entries as failures | Health functions expose `http_failure_details_24h` / `recent_http_failures`; digest only sends when a genuine issue exists |
+| Marketing editor preview did not match the delivered email | Negative spacing converted to padding at build time; editor renders at real content width |
+| Deploy replacing a lazily-loaded chunk crashed navigation | `src/lib/chunkReload.ts` guard reloads once per 10 minutes |
+| Bedding review screen duplicated validation | Removed; bedding is validated at booking create/edit/allocation via `src/lib/beddingRules.ts` |
+| Bulk "Update Invoice" action on bookings | Removed — invoices are auto-generated |
+
