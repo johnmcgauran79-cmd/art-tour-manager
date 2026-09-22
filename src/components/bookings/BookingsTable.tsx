@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

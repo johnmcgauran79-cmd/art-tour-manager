@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
