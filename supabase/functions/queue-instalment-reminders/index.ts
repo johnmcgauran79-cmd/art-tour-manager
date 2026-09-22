@@ -443,12 +443,12 @@ serve(async (req) => {
             recipient_email: recipientEmail,
             recipient_name: recipientName,
             payment_link: paymentLink,
-            state: isPassengerInvoice ? keepState : "held_agent",
-            hold_reason: isPassengerInvoice ? null : "Invoice is addressed to a third party (likely a travel agent) — check the amount manually before sending.",
+            state: holdReason ? "held_agent" : keepState,
+            hold_reason: holdReason,
             next_due_at: prior?.next_due_at ?? today,
           };
 
-          if (!isPassengerInvoice) held++;
+          if (holdReason) held++;
 
           if (!dryRun) {
             if (prior) {
