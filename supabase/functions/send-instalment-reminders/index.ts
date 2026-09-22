@@ -278,8 +278,10 @@ serve(async (req) => {
       }
 
       const pax2Email = (bookings ?? [])[0]?.pax2?.email;
-      const ccList = pax2Email && pax2Email.toLowerCase() !== String(recipient).toLowerCase()
+      const pax2Email = (bookings ?? [])[0]?.pax2?.email;
+      const ccList = !testMode && pax2Email && pax2Email.toLowerCase() !== String(recipient).toLowerCase()
         ? [pax2Email] : undefined;
+
 
       const brand = (tour as any)?.brand || defaultBrandRow || null;
       const brandSender = clean(brand?.sender_name);
