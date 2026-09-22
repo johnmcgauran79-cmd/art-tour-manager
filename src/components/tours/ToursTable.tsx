@@ -129,12 +129,14 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
     );
   });
 
-  // Calculate total passengers attending for each tour (confirmed bookings only)
+  // Calculate total passengers on the main body of the tour.
+  // Bookings excluded from the WhatsApp group (e.g. activity-only guests) are not counted.
   const getTotalPassengers = (tourId: string) => {
     return bookings?.filter(booking => 
       booking.tour_id === tourId && 
       booking.status !== 'cancelled' && 
-      booking.status !== 'waitlisted'
+      booking.status !== 'waitlisted' &&
+      booking.whatsapp_group_comms === true
     ).reduce((sum, booking) => sum + booking.passenger_count, 0) || 0;
   };
 
