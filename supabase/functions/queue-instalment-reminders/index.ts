@@ -401,6 +401,8 @@ serve(async (req) => {
             deposit_expected: depositExpected,
             shortfall,
             invoice_due_date: invoiceDue,
+            invoice_date: invoiceDate,
+            booked_at: bookedAt,
             final_payment_date: tour.final_payment_date ?? null,
             line_items: lineItems,
             recipient_email: recipientEmail,
