@@ -26,6 +26,10 @@ export default defineTool({
       .string()
       .optional()
       .describe("Welcome Drinks message (rich text / simple HTML) — where guests first gather."),
+    welcome_update_message: z
+      .string()
+      .optional()
+      .describe("Welcome Update (rich text / simple HTML) — tour-specific note for welcome emails, e.g. 'This tour begins in Sapporo and ends in Tokyo, book your flights accordingly.'"),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, ...input }, ctx) => {
