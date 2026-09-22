@@ -63,11 +63,16 @@ function renderDescription(value: unknown): string {
   if (!text) return "";
 
   if (!text.includes("\n")) {
+    const hasList = /INCLUSIONS|EXCLUSIONS/.test(text);
     text = text
-      // Section headings such as "TOUR INCLUSIONS:" / "PAYMENT SCHEDULE"
-      .replace(/\s+((?:[A-Z][A-Z &/']{3,}(?: [A-Z][A-Z &/']*)*)(?::|(?= ?\$)))/g, "\n\n$1")
-      // Bullet items written as " - item"
-      .replace(/\s+-\s+/g, "\n- ");
+      // Section headings such as "TOUR INCLUSIONS:" or "PAYMENT SCHEDULE"
+      .replace(/\s+(TOUR INCLUSIONS:|TOUR EXCLUSIONS:|INCLUSIONS:|EXCLUSIONS:|PAYMENT SCHEDULE|CANCELLATION POLICY)/g, "\n\n$1")
+      // Sub-lines such as "FINAL PAYMENT DUE ..." and each money amount
+      .replace(/\s+(FINAL PAYMENT DUE)/g, "\n$1")
+      .replace(/\s+(?=[$£€¥]\s?\d)/g, "\n");
+    // Bullet items written as " - item" — only where the row is actually a list,
+    // so plain rows like "Group - Anthony Price - Standard" stay on one line.
+    if (hasList) text = text.replace(/\s+-\s+/g, "\n- ");
   }
 
   const lines = text.split("\n").map((l) => l.trim());
@@ -117,11 +122,11 @@ function buildLineItemsTable(
     // render those as plain text rather than a row of zeros.
     if (unit === 0 && amount === 0) {
       return `<tr>
-      <td colspan="4" style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${renderDescription(li.description)}</td>
+      <td colspan="4" style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;line-height:1.6;border-bottom:1px solid #e5e7eb;vertical-align:top;">${renderDescription(li.description)}</td>
     </tr>`;
     }
     return `<tr>
-      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;vertical-align:top;">${renderDescription(li.description)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;line-height:1.6;border-bottom:1px solid #e5e7eb;vertical-align:top;">${renderDescription(li.description)}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:center;vertical-align:top;">${qty ? qty.toLocaleString("en-AU") : ""}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(unit)}</td>
       <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;text-align:right;vertical-align:top;">${sym}${formatMoney(amount)}</td>
