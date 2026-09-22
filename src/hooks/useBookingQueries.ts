@@ -147,8 +147,9 @@ export const usePaginatedBookings = (
 };
 
 // --- Outstanding payment categorisation -------------------------------------
-// A booking belongs to ONE outstanding category only, in stage order:
-// Deposits Owing first, then Instalments Owing, then Final Payments Owing.
+// A booking belongs to ONE outstanding category only — the most advanced
+// (most urgent) stage wins: Final Payments Owing, then Instalments Owing,
+// then Deposits Owing.
 const DEPOSIT_PENDING_STATUSES = ['pending', 'invoiced', 'racing_breaks_invoice'];
 const SETTLED_OR_EXEMPT_STATUSES = ['fully_paid', 'complimentary', 'host', 'cancelled', 'waitlisted'];
 
@@ -160,16 +161,32 @@ const depositCutoffISO = () => {
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
-const qualifiesDepositsOwing = (row: any) =>
-  DEPOSIT_PENDING_STATUSES.includes(row.status) && row.created_at < depositCutoffISO();
+const qualifiesFinalPaymentOwing = (row: any) => {
+  const tour = row.tours || {};
+  if (!tour.final_payment_date) return false;
+  if (!(tour.final_payment_date < todayISO())) return false;
+  return !SETTLED_OR_EXEMPT_STATUSES.includes(row.status);
+};
 
-const qualifiesInstalmentsOwing = (row: any) => {
+const instalmentStageOwing = (row: any) => {
   const tour = row.tours || {};
   if (!tour.instalment_required || !tour.instalment_date) return false;
   if (!(tour.instalment_date < todayISO())) return false;
   if (row.status === 'instalment_paid' || SETTLED_OR_EXEMPT_STATUSES.includes(row.status)) return false;
-  return !qualifiesDepositsOwing(row);
+  return true;
 };
+
+// Instalments owing only when the final payment isn't already due
+const qualifiesInstalmentsOwing = (row: any) =>
+  instalmentStageOwing(row) && !qualifiesFinalPaymentOwing(row);
+
+// Deposits owing only when neither later stage applies
+const qualifiesDepositsOwing = (row: any) =>
+  DEPOSIT_PENDING_STATUSES.includes(row.status) &&
+  row.created_at < depositCutoffISO() &&
+  !qualifiesFinalPaymentOwing(row) &&
+  !instalmentStageOwing(row);
+
 
 export const useFilteredBookings = (
   filterType: 'deposits_owing' | 'instalments_owing' | 'payment_due' | null, 
@@ -208,7 +225,8 @@ export const useFilteredBookings = (
       };
 
       if (filterType === 'deposits_owing') {
-        // Deposits owing: pre-deposit statuses 7+ days after booking created
+        // Deposits owing: pre-deposit statuses 7+ days after booking created,
+        // excluding anything already at the instalment or final payment stage
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 7);
         
@@ -216,11 +234,11 @@ export const useFilteredBookings = (
           .from('bookings')
           .select(`
             *,
-            tours!inner (name, start_date),
+            tours!inner (name, start_date, final_payment_date, instalment_required, instalment_date),
             customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
-          .in('status', ['pending', 'invoiced', 'racing_breaks_invoice'])
+          .in('status', DEPOSIT_PENDING_STATUSES as any)
           .lt('created_at', cutoffDate.toISOString());
         
         // Apply tour filter
@@ -228,19 +246,21 @@ export const useFilteredBookings = (
           query = query.eq('tour_id', tourFilter);
         }
         
-        const { data, error, count } = await query;
+        const { data, error } = await query;
         
         if (error) throw error;
-        return { data: sortAndPaginate(data || [], 'deposits_owing'), count: count || 0 };
+        const rows = (data || []).filter((row: any) => qualifiesDepositsOwing(row));
+        return { data: sortAndPaginate(rows, 'deposits_owing'), count: rows.length };
         
       } else if (filterType === 'instalments_owing') {
         // Instalments owing: tour has instalment_required, past instalment_date,
-        // status is not instalment_paid or fully_paid
+        // status is not instalment_paid or fully_paid, and the final payment
+        // isn't already due (that takes precedence)
         let query = supabase
           .from('bookings')
           .select(`
             *,
-            tours!inner (name, start_date, instalment_required, instalment_date),
+            tours!inner (name, start_date, final_payment_date, instalment_required, instalment_date),
             customers!lead_passenger_id (id, title, date_of_birth, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
@@ -261,9 +281,10 @@ export const useFilteredBookings = (
         const { data, error } = await query;
         
         if (error) throw error;
-        // Exclude anything still sitting in the earlier stage (deposits owing)
-        const rows = (data || []).filter((row: any) => !qualifiesDepositsOwing(row));
+        const rows = (data || []).filter((row: any) => qualifiesInstalmentsOwing(row));
         return { data: sortAndPaginate(rows, 'instalments_owing'), count: rows.length };
+        
+
         
       } else if (filterType === 'payment_due') {
         // Final payment owing: past final_payment_date and not fully_paid
@@ -290,11 +311,9 @@ export const useFilteredBookings = (
         const { data, error } = await query;
         
         if (error) throw error;
-        // Exclude anything still sitting in an earlier stage (deposit or instalment owing)
-        const rows = (data || []).filter(
-          (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
-        );
+        const rows = (data || []).filter((row: any) => qualifiesFinalPaymentOwing(row));
         return { data: sortAndPaginate(rows, 'payment_due'), count: rows.length };
+
       }
 
       return { data: [], count: 0 };
@@ -308,19 +327,24 @@ export const useFilterCounts = () => {
     queryKey: ['bookings', 'filter-counts'],
     queryFn: async () => {
       const today = todayISO();
-      
-      // Deposits owing: pre-deposit statuses 7+ days after booking created
-      const { count: depositsOwingCount } = await supabase
+      const tourFields = 'tours!inner(final_payment_date, instalment_required, instalment_date)';
+
+      // Deposits owing: pre-deposit statuses 7+ days after booking created,
+      // excluding anything already at a later payment stage
+      const { data: depositRows } = await supabase
         .from('bookings')
-        .select('*', { count: 'exact', head: true })
+        .select(`id, status, created_at, ${tourFields}`)
         .in('status', DEPOSIT_PENDING_STATUSES as any)
         .lt('created_at', depositCutoffISO());
 
-      // Instalments owing: tour has instalment_required, past instalment_date,
-      // excluding anything still owing a deposit
+      const depositsOwing = (depositRows || []).filter(
+        (row: any) => qualifiesDepositsOwing(row)
+      ).length;
+
+      // Instalments owing: past instalment_date and the final payment isn't due yet
       const { data: instalmentRows } = await supabase
         .from('bookings')
-        .select('id, status, created_at, tours!inner(instalment_required, instalment_date)')
+        .select(`id, status, created_at, ${tourFields}`)
         .eq('tours.instalment_required', true)
         .lt('tours.instalment_date', today)
         .neq('status', 'instalment_paid')
@@ -331,14 +355,13 @@ export const useFilterCounts = () => {
         .neq('status', 'waitlisted');
 
       const instalmentsOwing = (instalmentRows || []).filter(
-        (row: any) => !qualifiesDepositsOwing(row)
+        (row: any) => qualifiesInstalmentsOwing(row)
       ).length;
 
-      // Final payment owing: past final_payment_date, excluding anything still
-      // owing a deposit or an instalment
+      // Final payment owing: past final_payment_date and not settled
       const { data: finalRows } = await supabase
         .from('bookings')
-        .select('id, status, created_at, tours!inner(final_payment_date, instalment_required, instalment_date)')
+        .select(`id, status, created_at, ${tourFields}`)
         .lt('tours.final_payment_date', today)
         .neq('status', 'fully_paid')
         .neq('status', 'complimentary')
@@ -346,12 +369,14 @@ export const useFilterCounts = () => {
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
 
+
       const paymentDue = (finalRows || []).filter(
-        (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
+        (row: any) => qualifiesFinalPaymentOwing(row)
       ).length;
 
       return {
-        depositsOwing: depositsOwingCount || 0,
+        depositsOwing,
+
         instalmentsOwing,
         paymentDue,
       };
