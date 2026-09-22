@@ -266,14 +266,19 @@ serve(async (req) => {
             }
           }
           if (!matched) {
-            unlinked.push({
+            const entry = {
               kind,
               tour_id: tour.id,
               tour_name: tour.name,
               booking_id: b.id,
               invoice_reference: b.invoice_reference ?? null,
               client: [b.lead?.first_name, b.lead?.last_name].filter(Boolean).join(" ") || b.group_name,
-            });
+              reason: b.invoice_reference
+                ? `No invoice matching "${b.invoice_reference}" could be found in Xero — check the invoice number on the booking.`
+                : "No invoice has been raised in Xero for this booking yet, so there is nothing to chase.",
+            };
+            unlinked.push(entry);
+            notChased.push(entry);
           }
         }
 
