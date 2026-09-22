@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle, Mail,
+  Loader2, Send, Clock, Ban, RotateCcw, RefreshCw, CircleDollarSign, AlertTriangle, Phone, PauseCircle, Mail, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -78,6 +78,8 @@ export const InstalmentRemindersPanel = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [stopOpen, setStopOpen] = useState(false);
   const [stopReason, setStopReason] = useState("");
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removeReason, setRemoveReason] = useState("");
 
   const byKind = useMemo(() => {
     const map: Record<ReminderKind, InstalmentReminder[]> = { deposit: [], instalment: [], final: [] };
@@ -113,13 +115,15 @@ export const InstalmentRemindersPanel = () => {
       return next;
     });
 
-  const run = async (a: "send" | "skip" | "stop" | "resume" | "pause_auto", reason?: string) => {
+  const run = async (a: "send" | "skip" | "stop" | "resume" | "pause_auto" | "remove", reason?: string) => {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     await action.mutateAsync({ ids, action: a, reason });
     setSelected(new Set());
     setStopReason("");
     setStopOpen(false);
+    setRemoveReason("");
+    setRemoveOpen(false);
   };
 
   const busy = action.isPending || refresh.isPending;
@@ -155,6 +159,9 @@ export const InstalmentRemindersPanel = () => {
                 </Button>
                 <Button size="sm" variant="destructive" disabled={busy || selected.size === 0} onClick={() => setStopOpen(true)}>
                   <Ban className="h-4 w-4 mr-1" /> Stop ({selected.size})
+                </Button>
+                <Button size="sm" variant="outline" disabled={busy || selected.size === 0} onClick={() => setRemoveOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Remove ({selected.size})
                 </Button>
                 <Button
                   size="sm"
@@ -343,6 +350,28 @@ export const InstalmentRemindersPanel = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => run("stop", stopReason)}>Stop reminders</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {selected.size} reminder(s) from the list?</AlertDialogTitle>
+            <AlertDialogDescription>
+              These disappear from Payment reminders for good and the nightly check will not bring them back — use
+              this when chasing the balance isn't worth it, for example a small shortfall covered by a credit. Add a
+              short note so the team knows why.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={removeReason}
+            onChange={(e) => setRemoveReason(e.target.value)}
+            placeholder="Client had a $700 credit against a $1,000 deposit — not chasing the rest"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => run("remove", removeReason)}>Remove from list</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
