@@ -20,6 +20,8 @@ export interface InstalmentReminder {
   deposit_expected: number;
   shortfall: number;
   invoice_due_date: string | null;
+  invoice_date: string | null;
+  booked_at: string | null;
   final_payment_date: string | null;
   line_items: Array<{ description: string; quantity: number; unit_amount: number; line_amount: number }> | null;
   auto_send: boolean;
