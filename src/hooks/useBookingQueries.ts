@@ -327,19 +327,24 @@ export const useFilterCounts = () => {
     queryKey: ['bookings', 'filter-counts'],
     queryFn: async () => {
       const today = todayISO();
-      
-      // Deposits owing: pre-deposit statuses 7+ days after booking created
-      const { count: depositsOwingCount } = await supabase
+      const tourFields = 'tours!inner(final_payment_date, instalment_required, instalment_date)';
+
+      // Deposits owing: pre-deposit statuses 7+ days after booking created,
+      // excluding anything already at a later payment stage
+      const { data: depositRows } = await supabase
         .from('bookings')
-        .select('*', { count: 'exact', head: true })
+        .select(`id, status, created_at, ${tourFields}`)
         .in('status', DEPOSIT_PENDING_STATUSES as any)
         .lt('created_at', depositCutoffISO());
 
-      // Instalments owing: tour has instalment_required, past instalment_date,
-      // excluding anything still owing a deposit
+      const depositsOwing = (depositRows || []).filter(
+        (row: any) => qualifiesDepositsOwing(row)
+      ).length;
+
+      // Instalments owing: past instalment_date and the final payment isn't due yet
       const { data: instalmentRows } = await supabase
         .from('bookings')
-        .select('id, status, created_at, tours!inner(instalment_required, instalment_date)')
+        .select(`id, status, created_at, ${tourFields}`)
         .eq('tours.instalment_required', true)
         .lt('tours.instalment_date', today)
         .neq('status', 'instalment_paid')
@@ -350,20 +355,20 @@ export const useFilterCounts = () => {
         .neq('status', 'waitlisted');
 
       const instalmentsOwing = (instalmentRows || []).filter(
-        (row: any) => !qualifiesDepositsOwing(row)
+        (row: any) => qualifiesInstalmentsOwing(row)
       ).length;
 
-      // Final payment owing: past final_payment_date, excluding anything still
-      // owing a deposit or an instalment
+      // Final payment owing: past final_payment_date and not settled
       const { data: finalRows } = await supabase
         .from('bookings')
-        .select('id, status, created_at, tours!inner(final_payment_date, instalment_required, instalment_date)')
+        .select(`id, status, created_at, ${tourFields}`)
         .lt('tours.final_payment_date', today)
         .neq('status', 'fully_paid')
         .neq('status', 'complimentary')
         .neq('status', 'host')
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
+
 
       const paymentDue = (finalRows || []).filter(
         (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
