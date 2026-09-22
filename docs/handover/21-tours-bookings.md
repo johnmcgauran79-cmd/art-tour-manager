@@ -50,3 +50,24 @@ Creation is a four-step wizard collecting core, medical and dietary details, and
 ## Live volumes
 
 64 tours, 743 bookings, 6,637 contacts.
+
+## Passenger titles (September 2026)
+
+Each passenger on a booking can carry an optional title (Mr, Mrs, Miss, Dr, etc.), pulled from the contact record and shown for the lead passenger and passengers 2/3. Guests can set or change their own title on the tokenised profile update page sent from welcome emails, so titles stay current without staff editing.
+
+## Outstanding Payments screen
+
+The former "Update Status" bulk screen is **Outstanding Payments** (`src/pages/BulkBookingStatus.tsx`, button in `src/components/bookings/BookingsTable.tsx`, filters and counts in `src/hooks/useBookingQueries.ts`). A booking appears in exactly one category, most urgent stage first: Final Payments Owing → Instalments Owing → Deposits Owing. Never list the same booking under several stages; `racing_breaks_invoice` bookings previously appeared under all three.
+
+## Tour comms messages
+
+Each tour holds four reusable message blocks on `tours`, edited in Comms → Messages (`TourWelcomeMessageTab.tsx`, `useTourWelcomeMessage.ts`) and pulled into email templates:
+
+| Column | Merge field | Condition |
+| --- | --- | --- |
+| `welcome_message_*` (enabled/heading/body/signoff/image) | rendered block | `tour_welcome_message_enabled` |
+| `pickup_arrival_message` (+ `pickup_arrival_doc_path`) | `{{tour_pickup_arrival_message}}` | — |
+| `welcome_drinks_message` | `{{tour_welcome_drinks_message}}` | — |
+| `welcome_update_message` | `{{tour_welcome_update_message}}` | `{{#has_tour_welcome_update}}` / `{{^...}}` |
+
+`welcome_update_message` (September 2026) replaces writing separate welcome emails per tour — e.g. "this tour begins in Sapporo and ends in Tokyo, book flights accordingly". The condition strips HTML before trimming, so an empty rich-text value counts as absent. Wired through `src/utils/emailTemplateEngine.ts`, `supabase/functions/send-booking-confirmation/index.ts`, the template editor's "Welcome Update" insert button, and the MCP tools `get_tour_messages` / `update_tour_messages`.

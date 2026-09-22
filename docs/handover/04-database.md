@@ -87,3 +87,14 @@ erDiagram
   LANDING_PAGES ||--o{ LANDING_PAGE_SUBMISSIONS : receives
   BOOKINGS ||--o{ XERO_INVOICE_MAPPINGS : invoices
 ```
+
+## Recent column additions (September 2026)
+
+| Table | Columns | Purpose |
+| --- | --- | --- |
+| `tours` | `welcome_update_message` | Reusable per-tour note injected into welcome emails |
+| `tour_itineraries` | brochure / tour-itinerary file columns | Files tab in tour Communications (snapshot, guest document, brochure, itinerary) |
+| `instalment_reminders` | `kind`, `line_items`, `final_payment_date`, `escalated_at`, `auto_send`, `invoice_date`, `booked_at` | Deposit / instalment / final reminders, full invoice reproduction, automatic chasing |
+| `marketing_campaigns` | `daily_send_limit`, `ramp_sent_date`, `ramp_sent_count` | Warm-up ramp sending |
+| `campaign_recipients` | `send_priority` (+ queue-order index) | Warmest contacts first |
+| `task_entity_links` | campaign entity type, manual source | Linking tasks to campaigns and other records by hand |
