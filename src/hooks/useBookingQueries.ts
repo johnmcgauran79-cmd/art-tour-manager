@@ -307,48 +307,53 @@ export const useFilterCounts = () => {
   return useQuery({
     queryKey: ['bookings', 'filter-counts'],
     queryFn: async () => {
-      const today = new Date();
+      const today = todayISO();
       
-      // Deposits owing: invoiced status 7+ days after booking created
-      const cutoffDateDeposits = new Date();
-      cutoffDateDeposits.setDate(cutoffDateDeposits.getDate() - 7);
-      
+      // Deposits owing: pre-deposit statuses 7+ days after booking created
       const { count: depositsOwingCount } = await supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['pending', 'invoiced', 'racing_breaks_invoice'])
-        .lt('created_at', cutoffDateDeposits.toISOString());
+        .in('status', DEPOSIT_PENDING_STATUSES as any)
+        .lt('created_at', depositCutoffISO());
 
       // Instalments owing: tour has instalment_required, past instalment_date,
-      // status is not instalment_paid, fully_paid, or complimentary
-        const { count: instalmentsOwingCount } = await supabase
+      // excluding anything still owing a deposit
+      const { data: instalmentRows } = await supabase
         .from('bookings')
-        .select('*, tours!inner(instalment_required, instalment_date)', { count: 'exact', head: true })
+        .select('id, status, created_at, tours!inner(instalment_required, instalment_date)')
         .eq('tours.instalment_required', true)
-        .lt('tours.instalment_date', today.toISOString().split('T')[0])
+        .lt('tours.instalment_date', today)
         .neq('status', 'instalment_paid')
         .neq('status', 'fully_paid')
-        .neq('status', 'racing_breaks_invoice')
         .neq('status', 'complimentary')
         .neq('status', 'host')
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
 
-      // Final payment owing: past final_payment_date and not fully_paid or complimentary
-      const { count: paymentDueCount } = await supabase
+      const instalmentsOwing = (instalmentRows || []).filter(
+        (row: any) => !qualifiesDepositsOwing(row)
+      ).length;
+
+      // Final payment owing: past final_payment_date, excluding anything still
+      // owing a deposit or an instalment
+      const { data: finalRows } = await supabase
         .from('bookings')
-        .select('*, tours!inner(final_payment_date)', { count: 'exact', head: true })
-        .lt('tours.final_payment_date', today.toISOString().split('T')[0])
+        .select('id, status, created_at, tours!inner(final_payment_date, instalment_required, instalment_date)')
+        .lt('tours.final_payment_date', today)
         .neq('status', 'fully_paid')
         .neq('status', 'complimentary')
         .neq('status', 'host')
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
+
+      const paymentDue = (finalRows || []).filter(
+        (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
+      ).length;
 
       return {
         depositsOwing: depositsOwingCount || 0,
-        instalmentsOwing: instalmentsOwingCount || 0,
-        paymentDue: paymentDueCount || 0,
+        instalmentsOwing,
+        paymentDue,
       };
     },
   });
