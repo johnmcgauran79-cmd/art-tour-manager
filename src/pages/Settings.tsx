@@ -10,6 +10,7 @@ import { SystemSettings } from "@/components/settings/SystemSettings";
 import { AutomatedReportRulesManagement } from "@/components/reports/AutomatedReportRulesManagement";
 import { AdditionalInfoTemplatesManagement } from "@/components/email/AdditionalInfoTemplatesManagement";
 import { CancellationPolicySettings } from "@/components/settings/CancellationPolicySettings";
+import { BankDetailsSettings } from "@/components/settings/BankDetailsSettings";
 import { InvoiceLineTemplatesManagement } from "@/components/settings/InvoiceLineTemplatesManagement";
 import { EmailSettingsTab } from "@/components/email/EmailSettingsTab";
 import { BrandsManagement } from "@/components/settings/BrandsManagement";
