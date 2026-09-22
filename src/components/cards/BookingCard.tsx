@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAvatarUrl } from "@/hooks/useSignedUrl";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 
 interface BookingCardProps {
   booking: any;
@@ -25,7 +26,7 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
   const queryClient = useQueryClient();
   
   const leadPassenger = booking.customers 
-    ? `${booking.customers.first_name} ${booking.customers.last_name}`
+    ? formatNameWithTitle(booking.customers.title, booking.customers.first_name, booking.customers.last_name)
     : 'Unknown';
 
   const otherPassengers = [

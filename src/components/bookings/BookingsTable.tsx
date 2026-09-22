@@ -326,7 +326,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                       >
                         <TableCell className="font-medium">{booking.tours?.name || 'No Tour'}</TableCell>
                         <TableCell>
-                          {booking.customers?.first_name} {booking.customers?.last_name}
+                          {formatNameWithTitle(booking.customers?.title, booking.customers?.first_name, booking.customers?.last_name)}
                           {coBrandLabel(booking) && (
                             <Badge variant="outline" className="ml-2 border-primary/40 text-primary text-[10px] align-middle">
                               {coBrandLabel(booking)}
