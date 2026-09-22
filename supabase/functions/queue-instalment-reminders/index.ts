@@ -215,17 +215,62 @@ serve(async (req) => {
           byInvoice.set(m.xero_invoice_id, entry);
         }
 
+        /**
+         * Many bookings carry their invoice number in `invoice_reference` without
+         * ever having a row in xero_invoice_mappings (older bookings, or invoices
+         * raised directly in Xero). Those were silently skipped, so Outstanding
+         * Payments showed far more bookings than the reminder list. Look the
+         * invoice up by number, use it, and record the mapping for next time.
+         */
         for (const b of chaseable) {
-          if (!mappedBookingIds.has(b.id)) {
+          if (mappedBookingIds.has(b.id)) continue;
+          const tokens = String(b.invoice_reference ?? "")
+            .split(/[,;/|]+|\s+and\s+/i)
+            .map((t: string) => t.trim())
+            .filter(Boolean);
+          let matched = false;
+          for (const token of tokens) {
+            let found = numberCache.get(token.toUpperCase());
+            if (found === undefined) {
+              const res = await xeroGet(auth, `Invoices?InvoiceNumbers=${encodeURIComponent(token)}`);
+              await new Promise((r) => setTimeout(r, 300));
+              found = res?.Invoices?.[0] ?? null;
+              numberCache.set(token.toUpperCase(), found);
+            }
+            const foundId = found?.InvoiceID;
+            if (!foundId) continue;
+            matched = true;
+            invoiceCache.set(foundId, found);
+            mappedBookingIds.add(b.id);
+            const entry = byInvoice.get(foundId) ?? {
+              number: found.InvoiceNumber ?? token,
+              bookings: [],
+            };
+            if (!entry.bookings.some((x: any) => x.id === b.id)) entry.bookings.push(b);
+            byInvoice.set(foundId, entry);
+            if (!dryRun) {
+              await supabase.from("xero_invoice_mappings").upsert(
+                {
+                  booking_id: b.id,
+                  xero_invoice_id: foundId,
+                  xero_invoice_number: found.InvoiceNumber ?? token,
+                },
+                { onConflict: "booking_id,xero_invoice_id" },
+              );
+            }
+          }
+          if (!matched) {
             unlinked.push({
               kind,
               tour_id: tour.id,
               tour_name: tour.name,
               booking_id: b.id,
+              invoice_reference: b.invoice_reference ?? null,
               client: [b.lead?.first_name, b.lead?.last_name].filter(Boolean).join(" ") || b.group_name,
             });
           }
         }
+
 
         for (const [invoiceId, entry] of byInvoice) {
           // 3. Live Xero read (cached across the two kinds).
