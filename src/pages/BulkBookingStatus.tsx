@@ -339,7 +339,7 @@ export default function BulkBookingStatus() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Update Booking Status</span>
+            <span>Outstanding Payments</span>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
                 Page {currentPage} of {totalPages} • {totalCount} total bookings
