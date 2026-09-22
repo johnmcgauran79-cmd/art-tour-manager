@@ -297,6 +297,31 @@ export const InstalmentRemindersPanel = () => {
             ))}
           </>
         )}
+
+        {kindIssues.length > 0 && (
+          <div className="border rounded-md">
+            <div className="px-3 py-2 border-b bg-muted/40 text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              Not being chased ({kindIssues.length})
+            </div>
+            <div className="divide-y">
+              {kindIssues.map((i, idx) => (
+                <div key={idx} className="px-3 py-2 text-xs">
+                  <div className="font-medium text-foreground">
+                    {i.client || "Unknown"}
+                    {(i.invoice_number || i.invoice_reference) && (
+                      <span className="font-normal text-muted-foreground">
+                        {" "}· Inv {i.invoice_number || i.invoice_reference}
+                      </span>
+                    )}
+                    {i.tour_name && <span className="font-normal text-muted-foreground"> · {i.tour_name}</span>}
+                  </div>
+                  <div className="text-muted-foreground">{i.reason}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
 
       <AlertDialog open={stopOpen} onOpenChange={setStopOpen}>
