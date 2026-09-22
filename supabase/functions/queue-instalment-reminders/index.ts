@@ -374,17 +374,31 @@ serve(async (req) => {
             }
             if (b.group_name) passengerNames.add(norm(b.group_name));
           }
-          const isPassengerInvoice =
-            (contactEmail && passengerEmails.has(contactEmail)) ||
-            (contactName && passengerNames.has(contactName));
+          // The invoice must be addressed to a passenger by name. Matching on the
+          // email alone is not enough: travel agents often appear as the booking
+          // contact, so their email is on the booking too.
+          const nameMatchesPassenger = Boolean(contactName && passengerNames.has(contactName));
+          const emailMatchesPassenger = Boolean(contactEmail && passengerEmails.has(contactEmail));
+          const isPassengerInvoice = nameMatchesPassenger;
 
           const lead = entry.bookings[0]?.lead;
-          const recipientEmail = contactEmail && isPassengerInvoice
+          const recipientEmail = contactEmail && (nameMatchesPassenger || emailMatchesPassenger)
             ? String(inv.Contact?.EmailAddress).trim()
             : (lead?.email ?? null);
           const recipientName = isPassengerInvoice
             ? ([lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || inv.Contact?.Name || "")
-            : (inv.Contact?.Name || "");
+            : (inv.Contact?.Name || [lead?.first_name, lead?.last_name].filter(Boolean).join(" ") || "");
+
+          // Reasons a person must look at this line before anything is sent.
+          const holdReason = status === "DRAFT"
+            ? `Invoice ${invoiceNumber ?? ""} is still a draft in Xero — approve it before chasing payment, as the client cannot see or pay a draft.`
+            : status === "SUBMITTED"
+              ? `Invoice ${invoiceNumber ?? ""} is awaiting approval in Xero — approve it before chasing payment.`
+              : !isPassengerInvoice
+                ? `Invoice is addressed to ${inv.Contact?.Name || "someone"}, who is not a passenger on this booking — likely a travel agent billed net of commission, so check the amount manually before sending.`
+                : !recipientEmail
+                  ? "No email address on file for this invoice — add one to the contact before sending."
+                  : null;
 
           // Payment link (Xero online invoice), cached across kinds.
           let paymentLink = linkCache.get(invoiceId);
