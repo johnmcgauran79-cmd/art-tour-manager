@@ -42,3 +42,9 @@ Staff use the WordPress screens (`/wordpress`, `src/components/wordpress/*`) for
 - Application passwords can be revoked in WordPress without notice; failures surface as audit-log errors.
 - Rate limiting and plugin behaviour on the WordPress host are outside ART's control; large bulk pushes should be done in batches.
 - Whether every currently linked tour is fully reconciled is `UNVERIFIED`; check the audit log per tour.
+
+## Initial import on linking (September 2026)
+
+When a tour is first linked (`TourWebsiteLinkPrompt.tsx`, `TourWebsiteReconcileDialog.tsx`, `TourWebsiteSyncTab.tsx`), ART imports the website's content so admin starts from the live site rather than overwriting it: room prices, dates, location, payment details, capacity, inclusions/exclusions, itinerary days and day photos, and the overview text. There is also an explicit **"Import everything from the website"** action to re-run it later.
+
+Note the overview text is stored in the WordPress post `content`, not a separate ACF field; it lands in ART's `website_description` via the inclusions sync. After the initial import, ART edits publish back to WordPress through the normal preview-and-diff path.
