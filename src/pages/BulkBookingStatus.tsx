@@ -332,7 +332,7 @@ export default function BulkBookingStatus() {
         items={[
           { label: "Home", href: "/" },
           { label: "Bookings", href: "/?tab=bookings" },
-          { label: "Update Status" }
+          { label: "Outstanding Payments" }
         ]} 
       />
 
