@@ -10,10 +10,11 @@ const corsHeaders = {
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Days between chases, and how many emails before the invoice is flagged for a call.
-const CADENCE_DAYS: Record<string, number> = { instalment: 14, final: 7 };
+const CADENCE_DAYS: Record<string, number> = { deposit: 7, instalment: 14, final: 7 };
 const MAX_REMINDERS = 3;
 
 const TEMPLATE_TYPE: Record<string, string> = {
+  deposit: "deposit_reminder",
   instalment: "instalment_reminder",
   final: "final_balance",
 };
@@ -253,7 +254,7 @@ serve(async (req) => {
     const { data: templates } = await supabase
       .from("email_templates")
       .select("*")
-      .in("type", ["instalment_reminder", "final_balance"])
+      .in("type", ["deposit_reminder", "instalment_reminder", "final_balance"])
       .eq("is_active", true);
     const templateByType = new Map((templates ?? []).map((t: any) => [t.type, t]));
 
@@ -284,7 +285,7 @@ serve(async (req) => {
       if (!testMode && (r.state === "stopped" || r.state === "resolved" || r.state === "needs_call")) continue;
       if (automatic && r.auto_send === false) continue;
 
-      const kind = r.kind === "final" ? "final" : "instalment";
+      const kind = r.kind === "final" ? "final" : r.kind === "deposit" ? "deposit" : "instalment";
       const template = templateByType.get(TEMPLATE_TYPE[kind]);
       if (!template) {
         errors++;
@@ -390,6 +391,8 @@ serve(async (req) => {
         invoice_amount_paid: formatMoney(Number(r.amount_paid) || 0),
         invoice_amount_due: formatMoney(Number(r.amount_due) || 0),
         instalment_amount_due: formatMoney(Number(r.shortfall) || 0),
+        deposit_amount_due: formatMoney(Number(r.shortfall) || 0),
+        deposit_expected: formatMoney(Number(r.deposit_expected) || 0),
         amount_now_due: formatMoney(Number(r.shortfall) || 0),
         instalment_expected: formatMoney(Number(r.instalment_expected) || 0),
         balance_after_instalment: formatMoney(balanceAfter),
@@ -415,7 +418,8 @@ serve(async (req) => {
       };
 
       const baseSubject = mergeTemplate(
-        template.subject_template || (kind === "final" ? "Final balance due" : "Instalment payment due"),
+        template.subject_template
+          || (kind === "final" ? "Final balance due" : kind === "deposit" ? "Deposit payment due" : "Instalment payment due"),
         vars,
       );
       const subject = testMode ? `[TEST] ${baseSubject}` : baseSubject;
