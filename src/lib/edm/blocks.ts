@@ -1496,7 +1496,10 @@ export const renderEdmHtml = (
   opts: { subject?: string; preheader?: string; interactive?: boolean } = {}
 ): string => {
   const design = blocks.find((b) => b.type === "design");
-  const contentBlocks = blocks.filter((b) => b.type !== "design");
+  // Negative spacing is resolved into real padding first, so the canvas and the
+  // delivered email are laid out identically.
+  const contentBlocks = absorbNegativeSpacing(blocks.filter((b) => b.type !== "design"));
+
   const border = design?.borderColor || brand.colorBorder || "#e2e8f0";
   const pageBg = design?.pageBg || "#f4f5f7";
   const contentBg = design?.contentBg || "#ffffff";
