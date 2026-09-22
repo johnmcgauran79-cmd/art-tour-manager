@@ -90,7 +90,10 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
   const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, tourForPaymentAlerts as any);
   const confirmedBookings = tourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
   const waitlistedBookings = tourBookings.filter(b => b.status === 'waitlisted');
-  const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
+  // Main body of the tour only — bookings excluded from the WhatsApp group
+  // (e.g. activity-only guests) are not counted as tour passengers.
+  const mainBodyBookings = confirmedBookings.filter(b => b.whatsapp_group_comms === true);
+  const totalConfirmedPassengers = mainBodyBookings.reduce((sum, b) => sum + b.passenger_count, 0);
   const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
 
   // Calculate hotel room statistics for the first night only to avoid double-counting back-to-back hotels
@@ -239,7 +242,7 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{totalConfirmedPassengers}</div>
-            <p className="text-xs text-muted-foreground">{confirmedBookings.length} bookings</p>
+            <p className="text-xs text-muted-foreground">{mainBodyBookings.length} bookings</p>
           </CardContent>
         </Card>
 
