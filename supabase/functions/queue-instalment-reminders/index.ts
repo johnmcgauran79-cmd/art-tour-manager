@@ -247,9 +247,24 @@ serve(async (req) => {
           for (const token of tokens) {
             let found = numberCache.get(token.toUpperCase());
             if (found === undefined) {
-              const res = await xeroGet(auth, `Invoices?InvoiceNumbers=${encodeURIComponent(token)}`);
-              await new Promise((r) => setTimeout(r, 300));
-              found = res?.Invoices?.[0] ?? null;
+              /**
+                * Bookings record the number in several shapes: "INV-4475",
+                * "4475", "inv4475". Xero matches InvoiceNumber exactly, so try
+                * the sensible variants before giving up on the token.
+                */
+              const digits = token.replace(/\D+/g, "");
+              const variants = Array.from(new Set([
+                token,
+                digits ? `INV-${digits}` : "",
+                digits && digits !== token ? digits : "",
+              ].filter(Boolean)));
+              found = null;
+              for (const variant of variants) {
+                const res = await xeroGet(auth, `Invoices?InvoiceNumbers=${encodeURIComponent(variant)}`);
+                await new Promise((r) => setTimeout(r, 300));
+                const hit = res?.Invoices?.[0] ?? null;
+                if (hit) { found = hit; break; }
+              }
               numberCache.set(token.toUpperCase(), found);
             }
             const foundId = found?.InvoiceID;
