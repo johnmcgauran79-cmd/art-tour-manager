@@ -311,11 +311,9 @@ export const useFilteredBookings = (
         const { data, error } = await query;
         
         if (error) throw error;
-        // Exclude anything still sitting in an earlier stage (deposit or instalment owing)
-        const rows = (data || []).filter(
-          (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
-        );
+        const rows = (data || []).filter((row: any) => qualifiesFinalPaymentOwing(row));
         return { data: sortAndPaginate(rows, 'payment_due'), count: rows.length };
+
       }
 
       return { data: [], count: 0 };
