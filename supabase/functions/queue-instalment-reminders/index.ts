@@ -251,9 +251,14 @@ serve(async (req) => {
           const depositExpected = paxCount * (Number(tour.deposit_required) || 0);
           // Instalment reminders chase only what is due at this stage; the final
           // balance chases everything still outstanding on the invoice.
+          // Deposit reminders chase only the deposit still outstanding (never
+          // more than the balance on the invoice, so credits already applied in
+          // Xero are respected).
           const shortfall = kind === "final"
             ? due
-            : Math.max(0, depositExpected + instalmentExpected - paid);
+            : kind === "deposit"
+              ? Math.min(due, Math.max(0, depositExpected - paid))
+              : Math.max(0, depositExpected + instalmentExpected - paid);
 
           const existing = await supabase
             .from("instalment_reminders")
