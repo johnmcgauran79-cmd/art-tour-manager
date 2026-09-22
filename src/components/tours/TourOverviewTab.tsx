@@ -242,7 +242,7 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{totalConfirmedPassengers}</div>
-            <p className="text-xs text-muted-foreground">{confirmedBookings.length} bookings</p>
+            <p className="text-xs text-muted-foreground">{mainBodyBookings.length} bookings</p>
           </CardContent>
         </Card>
 
