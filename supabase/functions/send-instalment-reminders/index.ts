@@ -229,7 +229,7 @@ serve(async (req) => {
     let flaggedForCall = 0;
 
     for (const r of reminders ?? []) {
-      if (r.state === "stopped" || r.state === "resolved" || r.state === "needs_call") continue;
+      if (!testMode && (r.state === "stopped" || r.state === "resolved" || r.state === "needs_call")) continue;
       if (automatic && r.auto_send === false) continue;
 
       const kind = r.kind === "final" ? "final" : "instalment";
