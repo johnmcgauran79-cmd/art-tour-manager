@@ -173,9 +173,15 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
 
   // Calculate statistics from all tour bookings (before filters)
   const confirmedBookings = allTourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
+  const fullTourBookings = confirmedBookings.filter(b => (b as any).whatsapp_group_comms === true);
+  const activityOnlyBookings = confirmedBookings.filter(b => (b as any).whatsapp_group_comms !== true);
   const waitlistedBookings = allTourBookings.filter(b => b.status === 'waitlisted');
-  const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
-  const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
+  const sumPax = (list: typeof allTourBookings) => list.reduce((sum, b) => sum + (b.passenger_count || 0), 0);
+  const fullTourPassengers = sumPax(fullTourBookings);
+  const activityOnlyPassengers = sumPax(activityOnlyBookings);
+  const totalWaitlistedPassengers = sumPax(waitlistedBookings);
+  const totalConfirmedPassengers = fullTourPassengers + activityOnlyPassengers;
+
 
   return (
     <>
