@@ -893,20 +893,90 @@ const hasAnySpacing = (s?: EdmSpacing) =>
   !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null);
 
 /**
- * Negative spacing can't be expressed as padding, so any negative margin or
- * padding side is collected here and applied as a negative CSS margin on the
- * block's wrapper table (which pulls the block towards its neighbour).
+ * Negative spacing used to be emitted as a negative CSS margin on the block's
+ * wrapper table. Browsers honour that, but Gmail, Outlook and Apple Mail all
+ * strip negative margins, so the editing canvas looked tighter than the email
+ * that actually arrived. Negative spacing is now resolved before rendering
+ * (see absorbNegativeSpacing) by trimming real padding, and no negative margin
+ * is ever written into the HTML.
  */
-const negativeSpacing = (b: EdmBlock): string | null => {
-  const sides: (keyof EdmSpacing)[] = ["top", "right", "bottom", "left"];
-  const parts = sides.map((side) => {
-    const m = b.margin?.[side] ?? 0;
-    const p = b.padding?.[side] ?? 0;
-    const total = Math.min(0, m) + Math.min(0, p);
-    return total < 0 ? `${Math.round(total)}px` : "0";
-  });
-  return parts.some((v) => v !== "0") ? parts.join(" ") : null;
+const negativeSpacing = (_b: EdmBlock): string | null => null;
+
+/** Sum of the negative part of a block's margin + padding on one side. */
+const negOnSide = (b: EdmBlock, side: keyof EdmSpacing): number =>
+  Math.min(0, b.margin?.[side] ?? 0) + Math.min(0, b.padding?.[side] ?? 0);
+
+/** Take up to `want` px off an explicitly set positive spacing side. */
+const trimSide = (
+  s: EdmSpacing | undefined,
+  side: keyof EdmSpacing,
+  want: number
+): { spacing?: EdmSpacing; used: number } => {
+  const current = s?.[side];
+  if (!s || current == null || current <= 0 || want <= 0) return { spacing: s, used: 0 };
+  const used = Math.min(current, want);
+  return { spacing: { ...s, [side]: current - used }, used };
 };
+
+/**
+ * Resolve negative margins/padding into real (positive) padding so the preview
+ * and the delivered email agree. A negative side first eats the block's own
+ * padding/margin on that side, then the neighbouring side of the adjacent
+ * block. Anything that can't be absorbed is dropped, exactly as email clients
+ * would drop it.
+ */
+export const absorbNegativeSpacing = (blocks: EdmBlock[]): EdmBlock[] => {
+  const out: EdmBlock[] = blocks.map((b) => ({
+    ...b,
+    margin: b.margin ? { ...b.margin } : b.margin,
+    padding: b.padding ? { ...b.padding } : b.padding,
+    cells: b.cells?.map((c) => ({ ...c, blocks: absorbNegativeSpacing(c.blocks || []) })),
+  }));
+
+  const pullFrom = (b: EdmBlock, side: keyof EdmSpacing, want: number) => {
+    let left = want;
+    const p = trimSide(b.padding, side, left);
+    b.padding = p.spacing;
+    left -= p.used;
+    const m = trimSide(b.margin, side, left);
+    b.margin = m.spacing;
+    left -= m.used;
+    return left;
+  };
+
+  out.forEach((b, i) => {
+    (["top", "bottom"] as const).forEach((side) => {
+      const want = -negOnSide(b, side);
+      if (want <= 0) return;
+      // Own spacing first, then the facing side of the neighbouring block.
+      const left = pullFrom(b, side, want);
+      const neighbour = side === "top" ? out[i - 1] : out[i + 1];
+      if (left > 0 && neighbour) {
+        pullFrom(neighbour, side === "top" ? "bottom" : "top", left);
+      }
+    });
+    // Horizontal negatives have no neighbour to borrow from.
+    (["left", "right"] as const).forEach((side) => {
+      const want = -negOnSide(b, side);
+      if (want > 0) pullFrom(b, side, want);
+    });
+    // Whatever is still negative can't survive an email client, so clear it.
+    (["top", "right", "bottom", "left"] as const).forEach((side) => {
+      if (b.margin?.[side] != null && b.margin[side]! < 0) b.margin = { ...b.margin, [side]: 0 };
+      if (b.padding?.[side] != null && b.padding[side]! < 0)
+        b.padding = { ...b.padding, [side]: 0 };
+      const mm = b.mobile?.margin;
+      const mp = b.mobile?.padding;
+      if (mm?.[side] != null && mm[side]! < 0)
+        b.mobile = { ...b.mobile, margin: { ...mm, [side]: 0 } };
+      if (mp?.[side] != null && mp[side]! < 0)
+        b.mobile = { ...b.mobile, padding: { ...b.mobile!.padding, [side]: 0 } };
+    });
+  });
+
+  return out;
+};
+
 
 /** Resolve the font stack for a block, falling back to the brand default. */
 const fontStack = (b: EdmBlock, fallback: string) => b.fontFamily || fallback;
