@@ -97,6 +97,8 @@ export const InstalmentRemindersPanel = () => {
     return Array.from(map.values());
   }, [kindRows]);
 
+  const kindIssues = useMemo(() => issues.filter((i) => i.kind === kind), [issues, kind]);
+
   const selectable = kindRows;
   const allSelected = selectable.length > 0 && selected.size === selectable.length;
   const needsAction = kindRows.filter((r) =>
