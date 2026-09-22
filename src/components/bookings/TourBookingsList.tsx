@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,10 +48,10 @@ const getStatusOrder = (status: string) => {
 };
 
 const getLinkedPassengerName = (
-  passenger: { first_name?: string | null; last_name?: string | null } | null | undefined,
+  passenger: { title?: string | null; first_name?: string | null; last_name?: string | null } | null | undefined,
   fallbackName?: string | null,
 ) => {
-  const linkedName = `${passenger?.first_name || ''} ${passenger?.last_name || ''}`.trim();
+  const linkedName = formatNameWithTitle(passenger?.title, passenger?.first_name, passenger?.last_name);
   return linkedName || fallbackName || '';
 };
 
@@ -287,7 +288,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="font-medium truncate">
-                              {booking.customers?.first_name} {booking.customers?.last_name}
+                              {formatNameWithTitle(booking.customers?.title, booking.customers?.first_name, booking.customers?.last_name)}
                             </p>
                             {additionalPassengers.length > 0 && (
                               <p className="text-xs text-muted-foreground truncate">
@@ -417,7 +418,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                                 />
                               </div>
                             )}
-                            <span>{booking.customers?.first_name} {booking.customers?.last_name}</span>
+                            <span>{formatNameWithTitle(booking.customers?.title, booking.customers?.first_name, booking.customers?.last_name)}</span>
                             <ManualHandlingIndicator
                               tour={(booking as any).tours ? { manual_billing: (booking as any).tours.manual_billing, manual_emails: (booking as any).tours.manual_emails } : null}
                               bookingOverride={((booking as any).automation_override as BookingAutomationOverride) ?? 'inherit'}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -252,7 +253,7 @@ export default function BookingDetail() {
   };
 
   const leadPassengerName = booking.customers
-    ? `${booking.customers.first_name} ${booking.customers.last_name}`
+    ? formatNameWithTitle(booking.customers.title, booking.customers.first_name, booking.customers.last_name)
     : 'No lead passenger';
 
   const secondaryContactName = booking.secondary_contact

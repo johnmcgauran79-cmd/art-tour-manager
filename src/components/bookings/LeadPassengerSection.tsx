@@ -1,5 +1,6 @@
 
 import { Button } from "@/components/ui/button";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,7 @@ interface LeadPassengerSectionProps {
   onAddNewContact: () => void;
   selectedContactId: string;
   selectedContact?: {
+    title?: string | null;
     first_name: string;
     last_name: string;
     email: string | null;
@@ -70,7 +72,7 @@ export const LeadPassengerSection = ({
           <Info className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1 text-sm">
-              <p><strong>Name:</strong> {selectedContact.first_name} {selectedContact.last_name}</p>
+              <p><strong>Name:</strong> {formatNameWithTitle(selectedContact.title, selectedContact.first_name, selectedContact.last_name)}</p>
               {selectedContact.email && <p><strong>Email:</strong> {selectedContact.email}</p>}
               {selectedContact.phone && <p><strong>Phone:</strong> {selectedContact.phone}</p>}
               {selectedContact.dietary_requirements && (

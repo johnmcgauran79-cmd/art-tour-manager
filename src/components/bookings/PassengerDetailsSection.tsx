@@ -4,9 +4,11 @@ import { ChevronDown, ChevronUp, User, Phone, Mail, Heart, AlertCircle, Accessib
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SendProfileUpdateButton } from "@/components/email/SendProfileUpdateButton";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 
 interface PassengerContact {
   id: string;
+  title?: string | null;
   first_name: string;
   last_name: string;
   email?: string | null;
@@ -55,7 +57,7 @@ export const PassengerDetailsSection = ({
   if (!passenger && !fallbackName) return null;
 
   const displayName = passenger 
-    ? `${passenger.first_name} ${passenger.last_name}` 
+    ? formatNameWithTitle(passenger.title, passenger.first_name, passenger.last_name)
     : fallbackName;
 
   const preferredName = passenger?.preferred_name;
