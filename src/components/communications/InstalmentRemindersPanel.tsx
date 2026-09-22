@@ -247,7 +247,14 @@ export const InstalmentRemindersPanel = () => {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           <span>Invoice {money(r.invoice_total, r.currency_code)}</span>
                           <span>Paid {money(r.amount_paid, r.currency_code)}</span>
-                          <span>Final payment {dateAU(r.final_payment_date ?? r.tour?.final_payment_date ?? null)}</span>
+                          {r.kind === "deposit" ? (
+                            <>
+                              {r.booked_at && <span>Booked {dateAU(r.booked_at)}</span>}
+                              {r.invoice_date && <span>Invoiced {dateAU(r.invoice_date)}</span>}
+                            </>
+                          ) : (
+                            <span>Final payment {dateAU(r.final_payment_date ?? r.tour?.final_payment_date ?? null)}</span>
+                          )}
                           <span>Emails sent: {r.reminder_count}</span>
                           {r.last_sent_at && <span>Last {dateAU(r.last_sent_at)}</span>}
                           <span>Next {dateAU(r.next_due_at)}</span>
