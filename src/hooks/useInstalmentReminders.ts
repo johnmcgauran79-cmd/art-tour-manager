@@ -71,7 +71,7 @@ export const useInstalmentReminderDueCount = () =>
     refetchInterval: 120_000,
   });
 
-type Action = "send" | "skip" | "stop" | "resume" | "pause_auto";
+type Action = "send" | "skip" | "stop" | "resume" | "pause_auto" | "remove";
 
 export const useInstalmentReminderAction = () => {
   const qc = useQueryClient();
@@ -93,9 +93,11 @@ export const useInstalmentReminderAction = () => {
             ? "Pushed back a week"
             : vars.action === "stop"
               ? "Reminders stopped"
-              : vars.action === "pause_auto"
-                ? "Automatic sending paused"
-                : "Reminders resumed";
+              : vars.action === "remove"
+                ? "Removed from the list"
+                : vars.action === "pause_auto"
+                  ? "Automatic sending paused"
+                  : "Reminders resumed";
       toast({ title: "Done", description: label, variant: data.errors ? "destructive" : "default" });
       qc.invalidateQueries({ queryKey: ["instalment-reminders"] });
       qc.invalidateQueries({ queryKey: ["instalment-reminders-due-count"] });

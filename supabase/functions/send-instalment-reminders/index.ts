@@ -220,11 +220,14 @@ serve(async (req) => {
       });
     }
 
-    // Stop / skip / pause paths — no email.
-    if (action === "stop" || action === "skip" || action === "pause_auto") {
+    // Stop / skip / pause / remove paths — no email.
+    if (action === "stop" || action === "skip" || action === "pause_auto" || action === "remove") {
       let update: Record<string, unknown>;
       if (action === "stop") {
         update = { state: "stopped", stop_reason: reason, actioned_by: actorId, actioned_at: new Date().toISOString() };
+      } else if (action === "remove") {
+        // Removed rows disappear from the list and are never re-queued.
+        update = { state: "removed", stop_reason: reason || "Removed from the reminder list", actioned_by: actorId, actioned_at: new Date().toISOString() };
       } else if (action === "pause_auto") {
         update = { auto_send: false, actioned_by: actorId, actioned_at: new Date().toISOString() };
       } else {

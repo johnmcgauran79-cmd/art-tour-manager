@@ -342,7 +342,7 @@ serve(async (req) => {
 
           // Paid up, voided or nothing owing → resolve any existing row.
           if (due <= 0 || shortfall <= 0.005 || status === "VOIDED" || status === "DELETED" || status === "PAID") {
-            if (prior && prior.state !== "stopped" && prior.state !== "resolved") {
+            if (prior && prior.state !== "stopped" && prior.state !== "resolved" && prior.state !== "removed") {
               if (!dryRun) {
                 await supabase.from("instalment_reminders")
                   .update({ state: "resolved", amount_paid: paid, amount_due: due, invoice_total: total })
@@ -366,8 +366,9 @@ serve(async (req) => {
             continue;
           }
 
-          // Admin stopped this invoice (payment plan agreed) — leave it alone.
-          if (prior?.state === "stopped") continue;
+          // Admin stopped this invoice (payment plan agreed) or removed it from
+          // the list (e.g. small balance not worth chasing) — leave it alone.
+          if (prior?.state === "stopped" || prior?.state === "removed") continue;
 
           // 4. Who is the invoice addressed to? A non-passenger means a travel
           // agent / third party billed net of commission — hold for a manual check.
