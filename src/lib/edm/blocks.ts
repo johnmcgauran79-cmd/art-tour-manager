@@ -1172,16 +1172,13 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       const padLeft = c === 0 ? cp : cp + halfGap;
       const padRight = c === cols - 1 ? cp : cp + halfGap;
       /**
-       * Column padding can be negative, which pulls the content outwards.
-       * Padding itself can never be negative in email HTML, so any negative
-       * side is applied as a negative margin on a wrapper instead.
+       * Column padding can't be negative in email HTML, and negative margins are
+       * stripped by every major email client, so a negative column gap or padding
+       * simply becomes no padding — the same thing recipients would see.
        */
       const side = (n: number) => Math.max(0, n);
-      const pull = (n: number) => (n < 0 ? `${Math.round(n)}px` : "0");
-      const negative =
-        cp < 0 || padLeft < 0 || padRight < 0
-          ? `margin:${pull(cp)} ${pull(padRight)} ${pull(cp)} ${pull(padLeft)};`
-          : "";
+      const negative = "";
+
       // Builder-only hooks: identify the column so content can be dropped into
       // it, and show an empty-state hint on the editing canvas.
       const cellAttr = ctx.tag && cell?.id ? ` data-edm-cell="${cell.id}"` : "";
