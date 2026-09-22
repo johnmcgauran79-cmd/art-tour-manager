@@ -307,6 +307,7 @@ export interface EmailMergeData {
   has_instalment?: boolean;
   has_tour_host?: boolean;
   has_host_details?: boolean;
+  has_tour_welcome_update?: boolean;
   waiver_not_signed?: boolean;
 
   // Pickup location fields
