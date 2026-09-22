@@ -362,10 +362,11 @@ serve(async (req) => {
         brand_phone: brand?.company_phone || "",
       };
 
-      const subject = mergeTemplate(
+      const baseSubject = mergeTemplate(
         template.subject_template || (kind === "final" ? "Final balance due" : "Instalment payment due"),
         vars,
       );
+      const subject = testMode ? `[TEST] ${baseSubject}` : baseSubject;
       const html = mergeTemplate(template.content_template || "", vars);
 
       try {
@@ -375,46 +376,51 @@ serve(async (req) => {
         if ((result as any).error) throw new Error((result as any).error?.message || "resend error");
         const messageId = (result as any).data?.id || null;
 
-        const nextCount = (Number(r.reminder_count) || 0) + 1;
-        const escalate = nextCount >= MAX_REMINDERS;
-        if (escalate) flaggedForCall++;
+        if (!testMode) {
+          const nextCount = (Number(r.reminder_count) || 0) + 1;
+          const escalate = nextCount >= MAX_REMINDERS;
+          if (escalate) flaggedForCall++;
 
-        await supabase.from("instalment_reminders").update({
-          state: escalate ? "needs_call" : "sent",
-          hold_reason: escalate
-            ? `No response after ${MAX_REMINDERS} emails — please phone the client and follow up personally.`
-            : null,
-          escalated_at: escalate ? new Date().toISOString() : null,
-          reminder_count: nextCount,
-          last_sent_at: new Date().toISOString(),
-          next_due_at: addDays(CADENCE_DAYS[kind] ?? 7),
-          recipient_email: recipient,
-          last_email_id: messageId,
-          send_error: null,
-          actioned_by: automatic ? null : actorId,
-          actioned_at: new Date().toISOString(),
-        }).eq("id", r.id);
+          await supabase.from("instalment_reminders").update({
+            state: escalate ? "needs_call" : "sent",
+            hold_reason: escalate
+              ? `No response after ${MAX_REMINDERS} emails — please phone the client and follow up personally.`
+              : null,
+            escalated_at: escalate ? new Date().toISOString() : null,
+            reminder_count: nextCount,
+            last_sent_at: new Date().toISOString(),
+            next_due_at: addDays(CADENCE_DAYS[kind] ?? 7),
+            recipient_email: recipient,
+            last_email_id: messageId,
+            send_error: null,
+            actioned_by: automatic ? null : actorId,
+            actioned_at: new Date().toISOString(),
+          }).eq("id", r.id);
 
-        await supabase.from("email_logs").insert({
-          message_id: messageId,
-          booking_id: bookingIds[0] ?? null,
-          tour_id: r.tour_id,
-          recipient_email: recipient,
-          recipient_name: vars.recipient_name,
-          subject,
-          template_name: template.name,
-          template_id: template.id,
-          rendered_html: html,
-          from_email: fromField,
-        });
+          await supabase.from("email_logs").insert({
+            message_id: messageId,
+            booking_id: bookingIds[0] ?? null,
+            tour_id: r.tour_id,
+            recipient_email: recipient,
+            recipient_name: vars.recipient_name,
+            subject,
+            template_name: template.name,
+            template_id: template.id,
+            rendered_html: html,
+            from_email: fromField,
+          });
+        }
 
         sent++;
         await new Promise((res) => setTimeout(res, 600)); // Resend 2/sec limit
       } catch (sendErr: any) {
         errors++;
-        await supabase.from("instalment_reminders")
-          .update({ send_error: sendErr?.message || String(sendErr) }).eq("id", r.id);
+        if (!testMode) {
+          await supabase.from("instalment_reminders")
+            .update({ send_error: sendErr?.message || String(sendErr) }).eq("id", r.id);
+        }
       }
+
     }
 
     return new Response(JSON.stringify({ success: true, sent, errors, flagged_for_call: flaggedForCall }), {
