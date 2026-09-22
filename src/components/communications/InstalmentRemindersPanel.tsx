@@ -61,7 +61,10 @@ export const InstalmentRemindersPanel = () => {
   const { data: rows = [], isLoading } = useInstalmentReminders();
   const action = useInstalmentReminderAction();
   const refresh = useRefreshInstalmentReminders();
-  const [kind, setKind] = useState<ReminderKind>("instalment");
+  const test = useSendTestReminder();
+  const { user } = useAuth();
+  const myEmail = user?.email ?? "";
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [stopOpen, setStopOpen] = useState(false);
   const [stopReason, setStopReason] = useState("");
