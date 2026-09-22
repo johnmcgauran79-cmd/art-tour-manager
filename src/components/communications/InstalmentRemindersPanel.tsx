@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -150,22 +149,22 @@ export const InstalmentRemindersPanel = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Tabs
-          value={kind}
-          onValueChange={(v) => { setKind(v as ReminderKind); setSelected(new Set()); }}
-        >
-          <TabsList>
-            {KIND_ORDER.map((k) => (
-              <TabsTrigger key={k} value={k} className="gap-2">
-                {KIND_COPY[k].title}
-                <Badge variant="secondary">{(byKind[k] ?? []).length}</Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <div className="inline-flex items-center gap-1 rounded-md bg-muted p-1">
           {KIND_ORDER.map((k) => (
-            <TabsContent key={k} value={k} className="mt-0" />
+            <button
+              key={k}
+              type="button"
+              onClick={() => { setKind(k); setSelected(new Set()); }}
+              className={`inline-flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition-colors ${
+                kind === k ? "bg-background shadow font-medium" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {KIND_COPY[k].title}
+              <Badge variant="secondary">{(byKind[k] ?? []).length}</Badge>
+            </button>
           ))}
-        </Tabs>
+        </div>
+
 
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
