@@ -90,6 +90,7 @@ export interface EmailMergeData {
   tour_dates_note?: string;
   tour_pickup_arrival_message?: string;
   tour_welcome_drinks_message?: string;
+  tour_welcome_update_message?: string;
   
   // Booking fields
   booking_passenger_count?: number;
@@ -306,6 +307,7 @@ export interface EmailMergeData {
   has_instalment?: boolean;
   has_tour_host?: boolean;
   has_host_details?: boolean;
+  has_tour_welcome_update?: boolean;
   waiver_not_signed?: boolean;
 
   // Pickup location fields
@@ -589,6 +591,7 @@ export class EmailTemplateEngine {
         : '',
       tour_pickup_arrival_message: (tour as any).pickup_arrival_message || '',
       tour_welcome_drinks_message: (tour as any).welcome_drinks_message || '',
+      tour_welcome_update_message: (tour as any).welcome_update_message || '',
 
       tour: {
         name: tour.name,
@@ -764,6 +767,7 @@ export class EmailTemplateEngine {
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
       has_instalment: !!tour.instalment_required,
       has_tour_host: !!tour.tour_host && tour.tour_host !== 'TBD' && tour.tour_host.trim() !== '',
+      has_tour_welcome_update: !!String((tour as any).welcome_update_message || '').replace(/<[^>]*>/g, '').trim(),
       has_host_details: !!hostDetails,
       waiver_not_signed: true,  // Client-side defaults to true; server overrides per-recipient with actual waiver status
       needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient

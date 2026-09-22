@@ -7905,6 +7905,7 @@ export type Database = {
           welcome_message_heading: string | null
           welcome_message_image_path: string | null
           welcome_message_signoff: string | null
+          welcome_update_message: string | null
           xero_product_id: string | null
           xero_reference: string | null
         }
@@ -7979,6 +7980,7 @@ export type Database = {
           welcome_message_heading?: string | null
           welcome_message_image_path?: string | null
           welcome_message_signoff?: string | null
+          welcome_update_message?: string | null
           xero_product_id?: string | null
           xero_reference?: string | null
         }
@@ -8053,6 +8055,7 @@ export type Database = {
           welcome_message_heading?: string | null
           welcome_message_image_path?: string | null
           welcome_message_signoff?: string | null
+          welcome_update_message?: string | null
           xero_product_id?: string | null
           xero_reference?: string | null
         }

@@ -527,7 +527,7 @@
       {
         "name": "get_tour_messages",
         "title": "Get tour messages",
-        "description": "Read the three tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, and the Welcome Drinks Message. Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
+        "description": "Read the tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, the Welcome Drinks Message, and the Welcome Update (a tour-specific note for welcome emails, e.g. flight arrangements). Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -589,6 +589,10 @@
             "welcome_drinks_message": {
               "type": "string",
               "description": "Welcome Drinks message (rich text / simple HTML) — where guests first gather."
+            },
+            "welcome_update_message": {
+              "type": "string",
+              "description": "Welcome Update (rich text / simple HTML) — tour-specific note for welcome emails, e.g. 'This tour begins in Sapporo and ends in Tokyo, book your flights accordingly.'"
             }
           },
           "required": [

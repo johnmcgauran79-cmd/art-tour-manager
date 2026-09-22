@@ -6,13 +6,13 @@ import { toolError } from "./_uploads";
 import { tourPickupDocUrl } from "./_emailFileUrl";
 
 const MESSAGE_COLUMNS =
-  "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
+  "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, welcome_update_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
 
 export default defineTool({
   name: "get_tour_messages",
   title: "Get tour messages",
   description:
-    "Read the three tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, and the Welcome Drinks Message. Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
+    "Read the tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, the Welcome Drinks Message, and the Welcome Update (a tour-specific note for welcome emails, e.g. flight arrangements). Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
   inputSchema: { tour_id: z.string().describe("The tour id (uuid).") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id }, ctx) => {
@@ -46,6 +46,7 @@ export default defineTool({
       },
       pickup_arrival_message: row.pickup_arrival_message ?? "",
       welcome_drinks_message: row.welcome_drinks_message ?? "",
+      welcome_update_message: row.welcome_update_message ?? "",
       pickup_arrival_document: row.pickup_arrival_doc_path
         ? {
             file_name: row.pickup_arrival_doc_name ?? null,
@@ -57,6 +58,7 @@ export default defineTool({
         welcome_message: "{{#tour_welcome_message_enabled}}…{{/tour_welcome_message_enabled}}",
         pickup_arrival: "{{tour_pickup_arrival_message}}",
         welcome_drinks: "{{tour_welcome_drinks_message}}",
+        welcome_update: "{{tour_welcome_update_message}} (condition {{#has_tour_welcome_update}})",
       },
     };
     return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };

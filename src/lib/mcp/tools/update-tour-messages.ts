@@ -26,6 +26,10 @@ export default defineTool({
       .string()
       .optional()
       .describe("Welcome Drinks message (rich text / simple HTML) — where guests first gather."),
+    welcome_update_message: z
+      .string()
+      .optional()
+      .describe("Welcome Update (rich text / simple HTML) — tour-specific note for welcome emails, e.g. 'This tour begins in Sapporo and ends in Tokyo, book your flights accordingly.'"),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, ...input }, ctx) => {
@@ -39,6 +43,7 @@ export default defineTool({
       welcome_message_signoff: "welcome_message_signoff",
       pickup_arrival_message: "pickup_arrival_message",
       welcome_drinks_message: "welcome_drinks_message",
+      welcome_update_message: "welcome_update_message",
     };
     const payload: Record<string, unknown> = {};
     for (const [key, column] of Object.entries(map)) {
@@ -53,7 +58,7 @@ export default defineTool({
       .update(payload)
       .eq("id", tour_id)
       .select(
-        "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message",
+        "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, pickup_arrival_message, welcome_drinks_message, welcome_update_message",
       )
       .maybeSingle();
     if (error) return toolError(error.message);

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type, LayoutGrid, List, CreditCard, Space, Layers, MapPin, Wine } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type, LayoutGrid, List, CreditCard, Space, Layers, MapPin, Wine, Info } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -442,9 +442,19 @@ export const EmailTemplatesManagement = () => {
     setShowImageInsert(false);
   };
 
-  const insertTourMessageBlock = (variant: 'pickup' | 'drinks') => {
-    const field = variant === 'pickup' ? 'tour_pickup_arrival_message' : 'tour_welcome_drinks_message';
-    const label = variant === 'pickup' ? 'Pickup / Arrival Message' : 'Welcome Drinks Message';
+  const insertTourMessageBlock = (variant: 'pickup' | 'drinks' | 'update') => {
+    const field =
+      variant === 'pickup'
+        ? 'tour_pickup_arrival_message'
+        : variant === 'drinks'
+          ? 'tour_welcome_drinks_message'
+          : 'tour_welcome_update_message';
+    const label =
+      variant === 'pickup'
+        ? 'Pickup / Arrival Message'
+        : variant === 'drinks'
+          ? 'Welcome Drinks Message'
+          : 'Welcome Update';
     // Only renders when the tour has content in that message block.
     const html = `{{#${field}}}<div style="margin:16px 0;font-size:14px;line-height:1.6;color:#55575d;">{{${field}}}</div>{{/${field}}}`;
     insertHtmlBlock(html, `Tour Message • ${label}`);
@@ -712,6 +722,10 @@ export const EmailTemplatesManagement = () => {
                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertTourMessageBlock('drinks')}>
                        <Wine className="h-3 w-3" />
                        Welcome Drinks Message
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertTourMessageBlock('update')}>
+                       <Info className="h-3 w-3" />
+                       Welcome Update
                      </Button>
                   </div>
                   {showImageInsert && (
