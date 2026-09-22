@@ -278,7 +278,6 @@ serve(async (req) => {
       }
 
       const pax2Email = (bookings ?? [])[0]?.pax2?.email;
-      const pax2Email = (bookings ?? [])[0]?.pax2?.email;
       const ccList = !testMode && pax2Email && pax2Email.toLowerCase() !== String(recipient).toLowerCase()
         ? [pax2Email] : undefined;
 
