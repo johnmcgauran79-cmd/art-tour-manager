@@ -683,7 +683,7 @@ serve(async (req) => {
         success: true,
         applied,
         errors,
-        message: `Applied ${applied} status changes${errors > 0 ? `, ${errors} errors` : ''}`,
+        message: `Applied ${applied} status changes${remindersResolved > 0 ? `, ${remindersResolved} payment reminder(s) cleared` : ''}${errors > 0 ? `, ${errors} errors` : ''}`,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
