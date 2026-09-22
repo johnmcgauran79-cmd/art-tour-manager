@@ -545,6 +545,7 @@ serve(async (req) => {
         flagged_for_call: flaggedForCall,
         cadence_days: CADENCE_DAYS,
         unlinked_bookings: unlinked,
+        not_chased: notChased,
         details,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
