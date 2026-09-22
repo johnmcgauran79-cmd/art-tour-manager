@@ -6093,11 +6093,11 @@ var functionsBase = () => `${process.env.SUPABASE_URL}/functions/v1`;
 var tourPickupDocUrl = (tourId) => `${functionsBase()}/email-file?p=${tourId}`;
 
 // src/lib/mcp/tools/get-tour-messages.ts
-var MESSAGE_COLUMNS = "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
+var MESSAGE_COLUMNS = "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, welcome_update_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
 var get_tour_messages_default = defineTool99({
   name: "get_tour_messages",
   title: "Get tour messages",
-  description: "Read the three tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, and the Welcome Drinks Message. Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
+  description: "Read the tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, the Welcome Drinks Message, and the Welcome Update (a tour-specific note for welcome emails, e.g. flight arrangements). Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
   inputSchema: { tour_id: z95.string().describe("The tour id (uuid).") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id }, ctx) => {
@@ -6124,6 +6124,7 @@ var get_tour_messages_default = defineTool99({
       },
       pickup_arrival_message: row.pickup_arrival_message ?? "",
       welcome_drinks_message: row.welcome_drinks_message ?? "",
+      welcome_update_message: row.welcome_update_message ?? "",
       pickup_arrival_document: row.pickup_arrival_doc_path ? {
         file_name: row.pickup_arrival_doc_name ?? null,
         file_path: row.pickup_arrival_doc_path,
@@ -6132,7 +6133,8 @@ var get_tour_messages_default = defineTool99({
       merge_fields: {
         welcome_message: "{{#tour_welcome_message_enabled}}\u2026{{/tour_welcome_message_enabled}}",
         pickup_arrival: "{{tour_pickup_arrival_message}}",
-        welcome_drinks: "{{tour_welcome_drinks_message}}"
+        welcome_drinks: "{{tour_welcome_drinks_message}}",
+        welcome_update: "{{tour_welcome_update_message}} (condition {{#has_tour_welcome_update}})"
       }
     };
     return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
@@ -6153,7 +6155,8 @@ var update_tour_messages_default = defineTool100({
     welcome_message_body: z96.string().optional().describe("Welcome message body (rich text / simple HTML)."),
     welcome_message_signoff: z96.string().optional().describe("Welcome message sign-off, e.g. 'The ART Team'."),
     pickup_arrival_message: z96.string().optional().describe("Pickup/Arrival message (rich text / simple HTML) \u2014 where and when guests are met. May hyperlink the uploaded pickup document."),
-    welcome_drinks_message: z96.string().optional().describe("Welcome Drinks message (rich text / simple HTML) \u2014 where guests first gather.")
+    welcome_drinks_message: z96.string().optional().describe("Welcome Drinks message (rich text / simple HTML) \u2014 where guests first gather."),
+    welcome_update_message: z96.string().optional().describe("Welcome Update (rich text / simple HTML) \u2014 tour-specific note for welcome emails, e.g. 'This tour begins in Sapporo and ends in Tokyo, book your flights accordingly.'")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, ...input }, ctx) => {
