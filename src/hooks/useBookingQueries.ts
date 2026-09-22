@@ -146,6 +146,31 @@ export const usePaginatedBookings = (
   });
 };
 
+// --- Outstanding payment categorisation -------------------------------------
+// A booking belongs to ONE outstanding category only, in stage order:
+// Deposits Owing first, then Instalments Owing, then Final Payments Owing.
+const DEPOSIT_PENDING_STATUSES = ['pending', 'invoiced', 'racing_breaks_invoice'];
+const SETTLED_OR_EXEMPT_STATUSES = ['fully_paid', 'complimentary', 'host', 'cancelled', 'waitlisted'];
+
+const depositCutoffISO = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString();
+};
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const qualifiesDepositsOwing = (row: any) =>
+  DEPOSIT_PENDING_STATUSES.includes(row.status) && row.created_at < depositCutoffISO();
+
+const qualifiesInstalmentsOwing = (row: any) => {
+  const tour = row.tours || {};
+  if (!tour.instalment_required || !tour.instalment_date) return false;
+  if (!(tour.instalment_date < todayISO())) return false;
+  if (row.status === 'instalment_paid' || SETTLED_OR_EXEMPT_STATUSES.includes(row.status)) return false;
+  return !qualifiesDepositsOwing(row);
+};
+
 export const useFilteredBookings = (
   filterType: 'deposits_owing' | 'instalments_owing' | 'payment_due' | null, 
   page: number = 1, 
