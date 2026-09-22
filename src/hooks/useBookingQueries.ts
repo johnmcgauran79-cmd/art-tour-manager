@@ -371,11 +371,12 @@ export const useFilterCounts = () => {
 
 
       const paymentDue = (finalRows || []).filter(
-        (row: any) => !qualifiesDepositsOwing(row) && !qualifiesInstalmentsOwing(row)
+        (row: any) => qualifiesFinalPaymentOwing(row)
       ).length;
 
       return {
-        depositsOwing: depositsOwingCount || 0,
+        depositsOwing,
+
         instalmentsOwing,
         paymentDue,
       };
