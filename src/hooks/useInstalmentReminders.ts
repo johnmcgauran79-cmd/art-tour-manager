@@ -155,8 +155,9 @@ export const useRefreshInstalmentReminders = () => {
     onSuccess: (data: any) => {
       toast({
         title: "Checked against Xero",
-        description: `${data.queued} new · ${data.updated} updated · ${data.resolved} paid · ${data.auto_sent ?? 0} sent automatically · ${data.flagged_for_call ?? 0} for a phone call · ${data.held_agent} agent invoice(s) held`,
+        description: `${data.queued} new · ${data.updated} updated · ${data.resolved} paid · ${data.auto_sent ?? 0} sent automatically · ${data.flagged_for_call ?? 0} for a phone call · ${data.held_agent} held for a manual check`,
       });
+      qc.setQueryData(["instalment-reminder-issues"], (data.not_chased ?? []) as ReminderIssue[]);
       qc.invalidateQueries({ queryKey: ["instalment-reminders"] });
       qc.invalidateQueries({ queryKey: ["instalment-reminders-due-count"] });
     },
