@@ -147,8 +147,9 @@ export const usePaginatedBookings = (
 };
 
 // --- Outstanding payment categorisation -------------------------------------
-// A booking belongs to ONE outstanding category only, in stage order:
-// Deposits Owing first, then Instalments Owing, then Final Payments Owing.
+// A booking belongs to ONE outstanding category only — the most advanced
+// (most urgent) stage wins: Final Payments Owing, then Instalments Owing,
+// then Deposits Owing.
 const DEPOSIT_PENDING_STATUSES = ['pending', 'invoiced', 'racing_breaks_invoice'];
 const SETTLED_OR_EXEMPT_STATUSES = ['fully_paid', 'complimentary', 'host', 'cancelled', 'waitlisted'];
 
@@ -160,16 +161,32 @@ const depositCutoffISO = () => {
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
-const qualifiesDepositsOwing = (row: any) =>
-  DEPOSIT_PENDING_STATUSES.includes(row.status) && row.created_at < depositCutoffISO();
+const qualifiesFinalPaymentOwing = (row: any) => {
+  const tour = row.tours || {};
+  if (!tour.final_payment_date) return false;
+  if (!(tour.final_payment_date < todayISO())) return false;
+  return !SETTLED_OR_EXEMPT_STATUSES.includes(row.status);
+};
 
-const qualifiesInstalmentsOwing = (row: any) => {
+const instalmentStageOwing = (row: any) => {
   const tour = row.tours || {};
   if (!tour.instalment_required || !tour.instalment_date) return false;
   if (!(tour.instalment_date < todayISO())) return false;
   if (row.status === 'instalment_paid' || SETTLED_OR_EXEMPT_STATUSES.includes(row.status)) return false;
-  return !qualifiesDepositsOwing(row);
+  return true;
 };
+
+// Instalments owing only when the final payment isn't already due
+const qualifiesInstalmentsOwing = (row: any) =>
+  instalmentStageOwing(row) && !qualifiesFinalPaymentOwing(row);
+
+// Deposits owing only when neither later stage applies
+const qualifiesDepositsOwing = (row: any) =>
+  DEPOSIT_PENDING_STATUSES.includes(row.status) &&
+  row.created_at < depositCutoffISO() &&
+  !qualifiesFinalPaymentOwing(row) &&
+  !instalmentStageOwing(row);
+
 
 export const useFilteredBookings = (
   filterType: 'deposits_owing' | 'instalments_owing' | 'payment_due' | null, 
