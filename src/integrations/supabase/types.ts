@@ -3843,6 +3843,7 @@ export type Database = {
           amount_due: number
           amount_paid: number
           auto_send: boolean
+          booked_at: string | null
           booking_ids: string[]
           created_at: string
           currency_code: string
@@ -3852,6 +3853,7 @@ export type Database = {
           hold_reason: string | null
           id: string
           instalment_expected: number
+          invoice_date: string | null
           invoice_due_date: string | null
           invoice_total: number
           kind: string
@@ -3879,6 +3881,7 @@ export type Database = {
           amount_due?: number
           amount_paid?: number
           auto_send?: boolean
+          booked_at?: string | null
           booking_ids?: string[]
           created_at?: string
           currency_code?: string
@@ -3888,6 +3891,7 @@ export type Database = {
           hold_reason?: string | null
           id?: string
           instalment_expected?: number
+          invoice_date?: string | null
           invoice_due_date?: string | null
           invoice_total?: number
           kind?: string
@@ -3915,6 +3919,7 @@ export type Database = {
           amount_due?: number
           amount_paid?: number
           auto_send?: boolean
+          booked_at?: string | null
           booking_ids?: string[]
           created_at?: string
           currency_code?: string
@@ -3924,6 +3929,7 @@ export type Database = {
           hold_reason?: string | null
           id?: string
           instalment_expected?: number
+          invoice_date?: string | null
           invoice_due_date?: string | null
           invoice_total?: number
           kind?: string

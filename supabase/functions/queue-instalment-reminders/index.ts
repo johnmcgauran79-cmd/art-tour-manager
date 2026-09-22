@@ -292,6 +292,12 @@ serve(async (req) => {
           const due = Number(inv.AmountDue) || 0;
           const invoiceNumber = inv.InvoiceNumber || entry.number || null;
           const invoiceDue = parseXeroDate(inv.DueDate);
+          const invoiceDate = parseXeroDate(inv.Date);
+          // Oldest booking on the invoice — shows how long the deposit has been owing.
+          const bookedAt = entry.bookings
+            .map((b: any) => String(b.created_at ?? "").split("T")[0])
+            .filter(Boolean)
+            .sort()[0] ?? null;
           const status = String(inv.Status || "").toUpperCase();
 
           const paxCount = entry.bookings.reduce((s: number, b: any) => s + (Number(b.passenger_count) || 0), 0);
@@ -395,6 +401,8 @@ serve(async (req) => {
             deposit_expected: depositExpected,
             shortfall,
             invoice_due_date: invoiceDue,
+            invoice_date: invoiceDate,
+            booked_at: bookedAt,
             final_payment_date: tour.final_payment_date ?? null,
             line_items: lineItems,
             recipient_email: recipientEmail,
