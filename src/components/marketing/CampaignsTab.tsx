@@ -278,11 +278,13 @@ export function CampaignsTab({
 
   const openCampaign = (c: Partial<MarketingCampaign>) => {
     setEditing(c);
+    setSourceMode(null);
     setScheduleAt(toLocalInput(c.scheduled_send_at));
     setEmailsRaw(((c.audience_filters as AudienceFilters)?.emails || []).join("\n"));
     setProgress(null);
     setOpen(true);
   };
+
 
   const blankDraft = (): Partial<MarketingCampaign> => {
     const defaultBrand = brands.find((b) => b.is_default) || brands[0];
