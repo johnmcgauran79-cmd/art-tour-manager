@@ -74,6 +74,7 @@ import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmBuilder } from "./EdmBuilder";
 import { CampaignSendReviewDialog } from "./CampaignSendReviewDialog";
+import { CampaignReportDialog } from "./CampaignReportDialog";
 
 
 const statusVariant: Record<string, "secondary" | "default" | "outline" | "destructive"> = {
