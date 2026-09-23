@@ -201,3 +201,6 @@ verify_jwt = false
 
 [functions.send-instalment-reminders]
 verify_jwt = false
+
+[functions.xero-item-price-sync]
+verify_jwt = false

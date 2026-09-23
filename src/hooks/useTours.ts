@@ -127,6 +127,28 @@ export const useUpdateTour = () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      // ART Admin is the source of truth for Xero product prices: push the
+      // twin/double price to the tour's Xero item straight away.
+      const priceKeys = ['price_double', 'price_twin', 'xero_product_id'];
+      if (Object.keys(variables.updates).some((k) => priceKeys.includes(k))) {
+        supabase.functions
+          .invoke('xero-item-price-sync', { body: { action: 'sync', tourIds: [variables.tourId] } })
+          .then(({ data: res, error }) => {
+            queryClient.invalidateQueries({ queryKey: ['xero-price-check'] });
+            const row = (res as any)?.rows?.[0];
+            if (error || row?.state === 'failed' || row?.state === 'no_permission') {
+              toast({
+                title: "Xero price not updated",
+                description: row?.state === 'no_permission'
+                  ? "Reconnect Xero so ART Admin can update Products & Services."
+                  : "Check Settings → Invoice Management → Xero Product Prices.",
+                variant: "destructive",
+              });
+            } else if (row?.state === 'updated') {
+              toast({ title: "Xero price updated", description: `${row.code} now ${row.art_price}` });
+            }
+          });
+      }
       // Only show toast for minor updates that don't trigger department notifications
       const hasSignificantChanges = Object.keys(variables.updates).some(field => 
         ['start_date', 'end_date', 'instalment_date', 'final_payment_date', 
