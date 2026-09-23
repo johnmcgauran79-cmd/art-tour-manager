@@ -601,7 +601,14 @@ export function CampaignsTab({
                 </TableRow>
               )}
               {campaigns.map((c) => (
-                <TableRow key={c.id} className="cursor-pointer" onClick={() => openCampaign(c)}>
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    c.status === "draft" ? openCampaign(c) : setReport(c)
+                  }
+                >
+
                   <TableCell>
                     <div className="font-medium">{c.name}</div>
                     <div className="text-xs text-muted-foreground">{c.subject}</div>
