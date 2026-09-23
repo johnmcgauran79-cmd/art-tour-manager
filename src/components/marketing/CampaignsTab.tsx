@@ -208,7 +208,9 @@ export function CampaignsTab({
 
   const setRecipientSource = (value: string) => {
     if (!editing) return;
+    setSourceMode(value);
     if (value === "__all__") setEditing({ ...editing, audience_id: null, audience_filters: {} });
+
     else if (value === "__emails__")
       setEditing({
         ...editing,
