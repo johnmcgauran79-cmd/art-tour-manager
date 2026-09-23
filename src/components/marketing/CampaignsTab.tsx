@@ -1048,6 +1048,16 @@ export function CampaignsTab({
         </DialogContent>
       </Dialog>
 
+      {/* --------------------- sent campaign preview + statistics -------------------- */}
+      <CampaignReportDialog
+        campaign={report}
+        onClose={() => setReport(null)}
+        onEdit={(c) => {
+          setReport(null);
+          openCampaign(c);
+        }}
+      />
+
       {/* ------------------------------ pre-send review ----------------------------- */}
       <CampaignSendReviewDialog
         open={reviewOpen}
