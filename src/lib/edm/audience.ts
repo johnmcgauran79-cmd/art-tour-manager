@@ -262,6 +262,7 @@ export const resolveAudience = async (
   filters: AudienceFilters
 ): Promise<AudienceContact[]> => {
   const out: AudienceContact[] = [];
+  if (filters.tourGroupTourId) return resolveTourGroup(filters.tourGroupTourId);
   if (filters.emails?.length) return resolveEmailList(filters.emails);
   if (hasRules(filters)) {
     const rows = await resolveRuleTree(filters.rules as AudienceGroup);
