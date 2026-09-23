@@ -20,6 +20,12 @@ export interface AudienceFilters {
   neverTravelledOnly?: boolean;
   /** contacts interested in this tour */
   interestedTourId?: string;
+  /**
+   * "Tour Group" — everyone travelling on the main body of this tour, i.e. the
+   * passengers on active bookings that are part of the tour's WhatsApp group.
+   * Activity/ticket-only guests are excluded, matching the tour pax counts.
+   */
+  tourGroupTourId?: string;
   /** latest tour ended before this date (win-back segments) */
   latestTourBefore?: string;
   /** free-text name/email match */
@@ -183,8 +189,60 @@ export const resolveEmailList = async (emails: string[]): Promise<AudienceContac
   );
 };
 
+/**
+ * "Tour Group" — the passengers on the main body of a tour.
+ *
+ * Only active bookings flagged into the tour's WhatsApp group are counted, so
+ * activity/ticket-only guests are left out. Marketing consent is not required
+ * (this is a message to people who travelled with us), but suppressed
+ * addresses are still dropped at send time.
+ */
+export const resolveTourGroup = async (tourId: string): Promise<AudienceContact[]> => {
+  if (!tourId) return [];
+  const { data: bookings, error } = await supabase
+    .from("bookings")
+    .select(
+      "lead_passenger_id, passenger_2_id, passenger_3_id, secondary_contact_id, status, whatsapp_group_comms"
+    )
+    .eq("tour_id", tourId)
+    .eq("whatsapp_group_comms", true)
+    .neq("status", "cancelled");
+  if (error) throw error;
+
+  const ids = new Set<string>();
+  (bookings || []).forEach((b: any) => {
+    [b.lead_passenger_id, b.passenger_2_id, b.passenger_3_id, b.secondary_contact_id].forEach(
+      (id) => id && ids.add(id)
+    );
+  });
+  if (!ids.size) return [];
+
+  const list = [...ids];
+  const out: AudienceContact[] = [];
+  for (let i = 0; i < list.length; i += 200) {
+    const { data, error: cErr } = await supabase
+      .from("customers")
+      .select(CONTACT_COLUMNS)
+      .in("id", list.slice(i, i + 200))
+      .not("email", "is", null)
+      .neq("email", "");
+    if (cErr) throw cErr;
+    out.push(...((data || []) as AudienceContact[]));
+  }
+
+  const seen = new Set<string>();
+  return out.filter((c) => {
+    const key = (c.email || "").trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 /** Count matching, consented contacts without fetching them all. */
 export const countAudience = async (filters: AudienceFilters): Promise<number> => {
+  if (filters.tourGroupTourId)
+    return (await resolveTourGroup(filters.tourGroupTourId)).length;
   if (filters.emails?.length) return (await resolveEmailList(filters.emails)).length;
   if (hasRules(filters)) return (await resolveRuleTree(filters.rules as AudienceGroup)).length;
   const tagIds = filters.tagIds?.length
@@ -204,6 +262,7 @@ export const resolveAudience = async (
   filters: AudienceFilters
 ): Promise<AudienceContact[]> => {
   const out: AudienceContact[] = [];
+  if (filters.tourGroupTourId) return resolveTourGroup(filters.tourGroupTourId);
   if (filters.emails?.length) return resolveEmailList(filters.emails);
   if (hasRules(filters)) {
     const rows = await resolveRuleTree(filters.rules as AudienceGroup);
@@ -254,6 +313,8 @@ export const describeFilters = (
   f: AudienceFilters,
   lookup: { tags?: Record<string, string>; tours?: Record<string, string> } = {}
 ): string => {
+  if (f.tourGroupTourId)
+    return `Tour group: ${lookup.tours?.[f.tourGroupTourId] || "selected tour"} (passengers in the tour WhatsApp group)`;
   if (f.emails?.length)
     return `Specific addresses (${f.emails.length}): ${f.emails.slice(0, 4).join(", ")}${
       f.emails.length > 4 ? `, +${f.emails.length - 4} more` : ""

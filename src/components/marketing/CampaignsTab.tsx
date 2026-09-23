@@ -68,6 +68,7 @@ import {
   type AudienceFilters,
 } from "@/lib/edm/audience";
 import { useTags } from "@/hooks/useTags";
+import { useTours } from "@/hooks/useTours";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
@@ -112,6 +113,7 @@ export function CampaignsTab({
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: audiences = [] } = useAudiences();
   const { data: allTags = [] } = useTags();
+  const { data: allTours = [] } = useTours();
   const { data: brands = [] } = useBrands();
   const { data: templates = [] } = useEdmTemplates();
   const save = useSaveCampaign();
@@ -171,12 +173,26 @@ export function CampaignsTab({
       ? "__emails__"
       : adHocFilters.tagIds?.length
         ? "__tags__"
-        : "__all__";
+        : adHocFilters.tourGroupTourId
+          ? "__tour__"
+          : "__all__";
   /** Filters actually used to resolve recipients for this campaign. */
   const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
   const tagLookup = useMemo(
-    () => ({ tags: Object.fromEntries(allTags.map((t) => [t.id, t.name])) }),
-    [allTags]
+    () => ({
+      tags: Object.fromEntries(allTags.map((t) => [t.id, t.name])),
+      tours: Object.fromEntries((allTours as any[]).map((t) => [t.id, t.name])),
+    }),
+    [allTags, allTours]
+  );
+
+  /** Tours newest-first, so the one just finished is at the top of the list. */
+  const tourOptions = useMemo(
+    () =>
+      [...(allTours as any[])].sort((a, b) =>
+        String(b.start_date || "").localeCompare(String(a.start_date || ""))
+      ),
+    [allTours]
   );
 
   const setRecipientSource = (value: string) => {
@@ -193,6 +209,12 @@ export function CampaignsTab({
         ...editing,
         audience_id: null,
         audience_filters: { tagIds: adHocFilters.tagIds || [], tagMatchAny: true },
+      });
+    else if (value === "__tour__")
+      setEditing({
+        ...editing,
+        audience_id: null,
+        audience_filters: { tourGroupTourId: adHocFilters.tourGroupTourId || "" },
       });
     else setEditing({ ...editing, audience_id: value, audience_filters: null });
   };
@@ -827,6 +849,7 @@ export function CampaignsTab({
                         <SelectItem value="__all__">Whole database (all consented)</SelectItem>
                         <SelectItem value="__tags__">Contacts with tags…</SelectItem>
                         <SelectItem value="__emails__">Specific email addresses…</SelectItem>
+                        <SelectItem value="__tour__">Tour Group (a specific tour)…</SelectItem>
                         {audiences.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             Audience: {a.name}
@@ -834,6 +857,32 @@ export function CampaignsTab({
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {recipientSource === "__tour__" && (
+                      <Select
+                        value={adHocFilters.tourGroupTourId || ""}
+                        onValueChange={(tourGroupTourId) =>
+                          editing &&
+                          setEditing({
+                            ...editing,
+                            audience_id: null,
+                            audience_filters: { tourGroupTourId },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="min-w-[16rem] flex-1">
+                          <SelectValue placeholder="Choose a tour…" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {tourOptions.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
 
                     {recipientSource === "__tags__" && (
                       <Popover>
@@ -891,6 +940,15 @@ export function CampaignsTab({
                       </p>
                     </div>
                   )}
+
+                  {recipientSource === "__tour__" && (
+                    <p className="text-xs text-muted-foreground">
+                      Sends to every passenger on the main part of that tour — the bookings in the
+                      tour's WhatsApp group. Activity or ticket-only guests and cancelled bookings
+                      are left out, and anyone who has bounced or unsubscribed is still skipped.
+                    </p>
+                  )}
+
 
                   <p className="text-xs text-muted-foreground">
                     {describeFilters(effectiveFilters, tagLookup)}
