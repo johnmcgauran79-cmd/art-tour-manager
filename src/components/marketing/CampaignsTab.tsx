@@ -131,6 +131,7 @@ export function CampaignsTab({
     asNewVersion: boolean;
   } | null>(null);
   const [editing, setEditing] = useState<Partial<MarketingCampaign> | null>(null);
+  const [report, setReport] = useState<MarketingCampaign | null>(null);
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [testEmail, setTestEmail] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
