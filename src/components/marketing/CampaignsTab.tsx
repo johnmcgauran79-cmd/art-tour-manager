@@ -941,6 +941,15 @@ export function CampaignsTab({
                     </div>
                   )}
 
+                  {recipientSource === "__tour__" && (
+                    <p className="text-xs text-muted-foreground">
+                      Sends to every passenger on the main part of that tour — the bookings in the
+                      tour's WhatsApp group. Activity or ticket-only guests and cancelled bookings
+                      are left out, and anyone who has bounced or unsubscribed is still skipped.
+                    </p>
+                  )}
+
+
                   <p className="text-xs text-muted-foreground">
                     {describeFilters(effectiveFilters, tagLookup)}
                   </p>
