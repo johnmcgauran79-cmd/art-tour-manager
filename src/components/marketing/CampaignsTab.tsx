@@ -163,7 +163,11 @@ export function CampaignsTab({
     };
   }, [brands, editing?.brand_id]);
 
+  /** Manually chosen recipients option, so an empty selection doesn't reset it. */
+  const [sourceMode, setSourceMode] = useState<string | null>(null);
+
   const selectedAudience = audiences.find((a) => a.id === editing?.audience_id);
+
 
   /** Ad-hoc filters saved on the campaign when no saved audience is used. */
   const adHocFilters: AudienceFilters = (editing?.audience_filters as AudienceFilters) || {};
