@@ -189,8 +189,60 @@ export const resolveEmailList = async (emails: string[]): Promise<AudienceContac
   );
 };
 
+/**
+ * "Tour Group" — the passengers on the main body of a tour.
+ *
+ * Only active bookings flagged into the tour's WhatsApp group are counted, so
+ * activity/ticket-only guests are left out. Marketing consent is not required
+ * (this is a message to people who travelled with us), but suppressed
+ * addresses are still dropped at send time.
+ */
+export const resolveTourGroup = async (tourId: string): Promise<AudienceContact[]> => {
+  if (!tourId) return [];
+  const { data: bookings, error } = await supabase
+    .from("bookings")
+    .select(
+      "lead_passenger_id, passenger_2_id, passenger_3_id, secondary_contact_id, status, whatsapp_group_comms"
+    )
+    .eq("tour_id", tourId)
+    .eq("whatsapp_group_comms", true)
+    .neq("status", "cancelled");
+  if (error) throw error;
+
+  const ids = new Set<string>();
+  (bookings || []).forEach((b: any) => {
+    [b.lead_passenger_id, b.passenger_2_id, b.passenger_3_id, b.secondary_contact_id].forEach(
+      (id) => id && ids.add(id)
+    );
+  });
+  if (!ids.size) return [];
+
+  const list = [...ids];
+  const out: AudienceContact[] = [];
+  for (let i = 0; i < list.length; i += 200) {
+    const { data, error: cErr } = await supabase
+      .from("customers")
+      .select(CONTACT_COLUMNS)
+      .in("id", list.slice(i, i + 200))
+      .not("email", "is", null)
+      .neq("email", "");
+    if (cErr) throw cErr;
+    out.push(...((data || []) as AudienceContact[]));
+  }
+
+  const seen = new Set<string>();
+  return out.filter((c) => {
+    const key = (c.email || "").trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 /** Count matching, consented contacts without fetching them all. */
 export const countAudience = async (filters: AudienceFilters): Promise<number> => {
+  if (filters.tourGroupTourId)
+    return (await resolveTourGroup(filters.tourGroupTourId)).length;
   if (filters.emails?.length) return (await resolveEmailList(filters.emails)).length;
   if (hasRules(filters)) return (await resolveRuleTree(filters.rules as AudienceGroup)).length;
   const tagIds = filters.tagIds?.length
