@@ -20,6 +20,12 @@ export interface AudienceFilters {
   neverTravelledOnly?: boolean;
   /** contacts interested in this tour */
   interestedTourId?: string;
+  /**
+   * "Tour Group" — everyone travelling on the main body of this tour, i.e. the
+   * passengers on active bookings that are part of the tour's WhatsApp group.
+   * Activity/ticket-only guests are excluded, matching the tour pax counts.
+   */
+  tourGroupTourId?: string;
   /** latest tour ended before this date (win-back segments) */
   latestTourBefore?: string;
   /** free-text name/email match */
