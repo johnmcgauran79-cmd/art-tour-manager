@@ -68,6 +68,7 @@ import {
   type AudienceFilters,
 } from "@/lib/edm/audience";
 import { useTags } from "@/hooks/useTags";
+import { useTours } from "@/hooks/useTours";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
