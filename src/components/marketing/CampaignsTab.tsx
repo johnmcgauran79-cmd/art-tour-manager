@@ -167,7 +167,7 @@ export function CampaignsTab({
 
   /** Ad-hoc filters saved on the campaign when no saved audience is used. */
   const adHocFilters: AudienceFilters = (editing?.audience_filters as AudienceFilters) || {};
-  const recipientSource: string = editing?.audience_id
+  const derivedSource: string = editing?.audience_id
     ? editing.audience_id
     : adHocFilters.emails?.length
       ? "__emails__"
@@ -176,6 +176,13 @@ export function CampaignsTab({
         : adHocFilters.tourGroupTourId
           ? "__tour__"
           : "__all__";
+  /**
+   * The chosen option sticks even while its selection is still empty (no tour
+   * picked yet, no addresses pasted), so the dropdown no longer snaps back to
+   * "everyone".
+   */
+  const recipientSource: string = sourceMode ?? derivedSource;
+
   /** Filters actually used to resolve recipients for this campaign. */
   const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
   const tagLookup = useMemo(
