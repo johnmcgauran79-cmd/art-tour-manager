@@ -163,11 +163,15 @@ export function CampaignsTab({
     };
   }, [brands, editing?.brand_id]);
 
+  /** Manually chosen recipients option, so an empty selection doesn't reset it. */
+  const [sourceMode, setSourceMode] = useState<string | null>(null);
+
   const selectedAudience = audiences.find((a) => a.id === editing?.audience_id);
+
 
   /** Ad-hoc filters saved on the campaign when no saved audience is used. */
   const adHocFilters: AudienceFilters = (editing?.audience_filters as AudienceFilters) || {};
-  const recipientSource: string = editing?.audience_id
+  const derivedSource: string = editing?.audience_id
     ? editing.audience_id
     : adHocFilters.emails?.length
       ? "__emails__"
@@ -176,6 +180,13 @@ export function CampaignsTab({
         : adHocFilters.tourGroupTourId
           ? "__tour__"
           : "__all__";
+  /**
+   * The chosen option sticks even while its selection is still empty (no tour
+   * picked yet, no addresses pasted), so the dropdown no longer snaps back to
+   * "everyone".
+   */
+  const recipientSource: string = sourceMode ?? derivedSource;
+
   /** Filters actually used to resolve recipients for this campaign. */
   const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
   const tagLookup = useMemo(
@@ -197,7 +208,9 @@ export function CampaignsTab({
 
   const setRecipientSource = (value: string) => {
     if (!editing) return;
+    setSourceMode(value);
     if (value === "__all__") setEditing({ ...editing, audience_id: null, audience_filters: {} });
+
     else if (value === "__emails__")
       setEditing({
         ...editing,
@@ -265,11 +278,13 @@ export function CampaignsTab({
 
   const openCampaign = (c: Partial<MarketingCampaign>) => {
     setEditing(c);
+    setSourceMode(null);
     setScheduleAt(toLocalInput(c.scheduled_send_at));
     setEmailsRaw(((c.audience_filters as AudienceFilters)?.emails || []).join("\n"));
     setProgress(null);
     setOpen(true);
   };
+
 
   const blankDraft = (): Partial<MarketingCampaign> => {
     const defaultBrand = brands.find((b) => b.is_default) || brands[0];
