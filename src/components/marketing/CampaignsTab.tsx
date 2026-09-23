@@ -113,6 +113,7 @@ export function CampaignsTab({
   const { data: campaigns = [], isLoading } = useCampaigns();
   const { data: audiences = [] } = useAudiences();
   const { data: allTags = [] } = useTags();
+  const { data: allTours = [] } = useTours();
   const { data: brands = [] } = useBrands();
   const { data: templates = [] } = useEdmTemplates();
   const save = useSaveCampaign();
