@@ -313,6 +313,8 @@ export const describeFilters = (
   f: AudienceFilters,
   lookup: { tags?: Record<string, string>; tours?: Record<string, string> } = {}
 ): string => {
+  if (f.tourGroupTourId)
+    return `Tour group: ${lookup.tours?.[f.tourGroupTourId] || "selected tour"} (passengers in the tour WhatsApp group)`;
   if (f.emails?.length)
     return `Specific addresses (${f.emails.length}): ${f.emails.slice(0, 4).join(", ")}${
       f.emails.length > 4 ? `, +${f.emails.length - 4} more` : ""
