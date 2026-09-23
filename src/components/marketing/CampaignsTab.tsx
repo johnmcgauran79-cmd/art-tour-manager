@@ -173,12 +173,26 @@ export function CampaignsTab({
       ? "__emails__"
       : adHocFilters.tagIds?.length
         ? "__tags__"
-        : "__all__";
+        : adHocFilters.tourGroupTourId
+          ? "__tour__"
+          : "__all__";
   /** Filters actually used to resolve recipients for this campaign. */
   const effectiveFilters: AudienceFilters = selectedAudience?.filters || adHocFilters;
   const tagLookup = useMemo(
-    () => ({ tags: Object.fromEntries(allTags.map((t) => [t.id, t.name])) }),
-    [allTags]
+    () => ({
+      tags: Object.fromEntries(allTags.map((t) => [t.id, t.name])),
+      tours: Object.fromEntries((allTours as any[]).map((t) => [t.id, t.name])),
+    }),
+    [allTags, allTours]
+  );
+
+  /** Tours newest-first, so the one just finished is at the top of the list. */
+  const tourOptions = useMemo(
+    () =>
+      [...(allTours as any[])].sort((a, b) =>
+        String(b.start_date || "").localeCompare(String(a.start_date || ""))
+      ),
+    [allTours]
   );
 
   const setRecipientSource = (value: string) => {
@@ -195,6 +209,12 @@ export function CampaignsTab({
         ...editing,
         audience_id: null,
         audience_filters: { tagIds: adHocFilters.tagIds || [], tagMatchAny: true },
+      });
+    else if (value === "__tour__")
+      setEditing({
+        ...editing,
+        audience_id: null,
+        audience_filters: { tourGroupTourId: adHocFilters.tourGroupTourId || "" },
       });
     else setEditing({ ...editing, audience_id: value, audience_filters: null });
   };
