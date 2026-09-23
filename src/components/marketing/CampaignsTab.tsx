@@ -74,6 +74,7 @@ import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
 import { EdmBuilder } from "./EdmBuilder";
 import { CampaignSendReviewDialog } from "./CampaignSendReviewDialog";
+import { CampaignReportDialog } from "./CampaignReportDialog";
 
 
 const statusVariant: Record<string, "secondary" | "default" | "outline" | "destructive"> = {
@@ -130,6 +131,7 @@ export function CampaignsTab({
     asNewVersion: boolean;
   } | null>(null);
   const [editing, setEditing] = useState<Partial<MarketingCampaign> | null>(null);
+  const [report, setReport] = useState<MarketingCampaign | null>(null);
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [testEmail, setTestEmail] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
@@ -599,7 +601,14 @@ export function CampaignsTab({
                 </TableRow>
               )}
               {campaigns.map((c) => (
-                <TableRow key={c.id} className="cursor-pointer" onClick={() => openCampaign(c)}>
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    c.status === "draft" ? openCampaign(c) : setReport(c)
+                  }
+                >
+
                   <TableCell>
                     <div className="font-medium">{c.name}</div>
                     <div className="text-xs text-muted-foreground">{c.subject}</div>
@@ -1038,6 +1047,16 @@ export function CampaignsTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* --------------------- sent campaign preview + statistics -------------------- */}
+      <CampaignReportDialog
+        campaign={report}
+        onClose={() => setReport(null)}
+        onEdit={(c) => {
+          setReport(null);
+          openCampaign(c);
+        }}
+      />
 
       {/* ------------------------------ pre-send review ----------------------------- */}
       <CampaignSendReviewDialog
