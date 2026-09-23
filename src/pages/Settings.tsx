@@ -11,6 +11,7 @@ import { AutomatedReportRulesManagement } from "@/components/reports/AutomatedRe
 import { AdditionalInfoTemplatesManagement } from "@/components/email/AdditionalInfoTemplatesManagement";
 import { CancellationPolicySettings } from "@/components/settings/CancellationPolicySettings";
 import { BankDetailsSettings } from "@/components/settings/BankDetailsSettings";
+import { XeroPriceSyncCard } from "@/components/settings/XeroPriceSyncCard";
 import { InvoiceLineTemplatesManagement } from "@/components/settings/InvoiceLineTemplatesManagement";
 import { EmailSettingsTab } from "@/components/email/EmailSettingsTab";
 import { BrandsManagement } from "@/components/settings/BrandsManagement";
@@ -142,6 +143,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
                 <InvoiceLineTemplatesManagement />
               </CardContent>
             </Card>
+            <XeroPriceSyncCard />
             <BankDetailsSettings />
           </TabsContent>
         )}
