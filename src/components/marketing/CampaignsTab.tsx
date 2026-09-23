@@ -849,6 +849,7 @@ export function CampaignsTab({
                         <SelectItem value="__all__">Whole database (all consented)</SelectItem>
                         <SelectItem value="__tags__">Contacts with tags…</SelectItem>
                         <SelectItem value="__emails__">Specific email addresses…</SelectItem>
+                        <SelectItem value="__tour__">Tour Group (a specific tour)…</SelectItem>
                         {audiences.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
                             Audience: {a.name}
@@ -856,6 +857,32 @@ export function CampaignsTab({
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {recipientSource === "__tour__" && (
+                      <Select
+                        value={adHocFilters.tourGroupTourId || ""}
+                        onValueChange={(tourGroupTourId) =>
+                          editing &&
+                          setEditing({
+                            ...editing,
+                            audience_id: null,
+                            audience_filters: { tourGroupTourId },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="min-w-[16rem] flex-1">
+                          <SelectValue placeholder="Choose a tour…" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {tourOptions.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
 
                     {recipientSource === "__tags__" && (
                       <Popover>
