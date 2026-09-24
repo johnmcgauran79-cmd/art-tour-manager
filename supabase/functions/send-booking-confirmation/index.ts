@@ -474,6 +474,7 @@ const handler = async (req: Request): Promise<Response> => {
           room_type,
           room_upgrade,
           bedding,
+          confirmation_number,
           hotels (name, contact_name, contact_phone, contact_email, address, extra_night_price)
         ),
         activity_bookings (
