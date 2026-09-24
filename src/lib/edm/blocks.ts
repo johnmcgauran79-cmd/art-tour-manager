@@ -1698,7 +1698,7 @@ ${BRAND_FONT_HEAD_HTML}
 ${darkCss}
 </style>
 </head>
-<body style="margin:0;padding:0;background:${pageBg};">
+<body class="edm-page" style="margin:0;padding:0;background:${pageBg};">
 ${
   opts.preheader
     ? `<div style="display:none;font-size:1px;color:${pageBg};max-height:0;overflow:hidden;">${esc(

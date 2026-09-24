@@ -178,13 +178,23 @@ export function EdmBuilder({
   const [future, setFuture] = useState<EdmBlock[][]>([]);
 
   /** Apply a block change, recording the previous state for undo. */
+  /**
+   * Always build changes on the newest blocks. Two quick changes in a row (e.g.
+   * finishing typing on the email then flipping a setting) used to start from
+   * the same old copy, so the second silently undid the first — which is why a
+   * setting could look like it "didn't work" and then work on a later try.
+   */
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
   const commit = useCallback(
     (next: EdmBlock[]) => {
-      setPast((p) => [...p.slice(-49), blocks]);
+      const prev = blocksRef.current;
+      blocksRef.current = next;
+      setPast((p) => [...p.slice(-49), prev]);
       setFuture([]);
       onBlocksChange(next);
     },
-    [blocks, onBlocksChange]
+    [onBlocksChange]
   );
 
   const undo = useCallback(() => {
@@ -243,7 +253,7 @@ export function EdmBuilder({
   );
 
   const update = (id: string, patch: Partial<EdmBlock>) =>
-    commit(updateBlockById(blocks, id, patch));
+    commit(updateBlockById(blocksRef.current, id, patch));
 
 
   const add = (type: EdmPaletteType) => {
@@ -900,6 +910,23 @@ function BlockInspector({
   if (device === "mobile" && t !== "design") {
     const m = block.mobile || {};
     const setM = (patch: Partial<typeof m>) => onChange({ mobile: { ...m, ...patch } });
+    const deskX = (side: "left" | "right") =>
+      t === "image" && block.fullBleed
+        ? 0
+        : block.padding?.[side] ?? (block.padX != null ? block.padX : 32);
+    const cap = (n: number | undefined, max: number) => (n == null ? undefined : Math.min(n, max));
+    const padHint = {
+      top: block.padding?.top,
+      bottom: block.padding?.bottom,
+      left: cap(deskX("left"), 16),
+      right: cap(deskX("right"), 16),
+    };
+    const marginHint = {
+      top: block.margin?.top,
+      bottom: block.margin?.bottom,
+      left: cap(block.margin?.left, 12),
+      right: cap(block.margin?.right, 12),
+    };
 
     return (
       <div className="space-y-4">
@@ -942,16 +969,20 @@ function BlockInspector({
         <SpacingEditor
           label="Mobile margin (px)"
           value={m.margin}
-          linked={block.marginLinked}
+          inherited={marginHint}
+          hint="Blank sides follow desktop, with side gaps kept to 12px at most on phones."
+          linked={block.mobileMarginLinked === true}
           onChange={(margin) => setM({ margin })}
-          onLinkedChange={(marginLinked) => onChange({ marginLinked })}
+          onLinkedChange={(mobileMarginLinked) => onChange({ mobileMarginLinked })}
         />
         <SpacingEditor
           label="Mobile padding (px)"
           value={m.padding}
-          linked={block.paddingLinked}
+          inherited={padHint}
+          hint="Blank sides follow desktop, with side padding kept to 16px at most on phones."
+          linked={block.mobilePaddingLinked === true}
           onChange={(padding) => setM({ padding })}
-          onLinkedChange={(paddingLinked) => onChange({ paddingLinked })}
+          onLinkedChange={(mobilePaddingLinked) => onChange({ mobilePaddingLinked })}
         />
 
         {t === "button" && (
@@ -993,26 +1024,33 @@ function BlockInspector({
                 onCheckedChange={(imageFullWidth) => setM({ imageFullWidth })}
               />
             </div>
-            {!m.imageFullWidth && (
-              <div className="grid grid-cols-2 gap-3">
-                <NumField
-                  label="Image width"
-                  suffix="%"
-                  min={5}
-                  max={100}
-                  value={m.imageWidthPct}
-                  onChange={(imageWidthPct) => setM({ imageWidthPct })}
-                />
-                <NumField
-                  label="Max width"
-                  suffix="px"
-                  min={40}
-                  max={900}
-                  value={m.imageMaxWidth}
-                  onChange={(imageMaxWidth) => setM({ imageMaxWidth })}
-                />
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {m.imageFullWidth
+                ? "On: the image runs edge to edge on phones. Typing a width below switches this off."
+                : "Off: the image uses the width below (blank follows desktop)."}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <NumField
+                label="Image width"
+                suffix="%"
+                min={5}
+                max={100}
+                value={m.imageWidthPct}
+                onChange={(imageWidthPct) =>
+                  setM({ imageWidthPct, imageFullWidth: imageWidthPct != null ? false : m.imageFullWidth })
+                }
+              />
+              <NumField
+                label="Max width"
+                suffix="px"
+                min={40}
+                max={900}
+                value={m.imageMaxWidth}
+                onChange={(imageMaxWidth) =>
+                  setM({ imageMaxWidth, imageFullWidth: imageMaxWidth != null ? false : m.imageFullWidth })
+                }
+              />
+            </div>
           </div>
         )}
 
@@ -1689,7 +1727,8 @@ function BlockInspector({
             <div>
               <Label className="text-sm">Full width (edge to edge)</Label>
               <p className="text-xs text-muted-foreground">
-                Removes side padding and corners so the image fills the email width.
+                Removes side padding, side margins and corners so the image fills the email
+                width. If it sits alone in a block, that block's side padding is removed too.
               </p>
             </div>
             <Switch
