@@ -166,6 +166,8 @@ export interface EdmBlock {
   mobileHeaderPadding?: number;
   /** design block: phone-only footer social icon size in px */
   mobileIconSize?: number;
+  /** design: adapt the email for night / dark mode (default on) */
+  darkMode?: boolean;
   pageBg?: string;
   contentBg?: string;
   borderColor?: string;
@@ -200,6 +202,9 @@ export interface EdmBlock {
   marginLinked?: boolean;
   /** UI only: keep all padding sides in sync */
   paddingLinked?: boolean;
+  /** mobile spacing editors remember their own "all sides together" choice */
+  mobileMarginLinked?: boolean;
+  mobilePaddingLinked?: boolean;
 
   /* ---- typography ---- */
   /** default text colour for heading/text content */
@@ -1568,7 +1573,7 @@ export const stripPastedSpacing = (html: string): string => {
 export const renderEdmHtml = (
   blocks: EdmBlock[],
   brand: EdmBrand,
-  opts: { subject?: string; preheader?: string; interactive?: boolean } = {}
+  opts: { subject?: string; preheader?: string; interactive?: boolean; forceDark?: boolean } = {}
 ): string => {
   const design = blocks.find((b) => b.type === "design");
   // Negative spacing is resolved into real padding first, so the canvas and the
@@ -1601,7 +1606,7 @@ export const renderEdmHtml = (
         ? design?.imageUrl || ""
         : brand.emailHeaderImageUrl || "";
 
-  const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive };
+  const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive, width: maxWidth };
   const body = renderRows(contentBlocks, brand, ctx);
 
   /* Phone-only header, footer and footer-icon sizes. */
@@ -1625,14 +1630,52 @@ export const renderEdmHtml = (
 
   const mobileCss = [...designMobileCss, ...ctx.css].join("\n  ");
 
+  /**
+   * Night / dark mode. Only the default light surfaces and default text are
+   * switched; anything given its own colour (dark sections, header, footer,
+   * buttons, coloured words) keeps it. Apple Mail and iOS/Android Mail use the
+   * media query, Outlook.com uses [data-ogsc]; Gmail applies its own automatic
+   * darkening, which these colours are chosen to survive.
+   */
+  const isLight = (c: string) => {
+    const h = c.replace("#", "").toLowerCase();
+    const full = h.length === 3 ? h.split("").map((x) => x + x).join("") : h;
+    if (!/^[0-9a-f]{6}$/.test(full)) return false;
+    const [r, g, bl] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+    return 0.299 * r + 0.587 * g + 0.114 * bl > 200;
+  };
+  const darkOn = design?.darkMode !== false;
+  const darkRules = (pre: string) =>
+    [
+      isLight(pageBg) ? `${pre}.edm-page{background:#0b0f17!important;}` : "",
+      isLight(contentBg)
+        ? `${pre}.edm-content{background:#151b26!important;border-color:#2a3342!important;}`
+        : "",
+      isLight(contentBg)
+        ? `${pre}.edm-dt,${pre}.edm-dt>div,${pre}.edm-dt p,${pre}.edm-dt li{color:#e6e8ec!important;}`
+        : "",
+      isLight(contentBg) ? `${pre}.edm-dh{color:#f5f6f8!important;}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n  ");
+  const darkCss = darkOn
+    ? `@media (prefers-color-scheme:dark){
+  ${darkRules("")}
+}
+${darkRules("[data-ogsc] ")}
+${opts.forceDark ? darkRules("html.edm-force-dark ") : ""}`
+    : "";
+
   const footerSocial =
     design?.footerShowSocial && design.socials?.length
       ? `<div style="margin-bottom:12px;">${socialIconsHtml(design, footerColor)}</div>`
       : "";
 
   return `<!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en"${opts.forceDark ? ` class="edm-force-dark"` : ""}><head>
 <meta charset="utf-8" />
+${darkOn ? `<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />` : ""}
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(opts.subject || brand.name)}</title>
 ${BRAND_FONT_HEAD_HTML}
@@ -1652,6 +1695,7 @@ ${BRAND_FONT_HEAD_HTML}
      line spacing below, so what is set in the editor is what is sent. */
   ${mobileCss}
 }
+${darkCss}
 </style>
 </head>
 <body style="margin:0;padding:0;background:${pageBg};">
@@ -1662,9 +1706,9 @@ ${
       )}</div>`
     : ""
 }
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${pageBg};">
+<table role="presentation" class="edm-page" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${pageBg};">
 <tr><td align="center" style="padding:24px 12px;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
+  <table role="presentation" class="edm-content" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
       headerImage
         ? `<tr><td class="edm-header" align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
