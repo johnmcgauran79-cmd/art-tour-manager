@@ -58,22 +58,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Find the email log entry
-    const { data: emailLog, error: logError } = await supabase
-      .from("email_logs")
-      .select("id")
-      .eq("message_id", messageId)
-      .single();
-
-    if (logError || !emailLog) {
-      console.error("Email log not found for message:", messageId, logError);
-      // Don't fail the webhook - might be an email we didn't track
-      return new Response(
-        JSON.stringify({ message: "Email log not found, event ignored" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Map Resend event types to our event types
     const eventTypeMap: Record<string, string> = {
       "email.sent": "sent",
@@ -84,25 +68,63 @@ const handler = async (req: Request): Promise<Response> => {
       "email.opened": "opened",
       "email.clicked": "clicked",
     };
-
     const eventType = eventTypeMap[type] || type;
 
-    // Insert event record
-    const { error: insertError } = await supabase
-      .from("email_events")
-      .insert({
-        email_log_id: emailLog.id,
-        message_id: messageId,
-        event_type: eventType,
-        event_data: data,
-      });
+    // Find the email log entry (transactional emails)
+    const { data: emailLog } = await supabase
+      .from("email_logs")
+      .select("id")
+      .eq("message_id", messageId)
+      .maybeSingle();
 
-    if (insertError) {
-      console.error("Error inserting email event:", insertError);
-      return new Response(
-        JSON.stringify({ error: "Failed to insert event" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (emailLog) {
+      const { error: insertError } = await supabase
+        .from("email_events")
+        .insert({
+          email_log_id: emailLog.id,
+          message_id: messageId,
+          event_type: eventType,
+          event_data: data,
+        });
+      if (insertError) {
+        console.error("Error inserting email event:", insertError);
+        return new Response(
+          JSON.stringify({ error: "Failed to insert event" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // Marketing campaign emails are tracked on campaign_recipients instead.
+      const { data: recipient } = await supabase
+        .from("campaign_recipients")
+        .select("id, campaign_id, status")
+        .eq("provider_message_id", messageId)
+        .maybeSingle();
+
+      if (!recipient) {
+        console.log("No email log or campaign recipient for message:", messageId);
+        return new Response(
+          JSON.stringify({ message: "Email not tracked, event ignored" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if ((eventType === "bounced" || eventType === "complained") && recipient.status !== "bounced") {
+        const reason = data?.bounce?.message || data?.complaint?.message || eventType;
+        await supabase
+          .from("campaign_recipients")
+          .update({ status: "bounced", error_message: String(reason).slice(0, 500) })
+          .eq("id", recipient.id);
+        const { data: camp } = await supabase
+          .from("marketing_campaigns")
+          .select("bounce_count")
+          .eq("id", recipient.campaign_id)
+          .maybeSingle();
+        await supabase
+          .from("marketing_campaigns")
+          .update({ bounce_count: (Number(camp?.bounce_count) || 0) + 1 })
+          .eq("id", recipient.campaign_id);
+      }
     }
 
     // If bounced or complained, add to suppression list
