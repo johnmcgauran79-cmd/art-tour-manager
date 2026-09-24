@@ -706,6 +706,7 @@ export class EmailTemplateEngine {
         hotel_extra_night_price: hb.hotels?.extra_night_price,
         // Per-hotel conditional flags
         has_hotel_room_type: !!hb.room_type,
+        has_hotel_confirmation_number: !!(hb.confirmation_number && String(hb.confirmation_number).trim()),
         has_hotel_extra_night_price: !!(hb.hotels?.extra_night_price && String(hb.hotels.extra_night_price).trim()),
       })),
       
@@ -827,6 +828,9 @@ export class EmailTemplateEngine {
         }
         if (hb.room_type) {
           rows.push(`<tr><td style="${labelStyle}">Room Type</td><td style="${valueStyle}">${hb.room_type}</td></tr>`);
+        }
+        if (hb.confirmation_number && String(hb.confirmation_number).trim()) {
+          rows.push(`<tr><td style="${labelStyle}">Confirmation No.</td><td style="${valueStyle}">${String(hb.confirmation_number).trim()}</td></tr>`);
         }
         const extra = hb.hotels?.extra_night_price;
         if (extra && Number(extra) > 0) {

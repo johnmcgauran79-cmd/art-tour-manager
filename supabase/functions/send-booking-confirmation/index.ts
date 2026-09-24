@@ -1288,6 +1288,7 @@ const handler = async (req: Request): Promise<Response> => {
         hotel_extra_night_price: hb.hotels?.extra_night_price || '',
         // Per-hotel conditional flags for use inside {{#hotel_bookings}} loops
         has_hotel_room_type: !!hb.room_type,
+        has_hotel_confirmation_number: !!(hb.confirmation_number && String(hb.confirmation_number).trim()),
         has_hotel_extra_night_price: hb.hotels?.extra_night_price != null && hb.hotels.extra_night_price > 0,
       })),
       
@@ -1338,6 +1339,9 @@ const handler = async (req: Request): Promise<Response> => {
         }
         if (hb.has_hotel_room_type) {
           rows.push(`<tr><td style="${labelStyle}">Room Type</td><td style="${valueStyle}">${hb.hotel_room_type}</td></tr>`);
+        }
+        if (hb.has_hotel_confirmation_number) {
+          rows.push(`<tr><td style="${labelStyle}">Confirmation No.</td><td style="${valueStyle}">${String(hb.hotel_confirmation_number).trim()}</td></tr>`);
         }
         if (hb.has_hotel_extra_night_price) {
           rows.push(`<tr><td style="${labelStyle}">Extra Nights</td><td style="${valueStyle}">Available for $${hb.hotel_extra_night_price}</td></tr>`);

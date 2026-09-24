@@ -114,6 +114,8 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{^has_hotel_extra_night_price}} ... {{/has_hotel_extra_night_price}}',
     '{{#has_hotel_room_type}} ... {{/has_hotel_room_type}}',
     '{{^has_hotel_room_type}} ... {{/has_hotel_room_type}}',
+    '{{#has_hotel_confirmation_number}} ... {{/has_hotel_confirmation_number}}',
+    '{{^has_hotel_confirmation_number}} ... {{/has_hotel_confirmation_number}}',
     '{{#has_activity_bookings}} ... {{/has_activity_bookings}}',
     '{{#has_group_name}} ... {{/has_group_name}}',
     '{{#has_extra_requests}} ... {{/has_extra_requests}}',
