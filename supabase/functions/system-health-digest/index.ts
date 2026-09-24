@@ -130,6 +130,25 @@ Deno.serve(async (req) => {
     const health = data as Health;
 
     const problems = buildProblems(health);
+
+    // A failed backup run is a problem even when an older copy is still recent enough.
+    const since = new Date(Date.now() - 26 * 36e5).toISOString();
+    const { data: failedRuns } = await supabase
+      .from("backup_runs")
+      .select("kind, finished_at, error_message, metadata")
+      .eq("status", "failed")
+      .gte("finished_at", since)
+      .order("finished_at", { ascending: false });
+    const labels: Record<string, string> = { database: "database", storage: "uploaded files", code: "source code", full: "full" };
+    for (const r of failedRuns || []) {
+      const when = new Date(r.finished_at).toLocaleString("en-AU", { timeZone: "Australia/Sydney", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      const runUrl = (r.metadata as any)?.run_url;
+      problems.push(
+        `The ${labels[r.kind] || r.kind} backup failed at ${when}.` +
+          (r.error_message ? ` ${esc(r.error_message)}` : "") +
+          (runUrl ? ` <a href="${runUrl}">View the GitHub run</a>.` : ""),
+      );
+    }
     console.log(`[System Health] ${problems.length} problem(s) detected.`);
 
     if (previewOnly) return json({ success: true, problems, health });
