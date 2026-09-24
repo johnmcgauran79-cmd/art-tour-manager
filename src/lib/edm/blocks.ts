@@ -1216,7 +1216,7 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
   const innerW = Math.max(40, (ctx.width ?? 800) - (outerPad.left ?? 0) - (outerPad.right ?? 0));
   const colW = Math.max(40, Math.floor(innerW / cols) - cp * 2 - Math.max(0, b.colGap ?? 0));
   // Phone full-width images need the section's side padding removed as well.
-  if (allCellBlocks.some((x) => x.type === "image" && x.mobile?.imageFullWidth)) {
+  if (bleed || allCellBlocks.some((x) => x.type === "image" && x.mobile?.imageFullWidth)) {
     ctx.css.push(
       `table tr.${blockClass(b)}>td{padding-left:0!important;padding-right:0!important;}`
     );
