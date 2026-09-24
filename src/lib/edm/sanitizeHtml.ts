@@ -99,6 +99,12 @@ const scrub = (node: Element) => {
       return;
     }
     if (node.tagName === "A" && (name === "target" || name === "rel")) return;
+    if (name === "class") {
+      const kept = attr.value.split(/\s+/).filter((c) => ALLOWED_CLASS.test(c)).join(" ");
+      if (kept) node.setAttribute("class", kept);
+      else node.removeAttribute("class");
+      return;
+    }
     node.removeAttribute(attr.name);
   });
 };
