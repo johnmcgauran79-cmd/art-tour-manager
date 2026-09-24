@@ -182,7 +182,7 @@ export const useSaveCampaign = () => {
       if (c?.id) qc.invalidateQueries({ queryKey: ["marketing-campaign", c.id] });
     },
     onError: (e: any, vars: any) => {
-      if (vars?.silent) return;
+      if (vars?.silent || e instanceof EdmSaveConflictError) return;
       toast({ title: "Error", description: e.message, variant: "destructive" });
     },
   });
