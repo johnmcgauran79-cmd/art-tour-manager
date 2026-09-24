@@ -41,9 +41,12 @@ export function SpacingEditor({
   onChange,
   onLinkedChange,
   hint,
+  inherited,
 }: {
   label: string;
   value?: EdmSpacing;
+  /** values used when a side is left blank, shown as greyed placeholders */
+  inherited?: EdmSpacing;
   linked?: boolean;
   onChange: (next: EdmSpacing | undefined) => void;
   onLinkedChange: (linked: boolean) => void;
@@ -89,7 +92,7 @@ export function SpacingEditor({
               type="number"
               min={-160}
               max={160}
-              placeholder="—"
+              placeholder={inherited?.[key] != null ? String(inherited[key]) : "—"}
               value={v[key] ?? ""}
               onChange={(e) => setSide(key, e.target.value)}
             />

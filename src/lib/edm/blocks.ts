@@ -166,6 +166,8 @@ export interface EdmBlock {
   mobileHeaderPadding?: number;
   /** design block: phone-only footer social icon size in px */
   mobileIconSize?: number;
+  /** design: adapt the email for night / dark mode (default on) */
+  darkMode?: boolean;
   pageBg?: string;
   contentBg?: string;
   borderColor?: string;
@@ -200,6 +202,9 @@ export interface EdmBlock {
   marginLinked?: boolean;
   /** UI only: keep all padding sides in sync */
   paddingLinked?: boolean;
+  /** mobile spacing editors remember their own "all sides together" choice */
+  mobileMarginLinked?: boolean;
+  mobilePaddingLinked?: boolean;
 
   /* ---- typography ---- */
   /** default text colour for heading/text content */
@@ -859,21 +864,29 @@ interface RenderCtx {
   css: string[];
   /** tag rows with data-edm-id so the builder preview can be clicked */
   tag?: boolean;
+  /** available width in px at this level (drives image width attributes for Outlook) */
+  width?: number;
 }
 
 
 const px = (n: number) => `${Math.max(0, Math.round(n))}px`;
+
+/** Widest side padding / margin a block keeps on phones unless set for mobile. */
+const MOBILE_SIDE_PAD = 16;
+const MOBILE_SIDE_MARGIN = 12;
 
 /** Resolve the padding for a block, honouring legacy padX/padY. */
 const resolvePadding = (b: EdmBlock, ctx: RenderCtx, defY: number): EdmSpacing => {
   const legacyY = b.padY != null ? Math.max(0, b.padY) : defY;
   const legacyX = b.fullBleed ? 0 : b.padX != null ? Math.max(0, b.padX) : ctx.padX;
   const p = b.padding || {};
+  // Edge-to-edge images ignore side padding entirely, so zero really is zero.
+  const bleed = b.type === "image" && !!b.fullBleed;
   return {
     top: p.top ?? legacyY,
-    right: p.right ?? legacyX,
+    right: bleed ? 0 : p.right ?? legacyX,
     bottom: p.bottom ?? legacyY,
-    left: p.left ?? legacyX,
+    left: bleed ? 0 : p.left ?? legacyX,
   };
 };
 
@@ -885,12 +898,6 @@ const spacingCss = (s: EdmSpacing, fallback = 0) =>
 const hasSpacing = (s?: EdmSpacing) =>
   !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null && v !== 0);
 
-/**
- * Mobile spacing is independent of desktop, so a deliberate zero counts as a
- * value (e.g. "no padding on phones" even though desktop has padding).
- */
-const hasAnySpacing = (s?: EdmSpacing) =>
-  !!s && [s.top, s.right, s.bottom, s.left].some((v) => v != null);
 
 /**
  * Negative spacing used to be emitted as a negative CSS margin on the block's
@@ -1006,16 +1013,45 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
   if (m.hidden) rules.push(`tr.${cls}{display:none!important;max-height:0!important;overflow:hidden!important;}`);
 
   const tdRules: string[] = [];
-  // Phone padding is set on its own: a deliberate 0 is honoured even when the
-  // desktop block has padding.
-  if (hasAnySpacing(m.padding)) tdRules.push(`padding:${spacingCss(m.padding!)}!important`);
+  /**
+   * Phone spacing is independent of desktop. Each side set for mobile is used
+   * as-is (a deliberate 0 is honoured). Blank top/bottom sides keep the desktop
+   * value; blank left/right sides are capped so wide desktop gutters don't
+   * squeeze the content on a phone.
+   */
+  const fullImg = b.type === "image" && !!m.imageFullWidth;
+  const mp = m.padding || {};
+  const deskX = (side: "left" | "right") =>
+    b.type === "image" && b.fullBleed
+      ? 0
+      : b.padding?.[side] ?? (b.fullBleed ? 0 : b.padX != null ? Math.max(0, b.padX) : ctx.padX);
+  (["top", "bottom"] as const).forEach((side) => {
+    if (mp[side] != null) tdRules.push(`padding-${side}:${px(mp[side]!)}!important`);
+  });
+  if (!fullImg)
+    (["left", "right"] as const).forEach((side) => {
+      if (mp[side] != null) tdRules.push(`padding-${side}:${px(mp[side]!)}!important`);
+      else if (deskX(side) > MOBILE_SIDE_PAD)
+        tdRules.push(`padding-${side}:${MOBILE_SIDE_PAD}px!important`);
+    });
   if (m.align) tdRules.push(`text-align:${m.align}!important`);
   if (m.fontSize) tdRules.push(`font-size:${m.fontSize}px!important`);
   if (m.lineHeight) tdRules.push(`line-height:${m.lineHeight}!important`);
   if (tdRules.length) rules.push(`tr.${cls}>td{${tdRules.join(";")};}`);
 
-  if (hasAnySpacing(m.margin)) {
-    rules.push(`tr.${cls}-m>td{padding:${spacingCss(m.margin!)}!important;}`);
+  {
+    const mm = m.margin || {};
+    const mRules: string[] = [];
+    (["top", "bottom"] as const).forEach((side) => {
+      if (mm[side] != null) mRules.push(`padding-${side}:${px(mm[side]!)}!important`);
+    });
+    (["left", "right"] as const).forEach((side) => {
+      if (fullImg) mRules.push(`padding-${side}:0!important`);
+      else if (mm[side] != null) mRules.push(`padding-${side}:${px(mm[side]!)}!important`);
+      else if ((b.margin?.[side] ?? 0) > MOBILE_SIDE_MARGIN)
+        mRules.push(`padding-${side}:${MOBILE_SIDE_MARGIN}px!important`);
+    });
+    if (mRules.length) rules.push(`tr.${cls}-m>td{${mRules.join(";")};}`);
   }
 
   if (b.type === "text") {
@@ -1092,7 +1128,15 @@ const collectMobileCss = (b: EdmBlock, ctx: RenderCtx) => {
  * attach the block's class (for mobile rules) and wrap it in a margin row when
  * per-side margins are set.
  */
-const renderBlock = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string => {
+const renderBlock = (b0: EdmBlock, brand: EdmBrand, ctx0: RenderCtx): string => {
+  // Edge-to-edge images drop their side margins too.
+  const b: EdmBlock =
+    b0.type === "image" && b0.fullBleed && b0.margin
+      ? { ...b0, margin: { ...b0.margin, left: 0, right: 0 } }
+      : b0;
+  const ml = Math.max(0, b.margin?.left ?? 0);
+  const mr = Math.max(0, b.margin?.right ?? 0);
+  const ctx: RenderCtx = { ...ctx0, width: Math.max(40, (ctx0.width ?? 800) - ml - mr) };
   let html = renderBlockInner(b, brand, ctx);
   if (!html) return "";
 
@@ -1146,7 +1190,7 @@ const renderNested = (blocks: EdmBlock[], brand: EdmBrand, ctx: RenderCtx): stri
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${renderRows(
     blocks,
     brand,
-    { padX: 0, css: ctx.css, tag: ctx.tag }
+    { padX: 0, css: ctx.css, tag: ctx.tag, width: ctx.width }
   )}</table>`;
 };
 
@@ -1155,8 +1199,28 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
   const cols = Math.max(1, b.cols || 1);
   const rows = b.type === "table" ? Math.max(1, b.rowCount || 1) : 1;
   const cells = b.cells || [];
-  const cp = b.cellPadding ?? 8;
+  const allCellBlocks = cells.flatMap((c) => c?.blocks || []);
+  // A single column holding only edge-to-edge images runs edge to edge itself.
+  const bleed =
+    cols === 1 &&
+    rows === 1 &&
+    allCellBlocks.length > 0 &&
+    allCellBlocks.every((x) => x.type === "image" && x.fullBleed);
+  const cp = bleed ? 0 : b.cellPadding ?? 8;
   const valign = b.valign || "top";
+  const outerPad = resolvePadding(b, ctx, 12);
+  if (bleed) {
+    outerPad.left = 0;
+    outerPad.right = 0;
+  }
+  const innerW = Math.max(40, (ctx.width ?? 800) - (outerPad.left ?? 0) - (outerPad.right ?? 0));
+  const colW = Math.max(40, Math.floor(innerW / cols) - cp * 2 - Math.max(0, b.colGap ?? 0));
+  // Phone full-width images need the section's side padding removed as well.
+  if (bleed || allCellBlocks.some((x) => x.type === "image" && x.mobile?.imageFullWidth)) {
+    ctx.css.push(
+      `table tr.${blockClass(b)}>td{padding-left:0!important;padding-right:0!important;}`
+    );
+  }
   const width = `${Math.floor(100 / cols)}%`;
   const cellBorder =
     b.type === "table" && b.bordered !== false
@@ -1186,7 +1250,7 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
       const content =
         ctx.tag && empty
           ? `<div class="edm-empty-cell">No content here. Drag content from the right.</div>`
-          : renderNested(cell?.blocks || [], brand, ctx);
+          : renderNested(cell?.blocks || [], brand, { ...ctx, width: colW });
       const inner = negative ? `<div style="${negative}">${content}</div>` : content;
       return `<td class="edm-col"${cellAttr} width="${width}" valign="${valign}" style="width:${width};padding:${side(
         cp
@@ -1201,7 +1265,7 @@ const renderContainer = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string =
 
   return `<tr><td${b.sectionBg ? ` bgcolor="${b.sectionBg}"` : ""} style="${
     b.sectionBg ? `background-color:${b.sectionBg};` : ""
-  }padding:${pad(ctx, "12px", b)};">
+  }padding:${spacingCss(outerPad)};">
   <table role="presentation" class="edm-grid" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;${
     b.type === "table" ? `border-collapse:collapse;` : ""
   }">${body}</table></td></tr>`;
@@ -1254,7 +1318,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
 
   switch (b.type) {
     case "heading":
-      return `<tr><td${edit("text")} style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_HEADING)};font-size:${
+      return `<tr><td${edit("text")}${!b.color && !b.bgColor ? ` class="edm-dh"` : ""} style="padding:${pad(ctx, "8px", b)};font-family:${fontStack(b, FONT_HEADING)};font-size:${
         b.fontSize || headingSize(b.size)
       }px;line-height:1.25;font-weight:400;color:${b.color || primary};text-align:${align};">${esc(
         b.text || ""
@@ -1267,7 +1331,7 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
       const tFont = fontStack(b, FONT_BODY);
       const tSize = b.fontSize || 16;
       const tLh = b.lineHeight ?? 1.6;
-      return `<tr><td class="edm-body-text" style="padding:${pad(ctx, "8px", b)};font-family:${tFont};font-size:${tSize}px;line-height:${tLh};color:${
+      return `<tr><td class="edm-body-text${!b.color && !b.bgColor ? " edm-dt" : ""}" style="padding:${pad(ctx, "8px", b)};font-family:${tFont};font-size:${tSize}px;line-height:${tLh};color:${
         b.color || "#333333"
       };${
         b.align ? `text-align:${b.align};` : ""
@@ -1288,7 +1352,17 @@ const renderBlockInner = (b: EdmBlock, brand: EdmBrand, ctx: RenderCtx): string 
           : full
             ? "100%"
             : "100%";
-      const attrW = b.imageWidth ? `${b.imageWidth}` : "800";
+      // Outlook ignores CSS widths and uses the width attribute, so it must be
+      // the real rendered size (not the full email width) or small images such
+      // as a quote mark blow up in Outlook.
+      const ip = resolvePadding(b, ctx, full ? 0 : 12);
+      const avail = Math.max(20, (ctx.width ?? 800) - (ip.left ?? 0) - (ip.right ?? 0));
+      let attrNum =
+        unit === "px" && b.imageWidth
+          ? Math.min(b.imageWidth, avail)
+          : Math.round((avail * Math.min(100, b.imageWidthPct ?? 100)) / 100);
+      if (b.imageMaxWidth) attrNum = Math.min(attrNum, b.imageMaxWidth);
+      const attrW = `${Math.max(1, Math.round(attrNum))}`;
       const radius = b.radius != null ? b.radius : full ? 0 : 6;
       const crop = b.aspectRatio
         ? `aspect-ratio:${b.aspectRatio};object-fit:cover;height:auto;`
@@ -1493,7 +1567,7 @@ export const stripPastedSpacing = (html: string): string => {
 export const renderEdmHtml = (
   blocks: EdmBlock[],
   brand: EdmBrand,
-  opts: { subject?: string; preheader?: string; interactive?: boolean } = {}
+  opts: { subject?: string; preheader?: string; interactive?: boolean; forceDark?: boolean } = {}
 ): string => {
   const design = blocks.find((b) => b.type === "design");
   // Negative spacing is resolved into real padding first, so the canvas and the
@@ -1526,7 +1600,7 @@ export const renderEdmHtml = (
         ? design?.imageUrl || ""
         : brand.emailHeaderImageUrl || "";
 
-  const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive };
+  const ctx: RenderCtx = { padX: 32, css: [], tag: opts.interactive, width: maxWidth };
   const body = renderRows(contentBlocks, brand, ctx);
 
   /* Phone-only header, footer and footer-icon sizes. */
@@ -1550,14 +1624,52 @@ export const renderEdmHtml = (
 
   const mobileCss = [...designMobileCss, ...ctx.css].join("\n  ");
 
+  /**
+   * Night / dark mode. Only the default light surfaces and default text are
+   * switched; anything given its own colour (dark sections, header, footer,
+   * buttons, coloured words) keeps it. Apple Mail and iOS/Android Mail use the
+   * media query, Outlook.com uses [data-ogsc]; Gmail applies its own automatic
+   * darkening, which these colours are chosen to survive.
+   */
+  const isLight = (c: string) => {
+    const h = c.replace("#", "").toLowerCase();
+    const full = h.length === 3 ? h.split("").map((x) => x + x).join("") : h;
+    if (!/^[0-9a-f]{6}$/.test(full)) return false;
+    const [r, g, bl] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+    return 0.299 * r + 0.587 * g + 0.114 * bl > 200;
+  };
+  const darkOn = design?.darkMode !== false;
+  const darkRules = (pre: string) =>
+    [
+      isLight(pageBg) ? `${pre}.edm-page{background:#0b0f17!important;}` : "",
+      isLight(contentBg)
+        ? `${pre}.edm-content{background:#151b26!important;border-color:#2a3342!important;}`
+        : "",
+      isLight(contentBg)
+        ? `${pre}.edm-dt,${pre}.edm-dt>div,${pre}.edm-dt p,${pre}.edm-dt li{color:#e6e8ec!important;}`
+        : "",
+      isLight(contentBg) ? `${pre}.edm-dh{color:#f5f6f8!important;}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n  ");
+  const darkCss = darkOn
+    ? `@media (prefers-color-scheme:dark){
+  ${darkRules("")}
+}
+${darkRules("[data-ogsc] ")}
+${opts.forceDark ? darkRules("html.edm-force-dark ") : ""}`
+    : "";
+
   const footerSocial =
     design?.footerShowSocial && design.socials?.length
       ? `<div style="margin-bottom:12px;">${socialIconsHtml(design, footerColor)}</div>`
       : "";
 
   return `<!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en"${opts.forceDark ? ` class="edm-force-dark"` : ""}><head>
 <meta charset="utf-8" />
+${darkOn ? `<meta name="color-scheme" content="light dark" />
+<meta name="supported-color-schemes" content="light dark" />` : ""}
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(opts.subject || brand.name)}</title>
 ${BRAND_FONT_HEAD_HTML}
@@ -1577,9 +1689,10 @@ ${BRAND_FONT_HEAD_HTML}
      line spacing below, so what is set in the editor is what is sent. */
   ${mobileCss}
 }
+${darkCss}
 </style>
 </head>
-<body style="margin:0;padding:0;background:${pageBg};">
+<body class="edm-page" style="margin:0;padding:0;background:${pageBg};">
 ${
   opts.preheader
     ? `<div style="display:none;font-size:1px;color:${pageBg};max-height:0;overflow:hidden;">${esc(
@@ -1587,9 +1700,9 @@ ${
       )}</div>`
     : ""
 }
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${pageBg};">
+<table role="presentation" class="edm-page" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${pageBg};">
 <tr><td align="center" style="padding:24px 12px;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
+  <table role="presentation" class="edm-content" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${maxWidth}px;background:${contentBg};border:1px solid ${border};border-radius:10px;overflow:hidden;">
     ${
       headerImage
         ? `<tr><td class="edm-header" align="center" style="background:${headerBg};padding:${headerPadding}px 24px;">
