@@ -19,7 +19,7 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.40.7
 
       - name: Check required secrets
         env:
@@ -118,7 +118,14 @@ jobs:
           SECRET: ${{ secrets.BACKUP_WEBHOOK_SECRET }}
         run: |
           STATUS="success"
-          if [ "${{ job.status }}" != "success" ]; then STATUS="failed"; fi
+          ERR=""
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="failed"
+            if [ "${{ steps.dump.outcome }}" = "failure" ]; then ERR="The database export step failed (could not dump the database).";
+            elif [ "${{ steps.upload.outcome }}" = "failure" ]; then ERR="Uploading the backup to storage failed.";
+            elif [ "${{ steps.dump.outcome }}" = "skipped" ]; then ERR="An early setup step failed (secrets check or tool install).";
+            else ERR="A step in the backup job failed."; fi
+          fi
           curl -sS -X POST \
             "https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/backup-report" \
             -H "Content-Type: application/json" \
@@ -133,6 +140,7 @@ jobs:
             "size_bytes": ${{ steps.dump.outputs.size || 0 }},
             "artifact_name": "${{ steps.dump.outputs.artifact }}",
             "destination": "${{ steps.upload.outputs.destination }}${{ steps.sharepoint.outputs.destination && format(' + {0}', steps.sharepoint.outputs.destination) || '' }}",
+            "error_message": "$ERR",
             "metadata": { "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
           }
           JSON
