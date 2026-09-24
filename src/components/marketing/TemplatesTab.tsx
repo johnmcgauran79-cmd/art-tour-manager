@@ -145,6 +145,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       version: 1,
     });
     lastSavedRef.current = null;
+    setConflict(false);
     setSavedAt(null);
     setOpen(true);
   };
@@ -449,6 +450,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
                     onClick={() => {
                       setEditing(t);
                       lastSavedRef.current = JSON.stringify(payloadFor(t));
+                      setConflict(false);
                       setSavedAt(null);
                       setOpen(true);
                     }}
