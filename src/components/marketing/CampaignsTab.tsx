@@ -60,6 +60,7 @@ import {
   useSendCampaignTest,
   type EdmTemplateRow,
   type MarketingCampaign,
+  EdmSaveConflictError,
 } from "@/hooks/useMarketing";
 import {
   countAudience,
@@ -221,7 +222,16 @@ export function CampaignsTab({
       subject: c.subject || undefined,
       preheader: c.preheader || undefined,
     });
-    await save.mutateAsync({ id: c.id, html_body, expectedUpdatedAt: c.updated_at });
+    try {
+      await save.mutateAsync({ id: c.id, html_body, expectedUpdatedAt: c.updated_at });
+    } catch {
+      toast({
+        title: "Couldn't update",
+        description: "This campaign changed a moment ago. Refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
     toast({ title: "Updated", description: "The scheduled email now uses your current branding." });
   };
 
