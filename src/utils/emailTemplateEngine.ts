@@ -1,6 +1,9 @@
 // Email template engine with comprehensive mail merge fields
 import { buildHostDetails, formatPhoneInternational } from "@/utils/hostDetails";
 
+const __blankHtml = (v: any): string => { const s = typeof v === 'string' ? v : ''; const text = s.replace(/<br\s*\/?>/gi,'').replace(/&nbsp;/gi,' ').replace(/<[^>]*>/g,'').trim(); return text || /<img|<iframe|<table/i.test(s) ? s : ''; };
+
+
 export interface EmailMergeData {
   // Customer fields (dynamic - changes per recipient for multi-passenger emails)
   customer_first_name?: string;
@@ -589,9 +592,9 @@ export class EmailTemplateEngine {
       tour_dates_note: tour.dates_not_confirmed
         ? 'Provisional Tour dates - Race date still to be confirmed by the race club.'
         : '',
-      tour_pickup_arrival_message: (tour as any).pickup_arrival_message || '',
-      tour_welcome_drinks_message: (tour as any).welcome_drinks_message || '',
-      tour_welcome_update_message: (tour as any).welcome_update_message || '',
+      tour_pickup_arrival_message: __blankHtml((tour as any).pickup_arrival_message),
+      tour_welcome_drinks_message: __blankHtml((tour as any).welcome_drinks_message),
+      tour_welcome_update_message: __blankHtml((tour as any).welcome_update_message),
 
       tour: {
         name: tour.name,
@@ -768,7 +771,7 @@ export class EmailTemplateEngine {
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
       has_instalment: !!tour.instalment_required,
       has_tour_host: !!tour.tour_host && tour.tour_host !== 'TBD' && tour.tour_host.trim() !== '',
-      has_tour_welcome_update: !!String((tour as any).welcome_update_message || '').replace(/<[^>]*>/g, '').trim(),
+      has_tour_welcome_update: !!String(__blankHtml((tour as any).welcome_update_message)).replace(/<[^>]*>/g, '').trim(),
       has_host_details: !!hostDetails,
       waiver_not_signed: true,  // Client-side defaults to true; server overrides per-recipient with actual waiver status
       needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient

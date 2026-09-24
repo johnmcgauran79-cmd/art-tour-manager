@@ -7,6 +7,9 @@ import { formatPhoneInternational } from "../_shared/hostDetails.ts";
 import { emailAttachmentUrl } from "../_shared/emailFileUrl.ts";
 import { buildBrandTypography, type BrandTypography } from "../_shared/brandFonts.ts";
 
+const __blankHtml = (v: any): string => { const s = typeof v === 'string' ? v : ''; const text = s.replace(/<br\s*\/?>/gi,'').replace(/&nbsp;/gi,' ').replace(/<[^>]*>/g,'').trim(); return text || /<img|<iframe|<table/i.test(s) ? s : ''; };
+
+
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -1109,9 +1112,9 @@ const handler = async (req: Request): Promise<Response> => {
       tour_dates_note: booking.tours?.dates_not_confirmed
         ? 'Provisional Tour dates - Race date still to be confirmed by the race club.'
         : '',
-      tour_pickup_arrival_message: booking.tours?.pickup_arrival_message || '',
-      tour_welcome_drinks_message: booking.tours?.welcome_drinks_message || '',
-      tour_welcome_update_message: booking.tours?.welcome_update_message || '',
+      tour_pickup_arrival_message: __blankHtml(booking.tours?.pickup_arrival_message),
+      tour_welcome_drinks_message: __blankHtml(booking.tours?.welcome_drinks_message),
+      tour_welcome_update_message: __blankHtml(booking.tours?.welcome_update_message),
 
       tour: {
         name: booking.tours?.name || '',
@@ -1263,7 +1266,7 @@ const handler = async (req: Request): Promise<Response> => {
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
       has_instalment: !!booking.tours?.instalment_required,
       has_tour_host: !!booking.tours?.tour_host && booking.tours.tour_host !== 'TBD' && booking.tours.tour_host.trim() !== '',
-      has_tour_welcome_update: !!String(booking.tours?.welcome_update_message || '').replace(/<[^>]*>/g, '').trim(),
+      has_tour_welcome_update: !!String(__blankHtml(booking.tours?.welcome_update_message)).replace(/<[^>]*>/g, '').trim(),
       has_host_details: !!hostDetails,
       waiver_not_signed: !leadWaiverSigned,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
