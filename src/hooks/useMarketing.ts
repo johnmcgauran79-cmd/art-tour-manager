@@ -35,6 +35,10 @@ export interface MarketingCampaign {
   daily_send_limit?: number | null;
   ramp_sent_date?: string | null;
   ramp_sent_count?: number | null;
+  /** The saved template this campaign was copied from (a one-off copy, not a live link). */
+  source_template_id?: string | null;
+  source_template_name?: string | null;
+  source_template_copied_at?: string | null;
   created_at: string;
   updated_at: string;
 }
