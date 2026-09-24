@@ -1,7 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import { requireAdminOrManager } from "./_perms";
-import { LOCKED_FIELDS, updateRowFields } from "./_fieldUpdate";
+import { updateRowFields } from "./_fieldUpdate";
 
 const fieldValue = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
@@ -24,6 +24,3 @@ export default defineTool({
   },
 });
 
-export const lockedSummary = Object.entries(LOCKED_FIELDS)
-  .map(([t, f]) => `${t}: ${f.join(", ")}`)
-  .join("; ");

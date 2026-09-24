@@ -3893,14 +3893,193 @@ var update_hotel_default = defineTool64({
   }
 });
 
-// src/lib/mcp/tools/delete-hotel.ts
+// src/lib/mcp/tools/update-record-fields.ts
 import { defineTool as defineTool65 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z64 } from "npm:zod@^3.25.76";
-var delete_hotel_default = defineTool65({
+
+// src/lib/mcp/tools/_fieldUpdate.ts
+var ALWAYS_LOCKED = ["id", "created_at", "updated_at", "created_by"];
+var LOCKED_FIELDS = {
+  tours: [...ALWAYS_LOCKED],
+  activities: [...ALWAYS_LOCKED, "tour_id", "spots_booked", "spots_remaining", "legacy_status"],
+  hotels: [...ALWAYS_LOCKED, "tour_id", "rooms_booked", "legacy_status"],
+  customers: [
+    ...ALWAYS_LOCKED,
+    "brevo_contact_id",
+    "brevo_synced_at",
+    "keap_contact_id",
+    "keap_match_checked_at",
+    "lifetime_bookings",
+    "lifetime_value",
+    "latest_tour_name",
+    "latest_tour_end_date",
+    "last_activity_at",
+    "original_source",
+    "original_source_at",
+    "marketing_consent",
+    "marketing_consent_at",
+    "marketing_consent_source"
+  ]
+};
+var err = (text) => ({ content: [{ type: "text", text }], isError: true });
+async function updateRowFields(ctx, table, id, fields, opts = {}) {
+  const keys = Object.keys(fields);
+  if (keys.length === 0) return err("No fields supplied.");
+  const locked = LOCKED_FIELDS[table];
+  const blocked = keys.filter((k) => locked.includes(k));
+  if (blocked.length)
+    return err(`These fields are locked and can't be changed through AI tools: ${blocked.join(", ")}.`);
+  const supabase = supabaseForUser(ctx);
+  const { data: row, error } = await supabase.from(table).select("*").eq("id", id).maybeSingle();
+  if (error) return err(error.message);
+  if (!row) return err(`No ${table} record found with id ${id} (or not permitted).`);
+  const current = row;
+  const unknown = keys.filter((k) => !(k in current));
+  if (unknown.length) return err(`Unknown field(s) on ${table}: ${unknown.join(", ")}.`);
+  const changes = keys.filter((k) => current[k] !== fields[k]).map((k) => ({ field: k, from: current[k] ?? null, to: fields[k] }));
+  if (changes.length === 0) {
+    const out2 = { updated: false, changes: [] };
+    return { content: [{ type: "text", text: "Nothing changed \u2014 values already match." }], structuredContent: out2 };
+  }
+  const needsConfirm = changes.filter((c) => opts.confirmFields?.includes(c.field));
+  if (needsConfirm.length && !opts.confirm) {
+    const out2 = { updated: false, requires_confirmation: true, changes };
+    return {
+      content: [{
+        type: "text",
+        text: `Confirmation required. Show the user these changes (${needsConfirm.map((c) => `${c.field}: "${c.from ?? ""}" \u2192 "${c.to ?? ""}"`).join("; ")}) and, only after they agree, call again with confirm=true. Nothing has been saved.`
+      }],
+      structuredContent: out2
+    };
+  }
+  const patch = Object.fromEntries(changes.map((c) => [c.field, c.to]));
+  const { error: upErr } = await supabase.from(table).update(patch).eq("id", id);
+  if (upErr) return err(upErr.message);
+  const out = { updated: true, changes };
+  return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
+}
+
+// src/lib/mcp/tools/update-record-fields.ts
+var fieldValue = z64.union([z64.string(), z64.number(), z64.boolean(), z64.null()]);
+var update_record_fields_default = defineTool65({
+  name: "update_record_fields",
+  title: "Update any field on a tour, activity or hotel",
+  description: "Change any editable field on a tour, activity or hotel \u2014 everything shown in the app, including booking_status, payment_status, cancellation details, cutoff dates, prices and notes. Pass column names exactly as returned by get_tour / get_activity / get_hotel. Locked system fields are refused. Admin/manager only.",
+  inputSchema: {
+    record_type: z64.enum(["tour", "activity", "hotel"]),
+    id: z64.string().describe("The record id (uuid)."),
+    fields: z64.record(fieldValue).describe("Map of column name to new value. Dates YYYY-MM-DD; use null to clear.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ record_type, id, fields }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const table = { tour: "tours", activity: "activities", hotel: "hotels" }[record_type];
+    return updateRowFields(ctx, table, id, fields);
+  }
+});
+
+// src/lib/mcp/tools/get-contact-details.ts
+import { defineTool as defineTool66 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z65 } from "npm:zod@^3.25.76";
+var get_contact_details_default = defineTool66({
+  name: "get_contact_details",
+  title: "Get full contact details",
+  description: "Fetch every field on a contact record (name, title, contact details, address, date of birth, emergency contact, dietary, medical, accessibility, notes, lead fields). Passport details are not stored here. Admin/manager only.",
+  inputSchema: { customer_id: z65.string().describe("The contact id (uuid).") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ customer_id }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const { data, error } = await supabaseForUser(ctx).from("customers").select("*").eq("id", customer_id).maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Contact not found or not permitted" }], isError: true };
+    const { keap_contact_id: _k, keap_match_checked_at: _km, brevo_contact_id: _b, brevo_synced_at: _bs, ...contact } = data;
+    return { content: [{ type: "text", text: JSON.stringify(contact) }], structuredContent: { contact } };
+  }
+});
+
+// src/lib/mcp/tools/update-contact.ts
+import { defineTool as defineTool67 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z66 } from "npm:zod@^3.25.76";
+var fieldValue2 = z66.union([z66.string(), z66.number(), z66.boolean(), z66.null()]);
+var CONFIRM_FIELDS = ["first_name", "last_name", "preferred_name", "email", "phone"];
+var update_contact_default = defineTool67({
+  name: "update_contact",
+  title: "Update contact details",
+  description: "Change any editable field on a contact (title, address, date of birth, emergency contact, dietary, medical, accessibility, notes, spouse, etc.). Changes to name, email or phone are NOT saved on the first call: the tool returns the before/after values \u2014 show them to the user, and only after they confirm call again with confirm=true. Marketing consent and system fields are locked. Admin/manager only.",
+  inputSchema: {
+    customer_id: z66.string().describe("The contact id (uuid)."),
+    fields: z66.record(fieldValue2).describe("Map of column name (as returned by get_contact_details) to new value. Use null to clear."),
+    confirm: z66.boolean().optional().describe("Set true only after the user has approved name/email/phone changes.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ customer_id, fields, confirm }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    if (typeof fields.email === "string") fields.email = fields.email.trim().toLowerCase();
+    return updateRowFields(ctx, "customers", customer_id, fields, { confirmFields: CONFIRM_FIELDS, confirm });
+  }
+});
+
+// src/lib/mcp/tools/manage-external-link.ts
+import { defineTool as defineTool68 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z67 } from "npm:zod@^3.25.76";
+var TABLES = {
+  tour: { table: "tour_external_links", fk: "tour_id" },
+  activity: { table: "activity_external_links", fk: "activity_id" },
+  hotel: { table: "hotel_external_links", fk: "hotel_id" }
+};
+var manage_external_link_default = defineTool68({
+  name: "manage_external_link",
+  title: "Add or remove a link on a tour, activity or hotel",
+  description: "Add, edit or remove a labelled link (e.g. tickets or a contract stored in SharePoint/Google Drive) on a tour, activity or hotel. action='add' needs parent_id, label and url; 'update' needs link_id; 'remove' needs link_id and confirm=true. Admin/manager only.",
+  inputSchema: {
+    record_type: z67.enum(["tour", "activity", "hotel"]),
+    action: z67.enum(["add", "update", "remove"]),
+    parent_id: z67.string().optional().describe("Tour/activity/hotel id (for add)."),
+    link_id: z67.string().optional().describe("Existing link id (for update/remove)."),
+    label: z67.string().min(1).max(200).optional(),
+    url: z67.string().url().optional(),
+    confirm: z67.boolean().optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  handler: async ({ record_type, action, parent_id, link_id, label, url, confirm }, ctx) => {
+    const denied = await requireAdminOrManager(ctx);
+    if (denied) return denied;
+    const fail = (text) => ({ content: [{ type: "text", text }], isError: true });
+    const { table, fk } = TABLES[record_type];
+    const supabase = supabaseForUser(ctx);
+    if (action === "add") {
+      if (!parent_id || !label || !url) return fail("add needs parent_id, label and url.");
+      const { data, error: error2 } = await supabase.from(table).insert({ [fk]: parent_id, label, url, created_by: ctx.getUserId() }).select().single();
+      if (error2) return fail(error2.message);
+      return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { link: data } };
+    }
+    if (!link_id) return fail(`${action} needs link_id.`);
+    if (action === "update") {
+      const patch = Object.fromEntries(Object.entries({ label, url }).filter(([, v]) => v !== void 0));
+      if (!Object.keys(patch).length) return fail("Nothing to update.");
+      const { data, error: error2 } = await supabase.from(table).update(patch).eq("id", link_id).select().maybeSingle();
+      if (error2) return fail(error2.message);
+      if (!data) return fail("Link not found or not permitted.");
+      return { content: [{ type: "text", text: JSON.stringify(data) }], structuredContent: { link: data } };
+    }
+    if (!confirm) return fail("Removing a link needs confirm=true after the user agrees.");
+    const { error } = await supabase.from(table).delete().eq("id", link_id);
+    if (error) return fail(error.message);
+    return { content: [{ type: "text", text: `Removed link ${link_id}.` }], structuredContent: { removed: link_id } };
+  }
+});
+
+// src/lib/mcp/tools/delete-hotel.ts
+import { defineTool as defineTool69 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z68 } from "npm:zod@^3.25.76";
+var delete_hotel_default = defineTool69({
   name: "delete_hotel",
   title: "Delete hotel",
   description: "Delete a hotel by id. This cascades to hotel bookings \u2014 confirm with the user first.",
-  inputSchema: { hotel_id: z64.string() },
+  inputSchema: { hotel_id: z68.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ hotel_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3912,26 +4091,26 @@ var delete_hotel_default = defineTool65({
 });
 
 // src/lib/mcp/tools/upsert-hotel-booking.ts
-import { defineTool as defineTool66 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z65 } from "npm:zod@^3.25.76";
-var upsert_hotel_booking_default = defineTool66({
+import { defineTool as defineTool70 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z69 } from "npm:zod@^3.25.76";
+var upsert_hotel_booking_default = defineTool70({
   name: "upsert_hotel_booking",
   title: "Create or update a hotel booking",
   description: "Create a hotel booking (link a booking to a hotel with dates/bedding/room) or update it if hotel_booking_id is supplied.",
   inputSchema: {
-    hotel_booking_id: z65.string().optional().describe("Provide to update; omit to create."),
-    hotel_id: z65.string().optional(),
-    booking_id: z65.string().optional(),
-    check_in_date: z65.string().optional(),
-    check_out_date: z65.string().optional(),
-    nights: z65.number().int().optional(),
-    bedding: z65.string().optional(),
-    allocated: z65.boolean().optional(),
-    room_type: z65.string().optional(),
-    room_upgrade: z65.string().optional(),
-    confirmation_number: z65.string().optional(),
-    room_requests: z65.string().optional(),
-    required: z65.boolean().optional()
+    hotel_booking_id: z69.string().optional().describe("Provide to update; omit to create."),
+    hotel_id: z69.string().optional(),
+    booking_id: z69.string().optional(),
+    check_in_date: z69.string().optional(),
+    check_out_date: z69.string().optional(),
+    nights: z69.number().int().optional(),
+    bedding: z69.string().optional(),
+    allocated: z69.boolean().optional(),
+    room_type: z69.string().optional(),
+    room_upgrade: z69.string().optional(),
+    confirmation_number: z69.string().optional(),
+    room_requests: z69.string().optional(),
+    required: z69.boolean().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ hotel_booking_id, ...fields }, ctx) => {
@@ -3955,13 +4134,13 @@ var upsert_hotel_booking_default = defineTool66({
 });
 
 // src/lib/mcp/tools/delete-hotel-booking.ts
-import { defineTool as defineTool67 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z66 } from "npm:zod@^3.25.76";
-var delete_hotel_booking_default = defineTool67({
+import { defineTool as defineTool71 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z70 } from "npm:zod@^3.25.76";
+var delete_hotel_booking_default = defineTool71({
   name: "delete_hotel_booking",
   title: "Delete a hotel booking",
   description: "Remove a hotel booking (unlink a booking from a hotel).",
-  inputSchema: { hotel_booking_id: z66.string() },
+  inputSchema: { hotel_booking_id: z70.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ hotel_booking_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -3973,29 +4152,29 @@ var delete_hotel_booking_default = defineTool67({
 });
 
 // src/lib/mcp/tools/create-activity.ts
-import { defineTool as defineTool68 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z67 } from "npm:zod@^3.25.76";
-var create_activity_default = defineTool68({
+import { defineTool as defineTool72 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z71 } from "npm:zod@^3.25.76";
+var create_activity_default = defineTool72({
   name: "create_activity",
   title: "Create activity",
   description: "Add a new activity to a tour.",
   inputSchema: {
-    tour_id: z67.string(),
-    name: z67.string(),
-    activity_date: z67.string().optional().describe("YYYY-MM-DD."),
-    start_time: z67.string().optional().describe("HH:MM."),
-    end_time: z67.string().optional().describe("HH:MM."),
-    location: z67.string().optional(),
-    dress_code: z67.string().optional(),
-    hospitality_inclusions: z67.string().optional(),
-    notes: z67.string().optional(),
-    operations_notes: z67.string().optional(),
-    transport_mode: z67.string().optional(),
-    transport_company: z67.string().optional(),
-    transport_status: z67.string().optional(),
-    booking_status: z67.string().optional(),
-    payment_status: z67.string().optional(),
-    spots_available: z67.number().int().optional()
+    tour_id: z71.string(),
+    name: z71.string(),
+    activity_date: z71.string().optional().describe("YYYY-MM-DD."),
+    start_time: z71.string().optional().describe("HH:MM."),
+    end_time: z71.string().optional().describe("HH:MM."),
+    location: z71.string().optional(),
+    dress_code: z71.string().optional(),
+    hospitality_inclusions: z71.string().optional(),
+    notes: z71.string().optional(),
+    operations_notes: z71.string().optional(),
+    transport_mode: z71.string().optional(),
+    transport_company: z71.string().optional(),
+    transport_status: z71.string().optional(),
+    booking_status: z71.string().optional(),
+    payment_status: z71.string().optional(),
+    spots_available: z71.number().int().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -4011,43 +4190,43 @@ var create_activity_default = defineTool68({
 });
 
 // src/lib/mcp/tools/update-activity.ts
-import { defineTool as defineTool69 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z68 } from "npm:zod@^3.25.76";
-var update_activity_default = defineTool69({
+import { defineTool as defineTool73 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z72 } from "npm:zod@^3.25.76";
+var update_activity_default = defineTool73({
   name: "update_activity",
   title: "Update activity",
   description: "Update fields on an existing activity. Only supplied fields are changed.",
   inputSchema: {
-    activity_id: z68.string(),
-    name: z68.string().optional(),
-    activity_date: z68.string().optional(),
-    start_time: z68.string().optional(),
-    end_time: z68.string().optional(),
-    depart_for_activity: z68.string().optional(),
-    location: z68.string().optional(),
-    contact_name: z68.string().optional(),
-    contact_phone: z68.string().optional(),
-    contact_email: z68.string().optional(),
-    dress_code: z68.string().optional(),
-    hospitality_inclusions: z68.string().optional(),
-    notes: z68.string().optional(),
-    operations_notes: z68.string().optional(),
-    transport_mode: z68.string().optional(),
-    transport_company: z68.string().optional(),
-    transport_contact_name: z68.string().optional(),
-    transport_phone: z68.string().optional(),
-    transport_email: z68.string().optional(),
-    transport_notes: z68.string().optional(),
-    transport_status: z68.string().optional(),
-    booking_status: z68.string().optional(),
-    payment_status: z68.string().optional(),
-    cancellation_status: z68.string().optional(),
-    cancellation_details: z68.string().optional(),
-    cancellation_terms: z68.string().optional(),
-    driver_name: z68.string().optional(),
-    driver_phone: z68.string().optional(),
-    pickup_location_transport: z68.string().optional(),
-    spots_available: z68.number().int().optional()
+    activity_id: z72.string(),
+    name: z72.string().optional(),
+    activity_date: z72.string().optional(),
+    start_time: z72.string().optional(),
+    end_time: z72.string().optional(),
+    depart_for_activity: z72.string().optional(),
+    location: z72.string().optional(),
+    contact_name: z72.string().optional(),
+    contact_phone: z72.string().optional(),
+    contact_email: z72.string().optional(),
+    dress_code: z72.string().optional(),
+    hospitality_inclusions: z72.string().optional(),
+    notes: z72.string().optional(),
+    operations_notes: z72.string().optional(),
+    transport_mode: z72.string().optional(),
+    transport_company: z72.string().optional(),
+    transport_contact_name: z72.string().optional(),
+    transport_phone: z72.string().optional(),
+    transport_email: z72.string().optional(),
+    transport_notes: z72.string().optional(),
+    transport_status: z72.string().optional(),
+    booking_status: z72.string().optional(),
+    payment_status: z72.string().optional(),
+    cancellation_status: z72.string().optional(),
+    cancellation_details: z72.string().optional(),
+    cancellation_terms: z72.string().optional(),
+    driver_name: z72.string().optional(),
+    driver_phone: z72.string().optional(),
+    pickup_location_transport: z72.string().optional(),
+    spots_available: z72.number().int().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ activity_id, ...updates }, ctx) => {
@@ -4069,13 +4248,13 @@ var update_activity_default = defineTool69({
 });
 
 // src/lib/mcp/tools/delete-activity.ts
-import { defineTool as defineTool70 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z69 } from "npm:zod@^3.25.76";
-var delete_activity_default = defineTool70({
+import { defineTool as defineTool74 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z73 } from "npm:zod@^3.25.76";
+var delete_activity_default = defineTool74({
   name: "delete_activity",
   title: "Delete activity",
   description: "Delete an activity by id. Cascades to activity bookings \u2014 confirm first.",
-  inputSchema: { activity_id: z69.string() },
+  inputSchema: { activity_id: z73.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ activity_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4087,17 +4266,17 @@ var delete_activity_default = defineTool70({
 });
 
 // src/lib/mcp/tools/upsert-activity-booking.ts
-import { defineTool as defineTool71 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z70 } from "npm:zod@^3.25.76";
-var upsert_activity_booking_default = defineTool71({
+import { defineTool as defineTool75 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z74 } from "npm:zod@^3.25.76";
+var upsert_activity_booking_default = defineTool75({
   name: "upsert_activity_booking",
   title: "Create or update an activity booking",
   description: "Assign a booking to an activity with a passenger count, or update the count. Provide activity_booking_id to update, or activity_id + booking_id to create.",
   inputSchema: {
-    activity_booking_id: z70.string().optional(),
-    activity_id: z70.string().optional(),
-    booking_id: z70.string().optional(),
-    passengers_attending: z70.number().int().describe("Number of passengers attending (0 to opt out).")
+    activity_booking_id: z74.string().optional(),
+    activity_id: z74.string().optional(),
+    booking_id: z74.string().optional(),
+    passengers_attending: z74.number().int().describe("Number of passengers attending (0 to opt out).")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ activity_booking_id, activity_id, booking_id, passengers_attending }, ctx) => {
@@ -4118,13 +4297,13 @@ var upsert_activity_booking_default = defineTool71({
 });
 
 // src/lib/mcp/tools/delete-activity-booking.ts
-import { defineTool as defineTool72 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z71 } from "npm:zod@^3.25.76";
-var delete_activity_booking_default = defineTool72({
+import { defineTool as defineTool76 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z75 } from "npm:zod@^3.25.76";
+var delete_activity_booking_default = defineTool76({
   name: "delete_activity_booking",
   title: "Delete an activity booking",
   description: "Remove a booking's assignment to an activity.",
-  inputSchema: { activity_booking_id: z71.string() },
+  inputSchema: { activity_booking_id: z75.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ activity_booking_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4136,20 +4315,20 @@ var delete_activity_booking_default = defineTool72({
 });
 
 // src/lib/mcp/tools/list-tasks.ts
-import { defineTool as defineTool73 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z72 } from "npm:zod@^3.25.76";
-var list_tasks_default = defineTool73({
+import { defineTool as defineTool77 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z76 } from "npm:zod@^3.25.76";
+var list_tasks_default = defineTool77({
   name: "list_tasks",
   title: "List tasks",
   description: "List tasks with optional filters. Filter by status, priority, category, tour_id, assignee_user_id, or search text in title/description. Returns up to `limit` (default 50, max 200) most recent tasks.",
   inputSchema: {
-    status: z72.string().optional().describe("Task status enum value."),
-    priority: z72.string().optional(),
-    category: z72.string().optional(),
-    tour_id: z72.string().optional(),
-    assignee_user_id: z72.string().optional().describe("Filter tasks assigned to this user id."),
-    search: z72.string().optional().describe("Case-insensitive substring in title or description."),
-    limit: z72.number().int().min(1).max(200).optional()
+    status: z76.string().optional().describe("Task status enum value."),
+    priority: z76.string().optional(),
+    category: z76.string().optional(),
+    tour_id: z76.string().optional(),
+    assignee_user_id: z76.string().optional().describe("Filter tasks assigned to this user id."),
+    search: z76.string().optional().describe("Case-insensitive substring in title or description."),
+    limit: z76.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -4182,13 +4361,13 @@ var list_tasks_default = defineTool73({
 });
 
 // src/lib/mcp/tools/get-task.ts
-import { defineTool as defineTool74 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z73 } from "npm:zod@^3.25.76";
-var get_task_default = defineTool74({
+import { defineTool as defineTool78 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z77 } from "npm:zod@^3.25.76";
+var get_task_default = defineTool78({
   name: "get_task",
   title: "Get task",
   description: "Return full task detail: task row, assignments, watchers, approvers, subtasks, comments, entity links, and attachments metadata.",
-  inputSchema: { task_id: z73.string() },
+  inputSchema: { task_id: z77.string() },
   annotations: { readOnlyHint: true, openWorldHint: false },
   handler: async ({ task_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4223,24 +4402,24 @@ var get_task_default = defineTool74({
 });
 
 // src/lib/mcp/tools/create-task.ts
-import { defineTool as defineTool75 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z74 } from "npm:zod@^3.25.76";
-var create_task_default = defineTool75({
+import { defineTool as defineTool79 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z78 } from "npm:zod@^3.25.76";
+var create_task_default = defineTool79({
   name: "create_task",
   title: "Create task",
   description: "Create a task. Optionally assign users via `assignee_user_ids` (creates task_assignments rows). Status enum: not_started|in_progress|waiting|completed|cancelled|archived|not_required|with_third_party|awaiting_further_information|approval_required|approved|changes_needed. Priority: low|medium|high|critical. Category: operations|finance|marketing|booking|maintenance|general. Due date accepts YYYY-MM-DD (stored as literal date) or full ISO timestamp.",
   inputSchema: {
-    title: z74.string().min(1),
-    description: z74.string().optional(),
-    status: z74.string().optional(),
-    priority: z74.string().optional(),
-    category: z74.string().optional(),
-    due_date: z74.string().optional(),
-    tour_id: z74.string().optional(),
-    parent_task_id: z74.string().optional(),
-    depends_on_task_id: z74.string().optional(),
-    url_reference: z74.string().optional(),
-    assignee_user_ids: z74.array(z74.string()).optional()
+    title: z78.string().min(1),
+    description: z78.string().optional(),
+    status: z78.string().optional(),
+    priority: z78.string().optional(),
+    category: z78.string().optional(),
+    due_date: z78.string().optional(),
+    tour_id: z78.string().optional(),
+    parent_task_id: z78.string().optional(),
+    depends_on_task_id: z78.string().optional(),
+    url_reference: z78.string().optional(),
+    assignee_user_ids: z78.array(z78.string()).optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -4269,25 +4448,25 @@ var create_task_default = defineTool75({
 });
 
 // src/lib/mcp/tools/update-task.ts
-import { defineTool as defineTool76 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z75 } from "npm:zod@^3.25.76";
-var update_task_default = defineTool76({
+import { defineTool as defineTool80 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z79 } from "npm:zod@^3.25.76";
+var update_task_default = defineTool80({
   name: "update_task",
   title: "Update task",
   description: "Update fields on an existing task. Only supplied fields are changed. Set status to 'completed' to complete a task.",
   inputSchema: {
-    task_id: z75.string(),
-    title: z75.string().optional(),
-    description: z75.string().optional(),
-    status: z75.string().optional(),
-    priority: z75.string().optional(),
-    category: z75.string().optional(),
-    due_date: z75.string().nullable().optional(),
-    tour_id: z75.string().nullable().optional(),
-    parent_task_id: z75.string().nullable().optional(),
-    depends_on_task_id: z75.string().nullable().optional(),
-    url_reference: z75.string().nullable().optional(),
-    quick_update: z75.string().optional().describe("Short status note; timestamps set automatically.")
+    task_id: z79.string(),
+    title: z79.string().optional(),
+    description: z79.string().optional(),
+    status: z79.string().optional(),
+    priority: z79.string().optional(),
+    category: z79.string().optional(),
+    due_date: z79.string().nullable().optional(),
+    tour_id: z79.string().nullable().optional(),
+    parent_task_id: z79.string().nullable().optional(),
+    depends_on_task_id: z79.string().nullable().optional(),
+    url_reference: z79.string().nullable().optional(),
+    quick_update: z79.string().optional().describe("Short status note; timestamps set automatically.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ task_id, quick_update, ...rest }, ctx) => {
@@ -4316,13 +4495,13 @@ var update_task_default = defineTool76({
 });
 
 // src/lib/mcp/tools/delete-task.ts
-import { defineTool as defineTool77 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z76 } from "npm:zod@^3.25.76";
-var delete_task_default = defineTool77({
+import { defineTool as defineTool81 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z80 } from "npm:zod@^3.25.76";
+var delete_task_default = defineTool81({
   name: "delete_task",
   title: "Delete task",
   description: "Permanently delete a task and its assignments/comments/subtasks (cascades). Confirm with the user first.",
-  inputSchema: { task_id: z76.string() },
+  inputSchema: { task_id: z80.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ task_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4334,16 +4513,16 @@ var delete_task_default = defineTool77({
 });
 
 // src/lib/mcp/tools/add-task-comment.ts
-import { defineTool as defineTool78 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z77 } from "npm:zod@^3.25.76";
-var add_task_comment_default = defineTool78({
+import { defineTool as defineTool82 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z81 } from "npm:zod@^3.25.76";
+var add_task_comment_default = defineTool82({
   name: "add_task_comment",
   title: "Add task comment",
   description: "Add a comment to a task. Optionally reply to another comment via parent_comment_id.",
   inputSchema: {
-    task_id: z77.string(),
-    comment: z77.string().min(1),
-    parent_comment_id: z77.string().optional()
+    task_id: z81.string(),
+    comment: z81.string().min(1),
+    parent_comment_id: z81.string().optional()
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -4359,15 +4538,15 @@ var add_task_comment_default = defineTool78({
 });
 
 // src/lib/mcp/tools/assign-task.ts
-import { defineTool as defineTool79 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z78 } from "npm:zod@^3.25.76";
-var assign_task_default = defineTool79({
+import { defineTool as defineTool83 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z82 } from "npm:zod@^3.25.76";
+var assign_task_default = defineTool83({
   name: "assign_task",
   title: "Assign task",
   description: "Assign one or more users to a task (adds task_assignments rows; existing assignments unchanged).",
   inputSchema: {
-    task_id: z78.string(),
-    user_ids: z78.array(z78.string()).min(1)
+    task_id: z82.string(),
+    user_ids: z82.array(z82.string()).min(1)
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async ({ task_id, user_ids }, ctx) => {
@@ -4384,13 +4563,13 @@ var assign_task_default = defineTool79({
 });
 
 // src/lib/mcp/tools/unassign-task.ts
-import { defineTool as defineTool80 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z79 } from "npm:zod@^3.25.76";
-var unassign_task_default = defineTool80({
+import { defineTool as defineTool84 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z83 } from "npm:zod@^3.25.76";
+var unassign_task_default = defineTool84({
   name: "unassign_task",
   title: "Unassign task",
   description: "Remove a user's assignment from a task.",
-  inputSchema: { task_id: z79.string(), user_id: z79.string() },
+  inputSchema: { task_id: z83.string(), user_id: z83.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ task_id, user_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4402,18 +4581,18 @@ var unassign_task_default = defineTool80({
 });
 
 // src/lib/mcp/tools/add-task-subtask.ts
-import { defineTool as defineTool81 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z80 } from "npm:zod@^3.25.76";
-var add_task_subtask_default = defineTool81({
+import { defineTool as defineTool85 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z84 } from "npm:zod@^3.25.76";
+var add_task_subtask_default = defineTool85({
   name: "add_task_subtask",
   title: "Add task subtask",
   description: "Add a subtask (checklist item) to a task.",
   inputSchema: {
-    task_id: z80.string(),
-    title: z80.string().min(1),
-    sort_order: z80.number().int().optional(),
-    due_date: z80.string().optional().describe("YYYY-MM-DD"),
-    assignee_id: z80.string().optional()
+    task_id: z84.string(),
+    title: z84.string().min(1),
+    sort_order: z84.number().int().optional(),
+    due_date: z84.string().optional().describe("YYYY-MM-DD"),
+    assignee_id: z84.string().optional()
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -4429,19 +4608,19 @@ var add_task_subtask_default = defineTool81({
 });
 
 // src/lib/mcp/tools/update-task-subtask.ts
-import { defineTool as defineTool82 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z81 } from "npm:zod@^3.25.76";
-var update_task_subtask_default = defineTool82({
+import { defineTool as defineTool86 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z85 } from "npm:zod@^3.25.76";
+var update_task_subtask_default = defineTool86({
   name: "update_task_subtask",
   title: "Update task subtask",
   description: "Update a subtask. Set completed=true to mark it done (fills completed_at/by).",
   inputSchema: {
-    subtask_id: z81.string(),
-    title: z81.string().optional(),
-    completed: z81.boolean().optional(),
-    sort_order: z81.number().int().optional(),
-    due_date: z81.string().nullable().optional(),
-    assignee_id: z81.string().nullable().optional()
+    subtask_id: z85.string(),
+    title: z85.string().optional(),
+    completed: z85.boolean().optional(),
+    sort_order: z85.number().int().optional(),
+    due_date: z85.string().nullable().optional(),
+    assignee_id: z85.string().nullable().optional()
   },
   annotations: { readOnlyHint: false, openWorldHint: false },
   handler: async ({ subtask_id, completed, ...rest }, ctx) => {
@@ -4468,13 +4647,13 @@ var update_task_subtask_default = defineTool82({
 });
 
 // src/lib/mcp/tools/delete-task-subtask.ts
-import { defineTool as defineTool83 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z82 } from "npm:zod@^3.25.76";
-var delete_task_subtask_default = defineTool83({
+import { defineTool as defineTool87 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z86 } from "npm:zod@^3.25.76";
+var delete_task_subtask_default = defineTool87({
   name: "delete_task_subtask",
   title: "Delete task subtask",
   description: "Delete a subtask from a task.",
-  inputSchema: { subtask_id: z82.string() },
+  inputSchema: { subtask_id: z86.string() },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   handler: async ({ subtask_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4486,8 +4665,8 @@ var delete_task_subtask_default = defineTool83({
 });
 
 // src/lib/mcp/tools/list-task-statuses.ts
-import { defineTool as defineTool84 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var list_task_statuses_default = defineTool84({
+import { defineTool as defineTool88 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_task_statuses_default = defineTool88({
   name: "list_task_statuses",
   title: "List task statuses",
   description: "List configured task status values (label, value, sort order, is_finished flag).",
@@ -4506,7 +4685,7 @@ var list_task_statuses_default = defineTool84({
 });
 
 // src/lib/mcp/tools/wordpress-health-check.ts
-import { defineTool as defineTool85 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { defineTool as defineTool89 } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/wordpress/_client.ts
 var WORDPRESS_ALLOWED_ENDPOINTS = [
@@ -4641,10 +4820,10 @@ async function wordpressRequest(opts) {
         continue;
       }
       throw new WordpressClientError(msg, res.status, category);
-    } catch (err) {
+    } catch (err2) {
       clearTimeout(timer);
-      if (err instanceof WordpressClientError) throw err;
-      const aborted = err?.name === "AbortError";
+      if (err2 instanceof WordpressClientError) throw err2;
+      const aborted = err2?.name === "AbortError";
       const category = aborted ? "timeout" : "unreachable";
       lastError = new WordpressClientError(
         aborted ? "WordPress request timed out." : "WordPress is unreachable.",
@@ -4698,8 +4877,8 @@ async function auditWordpressCall(ctx, rec) {
   } catch {
   }
 }
-function categoriseError(err) {
-  const e = err;
+function categoriseError(err2) {
+  const e = err2;
   const anyE = e;
   return {
     message: anyE?.message ?? "Unknown WordPress error",
@@ -4709,7 +4888,7 @@ function categoriseError(err) {
 }
 
 // src/lib/mcp/tools/wordpress-health-check.ts
-var wordpress_health_check_default = defineTool85({
+var wordpress_health_check_default = defineTool89({
   name: "wordpress_health_check",
   title: "WordPress health check",
   description: "Confirm the WordPress REST API is reachable, authentication works, and the tour/pages/media endpoints are exposed. Never returns credentials. Admin/manager only.",
@@ -4741,8 +4920,8 @@ var wordpress_health_check_default = defineTool85({
         });
         result.reachable = true;
         if (res.status >= 200 && res.status < 300) result[label] = true;
-      } catch (err) {
-        const c = categoriseError(err);
+      } catch (err2) {
+        const c = categoriseError(err2);
         if (c.category !== "unreachable" && c.category !== "timeout") result.reachable = true;
         result.errors.push({ where: endpoint, ...c });
       }
@@ -4759,8 +4938,8 @@ var wordpress_health_check_default = defineTool85({
       result.wp_v2_namespace = true;
       result.profile_endpoint = true;
       result.username = me.data?.slug ?? me.data?.name ?? String(me.data?.id ?? "");
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       if (c.category !== "unreachable" && c.category !== "timeout") result.reachable = true;
       result.warnings.push({ where: "users/me", ...c });
       if (c.category === "unauthorized") {
@@ -4806,21 +4985,21 @@ var wordpress_health_check_default = defineTool85({
 });
 
 // src/lib/mcp/tools/wordpress-list-tours.ts
-import { defineTool as defineTool86 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z83 } from "npm:zod@^3.25.76";
-var wordpress_list_tours_default = defineTool86({
+import { defineTool as defineTool90 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z87 } from "npm:zod@^3.25.76";
+var wordpress_list_tours_default = defineTool90({
   name: "wordpress_list_tours",
   title: "List WordPress tours",
   description: "List tours from the public WordPress site (custom post type 'tour'). Returns concise summaries only \u2014 no full HTML content. Admin/manager only.",
   inputSchema: {
-    search: z83.string().optional(),
-    status: z83.string().optional().describe("Default 'publish'."),
-    category_id: z83.number().int().optional(),
-    tour_taxonomy_id: z83.number().int().optional(),
-    page: z83.number().int().min(1).optional(),
-    per_page: z83.number().int().min(1).max(50).optional(),
-    order: z83.enum(["asc", "desc"]).optional(),
-    orderby: z83.enum(["date", "modified", "title", "menu_order"]).optional()
+    search: z87.string().optional(),
+    status: z87.string().optional().describe("Default 'publish'."),
+    category_id: z87.number().int().optional(),
+    tour_taxonomy_id: z87.number().int().optional(),
+    page: z87.number().int().min(1).optional(),
+    per_page: z87.number().int().min(1).max(50).optional(),
+    order: z87.enum(["asc", "desc"]).optional(),
+    orderby: z87.enum(["date", "modified", "title", "menu_order"]).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -4868,8 +5047,8 @@ var wordpress_list_tours_default = defineTool86({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(summary) }], structuredContent: summary };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "list_tours",
@@ -4885,8 +5064,8 @@ var wordpress_list_tours_default = defineTool86({
 });
 
 // src/lib/mcp/tools/wordpress-get-tour.ts
-import { defineTool as defineTool87 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z84 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool91 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z88 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/_analyzer.ts
 function analyseContent(raw) {
@@ -4924,11 +5103,11 @@ function analyseContent(raw) {
 }
 
 // src/lib/mcp/tools/wordpress-get-tour.ts
-var wordpress_get_tour_default = defineTool87({
+var wordpress_get_tour_default = defineTool91({
   name: "wordpress_get_tour",
   title: "Get WordPress tour",
   description: "Fetch a single WordPress tour by ID including raw editable content (context=edit), taxonomies, ACF/meta fields where exposed, and a content analysis flagging YOOtheme/scripts/iframes. Admin/manager only.",
-  inputSchema: { tour_id: z84.number().int().min(1) },
+  inputSchema: { tour_id: z88.number().int().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -4974,8 +5153,8 @@ var wordpress_get_tour_default = defineTool87({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "get_tour",
@@ -4992,13 +5171,13 @@ var wordpress_get_tour_default = defineTool87({
 });
 
 // src/lib/mcp/tools/wordpress-find-tour.ts
-import { defineTool as defineTool88 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z85 } from "npm:zod@^3.25.76";
-var wordpress_find_tour_default = defineTool88({
+import { defineTool as defineTool92 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z89 } from "npm:zod@^3.25.76";
+var wordpress_find_tour_default = defineTool92({
   name: "wordpress_find_tour",
   title: "Find WordPress tour",
   description: "Search the WordPress tour custom post type by free text (title/slug/content). Returns likely matches with IDs and public URLs. Admin/manager only.",
-  inputSchema: { query: z85.string().min(1) },
+  inputSchema: { query: z89.string().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ query }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -5031,8 +5210,8 @@ var wordpress_find_tour_default = defineTool88({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "find_tour",
@@ -5048,17 +5227,17 @@ var wordpress_find_tour_default = defineTool88({
 });
 
 // src/lib/mcp/tools/wordpress-list-pages.ts
-import { defineTool as defineTool89 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z86 } from "npm:zod@^3.25.76";
-var wordpress_list_pages_default = defineTool89({
+import { defineTool as defineTool93 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z90 } from "npm:zod@^3.25.76";
+var wordpress_list_pages_default = defineTool93({
   name: "wordpress_list_pages",
   title: "List WordPress pages",
   description: "List standard WordPress pages. Concise summaries only. Admin/manager only.",
   inputSchema: {
-    search: z86.string().optional(),
-    status: z86.string().optional(),
-    page: z86.number().int().min(1).optional(),
-    per_page: z86.number().int().min(1).max(50).optional()
+    search: z90.string().optional(),
+    status: z90.string().optional(),
+    page: z90.number().int().min(1).optional(),
+    per_page: z90.number().int().min(1).max(50).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -5101,8 +5280,8 @@ var wordpress_list_pages_default = defineTool89({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "list_pages",
@@ -5118,13 +5297,13 @@ var wordpress_list_pages_default = defineTool89({
 });
 
 // src/lib/mcp/tools/wordpress-get-page.ts
-import { defineTool as defineTool90 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z87 } from "npm:zod@^3.25.76";
-var wordpress_get_page_default = defineTool90({
+import { defineTool as defineTool94 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z91 } from "npm:zod@^3.25.76";
+var wordpress_get_page_default = defineTool94({
   name: "wordpress_get_page",
   title: "Get WordPress page",
   description: "Fetch a WordPress page by ID with raw and rendered content plus a content analysis flagging YOOtheme layouts and other builder markers. Admin/manager only.",
-  inputSchema: { page_id: z87.number().int().min(1) },
+  inputSchema: { page_id: z91.number().int().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ page_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -5162,8 +5341,8 @@ var wordpress_get_page_default = defineTool90({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "get_page",
@@ -5180,13 +5359,13 @@ var wordpress_get_page_default = defineTool90({
 });
 
 // src/lib/mcp/tools/wordpress-get-media.ts
-import { defineTool as defineTool91 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z88 } from "npm:zod@^3.25.76";
-var wordpress_get_media_default = defineTool91({
+import { defineTool as defineTool95 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z92 } from "npm:zod@^3.25.76";
+var wordpress_get_media_default = defineTool95({
   name: "wordpress_get_media",
   title: "Get WordPress media item",
   description: "Fetch a WordPress media item by ID. Admin/manager only.",
-  inputSchema: { media_id: z88.number().int().min(1) },
+  inputSchema: { media_id: z92.number().int().min(1) },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ media_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -5218,8 +5397,8 @@ var wordpress_get_media_default = defineTool91({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "get_media",
@@ -5236,17 +5415,17 @@ var wordpress_get_media_default = defineTool91({
 });
 
 // src/lib/mcp/tools/wordpress-search-media.ts
-import { defineTool as defineTool92 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z89 } from "npm:zod@^3.25.76";
-var wordpress_search_media_default = defineTool92({
+import { defineTool as defineTool96 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z93 } from "npm:zod@^3.25.76";
+var wordpress_search_media_default = defineTool96({
   name: "wordpress_search_media",
   title: "Search WordPress media",
   description: "Search the WordPress media library. Admin/manager only.",
   inputSchema: {
-    search: z89.string().min(1),
-    media_type: z89.enum(["image", "video", "audio", "application"]).optional(),
-    page: z89.number().int().min(1).optional(),
-    per_page: z89.number().int().min(1).max(50).optional()
+    search: z93.string().min(1),
+    media_type: z93.enum(["image", "video", "audio", "application"]).optional(),
+    page: z93.number().int().min(1).optional(),
+    per_page: z93.number().int().min(1).max(50).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -5288,8 +5467,8 @@ var wordpress_search_media_default = defineTool92({
         response_code: res.status
       });
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "search_media",
@@ -5305,8 +5484,8 @@ var wordpress_search_media_default = defineTool92({
 });
 
 // src/lib/mcp/tools/wordpress-get-taxonomies.ts
-import { defineTool as defineTool93 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var wordpress_get_taxonomies_default = defineTool93({
+import { defineTool as defineTool97 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var wordpress_get_taxonomies_default = defineTool97({
   name: "wordpress_get_taxonomies",
   title: "Get WordPress taxonomies",
   description: "Return WordPress standard categories, tags, and the custom 'tours' taxonomy terms with their IDs. Admin/manager only.",
@@ -5328,8 +5507,8 @@ var wordpress_get_taxonomies_default = defineTool93({
           count: t.count,
           taxonomy: t.taxonomy
         }));
-      } catch (err) {
-        const c = categoriseError(err);
+      } catch (err2) {
+        const c = categoriseError(err2);
         out[endpoint] = [];
         errors.push({ where: endpoint, message: c.message, status: c.status });
       }
@@ -5348,8 +5527,8 @@ var wordpress_get_taxonomies_default = defineTool93({
 });
 
 // src/lib/mcp/tools/wordpress-update-tour-fields.ts
-import { defineTool as defineTool94 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z90 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool98 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z94 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/editableFields.ts
 var EDITABLE_ACF_SCALAR_FIELDS = [
@@ -5404,31 +5583,31 @@ function sanitiseAcfUpdate(input) {
 }
 
 // src/lib/mcp/tools/wordpress-update-tour-fields.ts
-var repeaterItemSchema = z90.record(z90.string(), z90.unknown());
-var wordpress_update_tour_fields_default = defineTool94({
+var repeaterItemSchema = z94.record(z94.string(), z94.unknown());
+var wordpress_update_tour_fields_default = defineTool98({
   name: "wordpress_update_tour_fields",
   title: "Update WordPress tour ACF fields",
   description: "Update a safe subset of ACF fields on a WordPress tour: pricing (price, single_room_price, twin_room_per_person_price, double_room_per_person_price), payment_details, dates (start_date, end_date, time_frame), status, radio_book_now, add_download_brochure, attach_brochure_here (WordPress media attachment ID for the brochure PDF, or null to clear), location, and the repeaters inclusions / exclusions_details / faqs_list / add_review. Any other key is stripped. Admin/manager only; every call is written to wordpress_integration_audit_logs with a before/after ACF snapshot. Hotels 1-5 are NOT writable here \u2014 use wordpress_get_tour to inspect them. The itinerary repeater is handled by wordpress_preview_tour_itinerary / wordpress_push_tour_itinerary.",
   inputSchema: {
-    tour_id: z90.number().int().min(1),
-    acf: z90.object({
-      price: z90.string().optional(),
-      status: z90.string().optional(),
-      radio_book_now: z90.string().optional(),
-      start_date: z90.string().optional(),
-      end_date: z90.string().optional(),
-      time_frame: z90.string().optional(),
-      location: z90.string().optional(),
-      single_room_price: z90.string().optional(),
-      twin_room_per_person_price: z90.string().optional(),
-      double_room_per_person_price: z90.string().optional(),
-      payment_details: z90.string().optional(),
-      add_download_brochure: z90.string().optional(),
-      attach_brochure_here: z90.union([z90.number().int().min(1), z90.null()]).optional(),
-      inclusions: z90.array(repeaterItemSchema).optional(),
-      exclusions_details: z90.array(repeaterItemSchema).optional(),
-      faqs_list: z90.array(repeaterItemSchema).optional(),
-      add_review: z90.array(repeaterItemSchema).optional()
+    tour_id: z94.number().int().min(1),
+    acf: z94.object({
+      price: z94.string().optional(),
+      status: z94.string().optional(),
+      radio_book_now: z94.string().optional(),
+      start_date: z94.string().optional(),
+      end_date: z94.string().optional(),
+      time_frame: z94.string().optional(),
+      location: z94.string().optional(),
+      single_room_price: z94.string().optional(),
+      twin_room_per_person_price: z94.string().optional(),
+      double_room_per_person_price: z94.string().optional(),
+      payment_details: z94.string().optional(),
+      add_download_brochure: z94.string().optional(),
+      attach_brochure_here: z94.union([z94.number().int().min(1), z94.null()]).optional(),
+      inclusions: z94.array(repeaterItemSchema).optional(),
+      exclusions_details: z94.array(repeaterItemSchema).optional(),
+      faqs_list: z94.array(repeaterItemSchema).optional(),
+      add_review: z94.array(repeaterItemSchema).optional()
     }).describe("Partial ACF payload. Only listed keys are accepted; unknown keys are stripped.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -5473,8 +5652,8 @@ var wordpress_update_tour_fields_default = defineTool94({
       });
       const out = { id: tour_id, changed_fields: changed, acf: after };
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "update_tour_fields",
@@ -5492,8 +5671,8 @@ var wordpress_update_tour_fields_default = defineTool94({
 });
 
 // src/lib/mcp/tools/wordpress-upload-media.ts
-import { defineTool as defineTool95 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z91 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool99 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z95 } from "npm:zod@^3.25.76";
 var ALLOWED_CONTENT_TYPES = /* @__PURE__ */ new Set([
   "application/pdf",
   "image/jpeg",
@@ -5517,15 +5696,15 @@ function b64Auth(user, pass) {
   if (typeof btoa === "function") return btoa(`${user}:${pass}`);
   return globalThis.Buffer.from(`${user}:${pass}`, "utf8").toString("base64");
 }
-var wordpress_upload_media_default = defineTool95({
+var wordpress_upload_media_default = defineTool99({
   name: "wordpress_upload_media",
   title: "Upload a file to the WordPress media library",
   description: "Upload a PDF or image (JPEG/PNG/WEBP/GIF) into the connected WordPress site's media library and return the new attachment id + source_url. Max 20MB. Provide the file as base64 in `data_base64`. Typical use: uploading a brochure PDF, then passing the returned id into `wordpress_update_tour_fields` under `acf.attach_brochure_here` (and setting `acf.add_download_brochure` to enable the download button). Admin/manager only; every upload is written to wordpress_integration_audit_logs.",
   inputSchema: {
-    filename: z91.string().min(1).max(255).describe("Filename including extension, e.g. '2027-darwin-cup-brochure.pdf'."),
-    content_type: z91.string().min(1).describe("MIME type. Allowed: application/pdf, image/jpeg, image/png, image/webp, image/gif."),
-    data_base64: z91.string().min(1).describe("Base64-encoded file contents (no data: prefix). Max 20MB after decoding."),
-    title: z91.string().max(255).optional().describe("Optional attachment title shown in WordPress. Defaults to the filename.")
+    filename: z95.string().min(1).max(255).describe("Filename including extension, e.g. '2027-darwin-cup-brochure.pdf'."),
+    content_type: z95.string().min(1).describe("MIME type. Allowed: application/pdf, image/jpeg, image/png, image/webp, image/gif."),
+    data_base64: z95.string().min(1).describe("Base64-encoded file contents (no data: prefix). Max 20MB after decoding."),
+    title: z95.string().max(255).optional().describe("Optional attachment title shown in WordPress. Defaults to the filename.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   handler: async ({ filename, content_type, data_base64, title }, ctx) => {
@@ -5555,8 +5734,8 @@ var wordpress_upload_media_default = defineTool95({
     let cfg;
     try {
       cfg = loadWordpressConfig();
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       return { content: [{ type: "text", text: c.message }], isError: true };
     }
     if (!cfg.baseUrl.startsWith("https://")) {
@@ -5635,8 +5814,8 @@ var wordpress_upload_media_default = defineTool95({
         size: bytes.byteLength
       };
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = err instanceof WordpressClientError ? { message: err.message, status: err.status } : categoriseError(err);
+    } catch (err2) {
+      const c = err2 instanceof WordpressClientError ? { message: err2.message, status: err2.status } : categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "upload_media",
@@ -5652,8 +5831,8 @@ var wordpress_upload_media_default = defineTool95({
 });
 
 // src/lib/mcp/tools/wordpress-get-tour-itinerary.ts
-import { defineTool as defineTool96 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z92 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool100 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z96 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/itinerary.ts
 var WP_ITINERARY_FIELD = "itinerary";
@@ -5792,12 +5971,12 @@ function buildItineraryDiff(artRows, wpRows) {
 }
 
 // src/lib/mcp/tools/wordpress-get-tour-itinerary.ts
-var wordpress_get_tour_itinerary_default = defineTool96({
+var wordpress_get_tour_itinerary_default = defineTool100({
   name: "wordpress_get_tour_itinerary",
   title: "Get WordPress tour itinerary",
   description: "Read the live itinerary currently published on a WordPress tour post. Returns the `itinerary` ACF repeater rows in order, each with its `date_event` heading and `details` HTML. Read-only, admin/manager only.",
   inputSchema: {
-    tour_id: z92.number().int().min(1).describe("The WordPress tour post id (not the ART tour uuid).")
+    tour_id: z96.number().int().min(1).describe("The WordPress tour post id (not the ART tour uuid).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id }, ctx) => {
@@ -5817,16 +5996,16 @@ var wordpress_get_tour_itinerary_default = defineTool96({
         rows
       };
       return { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       return { content: [{ type: "text", text: c.message }], isError: true };
     }
   }
 });
 
 // src/lib/mcp/tools/wordpress-preview-tour-itinerary.ts
-import { defineTool as defineTool97 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z93 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool101 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z97 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/_itineraryArt.ts
 async function loadArtItineraryRows(ctx, tourId) {
@@ -5892,13 +6071,13 @@ async function loadWordpressTourLink(ctx, tourId) {
 }
 
 // src/lib/mcp/tools/wordpress-preview-tour-itinerary.ts
-var wordpress_preview_tour_itinerary_default = defineTool97({
+var wordpress_preview_tour_itinerary_default = defineTool101({
   name: "wordpress_preview_tour_itinerary",
   title: "Preview itinerary push to website",
   description: "Dry run before publishing: renders the ART itinerary for a tour into WordPress repeater rows and diffs them row-by-row against what is live on the website. Changes nothing. Use this, show the diff to the user, then call `wordpress_push_tour_itinerary` to publish. Admin/manager only.",
   inputSchema: {
-    tour_id: z93.string().describe("The ART tour id (uuid)."),
-    wordpress_tour_id: z93.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
+    tour_id: z97.string().describe("The ART tour id (uuid)."),
+    wordpress_tour_id: z97.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, wordpress_tour_id }, ctx) => {
@@ -5953,24 +6132,24 @@ ${JSON.stringify(out)}` : `The website itinerary already matches ART (${art.rows
         }],
         structuredContent: out
       };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       return { content: [{ type: "text", text: c.message }], isError: true };
     }
   }
 });
 
 // src/lib/mcp/tools/wordpress-push-tour-itinerary.ts
-import { defineTool as defineTool98 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z94 } from "npm:zod@^3.25.76";
-var wordpress_push_tour_itinerary_default = defineTool98({
+import { defineTool as defineTool102 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z98 } from "npm:zod@^3.25.76";
+var wordpress_push_tour_itinerary_default = defineTool102({
   name: "wordpress_push_tour_itinerary",
   title: "Push itinerary to website",
   description: "Publish the ART itinerary for a tour to its linked WordPress tour post, replacing the live `itinerary` repeater rows (this is what guests see on the website). ART is the source of truth; the push is one-way ART \u2192 WordPress. Run `wordpress_preview_tour_itinerary` first, show the diff, and only call this once the user has approved \u2014 you must pass confirm=true. Every call is written to the WordPress audit log with a before/after snapshot. Admin/manager only.",
   inputSchema: {
-    tour_id: z94.string().describe("The ART tour id (uuid)."),
-    confirm: z94.boolean().describe("Must be true. Confirms the user has reviewed the diff and approved publishing to the live website."),
-    wordpress_tour_id: z94.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
+    tour_id: z98.string().describe("The ART tour id (uuid)."),
+    confirm: z98.boolean().describe("Must be true. Confirms the user has reviewed the diff and approved publishing to the live website."),
+    wordpress_tour_id: z98.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, confirm, wordpress_tour_id }, ctx) => {
@@ -6062,8 +6241,8 @@ ${JSON.stringify(out)}`
         }],
         structuredContent: out
       };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "push_tour_itinerary",
@@ -6085,8 +6264,8 @@ ${JSON.stringify(out)}`
 });
 
 // src/lib/mcp/tools/get-tour-messages.ts
-import { defineTool as defineTool99 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z95 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool103 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z99 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_emailFileUrl.ts
 var functionsBase = () => `${process.env.SUPABASE_URL}/functions/v1`;
@@ -6094,11 +6273,11 @@ var tourPickupDocUrl = (tourId) => `${functionsBase()}/email-file?p=${tourId}`;
 
 // src/lib/mcp/tools/get-tour-messages.ts
 var MESSAGE_COLUMNS = "id, name, welcome_message_enabled, welcome_message_heading, welcome_message_body, welcome_message_signoff, welcome_message_image_path, pickup_arrival_message, welcome_drinks_message, welcome_update_message, pickup_arrival_doc_path, pickup_arrival_doc_name";
-var get_tour_messages_default = defineTool99({
+var get_tour_messages_default = defineTool103({
   name: "get_tour_messages",
   title: "Get tour messages",
   description: "Read the tour comms messages used in email templates: the Welcome Message (with its on/off switch, heading, body and sign-off), the Pickup/Arrival Message, the Welcome Drinks Message, and the Welcome Update (a tour-specific note for welcome emails, e.g. flight arrangements). Also returns the uploaded pickup/arrival document (e.g. an arrivals map) and its public URL. Admin/manager only.",
-  inputSchema: { tour_id: z95.string().describe("The tour id (uuid).") },
+  inputSchema: { tour_id: z99.string().describe("The tour id (uuid).") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -6142,21 +6321,21 @@ var get_tour_messages_default = defineTool99({
 });
 
 // src/lib/mcp/tools/update-tour-messages.ts
-import { defineTool as defineTool100 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z96 } from "npm:zod@^3.25.76";
-var update_tour_messages_default = defineTool100({
+import { defineTool as defineTool104 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z100 } from "npm:zod@^3.25.76";
+var update_tour_messages_default = defineTool104({
   name: "update_tour_messages",
   title: "Update tour messages",
   description: "Edit the tour comms messages shown in the tour's Comms \u2192 Messages tab and pulled into email templates: the Welcome Message (turn on/off with `welcome_message_enabled`, plus heading/body/sign-off), the Pickup/Arrival Message and the Welcome Drinks Message. Message bodies are rich text \u2014 pass simple HTML (<p>, <strong>, <em>, <ul>, <a href>). Only the fields you supply are changed. Admin/manager only.",
   inputSchema: {
-    tour_id: z96.string().describe("The tour id (uuid)."),
-    welcome_message_enabled: z96.boolean().optional().describe("Turn the tour's Welcome Message on (true) or off (false)."),
-    welcome_message_heading: z96.string().optional().describe("Welcome message heading, e.g. 'Welcome'."),
-    welcome_message_body: z96.string().optional().describe("Welcome message body (rich text / simple HTML)."),
-    welcome_message_signoff: z96.string().optional().describe("Welcome message sign-off, e.g. 'The ART Team'."),
-    pickup_arrival_message: z96.string().optional().describe("Pickup/Arrival message (rich text / simple HTML) \u2014 where and when guests are met. May hyperlink the uploaded pickup document."),
-    welcome_drinks_message: z96.string().optional().describe("Welcome Drinks message (rich text / simple HTML) \u2014 where guests first gather."),
-    welcome_update_message: z96.string().optional().describe("Welcome Update (rich text / simple HTML) \u2014 tour-specific note for welcome emails, e.g. 'This tour begins in Sapporo and ends in Tokyo, book your flights accordingly.'")
+    tour_id: z100.string().describe("The tour id (uuid)."),
+    welcome_message_enabled: z100.boolean().optional().describe("Turn the tour's Welcome Message on (true) or off (false)."),
+    welcome_message_heading: z100.string().optional().describe("Welcome message heading, e.g. 'Welcome'."),
+    welcome_message_body: z100.string().optional().describe("Welcome message body (rich text / simple HTML)."),
+    welcome_message_signoff: z100.string().optional().describe("Welcome message sign-off, e.g. 'The ART Team'."),
+    pickup_arrival_message: z100.string().optional().describe("Pickup/Arrival message (rich text / simple HTML) \u2014 where and when guests are met. May hyperlink the uploaded pickup document."),
+    welcome_drinks_message: z100.string().optional().describe("Welcome Drinks message (rich text / simple HTML) \u2014 where guests first gather."),
+    welcome_update_message: z100.string().optional().describe("Welcome Update (rich text / simple HTML) \u2014 tour-specific note for welcome emails, e.g. 'This tour begins in Sapporo and ends in Tokyo, book your flights accordingly.'")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, ...input }, ctx) => {
@@ -6192,19 +6371,19 @@ var update_tour_messages_default = defineTool100({
 });
 
 // src/lib/mcp/tools/upload-tour-pickup-document.ts
-import { defineTool as defineTool101 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z97 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool105 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z101 } from "npm:zod@^3.25.76";
 var BUCKET = "email-attachments";
-var upload_tour_pickup_document_default = defineTool101({
+var upload_tour_pickup_document_default = defineTool105({
   name: "upload_tour_pickup_document",
   title: "Upload tour pickup/arrival document",
   description: "Upload the tour's Pickup/Arrival document (e.g. an arrivals map PDF) and attach it to the tour. Provide the file as base64 in `data_base64`, max 20MB. Replaces any existing pickup document. Returns a public URL you can hyperlink from the Pickup/Arrival message (e.g. 'For further details, see map here.'). Set `insert_link_text` to append that hyperlink to the message automatically. Admin/manager only.",
   inputSchema: {
-    tour_id: z97.string().describe("The tour id (uuid)."),
-    filename: z97.string().min(1).max(255).describe("Filename including extension, e.g. 'sydney-arrivals-map.pdf'."),
-    content_type: z97.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
-    data_base64: z97.string().min(1).describe("Base64-encoded file contents (no data: prefix)."),
-    insert_link_text: z97.string().optional().describe("Optional link text, e.g. 'see map here'. When supplied, a paragraph hyperlinking the document is appended to the Pickup/Arrival message.")
+    tour_id: z101.string().describe("The tour id (uuid)."),
+    filename: z101.string().min(1).max(255).describe("Filename including extension, e.g. 'sydney-arrivals-map.pdf'."),
+    content_type: z101.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
+    data_base64: z101.string().min(1).describe("Base64-encoded file contents (no data: prefix)."),
+    insert_link_text: z101.string().optional().describe("Optional link text, e.g. 'see map here'. When supplied, a paragraph hyperlinking the document is appended to the Pickup/Arrival message.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async ({ tour_id, filename, content_type, data_base64, insert_link_text }, ctx) => {
@@ -6267,24 +6446,24 @@ ${anchor}` : anchor;
 });
 
 // src/lib/mcp/tools/replace-tour-itinerary.ts
-import { defineTool as defineTool102 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z98 } from "npm:zod@^3.25.76";
-var entrySchema = z98.object({
-  subject: z98.string().min(1).describe("Entry title, e.g. 'Ferry Transfer'."),
-  content: z98.string().optional().describe("Entry details/description.")
+import { defineTool as defineTool106 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z102 } from "npm:zod@^3.25.76";
+var entrySchema = z102.object({
+  subject: z102.string().min(1).describe("Entry title, e.g. 'Ferry Transfer'."),
+  content: z102.string().optional().describe("Entry details/description.")
 });
-var daySchema = z98.object({
-  activity_date: z98.string().describe("Date for this day, YYYY-MM-DD."),
-  entries: z98.array(entrySchema).default([]).describe("Entries for the day, in display order.")
+var daySchema = z102.object({
+  activity_date: z102.string().describe("Date for this day, YYYY-MM-DD."),
+  entries: z102.array(entrySchema).default([]).describe("Entries for the day, in display order.")
 });
-var replace_tour_itinerary_default = defineTool102({
+var replace_tour_itinerary_default = defineTool106({
   name: "replace_tour_itinerary",
   title: "Replace the whole tour itinerary",
   description: "Replace a tour's current itinerary in one call: every existing day and entry is deleted and rebuilt from the `days` array (day numbers assigned in array order, entry sort order in array order). Destructive \u2014 always show the user the new itinerary and confirm before calling. Creates the itinerary if the tour has none. Admin/manager only.",
   inputSchema: {
-    tour_id: z98.string().describe("The tour id (uuid)."),
-    days: z98.array(daySchema).min(1).describe("The complete new itinerary, ordered day 1 first."),
-    title: z98.string().optional().describe("Optional itinerary title (only applied when supplied).")
+    tour_id: z102.string().describe("The tour id (uuid)."),
+    days: z102.array(daySchema).min(1).describe("The complete new itinerary, ordered day 1 first."),
+    title: z102.string().optional().describe("Optional itinerary title (only applied when supplied).")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   handler: async ({ tour_id, days, title }, ctx) => {
@@ -6363,15 +6542,15 @@ var replace_tour_itinerary_default = defineTool102({
 });
 
 // src/lib/mcp/tools/reorder-itinerary-days.ts
-import { defineTool as defineTool103 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z99 } from "npm:zod@^3.25.76";
-var reorder_itinerary_days_default = defineTool103({
+import { defineTool as defineTool107 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z103 } from "npm:zod@^3.25.76";
+var reorder_itinerary_days_default = defineTool107({
   name: "reorder_itinerary_days",
   title: "Reorder itinerary days",
   description: "Renumber the days of an itinerary. Provide `day_ids` in the order you want them shown \u2014 day_number is rewritten as 1,2,3\u2026 Every day of the itinerary must be listed. Dates are not changed. Admin/manager only.",
   inputSchema: {
-    itinerary_id: z99.string().describe("The itinerary id (uuid)."),
-    day_ids: z99.array(z99.string()).min(1).describe("Itinerary day ids (uuid) in the desired order, first day first.")
+    itinerary_id: z103.string().describe("The itinerary id (uuid)."),
+    day_ids: z103.array(z103.string()).min(1).describe("Itinerary day ids (uuid) in the desired order, first day first.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ itinerary_id, day_ids }, ctx) => {
@@ -6408,15 +6587,15 @@ var reorder_itinerary_days_default = defineTool103({
 });
 
 // src/lib/mcp/tools/reorder-itinerary-entries.ts
-import { defineTool as defineTool104 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z100 } from "npm:zod@^3.25.76";
-var reorder_itinerary_entries_default = defineTool104({
+import { defineTool as defineTool108 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z104 } from "npm:zod@^3.25.76";
+var reorder_itinerary_entries_default = defineTool108({
   name: "reorder_itinerary_entries",
   title: "Reorder itinerary entries",
   description: "Set the display order of the entries within one itinerary day. Provide `entry_ids` in the order you want them shown \u2014 sort_order is rewritten as 0,1,2\u2026 Every entry of the day must be listed. Admin/manager only.",
   inputSchema: {
-    day_id: z100.string().describe("The itinerary day id (uuid)."),
-    entry_ids: z100.array(z100.string()).min(1).describe("Entry ids (uuid) in the desired display order.")
+    day_id: z104.string().describe("The itinerary day id (uuid)."),
+    entry_ids: z104.array(z104.string()).min(1).describe("Entry ids (uuid) in the desired display order.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ day_id, entry_ids }, ctx) => {
@@ -6449,15 +6628,15 @@ var reorder_itinerary_entries_default = defineTool104({
 });
 
 // src/lib/mcp/tools/list-itinerary-day-photos.ts
-import { defineTool as defineTool105 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z101 } from "npm:zod@^3.25.76";
-var list_itinerary_day_photos_default = defineTool105({
+import { defineTool as defineTool109 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z105 } from "npm:zod@^3.25.76";
+var list_itinerary_day_photos_default = defineTool109({
   name: "list_itinerary_day_photos",
   title: "List itinerary day photos",
   description: "List the photos attached to a tour's itinerary days (max 3 per day). Returns each photo with its day number/date, caption, a temporary signed preview URL, and the WordPress media id once the photo has been synced to the website gallery (`wp_media_id` null = not yet on the website). Admin/manager only.",
   inputSchema: {
-    tour_id: z101.string().describe("The ART tour id (uuid)."),
-    day_id: z101.string().optional().describe("Optional: only return photos for this itinerary day id.")
+    tour_id: z105.string().describe("The ART tour id (uuid)."),
+    day_id: z105.string().optional().describe("Optional: only return photos for this itinerary day id.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, day_id }, ctx) => {
@@ -6493,19 +6672,19 @@ var list_itinerary_day_photos_default = defineTool105({
 });
 
 // src/lib/mcp/tools/upload-itinerary-day-photo.ts
-import { defineTool as defineTool106 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z102 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool110 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z106 } from "npm:zod@^3.25.76";
 var MAX_DAY_PHOTOS = 3;
-var upload_itinerary_day_photo_default = defineTool106({
+var upload_itinerary_day_photo_default = defineTool110({
   name: "upload_itinerary_day_photo",
   title: "Upload an itinerary day photo",
   description: "Upload a photo (JPEG/PNG/WEBP/GIF, base64 in `data_base64`, max 20MB) against one day of a tour's itinerary. Maximum 3 photos per day \u2014 delete one first with `delete_itinerary_day_photo` if the day is full. Photos live in the ART admin system; publish them to the website day gallery with `wordpress_sync_itinerary_day_photos`. Get day ids from `get_tour_itinerary`. Admin/manager only.",
   inputSchema: {
-    day_id: z102.string().describe("The itinerary day id (uuid) from get_tour_itinerary."),
-    filename: z102.string().min(1).max(255).describe("Filename including extension, e.g. 'day3-flemington.jpg'."),
-    content_type: z102.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}`),
-    data_base64: z102.string().min(1).describe("Base64-encoded image contents (no data: prefix)."),
-    caption: z102.string().max(500).optional().describe("Optional caption / alt text, also written to WordPress on sync.")
+    day_id: z106.string().describe("The itinerary day id (uuid) from get_tour_itinerary."),
+    filename: z106.string().min(1).max(255).describe("Filename including extension, e.g. 'day3-flemington.jpg'."),
+    content_type: z106.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}`),
+    data_base64: z106.string().min(1).describe("Base64-encoded image contents (no data: prefix)."),
+    caption: z106.string().max(500).optional().describe("Optional caption / alt text, also written to WordPress on sync.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async ({ day_id, filename, content_type, data_base64, caption }, ctx) => {
@@ -6552,15 +6731,15 @@ var upload_itinerary_day_photo_default = defineTool106({
 });
 
 // src/lib/mcp/tools/delete-itinerary-day-photo.ts
-import { defineTool as defineTool107 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z103 } from "npm:zod@^3.25.76";
-var delete_itinerary_day_photo_default = defineTool107({
+import { defineTool as defineTool111 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z107 } from "npm:zod@^3.25.76";
+var delete_itinerary_day_photo_default = defineTool111({
   name: "delete_itinerary_day_photo",
   title: "Delete an itinerary day photo",
   description: "Remove a photo from an itinerary day in the ART admin system (also deletes the stored file). The WordPress media library copy is left in place, but the photo drops out of the website day gallery the next time you run `wordpress_sync_itinerary_day_photos`. Must pass confirm=true. Admin/manager only.",
   inputSchema: {
-    photo_id: z103.string().describe("The itinerary day photo id (uuid) from list_itinerary_day_photos."),
-    confirm: z103.boolean().describe("Must be true \u2014 confirms the user approved deleting this photo.")
+    photo_id: z107.string().describe("The itinerary day photo id (uuid) from list_itinerary_day_photos."),
+    confirm: z107.boolean().describe("Must be true \u2014 confirms the user approved deleting this photo.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   handler: async ({ photo_id, confirm }, ctx) => {
@@ -6580,8 +6759,8 @@ var delete_itinerary_day_photo_default = defineTool107({
 });
 
 // src/lib/mcp/tools/wordpress-sync-itinerary-day-photos.ts
-import { defineTool as defineTool108 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z104 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool112 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z108 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/_media.ts
 function b64Auth2(user, pass) {
@@ -6643,14 +6822,14 @@ function guessContentType(name) {
   if (ext === "gif") return "image/gif";
   return "image/jpeg";
 }
-var wordpress_sync_itinerary_day_photos_default = defineTool108({
+var wordpress_sync_itinerary_day_photos_default = defineTool112({
   name: "wordpress_sync_itinerary_day_photos",
   title: "Publish itinerary day photos to the website",
   description: "Publish the photos attached to a tour's itinerary days (uploaded with `upload_itinerary_day_photo`) into the matching day galleries on the linked WordPress tour post. Any photo not yet in the WordPress media library is uploaded first, then each itinerary row's `gallery` is set to that day's photos in order (days with no ART photos keep whatever gallery is already live). ART is the source of truth and the sync is one-way ART \u2192 WordPress. Requires confirm=true; every call is audited with a before/after snapshot. Admin/manager only.",
   inputSchema: {
-    tour_id: z104.string().describe("The ART tour id (uuid)."),
-    confirm: z104.boolean().describe("Must be true. Confirms the user approved publishing these photos to the live website."),
-    wordpress_tour_id: z104.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
+    tour_id: z108.string().describe("The ART tour id (uuid)."),
+    confirm: z108.boolean().describe("Must be true. Confirms the user approved publishing these photos to the live website."),
+    wordpress_tour_id: z108.number().int().min(1).optional().describe("Override the WordPress tour post id. Defaults to the linked post for this tour.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, confirm, wordpress_tour_id }, ctx) => {
@@ -6734,8 +6913,8 @@ var wordpress_sync_itinerary_day_photos_default = defineTool108({
           result_status: "success",
           response_code: result.status
         });
-      } catch (err) {
-        uploadErrors.push(`${img.file_name ?? img.id}: ${categoriseError(err).message}`);
+      } catch (err2) {
+        uploadErrors.push(`${img.file_name ?? img.id}: ${categoriseError(err2).message}`);
       }
     }
     const galleriesByRow = art.day_ids.map(
@@ -6807,8 +6986,8 @@ ${JSON.stringify(out)}`
         }],
         structuredContent: out
       };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "sync_itinerary_day_photos",
@@ -6826,8 +7005,8 @@ ${JSON.stringify(out)}`
 });
 
 // src/lib/mcp/tools/get-tour-inclusions.ts
-import { defineTool as defineTool109 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z105 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool113 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z109 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/wordpress/inclusions.ts
 var WP_INCLUSIONS_FIELD = "inclusions";
@@ -6951,11 +7130,11 @@ async function loadArtInclusions(ctx, tourId) {
 }
 
 // src/lib/mcp/tools/get-tour-inclusions.ts
-var get_tour_inclusions_default = defineTool109({
+var get_tour_inclusions_default = defineTool113({
   name: "get_tour_inclusions",
   title: "Get tour inclusions & exclusions",
   description: "Read a tour's structured inclusion and exclusion items (in display order, with their ids) plus the tour's Website Description block. These are what publish to the WordPress tour page. Admin/manager only.",
-  inputSchema: { tour_id: z105.string().describe("The ART tour id (uuid).") },
+  inputSchema: { tour_id: z109.string().describe("The ART tour id (uuid).") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -6975,16 +7154,16 @@ var get_tour_inclusions_default = defineTool109({
 });
 
 // src/lib/mcp/tools/update-tour-inclusions.ts
-import { defineTool as defineTool110 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z106 } from "npm:zod@^3.25.76";
-var update_tour_inclusions_default = defineTool110({
+import { defineTool as defineTool114 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z110 } from "npm:zod@^3.25.76";
+var update_tour_inclusions_default = defineTool114({
   name: "update_tour_inclusions",
   title: "Replace tour inclusions or exclusions",
   description: "Replace the full inclusion OR exclusion list for a tour with the supplied items, in the order given. Each item is one bullet on the website; light inline HTML (<b>, <i>, <a href>) is kept, block markup is stripped. This replaces the existing list for that kind \u2014 read it with `get_tour_inclusions` first. Nothing is published to the website until `wordpress_push_tour_inclusions` is called. Admin/manager only.",
   inputSchema: {
-    tour_id: z106.string().describe("The ART tour id (uuid)."),
-    kind: z106.enum(["inclusion", "exclusion"]).describe("Which list to replace."),
-    items: z106.array(z106.string().min(1)).describe("The full list of items, in display order.")
+    tour_id: z110.string().describe("The ART tour id (uuid)."),
+    kind: z110.enum(["inclusion", "exclusion"]).describe("Which list to replace."),
+    items: z110.array(z110.string().min(1)).describe("The full list of items, in display order.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, kind, items }, ctx) => {
@@ -7009,15 +7188,15 @@ var update_tour_inclusions_default = defineTool110({
 });
 
 // src/lib/mcp/tools/reorder-tour-inclusions.ts
-import { defineTool as defineTool111 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z107 } from "npm:zod@^3.25.76";
-var reorder_tour_inclusions_default = defineTool111({
+import { defineTool as defineTool115 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z111 } from "npm:zod@^3.25.76";
+var reorder_tour_inclusions_default = defineTool115({
   name: "reorder_tour_inclusions",
   title: "Reorder tour inclusions or exclusions",
   description: "Set the display order of a tour's inclusion or exclusion items by listing their ids in the desired order (ids come from `get_tour_inclusions`). Admin/manager only.",
   inputSchema: {
-    tour_id: z107.string().describe("The ART tour id (uuid)."),
-    item_ids: z107.array(z107.string()).min(1).describe("Item ids in the desired display order.")
+    tour_id: z111.string().describe("The ART tour id (uuid)."),
+    item_ids: z111.array(z111.string()).min(1).describe("Item ids in the desired display order.")
   },
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, item_ids }, ctx) => {
@@ -7034,8 +7213,8 @@ var reorder_tour_inclusions_default = defineTool111({
 });
 
 // src/lib/mcp/tools/update-tour-website-description.ts
-import { defineTool as defineTool112 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z108 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool116 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z112 } from "npm:zod@^3.25.76";
 
 // src/lib/websiteHtml.ts
 function normalizeWebsiteHtml(input) {
@@ -7053,13 +7232,13 @@ function normalizeWebsiteHtml(input) {
 }
 
 // src/lib/mcp/tools/update-tour-website-description.ts
-var update_tour_website_description_default = defineTool112({
+var update_tour_website_description_default = defineTool116({
   name: "update_tour_website_description",
   title: "Update tour website description",
   description: "Set the tour's Website Description block \u2014 the HTML that publishes to the Tour Details section of the WordPress tour page (intro copy, notes and the inclusions copy shown there). Nothing goes live until `wordpress_push_tour_inclusions` is called. Admin/manager only.",
   inputSchema: {
-    tour_id: z108.string().describe("The ART tour id (uuid)."),
-    website_description: z108.string().describe("HTML for the Tour Details description block.")
+    tour_id: z112.string().describe("The ART tour id (uuid)."),
+    website_description: z112.string().describe("HTML for the Tour Details description block.")
   },
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, website_description }, ctx) => {
@@ -7076,15 +7255,15 @@ var update_tour_website_description_default = defineTool112({
 });
 
 // src/lib/mcp/tools/wordpress-preview-tour-inclusions.ts
-import { defineTool as defineTool113 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z109 } from "npm:zod@^3.25.76";
-var wordpress_preview_tour_inclusions_default = defineTool113({
+import { defineTool as defineTool117 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z113 } from "npm:zod@^3.25.76";
+var wordpress_preview_tour_inclusions_default = defineTool117({
   name: "wordpress_preview_tour_inclusions",
   title: "Preview inclusions push to website",
   description: "Dry run before publishing inclusions/exclusions/description: diffs the ART lists and Website Description against what is live on the linked WordPress tour page. Changes nothing. Show the diff to the user, then call `wordpress_push_tour_inclusions` with confirm=true. Admin/manager only.",
   inputSchema: {
-    tour_id: z109.string().describe("The ART tour id (uuid)."),
-    wordpress_tour_id: z109.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+    tour_id: z113.string().describe("The ART tour id (uuid)."),
+    wordpress_tour_id: z113.number().int().min(1).optional().describe("Override the WordPress tour post id.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, wordpress_tour_id }, ctx) => {
@@ -7136,25 +7315,25 @@ ${JSON.stringify(out)}` : "The website already matches ART for inclusions, exclu
         }],
         structuredContent: out
       };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       return { content: [{ type: "text", text: c.message }], isError: true };
     }
   }
 });
 
 // src/lib/mcp/tools/wordpress-push-tour-inclusions.ts
-import { defineTool as defineTool114 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z110 } from "npm:zod@^3.25.76";
-var wordpress_push_tour_inclusions_default = defineTool114({
+import { defineTool as defineTool118 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z114 } from "npm:zod@^3.25.76";
+var wordpress_push_tour_inclusions_default = defineTool118({
   name: "wordpress_push_tour_inclusions",
   title: "Push inclusions to website",
   description: "Publish a tour's inclusion/exclusion lists and Website Description to its linked WordPress tour page, replacing the live `inclusions` / `exclusions_details` repeaters and the Tour Details content. ART is the source of truth; the push is one-way ART \u2192 WordPress. Run `wordpress_preview_tour_inclusions` first, show the diff, and only call this once the user approves \u2014 confirm=true is required. Empty ART lists are never pushed (it will not blank the website). Admin/manager only.",
   inputSchema: {
-    tour_id: z110.string().describe("The ART tour id (uuid)."),
-    confirm: z110.boolean().describe("Must be true. Confirms the user reviewed the diff and approved publishing."),
-    sections: z110.array(z110.enum(["inclusions", "exclusions", "description"])).optional().describe("Which sections to publish. Defaults to all three."),
-    wordpress_tour_id: z110.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+    tour_id: z114.string().describe("The ART tour id (uuid)."),
+    confirm: z114.boolean().describe("Must be true. Confirms the user reviewed the diff and approved publishing."),
+    sections: z114.array(z114.enum(["inclusions", "exclusions", "description"])).optional().describe("Which sections to publish. Defaults to all three."),
+    wordpress_tour_id: z114.number().int().min(1).optional().describe("Override the WordPress tour post id.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, confirm, sections, wordpress_tour_id }, ctx) => {
@@ -7258,8 +7437,8 @@ var wordpress_push_tour_inclusions_default = defineTool114({
         }],
         structuredContent: out
       };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       await auditWordpressCall(ctx, {
         source: "mcp",
         action: "push_tour_inclusions",
@@ -7276,16 +7455,16 @@ var wordpress_push_tour_inclusions_default = defineTool114({
 });
 
 // src/lib/mcp/tools/wordpress-pull-tour-inclusions.ts
-import { defineTool as defineTool115 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z111 } from "npm:zod@^3.25.76";
-var wordpress_pull_tour_inclusions_default = defineTool115({
+import { defineTool as defineTool119 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z115 } from "npm:zod@^3.25.76";
+var wordpress_pull_tour_inclusions_default = defineTool119({
   name: "wordpress_pull_tour_inclusions",
   title: "Import inclusions from website",
   description: "One-time import: reads the live WordPress tour page's inclusions, exclusions and Tour Details description and copies them into ART for that tour. Call without confirm to preview what would be imported; call with confirm=true to write (this REPLACES the tour's ART lists). Admin/manager only.",
   inputSchema: {
-    tour_id: z111.string().describe("The ART tour id (uuid)."),
-    confirm: z111.boolean().optional().describe("true to write the imported content into ART. Omit to preview."),
-    wordpress_tour_id: z111.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+    tour_id: z115.string().describe("The ART tour id (uuid)."),
+    confirm: z115.boolean().optional().describe("true to write the imported content into ART. Omit to preview."),
+    wordpress_tour_id: z115.number().int().min(1).optional().describe("Override the WordPress tour post id.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, confirm, wordpress_tour_id }, ctx) => {
@@ -7349,16 +7528,16 @@ ${JSON.stringify(preview)}`
         content: [{ type: "text", text: `Imported ${inclusions.length} inclusion(s) and ${exclusions.length} exclusion(s) into ART.` }],
         structuredContent: out
       };
-    } catch (err) {
-      const c = categoriseError(err);
+    } catch (err2) {
+      const c = categoriseError(err2);
       return { content: [{ type: "text", text: c.message }], isError: true };
     }
   }
 });
 
 // src/lib/mcp/tools/wordpress-pull-itinerary-day-photos.ts
-import { defineTool as defineTool116 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z112 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool120 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z116 } from "npm:zod@^3.25.76";
 var MAX_DAY_PHOTOS2 = 3;
 function galleryIds(value) {
   const list = Array.isArray(value) ? value : value === null || value === void 0 || value === "" ? [] : [value];
@@ -7369,15 +7548,15 @@ function galleryIds(value) {
     return typeof id === "number" ? id : null;
   }).filter((id) => typeof id === "number" && Number.isFinite(id));
 }
-var wordpress_pull_itinerary_day_photos_default = defineTool116({
+var wordpress_pull_itinerary_day_photos_default = defineTool120({
   name: "wordpress_pull_itinerary_day_photos",
   title: "Import itinerary day photos from the website",
   description: "Backfill: copies the photos already published in each WordPress itinerary day gallery into the matching ART itinerary day (max 3 per day, matched day by day in order). Days that already hold ART photos are skipped \u2014 ART stays the source of truth and nothing on the website changes. Call without confirm to preview; call with confirm=true to write. Admin/manager only.",
   inputSchema: {
-    tour_id: z112.string().describe("The ART tour id (uuid)."),
-    confirm: z112.boolean().optional().describe("true to import the photos into ART. Omit to preview."),
-    day_ids: z112.array(z112.string()).optional().describe("Optional: only import these ART itinerary day ids. Defaults to every importable day."),
-    wordpress_tour_id: z112.number().int().min(1).optional().describe("Override the WordPress tour post id.")
+    tour_id: z116.string().describe("The ART tour id (uuid)."),
+    confirm: z116.boolean().optional().describe("true to import the photos into ART. Omit to preview."),
+    day_ids: z116.array(z116.string()).optional().describe("Optional: only import these ART itinerary day ids. Defaults to every importable day."),
+    wordpress_tour_id: z116.number().int().min(1).optional().describe("Override the WordPress tour post id.")
   },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   handler: async ({ tour_id, confirm, day_ids, wordpress_tour_id }, ctx) => {
@@ -7434,8 +7613,8 @@ var wordpress_pull_itinerary_day_photos_default = defineTool116({
             mime_type: d.mime_type ?? null,
             file_name: file ?? (d.source_url ? String(d.source_url).split("/").pop() ?? null : null)
           });
-        } catch (err) {
-          warnings.push(`Website image ${id}: ${categoriseError(err).message}`);
+        } catch (err2) {
+          warnings.push(`Website image ${id}: ${categoriseError(err2).message}`);
         }
       }
       const plan = days.map((day, i) => {
@@ -7506,8 +7685,8 @@ ${JSON.stringify(out2)}`
             }
             sort++;
             imported++;
-          } catch (err) {
-            errors.push(`Day ${day.day_number} image ${m.id}: ${categoriseError(err).message}`);
+          } catch (err2) {
+            errors.push(`Day ${day.day_number} image ${m.id}: ${categoriseError(err2).message}`);
           }
         }
       }
@@ -7530,30 +7709,30 @@ ${JSON.stringify(out)}`
         }],
         structuredContent: out
       };
-    } catch (err) {
-      return toolError2(categoriseError(err).message);
+    } catch (err2) {
+      return toolError2(categoriseError(err2).message);
     }
   }
 });
 
 // src/lib/mcp/tools/list-leads.ts
-import { defineTool as defineTool117 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z113 } from "npm:zod@^3.25.76";
-var list_leads_default = defineTool117({
+import { defineTool as defineTool121 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z117 } from "npm:zod@^3.25.76";
+var list_leads_default = defineTool121({
   name: "list_leads",
   title: "List leads (enquiries)",
   description: "List CRM leads/enquiries with filters: stage key, owner_id, tour_id (tour of interest), source, lead_type, needs_attention, in_nurture, created_from/created_to (YYYY-MM-DD). Ordered by most recent activity.",
   inputSchema: {
-    stage: z113.string().optional().describe("Stage key, e.g. new, contacted, qualified, proposal, won, lost."),
-    owner_id: z113.string().optional(),
-    tour_id: z113.string().optional(),
-    source: z113.string().optional(),
-    lead_type: z113.string().optional(),
-    needs_attention: z113.boolean().optional(),
-    in_nurture: z113.boolean().optional().describe("True returns leads with a nurture review date set."),
-    created_from: z113.string().optional(),
-    created_to: z113.string().optional(),
-    limit: z113.number().int().min(1).max(200).optional()
+    stage: z117.string().optional().describe("Stage key, e.g. new, contacted, qualified, proposal, won, lost."),
+    owner_id: z117.string().optional(),
+    tour_id: z117.string().optional(),
+    source: z117.string().optional(),
+    lead_type: z117.string().optional(),
+    needs_attention: z117.boolean().optional(),
+    in_nurture: z117.boolean().optional().describe("True returns leads with a nurture review date set."),
+    created_from: z117.string().optional(),
+    created_to: z117.string().optional(),
+    limit: z117.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7583,13 +7762,13 @@ var list_leads_default = defineTool117({
 });
 
 // src/lib/mcp/tools/get-lead.ts
-import { defineTool as defineTool118 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z114 } from "npm:zod@^3.25.76";
-var get_lead_default = defineTool118({
+import { defineTool as defineTool122 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z118 } from "npm:zod@^3.25.76";
+var get_lead_default = defineTool122({
   name: "get_lead",
   title: "Get lead",
   description: "Full detail for one lead/enquiry: the lead record, the linked contact, tour interests, stage history and recent CRM activity.",
-  inputSchema: { lead_id: z114.string() },
+  inputSchema: { lead_id: z118.string() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ lead_id }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -7619,20 +7798,20 @@ var get_lead_default = defineTool118({
 });
 
 // src/lib/mcp/tools/list-lead-activities.ts
-import { defineTool as defineTool119 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z115 } from "npm:zod@^3.25.76";
-var list_lead_activities_default = defineTool119({
+import { defineTool as defineTool123 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z119 } from "npm:zod@^3.25.76";
+var list_lead_activities_default = defineTool123({
   name: "list_lead_activities",
   title: "List CRM activity",
   description: "Timeline of CRM activity (calls, emails, notes, stage changes, marketing signals) for a lead or a contact. Filter by activity_type, meaningful-only, and date range.",
   inputSchema: {
-    lead_id: z115.string().optional(),
-    customer_id: z115.string().optional(),
-    activity_type: z115.string().optional(),
-    meaningful_only: z115.boolean().optional(),
-    from: z115.string().optional().describe("YYYY-MM-DD"),
-    to: z115.string().optional().describe("YYYY-MM-DD"),
-    limit: z115.number().int().min(1).max(200).optional()
+    lead_id: z119.string().optional(),
+    customer_id: z119.string().optional(),
+    activity_type: z119.string().optional(),
+    meaningful_only: z119.boolean().optional(),
+    from: z119.string().optional().describe("YYYY-MM-DD"),
+    to: z119.string().optional().describe("YYYY-MM-DD"),
+    limit: z119.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7657,8 +7836,8 @@ var list_lead_activities_default = defineTool119({
 });
 
 // src/lib/mcp/tools/list-crm-settings.ts
-import { defineTool as defineTool120 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var list_crm_settings_default = defineTool120({
+import { defineTool as defineTool124 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_crm_settings_default = defineTool124({
   name: "list_crm_settings",
   title: "List CRM configuration",
   description: "The CRM's configuration: lead stages (open/won/lost, cold thresholds), lead sources, lead types, lost reasons and the sales settings (response targets, escalation days).",
@@ -7687,8 +7866,8 @@ var list_crm_settings_default = defineTool120({
 });
 
 // src/lib/mcp/tools/get-crm-reports.ts
-import { defineTool as defineTool121 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z116 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool125 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z120 } from "npm:zod@^3.25.76";
 var REPORTS = [
   "pipeline_summary",
   "funnel",
@@ -7698,16 +7877,16 @@ var REPORTS = [
   "action_board",
   "data_quality"
 ];
-var get_crm_reports_default = defineTool121({
+var get_crm_reports_default = defineTool125({
   name: "get_crm_report",
   title: "Get CRM sales report",
   description: "Run one of the CRM's own reports and return its real figures: pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality. Date range applies where the report supports it.",
   inputSchema: {
-    report: z116.enum(REPORTS),
-    from: z116.string().optional().describe("YYYY-MM-DD, defaults to 90 days ago where supported."),
-    to: z116.string().optional().describe("YYYY-MM-DD, defaults to today where supported."),
-    tour_id: z116.string().optional().describe("Funnel only: limit to one tour."),
-    include_past: z116.boolean().optional().describe("tour_sales only: include departed tours.")
+    report: z120.enum(REPORTS),
+    from: z120.string().optional().describe("YYYY-MM-DD, defaults to 90 days ago where supported."),
+    to: z120.string().optional().describe("YYYY-MM-DD, defaults to today where supported."),
+    tour_id: z120.string().optional().describe("Funnel only: limit to one tour."),
+    include_past: z120.boolean().optional().describe("tour_sales only: include departed tours.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ report, from, to, tour_id, include_past }, ctx) => {
@@ -7734,23 +7913,23 @@ var get_crm_reports_default = defineTool121({
 });
 
 // src/lib/mcp/tools/get-data-quality.ts
-import { defineTool as defineTool122 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z117 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool126 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z121 } from "npm:zod@^3.25.76";
 var AREAS = ["contacts", "leads", "finance"];
 var RPC = {
   contacts: "dq_contact_issues",
   leads: "dq_lead_issues",
   finance: "dq_finance_issues"
 };
-var get_data_quality_default = defineTool122({
+var get_data_quality_default = defineTool126({
   name: "get_data_quality",
   title: "Get data quality issues",
   description: "List the data problems that distort reports and AI answers. Areas: contacts (duplicate contacts by email or name, missing phone on upcoming travellers, missing/invalid email, missing state/country), leads (active enquiries with no owner, no tour or unknown passenger numbers; lost without reason; won without booking; no lead source) and finance (Xero invoice links that are deleted/voided, invoice reference mismatches, invoiced bookings with no Xero link). Items staff marked 'not a problem' are excluded unless include_dismissed is true. Read-only; changes nothing. Restricted to admin/manager.",
   inputSchema: {
-    area: z117.enum(AREAS).optional().describe("Limit to one area. Defaults to all three."),
-    issue_type: z117.string().optional().describe("Limit to one issue type, e.g. duplicate_email."),
-    include_dismissed: z117.boolean().optional().describe("Include items marked as not a problem."),
-    limit: z117.number().int().optional().describe("Max rows per area (default 200, max 1000).")
+    area: z121.enum(AREAS).optional().describe("Limit to one area. Defaults to all three."),
+    issue_type: z121.string().optional().describe("Limit to one issue type, e.g. duplicate_email."),
+    include_dismissed: z121.boolean().optional().describe("Include items marked as not a problem."),
+    limit: z121.number().int().optional().describe("Max rows per area (default 200, max 1000).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ area, issue_type, include_dismissed, limit }, ctx) => {
@@ -7795,17 +7974,17 @@ var get_data_quality_default = defineTool122({
 });
 
 // src/lib/mcp/tools/list-tour-interests.ts
-import { defineTool as defineTool123 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z118 } from "npm:zod@^3.25.76";
-var list_tour_interests_default = defineTool123({
+import { defineTool as defineTool127 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z122 } from "npm:zod@^3.25.76";
+var list_tour_interests_default = defineTool127({
   name: "list_tour_interests",
   title: "List tour interests",
   description: "Contacts who have registered interest in a tour (or the tours one contact is interested in), with interest level, status and source.",
   inputSchema: {
-    tour_id: z118.string().optional(),
-    customer_id: z118.string().optional(),
-    status: z118.string().optional(),
-    limit: z118.number().int().min(1).max(500).optional()
+    tour_id: z122.string().optional(),
+    customer_id: z122.string().optional(),
+    status: z122.string().optional(),
+    limit: z122.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7829,16 +8008,16 @@ var list_tour_interests_default = defineTool123({
 });
 
 // src/lib/mcp/tools/list-crm-automation.ts
-import { defineTool as defineTool124 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z119 } from "npm:zod@^3.25.76";
-var list_crm_automation_default = defineTool124({
+import { defineTool as defineTool128 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z123 } from "npm:zod@^3.25.76";
+var list_crm_automation_default = defineTool128({
   name: "list_crm_automation",
   title: "List CRM automation rules and runs",
   description: "CRM automation rules (triggers, conditions, actions, cooldowns) and, optionally, their recent run log so you can see what fired and what failed.",
   inputSchema: {
-    include_runs: z119.boolean().optional(),
-    rule_id: z119.string().optional(),
-    limit: z119.number().int().min(1).max(200).optional()
+    include_runs: z123.boolean().optional(),
+    rule_id: z123.string().optional(),
+    limit: z123.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_runs, rule_id, limit }, ctx) => {
@@ -7862,21 +8041,21 @@ var list_crm_automation_default = defineTool124({
 });
 
 // src/lib/mcp/tools/list-form-submissions.ts
-import { defineTool as defineTool125 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z120 } from "npm:zod@^3.25.76";
-var list_form_submissions_default = defineTool125({
+import { defineTool as defineTool129 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z124 } from "npm:zod@^3.25.76";
+var list_form_submissions_default = defineTool129({
   name: "list_form_submissions",
   title: "List website form submissions",
   description: "Register-Interest and Booking form submissions exactly as submitted, with processing status, matched contact/lead, tour(s) and campaign attribution (utm fields).",
   inputSchema: {
-    form_type: z120.string().optional().describe("e.g. register_interest, booking"),
-    landing_page_id: z120.string().optional(),
-    tour_id: z120.string().optional(),
-    processing_status: z120.string().optional(),
-    needs_review: z120.boolean().optional(),
-    from: z120.string().optional().describe("YYYY-MM-DD"),
-    to: z120.string().optional().describe("YYYY-MM-DD"),
-    limit: z120.number().int().min(1).max(200).optional()
+    form_type: z124.string().optional().describe("e.g. register_interest, booking"),
+    landing_page_id: z124.string().optional(),
+    tour_id: z124.string().optional(),
+    processing_status: z124.string().optional(),
+    needs_review: z124.boolean().optional(),
+    from: z124.string().optional().describe("YYYY-MM-DD"),
+    to: z124.string().optional().describe("YYYY-MM-DD"),
+    limit: z124.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -7902,13 +8081,13 @@ var list_form_submissions_default = defineTool125({
 });
 
 // src/lib/mcp/tools/list-lead-forms.ts
-import { defineTool as defineTool126 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z121 } from "npm:zod@^3.25.76";
-var list_lead_forms_default = defineTool126({
+import { defineTool as defineTool130 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z125 } from "npm:zod@^3.25.76";
+var list_lead_forms_default = defineTool130({
   name: "list_lead_forms",
   title: "List public lead-capture forms",
   description: "The public forms (Register Interest, Booking) including slug, form type, tour choices, field configuration, submission count and follow-up settings.",
-  inputSchema: { include_inactive: z121.boolean().optional() },
+  inputSchema: { include_inactive: z125.boolean().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_inactive }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -7927,27 +8106,27 @@ var list_lead_forms_default = defineTool126({
 });
 
 // src/lib/mcp/tools/update-lead.ts
-import { defineTool as defineTool127 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z122 } from "npm:zod@^3.25.76";
-var update_lead_default = defineTool127({
+import { defineTool as defineTool131 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z126 } from "npm:zod@^3.25.76";
+var update_lead_default = defineTool131({
   name: "update_lead",
   title: "Update a lead",
   description: "Update a lead's stage, owner, priority, notes, next action, estimated value, passenger count, nurture review date or lost reason. Only supplied fields change. Stage changes are recorded in the lead's history by the system.",
   inputSchema: {
-    lead_id: z122.string(),
-    stage: z122.string().optional().describe("Stage key from list_crm_settings."),
-    owner_id: z122.string().nullable().optional(),
-    priority: z122.string().optional(),
-    passengers: z122.number().int().nullable().optional(),
-    estimated_value: z122.number().nullable().optional(),
-    next_action_date: z122.string().nullable().optional().describe("YYYY-MM-DD"),
-    next_action_note: z122.string().nullable().optional(),
-    notes: z122.string().optional(),
-    nurture_review_date: z122.string().nullable().optional().describe("YYYY-MM-DD"),
-    nurture_reason: z122.string().nullable().optional(),
-    lost_reason: z122.string().nullable().optional(),
-    lost_notes: z122.string().nullable().optional(),
-    tour_id: z122.string().nullable().optional()
+    lead_id: z126.string(),
+    stage: z126.string().optional().describe("Stage key from list_crm_settings."),
+    owner_id: z126.string().nullable().optional(),
+    priority: z126.string().optional(),
+    passengers: z126.number().int().nullable().optional(),
+    estimated_value: z126.number().nullable().optional(),
+    next_action_date: z126.string().nullable().optional().describe("YYYY-MM-DD"),
+    next_action_note: z126.string().nullable().optional(),
+    notes: z126.string().optional(),
+    nurture_review_date: z126.string().nullable().optional().describe("YYYY-MM-DD"),
+    nurture_reason: z126.string().nullable().optional(),
+    lost_reason: z126.string().nullable().optional(),
+    lost_notes: z126.string().nullable().optional(),
+    tour_id: z126.string().nullable().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ lead_id, ...rest }, ctx) => {
@@ -7970,22 +8149,22 @@ var update_lead_default = defineTool127({
 });
 
 // src/lib/mcp/tools/log-lead-activity.ts
-import { defineTool as defineTool128 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z123 } from "npm:zod@^3.25.76";
-var log_lead_activity_default = defineTool128({
+import { defineTool as defineTool132 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z127 } from "npm:zod@^3.25.76";
+var log_lead_activity_default = defineTool132({
   name: "log_lead_activity",
   title: "Log CRM activity on a lead",
   description: "Record a call, note, meeting or other activity on a lead or contact's timeline. This only writes history \u2014 it never sends anything.",
   inputSchema: {
-    lead_id: z123.string().optional(),
-    customer_id: z123.string().optional(),
-    activity_type: z123.string().describe("e.g. call, note, meeting, email_manual"),
-    subject: z123.string().optional(),
-    body: z123.string().optional(),
-    direction: z123.enum(["inbound", "outbound"]).optional(),
-    outcome: z123.string().optional(),
-    occurred_at: z123.string().optional().describe("ISO timestamp; defaults to now."),
-    is_meaningful: z123.boolean().optional()
+    lead_id: z127.string().optional(),
+    customer_id: z127.string().optional(),
+    activity_type: z127.string().describe("e.g. call, note, meeting, email_manual"),
+    subject: z127.string().optional(),
+    body: z127.string().optional(),
+    direction: z127.enum(["inbound", "outbound"]).optional(),
+    outcome: z127.string().optional(),
+    occurred_at: z127.string().optional().describe("ISO timestamp; defaults to now."),
+    is_meaningful: z127.boolean().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8020,20 +8199,20 @@ var log_lead_activity_default = defineTool128({
 });
 
 // src/lib/mcp/tools/upsert-tour-interest.ts
-import { defineTool as defineTool129 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z124 } from "npm:zod@^3.25.76";
-var upsert_tour_interest_default = defineTool129({
+import { defineTool as defineTool133 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z128 } from "npm:zod@^3.25.76";
+var upsert_tour_interest_default = defineTool133({
   name: "upsert_tour_interest",
   title: "Record or update a tour interest",
   description: "Record that a contact is interested in a tour, or update the interest level/status/notes on an existing interest record.",
   inputSchema: {
-    customer_id: z124.string(),
-    tour_id: z124.string(),
-    lead_id: z124.string().optional(),
-    interest_level: z124.string().optional(),
-    status: z124.string().optional(),
-    source: z124.string().optional(),
-    notes: z124.string().optional()
+    customer_id: z128.string(),
+    tour_id: z128.string(),
+    lead_id: z128.string().optional(),
+    interest_level: z128.string().optional(),
+    status: z128.string().optional(),
+    source: z128.string().optional(),
+    notes: z128.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8066,17 +8245,17 @@ var upsert_tour_interest_default = defineTool129({
 });
 
 // src/lib/mcp/tools/list-marketing-campaigns.ts
-import { defineTool as defineTool130 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z125 } from "npm:zod@^3.25.76";
-var list_marketing_campaigns_default = defineTool130({
+import { defineTool as defineTool134 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z129 } from "npm:zod@^3.25.76";
+var list_marketing_campaigns_default = defineTool134({
   name: "list_marketing_campaigns",
   title: "List marketing campaigns",
   description: "Marketing campaigns (EDMs) with status, schedule and headline stats: recipients, sent, failed, opens, clicks, bounces, unsubscribes. Counts are events; use list_campaign_recipients for unique contacts.",
   inputSchema: {
-    status: z125.string().optional().describe("draft, scheduled, sending, sent, failed"),
-    from: z125.string().optional().describe("YYYY-MM-DD, filters on send start / creation"),
-    to: z125.string().optional(),
-    limit: z125.number().int().min(1).max(200).optional()
+    status: z129.string().optional().describe("draft, scheduled, sending, sent, failed"),
+    from: z129.string().optional().describe("YYYY-MM-DD, filters on send start / creation"),
+    to: z129.string().optional(),
+    limit: z129.number().int().min(1).max(200).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8098,15 +8277,15 @@ var list_marketing_campaigns_default = defineTool130({
 });
 
 // src/lib/mcp/tools/get-marketing-campaign.ts
-import { defineTool as defineTool131 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z126 } from "npm:zod@^3.25.76";
-var get_marketing_campaign_default = defineTool131({
+import { defineTool as defineTool135 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z130 } from "npm:zod@^3.25.76";
+var get_marketing_campaign_default = defineTool135({
   name: "get_marketing_campaign",
   title: "Get marketing campaign with real stats",
   description: "One campaign plus reconciled results: unique contacts sent/delivered/opened/clicked, event totals, and the most-clicked links. Unique-contact figures never double-count a contact.",
   inputSchema: {
-    campaign_id: z126.string(),
-    include_html: z126.boolean().optional().describe("Include the campaign HTML body (large).")
+    campaign_id: z130.string(),
+    include_html: z130.boolean().optional().describe("Include the campaign HTML body (large).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ campaign_id, include_html }, ctx) => {
@@ -8151,17 +8330,17 @@ var get_marketing_campaign_default = defineTool131({
 });
 
 // src/lib/mcp/tools/list-campaign-recipients.ts
-import { defineTool as defineTool132 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z127 } from "npm:zod@^3.25.76";
-var list_campaign_recipients_default = defineTool132({
+import { defineTool as defineTool136 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z131 } from "npm:zod@^3.25.76";
+var list_campaign_recipients_default = defineTool136({
   name: "list_campaign_recipients",
   title: "List campaign recipients (who opened or clicked)",
   description: "Per-contact results for a campaign: status, sent/opened/clicked timestamps and counts. Filter to only openers, only clickers, only failures, or a status.",
   inputSchema: {
-    campaign_id: z127.string(),
-    engagement: z127.enum(["all", "opened", "clicked", "not_opened", "failed"]).optional(),
-    status: z127.string().optional(),
-    limit: z127.number().int().min(1).max(500).optional()
+    campaign_id: z131.string(),
+    engagement: z131.enum(["all", "opened", "clicked", "not_opened", "failed"]).optional(),
+    status: z131.string().optional(),
+    limit: z131.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ campaign_id, engagement, status, limit }, ctx) => {
@@ -8185,16 +8364,16 @@ var list_campaign_recipients_default = defineTool132({
 });
 
 // src/lib/mcp/tools/list-campaign-events.ts
-import { defineTool as defineTool133 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z128 } from "npm:zod@^3.25.76";
-var list_campaign_events_default = defineTool133({
+import { defineTool as defineTool137 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z132 } from "npm:zod@^3.25.76";
+var list_campaign_events_default = defineTool137({
   name: "list_campaign_events",
   title: "List campaign tracking events",
   description: "Raw open and click events for a campaign, including the exact link clicked. These are events, not unique contacts.",
   inputSchema: {
-    campaign_id: z128.string(),
-    event_type: z128.enum(["open", "click"]).optional(),
-    limit: z128.number().int().min(1).max(500).optional()
+    campaign_id: z132.string(),
+    event_type: z132.enum(["open", "click"]).optional(),
+    limit: z132.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ campaign_id, event_type, limit }, ctx) => {
@@ -8212,13 +8391,13 @@ var list_campaign_events_default = defineTool133({
 });
 
 // src/lib/mcp/tools/list-marketing-audiences.ts
-import { defineTool as defineTool134 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z129 } from "npm:zod@^3.25.76";
-var list_marketing_audiences_default = defineTool134({
+import { defineTool as defineTool138 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z133 } from "npm:zod@^3.25.76";
+var list_marketing_audiences_default = defineTool138({
   name: "list_marketing_audiences",
   title: "List marketing audiences",
   description: "Saved dynamic audiences with their filter rules and last counted sizes. Audiences resolve at send time, so counts here are the last calculation.",
-  inputSchema: { include_inactive: z129.boolean().optional() },
+  inputSchema: { include_inactive: z133.boolean().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_inactive }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -8235,16 +8414,16 @@ var list_marketing_audiences_default = defineTool134({
 });
 
 // src/lib/mcp/tools/count-marketing-audience.ts
-import { defineTool as defineTool135 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z130 } from "npm:zod@^3.25.76";
-var count_marketing_audience_default = defineTool135({
+import { defineTool as defineTool139 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z134 } from "npm:zod@^3.25.76";
+var count_marketing_audience_default = defineTool139({
   name: "count_marketing_audience",
   title: "Count a marketing audience now",
   description: "Resolve an audience live and return its size, using the saved audience (audience_id) or ad-hoc rules JSON in the same shape the audience builder uses. Consent, unsubscribes, bounces and suppressions always apply.",
   inputSchema: {
-    audience_id: z130.string().optional(),
-    rules: z130.any().optional().describe("Audience rules JSON, same shape as marketing_audiences.filters."),
-    sample: z130.boolean().optional().describe("Also return up to 25 matching contacts.")
+    audience_id: z134.string().optional(),
+    rules: z134.any().optional().describe("Audience rules JSON, same shape as marketing_audiences.filters."),
+    sample: z134.boolean().optional().describe("Also return up to 25 matching contacts.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ audience_id, rules, sample }, ctx) => {
@@ -8278,15 +8457,15 @@ var count_marketing_audience_default = defineTool135({
 });
 
 // src/lib/mcp/tools/get-tour-marketing-intelligence.ts
-import { defineTool as defineTool136 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z131 } from "npm:zod@^3.25.76";
-var get_tour_marketing_intelligence_default = defineTool136({
+import { defineTool as defineTool140 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z135 } from "npm:zod@^3.25.76";
+var get_tour_marketing_intelligence_default = defineTool140({
   name: "get_tour_marketing_intelligence",
   title: "Get tour marketing and sales intelligence",
   description: "Per-tour marketing funnel: interested contacts, marketing-eligible, active and nurture leads, booked passengers, contacts emailed, opens, clicks, meaningful tour clicks, enquiries and bookings attributed, plus the previous comparable period. Unique-contact and event figures are labelled separately.",
   inputSchema: {
-    tour_id: z131.string(),
-    days: z131.number().int().min(1).max(365).optional().describe("Window length, default 30.")
+    tour_id: z135.string(),
+    days: z135.number().int().min(1).max(365).optional().describe("Window length, default 30.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, days }, ctx) => {
@@ -8305,8 +8484,8 @@ var get_tour_marketing_intelligence_default = defineTool136({
 });
 
 // src/lib/mcp/tools/list-tour-marketing-people.ts
-import { defineTool as defineTool137 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z132 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool141 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z136 } from "npm:zod@^3.25.76";
 var METRICS = [
   "interested",
   "interested_not_booked",
@@ -8319,15 +8498,15 @@ var METRICS = [
   "enquiries",
   "bookings"
 ];
-var list_tour_marketing_people_default = defineTool137({
+var list_tour_marketing_people_default = defineTool141({
   name: "list_tour_marketing_people",
   title: "List the contacts behind a tour marketing number",
   description: "Drill into a tour marketing figure and list the actual contacts: interested, interested_not_booked, nurture_leads, active_leads, emailed, opened, clicked, meaningful_clicks, enquiries, bookings.",
   inputSchema: {
-    tour_id: z132.string(),
-    metric: z132.enum(METRICS),
-    days: z132.number().int().min(1).max(365).optional(),
-    limit: z132.number().int().min(1).max(500).optional()
+    tour_id: z136.string(),
+    metric: z136.enum(METRICS),
+    days: z136.number().int().min(1).max(365).optional(),
+    limit: z136.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ tour_id, metric, days, limit }, ctx) => {
@@ -8349,13 +8528,13 @@ var list_tour_marketing_people_default = defineTool137({
 });
 
 // src/lib/mcp/tools/list-marketing-link-rules.ts
-import { defineTool as defineTool138 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z133 } from "npm:zod@^3.25.76";
-var list_marketing_link_rules_default = defineTool138({
+import { defineTool as defineTool142 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z137 } from "npm:zod@^3.25.76";
+var list_marketing_link_rules_default = defineTool142({
   name: "list_marketing_link_rules",
   title: "List 'what a click means' rules",
   description: "Link classification rules that turn clicked URLs into meaning (high intent, register interest, tour-specific), including the tour each rule maps to.",
-  inputSchema: { include_inactive: z133.boolean().optional() },
+  inputSchema: { include_inactive: z137.boolean().optional() },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ include_inactive }, ctx) => {
     const denied = await requireAdminOrManager(ctx);
@@ -8372,15 +8551,15 @@ var list_marketing_link_rules_default = defineTool138({
 });
 
 // src/lib/mcp/tools/get-contact-marketing-status.ts
-import { defineTool as defineTool139 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z134 } from "npm:zod@^3.25.76";
-var get_contact_marketing_status_default = defineTool139({
+import { defineTool as defineTool143 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z138 } from "npm:zod@^3.25.76";
+var get_contact_marketing_status_default = defineTool143({
   name: "get_contact_marketing_status",
   title: "Get a contact's marketing status and history",
   description: "Whether a contact can be marketed to (subscription, unsubscribe, bounce suppression) plus their campaign history with opens and clicks, their leads and their tour interests.",
   inputSchema: {
-    customer_id: z134.string().optional(),
-    email: z134.string().optional()
+    customer_id: z138.string().optional(),
+    email: z138.string().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ customer_id, email }, ctx) => {
@@ -8424,17 +8603,17 @@ var get_contact_marketing_status_default = defineTool139({
 });
 
 // src/lib/mcp/tools/list-email-suppressions.ts
-import { defineTool as defineTool140 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z135 } from "npm:zod@^3.25.76";
-var list_email_suppressions_default = defineTool140({
+import { defineTool as defineTool144 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z139 } from "npm:zod@^3.25.76";
+var list_email_suppressions_default = defineTool144({
   name: "list_email_suppressions",
   title: "List email suppressions (bounces and complaints)",
   description: "Suppressed email addresses with type, reason and bounce counts. These addresses are always excluded from sending regardless of audience rules.",
   inputSchema: {
-    suppression_type: z135.string().optional(),
-    active_only: z135.boolean().optional(),
-    search: z135.string().optional().describe("Substring of the email address."),
-    limit: z135.number().int().min(1).max(500).optional()
+    suppression_type: z139.string().optional(),
+    active_only: z139.boolean().optional(),
+    search: z139.string().optional().describe("Substring of the email address."),
+    limit: z139.number().int().min(1).max(500).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ suppression_type, active_only, search, limit }, ctx) => {
@@ -8454,8 +8633,8 @@ var list_email_suppressions_default = defineTool140({
 });
 
 // src/lib/mcp/tools/list-mailboxes.ts
-import { defineTool as defineTool141 } from "npm:@lovable.dev/mcp-js@0.20.0";
-var list_mailboxes_default = defineTool141({
+import { defineTool as defineTool145 } from "npm:@lovable.dev/mcp-js@0.20.0";
+var list_mailboxes_default = defineTool145({
   name: "list_mailboxes",
   title: "List connected mailboxes",
   description: "Microsoft 365 mailboxes connected to the communications hub, with sync status, last successful sync, history depth and any error. Only mailboxes the signed-in user may read are returned.",
@@ -8476,24 +8655,24 @@ var list_mailboxes_default = defineTool141({
 });
 
 // src/lib/mcp/tools/search-correspondence.ts
-import { defineTool as defineTool142 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z136 } from "npm:zod@^3.25.76";
-var search_correspondence_default = defineTool142({
+import { defineTool as defineTool146 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z140 } from "npm:zod@^3.25.76";
+var search_correspondence_default = defineTool146({
   name: "search_correspondence",
   title: "Search individual correspondence",
   description: "Search synced Microsoft 365 correspondence by text, contact, lead, tour, booking, mailbox, direction or date range. Returns subject, participants and a preview; set include_body for full text. Mailbox access rules apply.",
   inputSchema: {
-    search: z136.string().optional().describe("Case-insensitive text in subject, preview or body."),
-    customer_id: z136.string().optional(),
-    lead_id: z136.string().optional(),
-    tour_id: z136.string().optional(),
-    booking_id: z136.string().optional(),
-    mailbox_id: z136.string().optional(),
-    direction: z136.enum(["inbound", "outbound"]).optional(),
-    from: z136.string().optional().describe("YYYY-MM-DD"),
-    to: z136.string().optional().describe("YYYY-MM-DD"),
-    include_body: z136.boolean().optional(),
-    limit: z136.number().int().min(1).max(100).optional()
+    search: z140.string().optional().describe("Case-insensitive text in subject, preview or body."),
+    customer_id: z140.string().optional(),
+    lead_id: z140.string().optional(),
+    tour_id: z140.string().optional(),
+    booking_id: z140.string().optional(),
+    mailbox_id: z140.string().optional(),
+    direction: z140.enum(["inbound", "outbound"]).optional(),
+    from: z140.string().optional().describe("YYYY-MM-DD"),
+    to: z140.string().optional().describe("YYYY-MM-DD"),
+    include_body: z140.boolean().optional(),
+    limit: z140.number().int().min(1).max(100).optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (input, ctx) => {
@@ -8537,15 +8716,15 @@ var search_correspondence_default = defineTool142({
 });
 
 // src/lib/mcp/tools/get-correspondence-message.ts
-import { defineTool as defineTool143 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z137 } from "npm:zod@^3.25.76";
-var get_correspondence_message_default = defineTool143({
+import { defineTool as defineTool147 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z141 } from "npm:zod@^3.25.76";
+var get_correspondence_message_default = defineTool147({
   name: "get_correspondence_message",
   title: "Get one message in full",
   description: "Full content of one synced message (body text and HTML, recipients, attachments) plus the contacts, leads, tours and bookings it is matched to. Optionally include the whole conversation thread.",
   inputSchema: {
-    email_id: z137.string(),
-    include_thread: z137.boolean().optional()
+    email_id: z141.string(),
+    include_thread: z141.boolean().optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ email_id, include_thread }, ctx) => {
@@ -8571,8 +8750,8 @@ var get_correspondence_message_default = defineTool143({
 });
 
 // src/lib/mcp/tools/send-marketing-campaign.ts
-import { defineTool as defineTool144 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z138 } from "npm:zod@^3.25.76";
+import { defineTool as defineTool148 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z142 } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_sending.ts
 function sendingEnabled() {
@@ -8611,15 +8790,15 @@ async function invokeFunction(ctx, name, body) {
 }
 
 // src/lib/mcp/tools/send-marketing-campaign.ts
-var send_marketing_campaign_default = defineTool144({
+var send_marketing_campaign_default = defineTool148({
   name: "send_marketing_campaign",
   title: "Send or test a marketing campaign (currently switched off)",
   description: "Send a prepared marketing campaign, or send a test copy to one address. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing. Consent, unsubscribe and suppression rules always apply.",
   inputSchema: {
-    campaign_id: z138.string(),
-    action: z138.enum(["send", "test"]).describe("send = full audience, test = single test address."),
-    test_email: z138.string().email().optional().describe("Required for action 'test'."),
-    confirm: z138.literal(true).describe("Must be true to confirm a real send.")
+    campaign_id: z142.string(),
+    action: z142.enum(["send", "test"]).describe("send = full audience, test = single test address."),
+    test_email: z142.string().email().optional().describe("Required for action 'test'."),
+    confirm: z142.literal(true).describe("Must be true to confirm a real send.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   handler: async ({ campaign_id, action, test_email, confirm }, ctx) => {
@@ -8645,16 +8824,16 @@ var send_marketing_campaign_default = defineTool144({
 });
 
 // src/lib/mcp/tools/schedule-marketing-campaign.ts
-import { defineTool as defineTool145 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z139 } from "npm:zod@^3.25.76";
-var schedule_marketing_campaign_default = defineTool145({
+import { defineTool as defineTool149 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z143 } from "npm:zod@^3.25.76";
+var schedule_marketing_campaign_default = defineTool149({
   name: "schedule_marketing_campaign",
   title: "Schedule a marketing campaign (currently switched off)",
   description: "Schedule a prepared campaign for a future date and time, or clear an existing schedule. DISABLED until ART authorises AI-initiated sending; until then it changes nothing.",
   inputSchema: {
-    campaign_id: z139.string(),
-    scheduled_send_at: z139.string().nullable().describe("ISO timestamp, or null to unschedule and return to draft."),
-    confirm: z139.literal(true)
+    campaign_id: z143.string(),
+    scheduled_send_at: z143.string().nullable().describe("ISO timestamp, or null to unschedule and return to draft."),
+    confirm: z143.literal(true)
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ campaign_id, scheduled_send_at, confirm }, ctx) => {
@@ -8677,24 +8856,24 @@ var schedule_marketing_campaign_default = defineTool145({
 });
 
 // src/lib/mcp/tools/send-individual-email.ts
-import { defineTool as defineTool146 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z140 } from "npm:zod@^3.25.76";
-var send_individual_email_default = defineTool146({
+import { defineTool as defineTool150 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z144 } from "npm:zod@^3.25.76";
+var send_individual_email_default = defineTool150({
   name: "send_individual_email",
   title: "Send an individual email from a shared mailbox (currently switched off)",
   description: "Send or reply to an individual email from one of the connected Microsoft 365 mailboxes, optionally linked to a contact, lead, tour or booking. DISABLED until ART authorises AI-initiated sending; until then it returns an explanation and sends nothing.",
   inputSchema: {
-    mailbox_id: z140.string(),
-    to: z140.array(z140.string().email()).optional(),
-    cc: z140.array(z140.string().email()).optional(),
-    subject: z140.string().optional(),
-    html: z140.string().describe("Message body as HTML."),
-    reply_to_email_id: z140.string().optional().describe("Reply to this synced message instead of starting a new one."),
-    customer_id: z140.string().optional(),
-    lead_id: z140.string().optional(),
-    tour_id: z140.string().optional(),
-    booking_id: z140.string().optional(),
-    confirm: z140.literal(true)
+    mailbox_id: z144.string(),
+    to: z144.array(z144.string().email()).optional(),
+    cc: z144.array(z144.string().email()).optional(),
+    subject: z144.string().optional(),
+    html: z144.string().describe("Message body as HTML."),
+    reply_to_email_id: z144.string().optional().describe("Reply to this synced message instead of starting a new one."),
+    customer_id: z144.string().optional(),
+    lead_id: z144.string().optional(),
+    tour_id: z144.string().optional(),
+    booking_id: z144.string().optional(),
+    confirm: z144.literal(true)
   },
   annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
   handler: async (input, ctx) => {
@@ -8729,8 +8908,8 @@ var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-wordpress-mcp",
   title: "Australian Racing Tours MCP v2",
-  version: "2.8.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_pull_itinerary_day_photos` (one-time backfill of the live website day galleries into ART; preview then confirm=true \u2014 skips days that already have ART photos), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD.  CRM / Leads (admin/manager only): `list_leads` (filter by stage/owner/tour/source/attention/nurture/date), `get_lead` (lead + contact + tour interests + stage history + activity), `list_lead_activities`, `list_crm_settings` (stages, sources, lead types, lost reasons, sales settings), `get_crm_report` (pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality), `get_data_quality` (duplicate contacts, missing phone/email/location, enquiry hygiene gaps and unhealthy Xero invoice links \u2014 the Data Quality dashboard's own figures), `list_tour_interests`, `list_crm_automation` (rules and run log), `list_form_submissions` (Register Interest / Booking submissions exactly as submitted, with utm attribution), `list_lead_forms`. Safe lead writes: `update_lead` (stage, owner, priority, next action, nurture review date, value, lost reason), `log_lead_activity` (call/note/meeting \u2014 writes history only, never sends), `upsert_tour_interest`. Marketing (admin/manager only): `list_marketing_campaigns`, `get_marketing_campaign` (unique-contact figures deduplicated, event totals and top clicked links separately), `list_campaign_recipients` (who opened / clicked / failed), `list_campaign_events` (raw opens and clicks with link URLs), `list_marketing_audiences`, `count_marketing_audience` (resolve a saved or ad-hoc audience live; consent, unsubscribes and suppressions always apply), `get_tour_marketing_intelligence` (per-tour funnel with a comparable previous period), `list_tour_marketing_people` (the contacts behind any tour figure), `list_marketing_link_rules` ('what a click means'), `get_contact_marketing_status` (eligibility, suppressions, campaign history), `list_email_suppressions`. Engagement tracking exists only from Phase 6 onwards \u2014 never present older campaigns as having zero interest, they were untracked. Receiving an email is never attribution; only the tracked click -> form -> enquiry -> booking chain is. Communications hub (admin/manager only, per-mailbox access enforced): `list_mailboxes`, `search_correspondence` (text, contact, lead, tour, booking, mailbox, direction, dates; include_body for full text), `get_correspondence_message` (full message plus thread and matched records). Sending is BUILT BUT SWITCHED OFF: `send_marketing_campaign`, `schedule_marketing_campaign` and `send_individual_email` refuse to act until an admin sets MCP_SENDING_ENABLED=true. Destructive tools cascade \u2014 confirm with the user before calling.",
+  version: "2.9.0",
+  instructions: "Tools for the Australian Racing Tours tour manager. WordPress content tools are exposed first for client compatibility: `wordpress_health_check`, `wordpress_list_tours`, `wordpress_get_tour`, `wordpress_find_tour`, `wordpress_list_pages`, `wordpress_get_page`, `wordpress_get_media`, `wordpress_search_media`, `wordpress_get_taxonomies`, `wordpress_get_tour_itinerary`, `wordpress_preview_tour_itinerary`, `wordpress_push_tour_itinerary` (ART is the source of truth; preview the diff, get the user's approval, then push with confirm=true). Tour Comms -> Messages: `get_tour_messages`, `update_tour_messages` (welcome message on/off plus heading/body/sign-off, pickup/arrival message, welcome drinks message), `upload_tour_pickup_document` (arrivals map etc., returns a public URL to hyperlink from the pickup message). Itinerary authoring: `replace_tour_itinerary` (destructive full rebuild - confirm first), `reorder_itinerary_days`, `reorder_itinerary_entries`. Itinerary day photos (max 3 per day, ART is the source of truth): `list_itinerary_day_photos`, `upload_itinerary_day_photo` (base64 image against a day id from `get_tour_itinerary`), `delete_itinerary_day_photo` (confirm=true), `wordpress_pull_itinerary_day_photos` (one-time backfill of the live website day galleries into ART; preview then confirm=true \u2014 skips days that already have ART photos), `wordpress_sync_itinerary_day_photos` (confirm=true \u2014 uploads any new photo to the WordPress media library and writes each day's `gallery` on the linked tour post; days with no ART photos keep their live gallery). Inclusions & exclusions (ART is the source of truth for the tour page's Price-section lists and the Tour Details description): `get_tour_inclusions`, `update_tour_inclusions` (replaces one full list), `reorder_tour_inclusions`, `update_tour_website_description`, `wordpress_pull_tour_inclusions` (one-time import from the live page; confirm=true to write), `wordpress_preview_tour_inclusions`, `wordpress_push_tour_inclusions` (confirm=true; never blanks a live list). The WordPress read tools are read-only and restricted to admin or manager users. All write tools and every expanded read tool (attachments, comms, waivers, travel docs, ops docs, alerts, host assignments, tasks, etc.) are also restricted to admin or manager users. Read: `list_tours` (does NOT guarantee business ordering \u2014 never assume its first row is the next/earliest/latest tour), `get_next_departing_tour` (deterministic soonest-departing tour \u2014 ALWAYS use for 'next tour' style questions), `get_tour` (full tour incl. pricing, instalments, inclusions/exclusions, ops notes, welcome message, cancellation override, flights), `list_bookings`, `get_booking`, `search_customers`, `get_customer`, `list_customer_bookings`, `list_tour_activities`, `get_activity`, `list_activity_attachments`, `list_hotel_attachments`, `get_attachment_download_url` (temporary signed link for any stored file_path), `list_activity_external_links`, `list_tour_hotels`, `get_hotel` (full hotel with hotel_bookings/attachments/links), `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_booking_travel_docs` (passports/visas \u2014 full detail), `list_booking_waivers`, `list_booking_comments`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_tour_attachments`, `list_tour_external_links`, `list_tour_pickup_options`, `list_tour_host_assignments`, `list_tour_document_images`, `list_tour_ops_reviews`, `list_tour_alerts`, `list_tour_operations_documents`, `list_email_rules`, `list_email_templates`, `list_tour_email_rule_overrides`, `list_tour_email_logs`, `list_scheduled_emails`, `list_pending_email_approvals`. Task Manager: `list_tasks` (filter by status/priority/category/tour/assignee/search), `get_task` (full detail incl. assignments, subtasks, comments, watchers, approvers, entity links, attachments), `list_task_statuses`. Xero financial (read-only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices`, `get_payment_exception_report`, `compare_art_payment_report_to_xero`, `explain_booking_payment_position`, `list_invoice_mapping_issues`. Write (admin/manager only): tours \u2014 `create_tour`, `update_tour` (full field parity incl. inclusions/exclusions/instalments/pricing/welcome message/cancellation override/flights/manual_billing/manual_emails); hotels \u2014 `create_hotel`, `update_hotel`, `delete_hotel`, `upsert_hotel_booking`, `delete_hotel_booking`; activities \u2014 `create_activity`, `update_activity`, `delete_activity`, `upsert_activity_booking`, `delete_activity_booking`; itineraries \u2014 `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day`; additional info \u2014 `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails); file uploads (base64 `data_base64`, max 20MB) \u2014 `upload_tour_attachment`, `upload_activity_attachment`, `upload_hotel_attachment`, `upload_itinerary_document` (document='itinerary_snapshot' or 'guest_document'; replaces the existing file), `upload_tour_document_image` (guest doc images, max 10 per tour); tasks \u2014 `create_task`, `update_task` (set status='completed' to complete), `delete_task`, `add_task_comment`, `assign_task`, `unassign_task`, `add_task_subtask`, `update_task_subtask`, `delete_task_subtask`. Dates are YYYY-MM-DD.  CRM / Leads (admin/manager only): `list_leads` (filter by stage/owner/tour/source/attention/nurture/date), `get_lead` (lead + contact + tour interests + stage history + activity), `list_lead_activities`, `list_crm_settings` (stages, sources, lead types, lost reasons, sales settings), `get_crm_report` (pipeline_summary, funnel, response_performance, attribution_performance, tour_sales, action_board, data_quality), `get_data_quality` (duplicate contacts, missing phone/email/location, enquiry hygiene gaps and unhealthy Xero invoice links \u2014 the Data Quality dashboard's own figures), `list_tour_interests`, `list_crm_automation` (rules and run log), `list_form_submissions` (Register Interest / Booking submissions exactly as submitted, with utm attribution), `list_lead_forms`. Safe lead writes: `update_lead` (stage, owner, priority, next action, nurture review date, value, lost reason), `log_lead_activity` (call/note/meeting \u2014 writes history only, never sends), `upsert_tour_interest`. Marketing (admin/manager only): `list_marketing_campaigns`, `get_marketing_campaign` (unique-contact figures deduplicated, event totals and top clicked links separately), `list_campaign_recipients` (who opened / clicked / failed), `list_campaign_events` (raw opens and clicks with link URLs), `list_marketing_audiences`, `count_marketing_audience` (resolve a saved or ad-hoc audience live; consent, unsubscribes and suppressions always apply), `get_tour_marketing_intelligence` (per-tour funnel with a comparable previous period), `list_tour_marketing_people` (the contacts behind any tour figure), `list_marketing_link_rules` ('what a click means'), `get_contact_marketing_status` (eligibility, suppressions, campaign history), `list_email_suppressions`. Engagement tracking exists only from Phase 6 onwards \u2014 never present older campaigns as having zero interest, they were untracked. Receiving an email is never attribution; only the tracked click -> form -> enquiry -> booking chain is. Communications hub (admin/manager only, per-mailbox access enforced): `list_mailboxes`, `search_correspondence` (text, contact, lead, tour, booking, mailbox, direction, dates; include_body for full text), `get_correspondence_message` (full message plus thread and matched records). Sending is BUILT BUT SWITCHED OFF: `send_marketing_campaign`, `schedule_marketing_campaign` and `send_individual_email` refuse to act until an admin sets MCP_SENDING_ENABLED=true. Destructive tools cascade \u2014 confirm with the user before calling. Full-field editing: `update_record_fields` changes ANY editable field on a tour, activity or hotel (booking_status, payment_status, cancellation, cutoffs, prices, notes\u2026) using column names from get_tour/get_activity/get_hotel; system fields are locked. Contacts: `get_contact_details` (every field) and `update_contact` (any field; name/email/phone changes return a preview first \u2014 show the user and repeat with confirm=true only after they agree; marketing consent is locked). Tickets and contracts: upload PDFs with upload_activity_attachment / upload_hotel_attachment / upload_tour_attachment, or store a link with `manage_external_link` (add/update/remove).",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -8826,6 +9005,10 @@ var mcp_default = defineMcp({
     list_tour_email_rule_overrides_default,
     create_hotel_default,
     update_hotel_default,
+    update_record_fields_default,
+    get_contact_details_default,
+    update_contact_default,
+    manage_external_link_default,
     delete_hotel_default,
     upsert_hotel_booking_default,
     delete_hotel_booking_default,
