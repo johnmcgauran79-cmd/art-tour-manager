@@ -135,22 +135,37 @@ export const useCampaigns = () =>
     },
     staleTime: 30000,
   });
+/** Thrown when a save is refused because the email was saved elsewhere first. */
+export class EdmSaveConflictError extends Error {
+  constructor() {
+    super("This email was changed in another window or by someone else since you opened it.");
+    this.name = "EdmSaveConflictError";
+  }
+}
+
 export const useSaveCampaign = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: Partial<MarketingCampaign> & { id?: string; silent?: boolean }) => {
-      const { id, silent, ...rest } = input;
+    mutationFn: async (
+      input: Partial<MarketingCampaign> & {
+        id?: string;
+        silent?: boolean;
+        /** Only save if nobody else has saved since this time (conflict guard). */
+        expectedUpdatedAt?: string | null;
+      }
+    ) => {
+      const { id, silent, expectedUpdatedAt, ...rest } = input as any;
       const payload: any = { ...rest };
       delete payload.silent;
+      delete payload.updated_at;
+      delete payload.created_at;
       if (id) {
-        const { data, error } = await supabase
-          .from("marketing_campaigns")
-          .update(payload)
-          .eq("id", id)
-          .select()
-          .maybeSingle();
+        let q = supabase.from("marketing_campaigns").update(payload).eq("id", id);
+        if (expectedUpdatedAt) q = q.eq("updated_at", expectedUpdatedAt);
+        const { data, error } = await q.select().maybeSingle();
         if (error) throw error;
+        if (!data && expectedUpdatedAt) throw new EdmSaveConflictError();
         return data as unknown as MarketingCampaign;
       }
       const user = (await supabase.auth.getUser()).data.user;
@@ -706,19 +721,23 @@ export const useSaveEdmTemplate = () => {
         saveAsNewVersion?: boolean;
         /** Autosave: persist without showing a toast. */
         silent?: boolean;
+        /** Only save if nobody else has saved since this time (conflict guard). */
+        expectedUpdatedAt?: string | null;
       }
     ) => {
-      const { id, saveAsNewVersion, silent, created_at, updated_at, ...rest } = input as any;
+      const { id, saveAsNewVersion, silent, created_at, updated_at, expectedUpdatedAt, ...rest } =
+        input as any;
       const user = (await supabase.auth.getUser()).data.user;
 
       if (id && !saveAsNewVersion) {
-        const { data, error } = await supabase
+        let q = supabase
           .from("edm_templates")
           .update({ ...rest, updated_at: new Date().toISOString() })
-          .eq("id", id)
-          .select()
-          .maybeSingle();
+          .eq("id", id);
+        if (expectedUpdatedAt) q = q.eq("updated_at", expectedUpdatedAt);
+        const { data, error } = await q.select().maybeSingle();
         if (error) throw error;
+        if (!data && expectedUpdatedAt) throw new EdmSaveConflictError();
         return data as unknown as EdmTemplateRow;
       }
 
@@ -748,8 +767,10 @@ export const useSaveEdmTemplate = () => {
         title: v.id && !v.saveAsNewVersion ? "Template updated" : "Template saved",
       });
     },
-    onError: (e: any) =>
-      toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onError: (e: any, v: any) => {
+      if (v?.silent || e instanceof EdmSaveConflictError) return;
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    },
   });
 };
 
