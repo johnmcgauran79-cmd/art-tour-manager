@@ -18,6 +18,7 @@ import {
   Minus,
 
   Monitor,
+  Moon,
   MousePointerClick,
   MoreHorizontal,
   Plus,
@@ -156,6 +157,8 @@ export function EdmBuilder({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [livePreview, setLivePreview] = useState(true);
+  /** Show the canvas as a phone in dark mode would. */
+  const [darkPreview, setDarkPreview] = useState(false);
   /** When set, the next click on the email places a block of this type. */
   const [pickType, setPickType] = useState<EdmPaletteType | null>(null);
   /** Palette tile currently being dragged onto the email. */
@@ -248,8 +251,13 @@ export function EdmBuilder({
     () =>
       mode === "html"
         ? html || "<p style='font-family:Arial'>Paste your HTML to see a preview.</p>"
-        : renderEdmHtml(blocks, brand, { subject, preheader, interactive: true }),
-    [mode, html, blocks, brand, subject, preheader]
+        : renderEdmHtml(blocks, brand, {
+            subject,
+            preheader,
+            interactive: true,
+            forceDark: darkPreview,
+          }),
+    [mode, html, blocks, brand, subject, preheader, darkPreview]
   );
 
   const update = (id: string, patch: Partial<EdmBlock>) =>
@@ -438,6 +446,16 @@ export function EdmBuilder({
               onClick={() => setDevice("mobile")}
             >
               <Smartphone className="h-3.5 w-3.5" /> Mobile
+            </Button>
+            <Button
+              variant={darkPreview ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setDarkPreview((d) => !d)}
+              title="Preview how the email looks in dark mode"
+              aria-pressed={darkPreview}
+            >
+              <Moon className="h-3.5 w-3.5" /> Dark
             </Button>
           </div>
         )}
@@ -1212,6 +1230,21 @@ function BlockInspector({
               onChange={(e) => onChange({ maxWidth: Number(e.target.value) || 800 })}
             />
           </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+          <div>
+            <Label className="text-sm">Night / dark mode friendly</Label>
+            <p className="text-xs text-muted-foreground">
+              On phones and mail apps set to dark mode, the white background turns dark and plain
+              text turns light. Anything you've coloured yourself keeps its colour. Use the moon
+              button at the top to check it.
+            </p>
+          </div>
+          <Switch
+            checked={block.darkMode !== false}
+            onCheckedChange={(on) => onChange({ darkMode: on })}
+          />
         </div>
 
         <div className="space-y-3 rounded-md border p-3">
