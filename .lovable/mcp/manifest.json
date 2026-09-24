@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.8.0",
+      "version": "2.9.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -2998,6 +2998,178 @@
           },
           "required": [
             "hotel_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_record_fields",
+        "title": "Update any field on a tour, activity or hotel",
+        "description": "Change any editable field on a tour, activity or hotel — everything shown in the app, including booking_status, payment_status, cancellation details, cutoff dates, prices and notes. Pass column names exactly as returned by get_tour / get_activity / get_hotel. Locked system fields are refused. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "type": "string",
+              "enum": [
+                "tour",
+                "activity",
+                "hotel"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "description": "The record id (uuid)."
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "description": "Map of column name to new value. Dates YYYY-MM-DD; use null to clear."
+            }
+          },
+          "required": [
+            "record_type",
+            "id",
+            "fields"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_contact_details",
+        "title": "Get full contact details",
+        "description": "Fetch every field on a contact record (name, title, contact details, address, date of birth, emergency contact, dietary, medical, accessibility, notes, lead fields). Passport details are not stored here. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string",
+              "description": "The contact id (uuid)."
+            }
+          },
+          "required": [
+            "customer_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_contact",
+        "title": "Update contact details",
+        "description": "Change any editable field on a contact (title, address, date of birth, emergency contact, dietary, medical, accessibility, notes, spouse, etc.). Changes to name, email or phone are NOT saved on the first call: the tool returns the before/after values — show them to the user, and only after they confirm call again with confirm=true. Marketing consent and system fields are locked. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "customer_id": {
+              "type": "string",
+              "description": "The contact id (uuid)."
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "description": "Map of column name (as returned by get_contact_details) to new value. Use null to clear."
+            },
+            "confirm": {
+              "type": "boolean",
+              "description": "Set true only after the user has approved name/email/phone changes."
+            }
+          },
+          "required": [
+            "customer_id",
+            "fields"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "manage_external_link",
+        "title": "Add or remove a link on a tour, activity or hotel",
+        "description": "Add, edit or remove a labelled link (e.g. tickets or a contract stored in SharePoint/Google Drive) on a tour, activity or hotel. action='add' needs parent_id, label and url; 'update' needs link_id; 'remove' needs link_id and confirm=true. Admin/manager only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "record_type": {
+              "type": "string",
+              "enum": [
+                "tour",
+                "activity",
+                "hotel"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "add",
+                "update",
+                "remove"
+              ]
+            },
+            "parent_id": {
+              "type": "string",
+              "description": "Tour/activity/hotel id (for add)."
+            },
+            "link_id": {
+              "type": "string",
+              "description": "Existing link id (for update/remove)."
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "confirm": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "record_type",
+            "action"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
