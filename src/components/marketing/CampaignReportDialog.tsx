@@ -57,19 +57,29 @@ export function CampaignReportDialog({ campaign, onClose, onEdit }: Props) {
     },
   });
 
-  const unique = useMemo(() => {
-    const rows = recipients as any[];
-    const key = (r: any) => r.customer_id ?? r.email;
-    const count = (f: (r: any) => boolean) =>
-      new Set(rows.filter(f).map(key).filter(Boolean)).size;
-    return {
-      recipients: count(() => true),
-      sent: count((r) => !!r.sent_at),
-      failed: count((r) => r.status === "failed" || r.status === "bounced"),
-      opened: count((r) => !!r.opened_at),
-      clicked: count((r) => !!r.clicked_at),
-    };
-  }, [recipients]);
+  const { data: unique = { sent: 0, opened: 0, clicked: 0, bounced: 0 } } = useQuery({
+    queryKey: ["campaign-unique-counts", campaign?.id],
+    enabled: !!campaign?.id,
+    queryFn: async () => {
+      const c = async (apply: (q: any) => any) => {
+        const { count, error } = await apply(
+          supabase
+            .from("campaign_recipients")
+            .select("id", { count: "exact", head: true })
+            .eq("campaign_id", campaign!.id)
+        );
+        if (error) throw error;
+        return count ?? 0;
+      };
+      const [sent, opened, clicked, bounced] = await Promise.all([
+        c((q) => q.not("sent_at", "is", null)),
+        c((q) => q.not("opened_at", "is", null)),
+        c((q) => q.not("clicked_at", "is", null)),
+        c((q) => q.eq("status", "bounced")),
+      ]);
+      return { sent, opened, clicked, bounced };
+    },
+  });
 
   const topLinks = useMemo(() => {
     const map = new Map<string, number>();
@@ -90,7 +100,7 @@ export function CampaignReportDialog({ campaign, onClose, onEdit }: Props) {
         ["Clicks (events)", campaign.click_count ?? 0],
         ["Unique openers", `${unique.opened} (${pct(unique.opened, unique.sent)})`],
         ["Unique clickers", `${unique.clicked} (${pct(unique.clicked, unique.sent)})`],
-        ["Bounces", campaign.bounce_count ?? 0],
+        ["Bounces", `${Math.max(unique.bounced, campaign.bounce_count ?? 0)} (${pct(Math.max(unique.bounced, campaign.bounce_count ?? 0), unique.sent)})`],
         ["Unsubscribes", campaign.unsubscribe_count ?? 0],
         ["Send started", dt(campaign.send_started_at)],
         ["Send completed", dt(campaign.send_completed_at)],
