@@ -5168,6 +5168,9 @@ export type Database = {
           send_completed_at: string | null
           send_started_at: string | null
           sent_count: number
+          source_template_copied_at: string | null
+          source_template_id: string | null
+          source_template_name: string | null
           status: string
           subject: string
           total_recipients: number
@@ -5200,6 +5203,9 @@ export type Database = {
           send_completed_at?: string | null
           send_started_at?: string | null
           sent_count?: number
+          source_template_copied_at?: string | null
+          source_template_id?: string | null
+          source_template_name?: string | null
           status?: string
           subject?: string
           total_recipients?: number
@@ -5232,6 +5238,9 @@ export type Database = {
           send_completed_at?: string | null
           send_started_at?: string | null
           sent_count?: number
+          source_template_copied_at?: string | null
+          source_template_id?: string | null
+          source_template_name?: string | null
           status?: string
           subject?: string
           total_recipients?: number

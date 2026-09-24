@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { SaveConflictDialog, UnsavedChangesDialog, afterDialogClose } from "./EdmSafetyDialogs";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,6 +60,7 @@ import {
   useSendCampaignTest,
   type EdmTemplateRow,
   type MarketingCampaign,
+  EdmSaveConflictError,
 } from "@/hooks/useMarketing";
 import {
   countAudience,
@@ -87,6 +90,34 @@ const statusVariant: Record<string, "secondary" | "default" | "outline" | "destr
 };
 
 /** ISO timestamp -> value for <input type="datetime-local"> in local time. */
+/**
+ * What a campaign "is" for save purposes: everything except timestamps and
+ * send stats, with the email HTML rebuilt from the blocks.
+ */
+const campaignFingerprint = (c: Partial<MarketingCampaign>, brand: EdmBrand) => {
+  const {
+    updated_at,
+    created_at,
+    sent_count,
+    failed_count,
+    open_count,
+    click_count,
+    bounce_count,
+    unsubscribe_count,
+    total_recipients,
+    ...rest
+  } = c as any;
+  const mode = (c.editor_mode as "blocks" | "html") || "blocks";
+  const html_body =
+    mode === "blocks"
+      ? renderEdmHtml((c.blocks as EdmBlock[]) || [], brand, {
+          subject: c.subject || undefined,
+          preheader: c.preheader || undefined,
+        })
+      : c.html_body || "";
+  return JSON.stringify({ ...rest, html_body });
+};
+
 const toLocalInput = (iso?: string | null) => {
   if (!iso) return "";
   const d = new Date(iso);
@@ -133,6 +164,15 @@ export function CampaignsTab({
     asNewVersion: boolean;
   } | null>(null);
   const [editing, setEditing] = useState<Partial<MarketingCampaign> | null>(null);
+  /** Fingerprint of the last saved copy — drives autosave and the unsaved-changes check. */
+  const lastAutoSaveRef = useRef<string | null>(null);
+  /** One save at a time, so an older copy can never land after a newer one. */
+  const inFlightRef = useRef<Promise<any> | null>(null);
+  /** Saved elsewhere since it was opened — autosave pauses until the user decides. */
+  const [conflict, setConflict] = useState(false);
+  const conflictRef = useRef(false);
+  conflictRef.current = conflict;
+  const [confirmClose, setConfirmClose] = useState(false);
   const [report, setReport] = useState<MarketingCampaign | null>(null);
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
   const [testEmail, setTestEmail] = useState("");
@@ -142,6 +182,58 @@ export function CampaignsTab({
   const [reviewMode, setReviewMode] = useState<"now" | "schedule">("now");
   const [emailsRaw, setEmailsRaw] = useState("");
 
+
+  const brandFor = (brandId?: string | null): EdmBrand => {
+    const b =
+      brands.find((x) => x.id === brandId) || brands.find((x) => x.is_default) || brands[0];
+    return {
+      name: b?.name || "Australian Racing Tours",
+      emailHeaderImageUrl: b?.email_header_image_url,
+      colorPrimary: b?.color_primary,
+      colorBorder: b?.color_border,
+      colorButton: b?.color_button,
+      colorButtonText: b?.color_button_text,
+      companyAddress: b?.company_address,
+      companyPhone: b?.company_phone,
+      companyWebsite: b?.company_website,
+      footerText: b?.footer_text,
+      paletteColors: b?.palette_colors,
+    };
+  };
+
+  /** Scheduled campaigns whose stored email no longer matches the current branding. */
+  const staleScheduled = useMemo(() => {
+    const ids = new Set<string>();
+    if (!brands.length) return ids;
+    for (const c of campaigns) {
+      if (c.status !== "scheduled" || (c.editor_mode || "blocks") !== "blocks") continue;
+      const fresh = renderEdmHtml((c.blocks as EdmBlock[]) || [], brandFor(c.brand_id), {
+        subject: c.subject || undefined,
+        preheader: c.preheader || undefined,
+      });
+      if (fresh !== (c.html_body || "")) ids.add(c.id);
+    }
+    return ids;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaigns, brands]);
+
+  const refreshScheduledHtml = async (c: MarketingCampaign) => {
+    const html_body = renderEdmHtml((c.blocks as EdmBlock[]) || [], brandFor(c.brand_id), {
+      subject: c.subject || undefined,
+      preheader: c.preheader || undefined,
+    });
+    try {
+      await save.mutateAsync({ id: c.id, html_body, expectedUpdatedAt: c.updated_at });
+    } catch {
+      toast({
+        title: "Couldn't update",
+        description: "This campaign changed a moment ago. Refresh the page and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Updated", description: "The scheduled email now uses your current branding." });
+  };
 
   const brand = useMemo<EdmBrand>(() => {
     const b =
@@ -278,6 +370,8 @@ export function CampaignsTab({
 
   const openCampaign = (c: Partial<MarketingCampaign>) => {
     setEditing(c);
+    lastAutoSaveRef.current = c.id ? campaignFingerprint(c, brandFor(c.brand_id)) : null;
+    setConflict(false);
     setSourceMode(null);
     setScheduleAt(toLocalInput(c.scheduled_send_at));
     setEmailsRaw(((c.audience_filters as AudienceFilters)?.emails || []).join("\n"));
@@ -328,6 +422,9 @@ export function CampaignsTab({
       blocks: (tpl.blocks as EdmBlock[]) || [],
       html_body: tpl.html_body || "",
       brand_id: tpl.brand_id ?? blankDraft().brand_id ?? null,
+      source_template_id: tpl.id,
+      source_template_name: tpl.name,
+      source_template_copied_at: new Date().toISOString(),
     });
   };
 
@@ -347,8 +444,27 @@ export function CampaignsTab({
         : editing.html_body || "";
 
     const payload = { ...editing, html_body, ...extra };
-    const saved = await save.mutateAsync(payload);
-    if (saved?.id) setEditing({ ...payload, id: saved.id });
+    while (inFlightRef.current) await inFlightRef.current.catch(() => null);
+    const task = save.mutateAsync({
+      ...payload,
+      expectedUpdatedAt: payload.id ? editing.updated_at ?? null : null,
+    } as any);
+    inFlightRef.current = task;
+    let saved: MarketingCampaign | null = null;
+    try {
+      saved = await task;
+    } catch (e) {
+      if (e instanceof EdmSaveConflictError) setConflict(true);
+      return null;
+    } finally {
+      if (inFlightRef.current === task) inFlightRef.current = null;
+    }
+    if (saved?.id) {
+      const next = { ...payload, id: saved.id, updated_at: saved.updated_at };
+      setEditing(next);
+      editingRef.current = next;
+      lastAutoSaveRef.current = campaignFingerprint(next, brand);
+    }
     return saved;
   };
 
@@ -357,10 +473,56 @@ export function CampaignsTab({
     if (saved) toast({ title: "Draft saved", description: "Come back any time to finish it." });
   };
 
+  /** Close the editor, but never silently throw away unsaved edits. */
+  const requestClose = () => {
+    const draft = editingRef.current;
+    const editable = !draft?.status || ["draft", "scheduled"].includes(draft.status);
+    const dirty =
+      !!draft &&
+      editable &&
+      (!!inFlightRef.current ||
+        (!!draft.id && lastAutoSaveRef.current !== campaignFingerprint(draft, brand)) ||
+        (!draft.id && !!draft.name?.trim() && !!draft.subject?.trim()));
+    if (dirty) setConfirmClose(true);
+    else setOpen(false);
+  };
+
+  const loadLatest = async () => {
+    const id = editingRef.current?.id;
+    setConflict(false);
+    if (!id) return;
+    const { data } = await supabase.from("marketing_campaigns").select("*").eq("id", id).maybeSingle();
+    if (data) {
+      const row = data as unknown as MarketingCampaign;
+      setEditing(row);
+      editingRef.current = row;
+      lastAutoSaveRef.current = campaignFingerprint(row, brandFor(row.brand_id));
+      toast({ title: "Latest version loaded" });
+    }
+  };
+
+  const keepMine = async () => {
+    const id = editingRef.current?.id;
+    if (id) {
+      const { data } = await supabase
+        .from("marketing_campaigns")
+        .select("updated_at")
+        .eq("id", id)
+        .maybeSingle();
+      if (data?.updated_at && editingRef.current) {
+        editingRef.current = { ...editingRef.current, updated_at: data.updated_at };
+        setEditing((prev) => (prev ? { ...prev, updated_at: data.updated_at } : prev));
+      }
+    }
+    conflictRef.current = false;
+    setConflict(false);
+    lastAutoSaveRef.current = null; // next autosave writes this version
+    toast({ title: "Keeping your version", description: "It will be saved in a moment." });
+  };
+
   /* ------------------------------- autosave (15s) ------------------------------ */
   const editingRef = useRef<Partial<MarketingCampaign> | null>(editing);
   editingRef.current = editing;
-  const lastAutoSaveRef = useRef<string | null>(null);
   const [autoSaving, setAutoSaving] = useState(false);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
 
@@ -384,19 +546,36 @@ export function CampaignsTab({
             })
           : draft.html_body || "";
       const payload = { ...draft, html_body };
-      const fingerprint = JSON.stringify(payload);
-      if (lastAutoSaveRef.current === fingerprint) return;
+      const fingerprint = campaignFingerprint(draft, brand);
+      if (draft.id && lastAutoSaveRef.current === fingerprint) return;
+      if (conflictRef.current || inFlightRef.current) return;
+      const task = save.mutateAsync({
+        ...payload,
+        silent: true,
+        expectedUpdatedAt: draft.id ? draft.updated_at ?? null : null,
+      } as any);
+      inFlightRef.current = task;
       try {
         setAutoSaving(true);
-        const saved = await save.mutateAsync({ ...payload, silent: true } as any);
+        const saved = await task;
         lastAutoSaveRef.current = fingerprint;
         setAutoSavedAt(new Date());
-        if (saved?.id && !draft.id) {
-          setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
+        if (saved?.id) {
+          setEditing((prev) =>
+            prev ? { ...prev, id: saved.id, updated_at: saved.updated_at } : prev
+          );
+          if (editingRef.current)
+            editingRef.current = {
+              ...editingRef.current,
+              id: saved.id,
+              updated_at: saved.updated_at,
+            };
         }
-      } catch {
-        // Leave the fingerprint unset so the next tick retries.
+      } catch (e) {
+        if (e instanceof EdmSaveConflictError) setConflict(true);
+        // Otherwise leave the fingerprint unset so the next tick retries.
       } finally {
+        if (inFlightRef.current === task) inFlightRef.current = null;
         setAutoSaving(false);
       }
     };
@@ -518,7 +697,8 @@ export function CampaignsTab({
 
   const handleSend = async (contacts: AudienceContact[]) => {
     const saved = await persist();
-    const campaignId = saved?.id || editing?.id;
+    // If the save didn't go through, never send an out-of-date copy.
+    const campaignId = saved?.id;
     if (!campaignId) return;
     if (!contacts.length) {
       toast({ title: "No consented recipients in that audience", variant: "destructive" });
@@ -652,6 +832,22 @@ export function CampaignsTab({
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[c.status] || "secondary"}>{c.status}</Badge>
+                    {staleScheduled.has(c.id) && (
+                      <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+                        <div>Branding changed since this was scheduled.</div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void refreshScheduledHtml(c);
+                          }}
+                        >
+                          Update to current branding
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {c.scheduled_send_at
@@ -702,6 +898,26 @@ export function CampaignsTab({
       </Card>
 
       {/* ----------------------------- start-from picker ---------------------------- */}
+      <UnsavedChangesDialog
+        open={confirmClose}
+        saving={save.isPending}
+        onKeepEditing={() => setConfirmClose(false)}
+        onDiscard={() => {
+          setConfirmClose(false);
+          afterDialogClose(() => setOpen(false));
+        }}
+        onSaveAndClose={async () => {
+          setConfirmClose(false);
+          const saved = await persist();
+          if (saved) afterDialogClose(() => setOpen(false));
+        }}
+      />
+      <SaveConflictDialog
+        open={open && conflict}
+        onLoadLatest={loadLatest}
+        onKeepMine={keepMine}
+      />
+
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
@@ -767,7 +983,7 @@ export function CampaignsTab({
       </Dialog>
 
       {/* ------------------------------- campaign editor ---------------------------- */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : requestClose())}>
         <DialogContent className="max-h-[92vh] max-w-[95vw] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing?.id ? "Edit campaign" : "New campaign"}</DialogTitle>
@@ -775,6 +991,16 @@ export function CampaignsTab({
               Design your email, save it as a draft, send yourself a test, then schedule or send it.
             </DialogDescription>
           </DialogHeader>
+
+          {editing?.source_template_name && (
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Copied from the template <strong>{editing.source_template_name}</strong>
+              {editing.source_template_copied_at
+                ? ` on ${format(new Date(editing.source_template_copied_at), "dd/MM/yyyy")}`
+                : ""}
+              . This is its own copy, so later changes to the template won't change this campaign.
+            </div>
+          )}
 
           {editing && (
             <div className="space-y-5">
@@ -1088,7 +1314,7 @@ export function CampaignsTab({
               )}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={requestClose}>
               Close
             </Button>
             <Button

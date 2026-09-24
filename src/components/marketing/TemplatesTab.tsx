@@ -44,8 +44,11 @@ import {
   useSaveCampaign,
   useSaveEdmTemplate,
   useSendTemplateTest,
+  EdmSaveConflictError,
   type EdmTemplateRow,
 } from "@/hooks/useMarketing";
+import { supabase } from "@/integrations/supabase/client";
+import { SaveConflictDialog, UnsavedChangesDialog, afterDialogClose } from "./EdmSafetyDialogs";
 import { useAuth } from "@/hooks/useAuth";
 import { renderEdmHtml, type EdmBlock, type EdmBrand } from "@/lib/edm/blocks";
 import { edmStarterTemplates } from "@/lib/edm/templates";
@@ -142,6 +145,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       version: 1,
     });
     lastSavedRef.current = null;
+    setConflict(false);
     setSavedAt(null);
     setOpen(true);
   };
@@ -151,6 +155,11 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
   const [autoSaveOn, setAutoSaveOn] = useState(true);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [autoSaving, setAutoSaving] = useState(false);
+  /** Saved elsewhere since we opened it — autosave pauses until the user decides. */
+  const [conflict, setConflict] = useState(false);
+  const conflictRef = useRef(false);
+  conflictRef.current = conflict;
+  const [confirmClose, setConfirmClose] = useState(false);
 
   const payloadFor = useCallback(
     (t: Partial<EdmTemplateRow>) => {
@@ -177,88 +186,143 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
     [brands]
   );
 
-  // Autosave: debounce edits and persist quietly so nothing is lost.
-  useEffect(() => {
-    if (!open || !autoSaveOn || !editing?.name?.trim()) return;
-    const payload = payloadFor(editing);
-    const fingerprint = JSON.stringify(payload);
-    if (lastSavedRef.current === fingerprint) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        setAutoSaving(true);
-        const saved = await saveTemplate.mutateAsync({
-          id: editing.id,
-          silent: true,
-          ...payload,
-        });
-        lastSavedRef.current = fingerprint;
-        setSavedAt(new Date());
-        if (saved?.id && !editing.id) setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
-      } catch {
-        // Leave the fingerprint unset so the next tick retries.
-      } finally {
-        setAutoSaving(false);
-      }
-    }, 1200);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing, open, autoSaveOn, payloadFor]);
-
-  // Safety net: even while typing non-stop, persist at least every 15 seconds.
   const editingRef = useRef<Partial<EdmTemplateRow> | null>(editing);
   editingRef.current = editing;
-  useEffect(() => {
-    if (!open || !autoSaveOn) return;
-    const timer = setInterval(async () => {
+
+  /**
+   * One save at a time. Autosave (debounced and the 15s safety net) and the
+   * Save buttons all go through here, so saves can never overlap and an older
+   * copy can never land after a newer one.
+   */
+  const inFlightRef = useRef<Promise<boolean> | null>(null);
+  const runSave = useCallback(
+    async (opts: { silent: boolean; force?: boolean } = { silent: true }): Promise<boolean> => {
+      // Wait for any save already on its way, then save the very latest copy.
+      while (inFlightRef.current) await inFlightRef.current.catch(() => false);
       const draft = editingRef.current;
-      if (!draft?.name?.trim()) return;
+      if (!draft?.name?.trim()) return false;
+      if (conflictRef.current && !opts.force) return false;
       const payload = payloadFor(draft);
       const fingerprint = JSON.stringify(payload);
-      if (lastSavedRef.current === fingerprint) return;
+      if (!opts.force && draft.id && lastSavedRef.current === fingerprint) return true;
+
+      const task = (async () => {
+        try {
+          if (opts.silent) setAutoSaving(true);
+          const saved = await saveTemplate.mutateAsync({
+            id: draft.id,
+            silent: opts.silent,
+            expectedUpdatedAt: draft.id ? draft.updated_at ?? null : null,
+            ...payload,
+          });
+          lastSavedRef.current = fingerprint;
+          setSavedAt(new Date());
+          if (saved?.id) {
+            setEditing((prev) =>
+              prev ? { ...prev, id: saved.id, updated_at: saved.updated_at } : prev
+            );
+            // Keep the ref in step so an immediate follow-up save uses the new stamp.
+            if (editingRef.current)
+              editingRef.current = {
+                ...editingRef.current,
+                id: saved.id,
+                updated_at: saved.updated_at,
+              };
+          }
+          return true;
+        } catch (e) {
+          if (e instanceof EdmSaveConflictError) setConflict(true);
+          // Otherwise leave the fingerprint unset so the next tick retries.
+          return false;
+        } finally {
+          if (opts.silent) setAutoSaving(false);
+        }
+      })();
+      inFlightRef.current = task;
       try {
-        setAutoSaving(true);
-        const saved = await saveTemplate.mutateAsync({ id: draft.id, silent: true, ...payload });
-        lastSavedRef.current = fingerprint;
-        setSavedAt(new Date());
-        if (saved?.id && !draft.id) setEditing((prev) => (prev ? { ...prev, id: saved.id } : prev));
-      } catch {
-        // Retry on the next tick.
+        return await task;
       } finally {
-        setAutoSaving(false);
+        if (inFlightRef.current === task) inFlightRef.current = null;
       }
-    }, 15000);
-    return () => clearInterval(timer);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, autoSaveOn, payloadFor]);
+    [payloadFor]
+  );
+
+  // Autosave: debounce edits (1.2s) and persist quietly so nothing is lost.
+  useEffect(() => {
+    if (!open || !autoSaveOn || !editing?.name?.trim() || conflict) return;
+    if (editing.id && lastSavedRef.current === JSON.stringify(payloadFor(editing))) return;
+    const timer = setTimeout(() => void runSave({ silent: true }), 1200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, open, autoSaveOn, payloadFor, conflict]);
+
+  // Safety net: even while typing non-stop, persist at least every 15 seconds.
+  useEffect(() => {
+    if (!open || !autoSaveOn) return;
+    const timer = setInterval(() => void runSave({ silent: true }), 15000);
+    return () => clearInterval(timer);
+  }, [open, autoSaveOn, runSave]);
+
+  const isDirty = () => {
+    const draft = editingRef.current;
+    if (!draft) return false;
+    return lastSavedRef.current !== JSON.stringify(payloadFor(draft));
+  };
+
+  /** Close the editor, but never silently throw away unsaved edits. */
+  const requestClose = () => {
+    if (isDirty() || inFlightRef.current) setConfirmClose(true);
+    else setOpen(false);
+  };
+
+  const loadLatest = async () => {
+    const id = editingRef.current?.id;
+    setConflict(false);
+    if (!id) return;
+    const { data } = await supabase.from("edm_templates").select("*").eq("id", id).maybeSingle();
+    if (data) {
+      const row = data as unknown as EdmTemplateRow;
+      setEditing(row);
+      lastSavedRef.current = JSON.stringify(payloadFor(row));
+      toast({ title: "Latest version loaded" });
+    }
+  };
+
+  const keepMine = async () => {
+    const id = editingRef.current?.id;
+    if (!id) return setConflict(false);
+    const { data } = await supabase
+      .from("edm_templates")
+      .select("updated_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (data?.updated_at && editingRef.current) {
+      editingRef.current = { ...editingRef.current, updated_at: data.updated_at };
+      setEditing((prev) => (prev ? { ...prev, updated_at: data.updated_at } : prev));
+    }
+    conflictRef.current = false;
+    setConflict(false);
+    const ok = await runSave({ silent: false, force: true });
+    if (ok) toast({ title: "Your version was saved" });
+  };
 
   const commit = async (asNewVersion: boolean) => {
     if (!editing?.name) {
       toast({ title: "Template name required", variant: "destructive" });
       return;
     }
-    const mode = (editing.editor_mode as "blocks" | "html") || "blocks";
-    const html_body =
-      mode === "blocks"
-        ? renderEdmHtml((editing.blocks as EdmBlock[]) || [], brand, {
-            subject: editing.subject || undefined,
-            preheader: editing.preheader || undefined,
-          })
-        : editing.html_body || "";
-
+    if (!asNewVersion) {
+      const ok = await runSave({ silent: false, force: true });
+      if (ok) setOpen(false);
+      return;
+    }
+    while (inFlightRef.current) await inFlightRef.current.catch(() => false);
     const saved = await saveTemplate.mutateAsync({
       id: editing.id,
-      saveAsNewVersion: asNewVersion,
-      name: editing.name,
-      description: editing.description || null,
-      category: editing.category || "General",
-      subject: editing.subject || null,
-      preheader: editing.preheader || null,
-      editor_mode: mode,
-      blocks: (editing.blocks as any) || [],
-      html_body,
-      brand_id: editing.brand_id || null,
+      saveAsNewVersion: true,
+      ...payloadFor(editing),
     });
     if (saved) setOpen(false);
   };
@@ -272,8 +336,11 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
       preheader: t.preheader || "",
       editor_mode: t.editor_mode,
       blocks: (t.blocks as any) || [],
-      html_body: t.html_body || "",
+      html_body: htmlFor(t),
       brand_id: t.brand_id || defaultBrand?.id || null,
+      source_template_id: t.id,
+      source_template_name: t.name,
+      source_template_copied_at: new Date().toISOString(),
       from_name: defaultBrand?.sender_name ?? null,
       from_email: defaultBrand?.from_email_client ?? null,
       status: "draft",
@@ -383,6 +450,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
                     onClick={() => {
                       setEditing(t);
                       lastSavedRef.current = JSON.stringify(payloadFor(t));
+                      setConflict(false);
                       setSavedAt(null);
                       setOpen(true);
                     }}
@@ -444,7 +512,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
         </div>
       ))}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : requestClose())}>
         <DialogContent className="max-h-[92vh] max-w-[95vw] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing?.id ? "Edit template" : "New template"}</DialogTitle>
@@ -549,7 +617,7 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
               ) : null}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={requestClose}>
               Close
             </Button>
             <Button
@@ -592,6 +660,26 @@ export function TemplatesTab({ onDraftCreated }: TemplatesTabProps = {}) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        open={confirmClose}
+        saving={saveTemplate.isPending}
+        onKeepEditing={() => setConfirmClose(false)}
+        onDiscard={() => {
+          setConfirmClose(false);
+          afterDialogClose(() => setOpen(false));
+        }}
+        onSaveAndClose={async () => {
+          setConfirmClose(false);
+          const ok = await runSave({ silent: false, force: true });
+          if (ok) afterDialogClose(() => setOpen(false));
+        }}
+      />
+      <SaveConflictDialog
+        open={open && conflict}
+        onLoadLatest={loadLatest}
+        onKeepMine={keepMine}
+      />
 
       {/* Send test email */}
       <Dialog

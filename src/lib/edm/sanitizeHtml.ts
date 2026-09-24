@@ -24,10 +24,37 @@ const ALLOWED_TAGS = new Set([
   "UL",
   "OL",
   "LI",
+  // Also produced by the settings-panel text editor — kept so formatting made
+  // there survives a later edit typed straight onto the canvas.
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "BLOCKQUOTE",
+  "SUP",
+  "SUB",
 ]);
 
-/** Inline styles worth keeping — colour choices made with the text toolbar. */
-const ALLOWED_STYLES = ["color", "background-color", "text-align", "font-weight", "font-style"];
+/**
+ * Inline styles worth keeping — anything the text toolbar or the settings-panel
+ * text editor can set. Must match what those tools produce, otherwise a canvas
+ * edit silently strips formatting that was applied elsewhere.
+ */
+const ALLOWED_STYLES = [
+  "color",
+  "background-color",
+  "text-align",
+  "font-weight",
+  "font-style",
+  "font-size",
+  "font-family",
+  "line-height",
+  "letter-spacing",
+  "text-decoration",
+];
+
+/** Quill list/indent classes, kept so nested lists survive a canvas edit. */
+const ALLOWED_CLASS = /^ql-(indent-\d|align-\w+)$/;
 
 const cleanStyle = (value: string) =>
   value
@@ -72,6 +99,12 @@ const scrub = (node: Element) => {
       return;
     }
     if (node.tagName === "A" && (name === "target" || name === "rel")) return;
+    if (name === "class") {
+      const kept = attr.value.split(/\s+/).filter((c) => ALLOWED_CLASS.test(c)).join(" ");
+      if (kept) node.setAttribute("class", kept);
+      else node.removeAttribute("class");
+      return;
+    }
     node.removeAttribute(attr.name);
   });
 };

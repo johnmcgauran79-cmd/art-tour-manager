@@ -126,3 +126,11 @@ The Keap → Brevo migration console, the `brevo-sync` and `crm-migrate-*` funct
 Gmail, Outlook and Apple Mail discard negative CSS margins, so blocks pulled tighter in the editor arrived with the full gap. Negative padding/margin is now converted into real padding before the email HTML is built: the block's own space is trimmed first, then the facing space on the neighbouring block. Editor and delivered email now lay out identically (desktop was the only view affected; phone view has its own padding rules).
 
 Also in the editor: a YouTube video block (`youtubeVideoId`, thumbnail, caption, link), 15-second autosave on templates and campaigns, a "Row" toolbar action with row highlighting, independent scrolling for the email and settings panes, per-side spacing entry ("All sides together" vs "Each side on its own"), and a test-email dialog that opens over the editor without closing it.
+
+## Editor reliability safeguards (24/09/2026)
+- `sanitizeEdmHtml` keeps the same formatting the settings-panel text editor produces (H1–H4, blockquote, font-size/family, line-height, letter-spacing, Quill indent classes), so canvas edits no longer strip it.
+- Template and campaign saves pass `expectedUpdatedAt`; if the row changed elsewhere, `EdmSaveConflictError` is thrown, autosave pauses and `SaveConflictDialog` offers "Load latest" / "Keep my version".
+- Saves are serialised (one in flight at a time) — templates via `runSave`, campaigns via `inFlightRef`.
+- Closing an editor with unsaved edits shows `UnsavedChangesDialog` (save and close / discard / keep editing).
+- Campaigns record `source_template_id/_name/_copied_at` and show a "Copied from template" note; they are one-off copies.
+- Scheduled campaigns whose stored HTML no longer matches current branding show "Update to current branding" in the list. `handleSend` never sends if the pre-send save failed.
