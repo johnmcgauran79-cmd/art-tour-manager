@@ -74,6 +74,7 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{pickup_button}}', '{{pickup_link}}',
     '{{itinerary_button}}', '{{itinerary_link}}',
     '{{guest_document_button}}', '{{guest_document_link}}',
+    '{{snapshot_itinerary_button}}', '{{snapshot_itinerary_link}}',
     '--- Custom Forms ---',
     '{{custom_form_button}}',
     '{{custom_form_button:Form Title}}',

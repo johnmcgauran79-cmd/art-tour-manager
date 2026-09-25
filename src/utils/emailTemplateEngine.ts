@@ -332,6 +332,8 @@ export interface EmailMergeData {
   itinerary_link?: string;
   guest_document_button?: string;
   guest_document_link?: string;
+  snapshot_itinerary_button?: string;
+  snapshot_itinerary_link?: string;
   
   // Additional info blocks - rendered server-side
   additional_info_blocks?: string;
@@ -796,6 +798,8 @@ export class EmailTemplateEngine {
       itinerary_link: '{{itinerary_link}}',
       guest_document_button: '{{guest_document_button}}',
       guest_document_link: '{{guest_document_link}}',
+      snapshot_itinerary_button: '{{snapshot_itinerary_button}}',
+      snapshot_itinerary_link: '{{snapshot_itinerary_link}}',
       
       // Additional info blocks - rendered server-side with tour data
       additional_info_blocks: '{{additional_info_blocks}}',

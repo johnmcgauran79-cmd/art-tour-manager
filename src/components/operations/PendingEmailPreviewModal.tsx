@@ -109,6 +109,7 @@ export const PendingEmailPreviewModal = ({
     '{{custom_form_link}}': '#preview-custom-form',
     '{{itinerary_button}}': `<span style="${placeholderButtonStyle}">🗺️ View Itinerary (Preview)</span>`,
     '{{itinerary_link}}': '#preview-itinerary',
+    '{{snapshot_itinerary_button}}': `<span style="${placeholderButtonStyle}">📄 Print Friendly Itinerary (Preview)</span>`,
     '{{guest_document_button}}': `<span style="${placeholderButtonStyle}">📄 View Guest Document (Preview)</span>`,
     '{{guest_document_link}}': '#preview-guest-document',
   };
