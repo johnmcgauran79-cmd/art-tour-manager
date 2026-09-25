@@ -22,18 +22,28 @@ const TARGETS = {
     pathColumn: "guest_document_file_path",
     nameColumn: "guest_document_file_name",
   },
+  brochure: {
+    folder: "tour-brochures",
+    pathColumn: "brochure_file_path",
+    nameColumn: "brochure_file_name",
+  },
+  tour_itinerary: {
+    folder: "tour-itinerary-documents",
+    pathColumn: "tour_itinerary_file_path",
+    nameColumn: "tour_itinerary_file_name",
+  },
 } as const;
 
 export default defineTool({
   name: "upload_itinerary_document",
-  title: "Upload the itinerary snapshot or guest document",
+  title: "Upload a tour Files-tab document",
   description:
-    "Upload (or replace) a tour's Itinerary Snapshot or Guest Document file on its itinerary. Choose `document` = 'itinerary_snapshot' or 'guest_document'. Any existing file for that slot is replaced and removed from storage. Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
+    "Upload (or replace) one of the four files on a tour's Comms -> Files tab: Itinerary Snapshot, Guest Document, Brochure or Tour Itinerary. Choose `document` = 'itinerary_snapshot', 'guest_document', 'brochure' or 'tour_itinerary'. Any existing file for that slot is replaced and removed from storage. Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
   inputSchema: {
     tour_id: z.string().describe("The tour id (uuid)."),
     document: z
-      .enum(["itinerary_snapshot", "guest_document"])
-      .describe("Which slot to fill: 'itinerary_snapshot' or 'guest_document'."),
+      .enum(["itinerary_snapshot", "guest_document", "brochure", "tour_itinerary"])
+      .describe("Which Files-tab slot to fill: 'itinerary_snapshot', 'guest_document', 'brochure' or 'tour_itinerary'."),
     filename: z.string().min(1).max(255).describe("Filename including extension, usually a PDF."),
     content_type: z.string().min(1).describe(`MIME type. Allowed: ${ALLOWED_DOCUMENT_TYPES.join(", ")}`),
     data_base64: z.string().min(1).describe("Base64-encoded file contents (no data: prefix)."),
