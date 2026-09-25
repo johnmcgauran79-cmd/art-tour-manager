@@ -23,8 +23,8 @@ const AUTO_HINT: Record<string, string> = {
 export const GuestReadyChecklist = ({ tour }: { tour: TourHealth }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const perms = usePermissions() as any;
-  const canEdit = perms?.isAdmin || perms?.isManager || perms?.canEditTours || perms?.canManageTours;
+  const { canEdit: canEditResource } = usePermissions();
+  const canEdit = canEditResource("tour").allowed;
   const { toast } = useToast();
 
   const toggle = useMutation({

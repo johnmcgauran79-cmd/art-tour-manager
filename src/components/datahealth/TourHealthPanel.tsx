@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { ChevronDown } from "lucide-react";
 import { HealthScoreBadge } from "@/components/datahealth/HealthScoreBadge";
+import { GuestReadyChecklist } from "@/components/datahealth/GuestReadyChecklist";
 import {
   CHECK_LABELS,
   DATA_HEALTH_CHECKS,
@@ -68,6 +69,9 @@ export const TourHealthPanel = ({
                   DMC managed
                 </Badge>
               )}
+              <Badge variant={tour.guestReadyScore === 100 ? "default" : "outline"} className="text-[11px]">
+                Guest Ready {tour.guestReadyScore}%
+              </Badge>
               <Badge variant="outline" className="text-[11px]">
                 Guest data {tour.guestScore}
               </Badge>
@@ -91,15 +95,17 @@ export const TourHealthPanel = ({
               {DATA_HEALTH_CHECKS.filter((c) => tour.categoryScores[c.id] !== undefined).map((c) => (
                 <Badge key={c.id} variant="outline" className="text-[11px] font-normal">
                   <span className="text-muted-foreground">
-                    {c.group === "ops" ? "Ops" : "Guest"} · {c.label}
+                    {c.group === "ops" ? "Ops" : c.group === "ready" ? "Guest Ready" : "Guest"} · {c.label}
                   </span>
                   <span className="ml-1 font-semibold tabular-nums">{tour.categoryScores[c.id]}</span>
                 </Badge>
               ))}
             </div>
 
-            {tour.items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing outstanding — this tour is ready to run.</p>
+            <GuestReadyChecklist tour={tour} />
+
+            {tour.opsItems.length + tour.guestItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing outstanding operationally or in guest data.</p>
             ) : (
               <div className="space-y-6">
                 {(["ops", "guest"] as const).map((group) => {
