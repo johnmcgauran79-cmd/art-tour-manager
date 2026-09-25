@@ -123,7 +123,7 @@ Plain percentage of six steps (no urgency multiplier), shown beside the ops scor
 | Race tickets received / arranged | Tick box on the tour (`tours.race_tickets_arranged_at/_by`) |
 | Guest Document created | `tour_itineraries.guest_document_file_path` |
 | Itinerary Snapshot created | `tour_itineraries.snapshot_file_path` |
-| 2 Week email sent | `email_logs` row for the tour with template name starting "2 Week", no error |
+| 2 Week email sent | `email_logs` row for the tour with template name starting "2 Week", no error, sent as a group send (`batch_id` set) to a non-`@australianracingtours.com.au` address — single tests are ignored |
 | WhatsApp group chat started | Tick box on the tour (`tours.whatsapp_group_started_at/_by`) |
 | Host briefing sent to host | `email_logs` row with template name matching "host … briefing" |
 
