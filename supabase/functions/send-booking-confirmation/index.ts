@@ -901,6 +901,35 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Print-friendly itinerary: links to the tour's uploaded Itinerary Snapshot file
+    let snapshotLink = '';
+    let snapshotButton = '';
+    const needsSnapshot = /\{\{\s*snapshot_itinerary_(?:link|button)\s*\}\}|%7B%7Bsnapshot_itinerary_(?:link|button)%7D%7D/i.test(normalizedContentToCheck);
+    if (needsSnapshot && booking.tour_id) {
+      try {
+        const { data: snapRow } = await supabaseClient
+          .from('tour_itineraries')
+          .select('snapshot_file_path')
+          .eq('tour_id', booking.tour_id)
+          .maybeSingle();
+        if (snapRow?.snapshot_file_path) {
+          const { data: signed, error: signErr } = await supabaseClient.storage
+            .from('attachments')
+            .createSignedUrl(snapRow.snapshot_file_path, 60 * 60 * 24 * 28);
+          if (signErr) {
+            console.error('Error signing snapshot URL:', signErr);
+          } else if (signed?.signedUrl) {
+            snapshotLink = signed.signedUrl;
+            snapshotButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-snapshot-itinerary="button"><tr><td><a href="${snapshotLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">PRINT FRIENDLY ITINERARY</a></td></tr></table>`;
+          }
+        } else {
+          console.log('No itinerary snapshot uploaded for tour:', booking.tour_id);
+        }
+      } catch (e) {
+        console.error('Snapshot link generation failed:', e);
+      }
+    }
+
     // Check if guest document link/button is needed (links to the manually uploaded
     // Guest Document on the tour's Itinerary tab, not the auto-generated itinerary page)
     const hasGuestDocPlaceholder = /\{\{\s*guest_document_(link|button)\s*\}\}/.test(normalizedContentToCheck);
@@ -1237,6 +1266,8 @@ const handler = async (req: Request): Promise<Response> => {
       // Uploaded Guest Document (tour Itinerary tab) action fields
       guest_document_link: guestDocumentLink,
       guest_document_button: guestDocumentButton,
+      snapshot_itinerary_link: snapshotLink,
+      snapshot_itinerary_button: snapshotButton,
       pickup_location_name: pickupLocationName,
       pickup_location_time: pickupLocationTime,
       pickup_location_details: pickupLocationDetails,
