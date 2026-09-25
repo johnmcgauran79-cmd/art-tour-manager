@@ -275,7 +275,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           .in("tour_id", tourIds),
         supabase
           .from("email_logs")
-          .select("tour_id, template_name, sent_at")
+          .select("tour_id, template_name, sent_at, batch_id, recipient_email")
           .in("tour_id", tourIds)
           .is("error_message", null)
           .or("template_name.ilike.2 week%,template_name.ilike.%host%briefing%"),
@@ -364,7 +364,14 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       const hostBriefingSent = new Map<string, string>();
       ((emailLogRes.data || []) as any[]).forEach((l) => {
         const name = String(l.template_name || "").toLowerCase();
-        const target = name.startsWith("2 week") ? twoWeekSent : hostBriefingSent;
+        const isTwoWeek = name.startsWith("2 week");
+        // Only the real group send counts: bulk sends carry a batch id, and
+        // copies/tests to our own addresses are ignored.
+        if (isTwoWeek) {
+          const internal = String(l.recipient_email || "").toLowerCase().endsWith("@australianracingtours.com.au");
+          if (!l.batch_id || internal) return;
+        }
+        const target = isTwoWeek ? twoWeekSent : hostBriefingSent;
         const prev = target.get(l.tour_id);
         if (!prev || (l.sent_at && l.sent_at > prev)) target.set(l.tour_id, l.sent_at);
       });
