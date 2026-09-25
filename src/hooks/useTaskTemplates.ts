@@ -20,6 +20,7 @@ export interface TaskTemplate {
   approval_policy: 'all' | 'any';
   default_url_reference: string | null;
   approver_user_ids?: string[];
+  subtask_titles?: string[];
 }
 
 export const useTaskTemplates = () => {
@@ -61,8 +62,21 @@ export const useTaskTemplates = () => {
         approversByTemplate.set(row.template_id, arr);
       });
 
+      const { data: subs, error: sErr } = await supabase
+        .from('task_template_subtasks' as any)
+        .select('template_id, title, sort_order')
+        .order('sort_order');
+      if (sErr) console.error('Error fetching template subtasks:', sErr);
+      const subsByTemplate = new Map<string, string[]>();
+      ((subs as any[]) || []).forEach((row) => {
+        const arr = subsByTemplate.get(row.template_id) || [];
+        arr.push(row.title);
+        subsByTemplate.set(row.template_id, arr);
+      });
+
       const result = (data || []).map((t: any) => ({
         ...t,
+        subtask_titles: subsByTemplate.get(t.id) || [],
         assignee_user_ids: byTemplate.get(t.id) || [],
         approver_user_ids: approversByTemplate.get(t.id) || [],
       })) as TaskTemplate[];
@@ -103,6 +117,22 @@ const syncApprovers = async (templateId: string, userIds: string[] | undefined) 
   }
 };
 
+const syncSubtasks = async (templateId: string, titles: string[] | undefined) => {
+  if (!titles) return;
+  const clean = titles.map((t) => t.trim()).filter(Boolean);
+  const { error: delErr } = await supabase
+    .from('task_template_subtasks' as any)
+    .delete()
+    .eq('template_id', templateId);
+  if (delErr) throw delErr;
+  if (clean.length > 0) {
+    const { error: insErr } = await supabase
+      .from('task_template_subtasks' as any)
+      .insert(clean.map((title, idx) => ({ template_id: templateId, title, sort_order: idx })));
+    if (insErr) throw insErr;
+  }
+};
+
 export const useCreateTaskTemplate = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -122,6 +152,7 @@ export const useCreateTaskTemplate = () => {
       approval_policy?: 'all' | 'any';
       default_url_reference?: string | null;
       approver_user_ids?: string[];
+      subtask_titles?: string[];
     }) => {
       const { data, error } = await supabase
         .from('task_templates')
@@ -144,6 +175,7 @@ export const useCreateTaskTemplate = () => {
       if (error) throw error;
       await syncAssignees(data.id, templateData.assignee_user_ids);
       await syncApprovers(data.id, templateData.approver_user_ids);
+      await syncSubtasks(data.id, templateData.subtask_titles);
       return data;
     },
     onSuccess: () => {
@@ -171,9 +203,9 @@ export const useUpdateTaskTemplate = () => {
   return useMutation({
     mutationFn: async (data: {
       templateId: string;
-      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active' | 'assignee_user_ids' | 'template_type' | 'default_status' | 'approval_policy' | 'default_url_reference' | 'approver_user_ids'>>;
+      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active' | 'assignee_user_ids' | 'template_type' | 'default_status' | 'approval_policy' | 'default_url_reference' | 'approver_user_ids' | 'subtask_titles'>>;
     }) => {
-      const { assignee_user_ids, approver_user_ids, ...rest } = data.updates as any;
+      const { assignee_user_ids, approver_user_ids, subtask_titles, ...rest } = data.updates as any;
       const { data: template, error } = await supabase
         .from('task_templates')
         .update(rest)
@@ -187,6 +219,9 @@ export const useUpdateTaskTemplate = () => {
       }
       if (approver_user_ids !== undefined) {
         await syncApprovers(data.templateId, approver_user_ids);
+      }
+      if (subtask_titles !== undefined) {
+        await syncSubtasks(data.templateId, subtask_titles);
       }
       return template;
     },

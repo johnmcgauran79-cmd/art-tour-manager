@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TaskTemplate, useCreateTaskTemplate, useUpdateTaskTemplate } from "@/hooks/useTaskTemplates";
-import { Save, X } from "lucide-react";
+import { Save, X, ArrowUp, ArrowDown, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -35,6 +35,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
     approval_policy: 'all' as 'all' | 'any',
     default_url_reference: '',
     approver_user_ids: [] as string[],
+    subtask_titles: [] as string[],
   });
 
   const createTemplate = useCreateTaskTemplate();
@@ -43,6 +44,22 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
   const { data: taskStatuses = [] } = useTaskStatuses();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedApproverId, setSelectedApproverId] = useState<string>("");
+  const [newSubtask, setNewSubtask] = useState("");
+
+  const setSubtasks = (list: string[]) => setFormData((f) => ({ ...f, subtask_titles: list }));
+  const addSubtask = () => {
+    const t = newSubtask.trim();
+    if (!t) return;
+    setSubtasks([...formData.subtask_titles, t]);
+    setNewSubtask("");
+  };
+  const moveSubtask = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    const list = [...formData.subtask_titles];
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    setSubtasks(list);
+  };
 
   useEffect(() => {
     if (template) {
@@ -60,6 +77,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
         approval_policy: template.approval_policy || 'all',
         default_url_reference: template.default_url_reference || '',
         approver_user_ids: template.approver_user_ids || [],
+        subtask_titles: template.subtask_titles || [],
       });
     } else {
       setFormData({
@@ -76,6 +94,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
         approval_policy: 'all',
         default_url_reference: '',
         approver_user_ids: [],
+        subtask_titles: [],
       });
     }
   }, [template]);
@@ -99,6 +118,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
       approval_policy: formData.approval_policy,
       default_url_reference: formData.default_url_reference.trim() || null,
       approver_user_ids: formData.approver_user_ids,
+      subtask_titles: formData.subtask_titles,
     };
 
     try {
@@ -331,6 +351,46 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
                 onChange={(e) => setFormData({ ...formData, default_url_reference: e.target.value })}
                 placeholder="https://..."
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Subtasks</Label>
+              <p className="text-xs text-muted-foreground">
+                Added to every new task created from this template, in this order.
+              </p>
+              {formData.subtask_titles.map((t, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-5 text-xs text-muted-foreground">{i + 1}.</span>
+                  <Input
+                    value={t}
+                    onChange={(e) => {
+                      const list = [...formData.subtask_titles];
+                      list[i] = e.target.value;
+                      setSubtasks(list);
+                    }}
+                  />
+                  <Button type="button" variant="ghost" size="icon" disabled={i === 0} onClick={() => moveSubtask(i, -1)} aria-label="Move up">
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" disabled={i === formData.subtask_titles.length - 1} onClick={() => moveSubtask(i, 1)} aria-label="Move down">
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => setSubtasks(formData.subtask_titles.filter((_, x) => x !== i))} aria-label="Remove subtask">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newSubtask}
+                  onChange={(e) => setNewSubtask(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtask(); } }}
+                  placeholder="Add a subtask..."
+                />
+                <Button type="button" variant="outline" onClick={addSubtask} disabled={!newSubtask.trim()}>
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
