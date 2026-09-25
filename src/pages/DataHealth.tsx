@@ -96,6 +96,7 @@ export default function DataHealth() {
         { header: "Bookings", value: (t) => t.bookings },
         { header: "Passengers", value: (t) => t.pax },
         { header: "Ops readiness", value: (t) => t.opsScore },
+        { header: "Guest Ready", value: (t) => t.guestReadyScore },
         { header: "Guest data", value: (t) => t.guestScore },
         { header: "Ops issues", value: (t) => t.opsItems.length },
         { header: "Guest data issues", value: (t) => t.guestItems.length },
@@ -130,6 +131,12 @@ export default function DataHealth() {
       Icon: ShieldCheck,
     },
     {
+      label: "Guest Ready",
+      value: data ? `${data.guestReadyPortfolioScore}` : "—",
+      hint: "Tickets, guest documents, 2 week email, WhatsApp group and host briefing",
+      Icon: CheckCircle2,
+    },
+    {
       label: "Guest data",
       value: data ? `${data.guestPortfolioScore}` : "—",
       hint: "Completeness of passenger-supplied information",
@@ -157,7 +164,7 @@ export default function DataHealth() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tour Readiness</h1>
           <p className="text-muted-foreground">
-            Operational readiness of upcoming tours (hotels, activities, tour setup) and guest data completeness.
+            Operational readiness of upcoming tours (hotels, activities, tour setup), Guest Ready (what guests and hosts receive) and guest data completeness.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -180,7 +187,7 @@ export default function DataHealth() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {summaryCards.map((c) => (
           <Card key={c.label}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -252,7 +259,7 @@ export default function DataHealth() {
                 <SelectItem value="all">All checks</SelectItem>
                 {DATA_HEALTH_CHECKS.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.group === "ops" ? "Ops" : "Guest"} · {c.label}
+                    {c.group === "ops" ? "Ops" : c.group === "ready" ? "Guest Ready" : "Guest"} · {c.label}
                   </SelectItem>
                 ))}
               </SelectContent>

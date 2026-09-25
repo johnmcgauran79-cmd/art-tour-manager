@@ -107,11 +107,27 @@ scores. The score for each category appears when you expand the row.
 - Passenger-level allocation gaps (who is or isn't attending each activity) are **not**
   scored here — they are managed in the Activity Bookings review screen.
 
-**Tour setup** — 4 checkpoints from `tours`, `tour_itineraries`, `tour_attachments`
+**Tour setup** — 3 checkpoints from `tours`, `tour_itineraries`
 1. `tour_host` assigned.
 2. Current itinerary exists and has days built.
-3. A guest document exists (itinerary guest document file, or any tour attachment).
-4. `capacity` set to a number greater than 0.
+3. `capacity` set to a number greater than 0.
+
+(The guest document moved to Guest Ready in September 2026 — it can only be produced once operations are done.)
+
+### Guest Ready (third level, September 2026)
+
+Plain percentage of six steps (no urgency multiplier), shown beside the ops score and never affecting it:
+
+| Step | How it's marked |
+| --- | --- |
+| Race tickets received / arranged | Tick box on the tour (`tours.race_tickets_arranged_at/_by`) |
+| Guest Document created | `tour_itineraries.guest_document_file_path` |
+| Itinerary Snapshot created | `tour_itineraries.snapshot_file_path` |
+| 2 Week email sent | `email_logs` row for the tour with template name starting "2 Week", no error |
+| WhatsApp group chat started | Tick box on the tour (`tours.whatsapp_group_started_at/_by`) |
+| Host briefing sent to host | `email_logs` row with template name matching "host … briefing" |
+
+Checklist UI: `src/components/datahealth/GuestReadyChecklist.tsx` (tick boxes: admin/manager).
 
 **Payments** — from `bookings` and `xero_invoice_mappings`; **only inside 30 days of departure**
 - 1 checkpoint per booking. Fails when the booking isn't settled and Xero still shows an
