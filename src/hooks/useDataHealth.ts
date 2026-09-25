@@ -21,7 +21,7 @@ import { isPlaceholderBooking } from "@/lib/placeholderBookings";
  * Egress rules: every query is scoped to the in-scope tour/booking id set.
  */
 
-export type DataHealthGroup = "ops" | "guest";
+export type DataHealthGroup = "ops" | "guest" | "ready";
 
 export type DataHealthCheckId =
   | "hotel"
@@ -34,7 +34,8 @@ export type DataHealthCheckId =
   | "emergency"
   | "waivers"
   | "forms"
-  | "pickups";
+  | "pickups"
+  | "guest_ready";
 
 export interface DataHealthCheckMeta {
   id: DataHealthCheckId;
@@ -48,7 +49,7 @@ export interface DataHealthCheckMeta {
 export const DATA_HEALTH_CHECKS: DataHealthCheckMeta[] = [
   { id: "hotel", label: "Hotels", group: "ops", weight: 30, description: "Hotel contract status, terms, contract file and room allocation" },
   { id: "activities", label: "Activities", group: "ops", weight: 30, description: "Activity booking and payment status, capacity and supplier details" },
-  { id: "ops", label: "Tour setup", group: "ops", weight: 25, description: "Host, itinerary, guest document and capacity" },
+  { id: "ops", label: "Tour setup", group: "ops", weight: 25, description: "Host, itinerary and capacity" },
   { id: "payments", label: "Payments", group: "ops", weight: 10, description: "Bookings not yet settled close to departure" },
   { id: "website", label: "Website", group: "ops", weight: 5, description: "Not linked to WordPress, or changes awaiting publish" },
   { id: "passports", label: "Passport details", group: "guest", weight: 25, description: "Passengers with no passport details recorded" },
@@ -57,6 +58,7 @@ export const DATA_HEALTH_CHECKS: DataHealthCheckMeta[] = [
   { id: "emergency", label: "Emergency contacts", group: "guest", weight: 15, description: "Lead passengers with no emergency contact" },
   { id: "forms", label: "Custom forms", group: "guest", weight: 10, description: "Outstanding responses to a published tour form" },
   { id: "pickups", label: "Pickups", group: "guest", weight: 5, description: "Bookings with no pickup option selected" },
+  { id: "guest_ready", label: "Guest Ready", group: "ready", weight: 1, description: "Race tickets, guest document, snapshot and 2 week email, WhatsApp group, host briefing" },
 ];
 
 export const CHECK_LABELS: Record<DataHealthCheckId, string> = DATA_HEALTH_CHECKS.reduce(
@@ -94,6 +96,10 @@ export interface TourHealth {
   score: number;
   opsScore: number;
   guestScore: number;
+  /** Guest Ready: plain % of the guest-facing checklist completed. */
+  guestReadyScore: number;
+  guestReady: GuestReadyStep[];
+  readyItems: DataHealthItem[];
   items: DataHealthItem[];
   opsItems: DataHealthItem[];
   guestItems: DataHealthItem[];
@@ -105,11 +111,21 @@ export interface TourHealth {
   dmcManaged?: boolean;
 }
 
+export interface GuestReadyStep {
+  key: "race_tickets" | "guest_document" | "snapshot" | "two_week_email" | "whatsapp" | "host_briefing";
+  label: string;
+  done: boolean;
+  /** Ticked by staff rather than detected. */
+  manual: boolean;
+  detail?: string;
+}
+
 export interface DataHealthResult {
   tours: TourHealth[];
   allItems: DataHealthItem[];
   portfolioScore: number;
   guestPortfolioScore: number;
+  guestReadyPortfolioScore: number;
   atRisk: number;
   warning: number;
 }
@@ -167,7 +183,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       let tourQuery = supabase
         .from("tours")
         .select(
-          "id, name, start_date, end_date, status, capacity, tour_host, travel_documents_required, pickup_location_required, is_test_tour, managed_by_dmc"
+          "id, name, start_date, end_date, status, capacity, tour_host, travel_documents_required, pickup_location_required, is_test_tour, managed_by_dmc, race_tickets_arranged_at, whatsapp_group_started_at"
         )
         .gte("start_date", today)
         .order("start_date", { ascending: true });
@@ -183,7 +199,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
       const tourIds = tours.map((t: any) => t.id);
 
       if (tourIds.length === 0) {
-        return { tours: [], allItems: [], portfolioScore: 100, guestPortfolioScore: 100, atRisk: 0, warning: 0 };
+        return { tours: [], allItems: [], portfolioScore: 100, guestPortfolioScore: 100, guestReadyPortfolioScore: 100, atRisk: 0, warning: 0 };
       }
 
       // --- 2. Bookings for those tours --------------------------------------
@@ -220,6 +236,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         websiteChangeRes,
         invoiceRes,
         activityRes,
+        emailLogRes,
       ] = await Promise.all([
         supabase
           .from("hotels")
@@ -244,7 +261,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           : Promise.resolve({ data: [], error: null } as any),
         supabase
           .from("tour_itineraries")
-          .select("id, tour_id, is_current, guest_document_file_path, tour_itinerary_days(id)")
+          .select("id, tour_id, is_current, guest_document_file_path, snapshot_file_path, tour_itinerary_days(id)")
           .in("tour_id", tourIds),
         supabase.from("tour_attachments").select("id, tour_id").in("tour_id", tourIds),
         supabase.from("wordpress_tour_links").select("tour_id, wp_tour_id").in("tour_id", tourIds),
@@ -256,12 +273,18 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           .from("activities")
           .select("id, tour_id, name, activity_date, start_time, location, booking_status, payment_status, transport_status, transport_mode, spots_available, spots_booked, contact_name, contact_phone")
           .in("tour_id", tourIds),
+        supabase
+          .from("email_logs")
+          .select("tour_id, template_name, sent_at")
+          .in("tour_id", tourIds)
+          .is("error_message", null)
+          .or("template_name.ilike.2 week%,template_name.ilike.%host%briefing%"),
       ]);
 
       const firstError = [
         hotelsRes, hotelRes, waiverRes, docsRes, pickupRes, formRes, formResponseRes,
         formExemptionRes, itineraryRes, attachmentRes, wpLinkRes, websiteChangeRes,
-        invoiceRes, activityRes,
+        invoiceRes, activityRes, emailLogRes,
       ].find((r: any) => r?.error)?.error;
       if (firstError) throw firstError;
 
@@ -336,6 +359,16 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         websiteChangesByTour.set(c.tour_id, list);
       });
 
+
+      const twoWeekSent = new Map<string, string>();
+      const hostBriefingSent = new Map<string, string>();
+      ((emailLogRes.data || []) as any[]).forEach((l) => {
+        const name = String(l.template_name || "").toLowerCase();
+        const target = name.startsWith("2 week") ? twoWeekSent : hostBriefingSent;
+        const prev = target.get(l.tour_id);
+        if (!prev || (l.sent_at && l.sent_at > prev)) target.set(l.tour_id, l.sent_at);
+      });
+      const fmtAu = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("en-AU") : undefined);
 
       const invoiceByBooking = new Map<string, any>();
       (invoiceRes.data || []).forEach((m: any) => invoiceByBooking.set(m.booking_id, m));
@@ -479,14 +512,12 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
 
 
         // ================= OPS: TOUR SETUP =================================
-        track("ops", 4);
+        // Guest document moved to Guest Ready — it can only be produced once ops are done.
+        track("ops", 3);
         if (blank(tour.tour_host)) flag("ops", tour.name, "No tour host assigned");
         const itinerary = itineraryByTour.get(tour.id);
         const dayCount = itinerary?.tour_itinerary_days?.length || 0;
         if (!itinerary || dayCount === 0) flag("ops", tour.name, "Itinerary has no days built");
-        if (!itinerary?.guest_document_file_path && (attachmentCountByTour.get(tour.id) || 0) === 0) {
-          flag("ops", tour.name, "No guest document uploaded");
-        }
         if (!tour.capacity || tour.capacity <= 0) flag("ops", tour.name, "Tour capacity not set");
 
         // ================= OPS: WEBSITE ====================================
@@ -571,6 +602,19 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           }
         });
 
+        // ================= GUEST READY =====================================
+        const guestReady: GuestReadyStep[] = [
+          { key: "race_tickets", label: "Race tickets received / arranged", manual: true, done: !!tour.race_tickets_arranged_at, detail: fmtAu(tour.race_tickets_arranged_at) },
+          { key: "guest_document", label: "Guest Document created", manual: false, done: !!itinerary?.guest_document_file_path },
+          { key: "snapshot", label: "Itinerary Snapshot created", manual: false, done: !!itinerary?.snapshot_file_path },
+          { key: "two_week_email", label: "2 Week email sent", manual: false, done: twoWeekSent.has(tour.id), detail: fmtAu(twoWeekSent.get(tour.id)) },
+          { key: "whatsapp", label: "WhatsApp group chat started", manual: true, done: !!tour.whatsapp_group_started_at, detail: fmtAu(tour.whatsapp_group_started_at) },
+          { key: "host_briefing", label: "Host briefing sent to host", manual: false, done: hostBriefingSent.has(tour.id), detail: fmtAu(hostBriefingSent.get(tour.id)) },
+        ];
+        track("guest_ready", guestReady.length);
+        guestReady.filter((g) => !g.done).forEach((g) => flag("guest_ready", tour.name, `${g.label} — not yet done`));
+        const guestReadyScore = Math.round((guestReady.filter((g) => g.done).length / guestReady.length) * 100);
+
         // ================= SCORING =========================================
         const multiplier = urgencyMultiplier(daysOut);
         const categoryScores: Partial<Record<DataHealthCheckId, number>> = {};
@@ -608,6 +652,9 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
           score: opsScore,
           opsScore,
           guestScore,
+          guestReadyScore,
+          guestReady,
+          readyItems: items.filter((i) => i.group === "ready"),
           items,
           opsItems: items.filter((i) => i.group === "ops"),
           guestItems: items.filter((i) => i.group === "guest"),
@@ -626,6 +673,7 @@ export const useDataHealth = (windowDays: DataHealthWindow = 120) => {
         allItems,
         portfolioScore: avg(tourHealth.map((t) => t.opsScore)),
         guestPortfolioScore: avg(tourHealth.map((t) => t.guestScore)),
+        guestReadyPortfolioScore: avg(tourHealth.map((t) => t.guestReadyScore)),
         atRisk: tourHealth.filter((t) => t.opsScore < 70).length,
         warning: tourHealth.filter((t) => t.opsScore >= 70 && t.opsScore < 90).length,
       };
