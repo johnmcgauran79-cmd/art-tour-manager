@@ -13,7 +13,7 @@
   "mcp": {
     "server": {
       "name": "art-tour-manager-wordpress-mcp",
-      "version": "2.9.0",
+      "version": "2.10.0",
       "title": "Australian Racing Tours MCP v2"
     },
     "tools": [
@@ -2571,8 +2571,8 @@
       },
       {
         "name": "upload_itinerary_document",
-        "title": "Upload the itinerary snapshot or guest document",
-        "description": "Upload (or replace) a tour's Itinerary Snapshot or Guest Document file on its itinerary. Choose `document` = 'itinerary_snapshot' or 'guest_document'. Any existing file for that slot is replaced and removed from storage. Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
+        "title": "Upload a tour Files-tab document",
+        "description": "Upload (or replace) one of the four files on a tour's Comms -> Files tab: Itinerary Snapshot, Guest Document, Brochure or Tour Itinerary. Choose `document` = 'itinerary_snapshot', 'guest_document', 'brochure' or 'tour_itinerary'. Any existing file for that slot is replaced and removed from storage. Provide the file as base64 in `data_base64`, max 20MB. Admin/manager only.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
@@ -2590,9 +2590,11 @@
               "type": "string",
               "enum": [
                 "itinerary_snapshot",
-                "guest_document"
+                "guest_document",
+                "brochure",
+                "tour_itinerary"
               ],
-              "description": "Which slot to fill: 'itinerary_snapshot' or 'guest_document'."
+              "description": "Which Files-tab slot to fill: 'itinerary_snapshot', 'guest_document', 'brochure' or 'tour_itinerary'."
             },
             "filename": {
               "type": "string",
