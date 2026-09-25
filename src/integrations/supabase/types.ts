@@ -7931,6 +7931,8 @@ export type Database = {
           price_double: number | null
           price_single: number | null
           price_twin: number | null
+          race_tickets_arranged_at: string | null
+          race_tickets_arranged_by: string | null
           return_flight_date: string | null
           return_flight_number: string | null
           start_date: string
@@ -7950,6 +7952,8 @@ export type Database = {
           welcome_message_image_path: string | null
           welcome_message_signoff: string | null
           welcome_update_message: string | null
+          whatsapp_group_started_at: string | null
+          whatsapp_group_started_by: string | null
           xero_product_id: string | null
           xero_reference: string | null
         }
@@ -8006,6 +8010,8 @@ export type Database = {
           price_double?: number | null
           price_single?: number | null
           price_twin?: number | null
+          race_tickets_arranged_at?: string | null
+          race_tickets_arranged_by?: string | null
           return_flight_date?: string | null
           return_flight_number?: string | null
           start_date: string
@@ -8025,6 +8031,8 @@ export type Database = {
           welcome_message_image_path?: string | null
           welcome_message_signoff?: string | null
           welcome_update_message?: string | null
+          whatsapp_group_started_at?: string | null
+          whatsapp_group_started_by?: string | null
           xero_product_id?: string | null
           xero_reference?: string | null
         }
@@ -8081,6 +8089,8 @@ export type Database = {
           price_double?: number | null
           price_single?: number | null
           price_twin?: number | null
+          race_tickets_arranged_at?: string | null
+          race_tickets_arranged_by?: string | null
           return_flight_date?: string | null
           return_flight_number?: string | null
           start_date?: string
@@ -8100,6 +8110,8 @@ export type Database = {
           welcome_message_image_path?: string | null
           welcome_message_signoff?: string | null
           welcome_update_message?: string | null
+          whatsapp_group_started_at?: string | null
+          whatsapp_group_started_by?: string | null
           xero_product_id?: string | null
           xero_reference?: string | null
         }
