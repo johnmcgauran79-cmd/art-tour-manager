@@ -87,6 +87,14 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     setApprovalPolicy((tpl.approval_policy || "all") as ApprovalPolicy);
     setApproverIds(tpl.approver_user_ids || []);
     setSelectedUsers(tpl.assignee_user_ids || []);
+    setDraftSubtasks(
+      (tpl.subtask_titles || []).map((t, i) => ({
+        id: `tpl-${Date.now()}-${i}`,
+        title: t,
+        assignee_id: null,
+        due_date: null,
+      })),
+    );
   };
 
   // Fetch tours for the dropdown
